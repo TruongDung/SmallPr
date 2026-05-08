@@ -305,6 +305,10 @@ const renderTasks = (tasks) => {
     timeSpent.className = 'task-time';
     timeSpent.textContent = `⏱ Time spent: ${task.time_spent_minutes} minutes`;
 
+    const datetime = document.createElement('p');
+    datetime.className = 'task-datetime';
+    datetime.textContent = `📅 Created: ${formatDateEST(task.created_at)}`;
+
     const actions = document.createElement('div');
     actions.className = 'task-actions';
 
@@ -321,7 +325,7 @@ const renderTasks = (tasks) => {
     deleteButton.addEventListener('click', () => deleteTask(task.id));
 
     actions.append(toggleButton, editButton, deleteButton);
-    card.append(meta, description, timeSpent, actions);
+    card.append(meta, description, timeSpent, datetime, actions);
     taskList.append(card);
   });
 };
