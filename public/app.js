@@ -19,8 +19,22 @@ let tasks = [];
 // Helper function to format date in EST (New York)
 const formatDateEST = (dateString) => {
   const date = new Date(dateString);
-  const estDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/New_York' }));
-  return estDate.toLocaleString('en-US') + ' EST (NYC)';
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true
+  });
+  const parts = formatter.formatToParts(date);
+  const formattedParts = {};
+  parts.forEach(part => {
+    formattedParts[part.type] = part.value;
+  });
+  return `${formattedParts.month}/${formattedParts.day}/${formattedParts.year}, ${formattedParts.hour}:${formattedParts.minute}:${formattedParts.second} ${formattedParts.dayPeriod} EST (NYC)`;
 };
 
 // Helper function to get weather icon
@@ -88,6 +102,12 @@ const fetchWeatherForLocation = async (lat, lng, locationName) => {
 };
 
 // Display weather on the widget
+// Get current time in EST timezone
+const getCurrentTimeEST = () => {
+  const now = new Date();
+  return now.toLocaleString('en-US', { timeZone: 'America/New_York' });
+};
+
 const displayWeather = async (weather, lat, lng, locationName = '') => {
   const weatherWidget = document.getElementById('weather-widget');
   
@@ -108,6 +128,7 @@ const displayWeather = async (weather, lat, lng, locationName = '') => {
   const icon = getWeatherIcon(weather.weather_code);
   const temp = Math.round(weather.temperature_2m);
   const humidity = weather.relative_humidity_2m;
+  const currentTime = getCurrentTimeEST();
   
   weatherWidget.innerHTML = `
     <div class="weather-content">
@@ -117,9 +138,21 @@ const displayWeather = async (weather, lat, lng, locationName = '') => {
         <div class="weather-temp">${temp}°F</div>
         <div class="weather-humidity">Humidity: ${humidity}%</div>
       </div>
+      <div class="weather-time">
+        <div class="time-label">EST Time</div>
+        <div class="time-display">${currentTime}</div>
+      </div>
     </div>
   `;
   weatherWidget.classList.remove('hidden');
+  
+  // Update time every second
+  setInterval(() => {
+    const timeDisplay = weatherWidget.querySelector('.time-display');
+    if (timeDisplay) {
+      timeDisplay.textContent = getCurrentTimeEST();
+    }
+  }, 1000);
 };
 
 const showSection = () => {
@@ -193,8 +226,32 @@ const handleTaskSubmit = async (event) => {
   const title = document.getElementById('task-title').value.trim();
   const description = document.getElementById('task-description').value.trim();
   const time_spent_minutes = parseInt(document.getElementById('task-time').value) || 0;
+  
+  const titleError = document.getElementById('title-error');
+  const descriptionError = document.getElementById('description-error');
+  const formError = document.getElementById('form-error');
+  
+  // Clear previous errors
+  titleError.classList.add('hidden');
+  descriptionError.classList.add('hidden');
+  formError.classList.add('hidden');
 
+  // Validation
   if (!title) {
+    formError.textContent = 'Title is required';
+    formError.classList.remove('hidden');
+    return;
+  }
+  
+  if (title.length > 20) {
+    titleError.textContent = 'Title must be 20 characters or less';
+    titleError.classList.remove('hidden');
+    return;
+  }
+  
+  if (description.length > 500) {
+    descriptionError.textContent = 'Description must be 500 characters or less';
+    descriptionError.classList.remove('hidden');
     return;
   }
 
@@ -206,6 +263,9 @@ const handleTaskSubmit = async (event) => {
   if (result.task) {
     authForm.reset();
     taskForm.reset();
+    titleError.classList.add('hidden');
+    descriptionError.classList.add('hidden');
+    formError.classList.add('hidden');
     loadTasks();
   }
 };
@@ -282,10 +342,27 @@ const deleteTask = async (id) => {
 };
 
 const editTask = (task) => {
-  const title = prompt('Task title', task.title);
+  const title = prompt('Task title (max 20 characters)', task.title);
   if (title === null) return;
-  const description = prompt('Task description', task.description || '');
+  
+  if (!title.trim()) {
+    alert('Title cannot be empty');
+    return;
+  }
+  
+  if (title.length > 20) {
+    alert('Title must be 20 characters or less');
+    return;
+  }
+  
+  const description = prompt('Task description (max 500 characters)', task.description || '');
   if (description === null) return;
+  
+  if (description.length > 500) {
+    alert('Description must be 500 characters or less');
+    return;
+  }
+  
   const timeSpent = prompt('Time spent (minutes)', task.time_spent_minutes || '0');
   if (timeSpent === null) return;
   updateTask(task.id, { title, description, completed: task.completed, time_spent_minutes: parseInt(timeSpent) || 0 });
@@ -298,7 +375,12 @@ const handleLogout = async () => {
 };
 
 const exportToExcel = () => {
+  const currentDateTime = new Date().toLocaleString('en-US', { 
+    timeZone: 'America/New_York'
+  }) + ' EST (NYC)';
+  
   const data = tasks.map(task => ({
+    'Export Date': currentDateTime,
     Title: task.title,
     Description: task.description,
     Completed: task.completed ? 'Yes' : 'No',
@@ -315,8 +397,14 @@ const exportToExcel = () => {
 const exportToPdf = () => {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
+  const currentDateTime = new Date().toLocaleString('en-US', { 
+    timeZone: 'America/New_York'
+  }) + ' EST (NYC)';
+  
   doc.setFontSize(16);
   doc.text('My Tasks', 20, 20);
+  doc.setFontSize(10);
+  doc.text(`Export Date: ${currentDateTime}`, 20, 30);
   let y = 40;
   tasks.forEach(task => {
     doc.setFontSize(12);

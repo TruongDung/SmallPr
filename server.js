@@ -194,6 +194,14 @@ app.post('/api/tasks', authRequired, async (req, res) => {
   if (!title) {
     return res.status(400).json({ error: 'Task title is required' });
   }
+  
+  if (title.length > 20) {
+    return res.status(400).json({ error: 'Task title must be 20 characters or less' });
+  }
+  
+  if (description && description.length > 500) {
+    return res.status(400).json({ error: 'Task description must be 500 characters or less' });
+  }
 
   try {
     const result = await runAsync(
@@ -216,6 +224,15 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
     const task = await getAsync('SELECT * FROM tasks WHERE id = ? AND user_id = ?', [id, req.session.userId]);
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
+    }
+    
+    // Validation
+    if (title && title.length > 20) {
+      return res.status(400).json({ error: 'Task title must be 20 characters or less' });
+    }
+    
+    if (description && description.length > 500) {
+      return res.status(400).json({ error: 'Task description must be 500 characters or less' });
     }
 
     await runAsync(

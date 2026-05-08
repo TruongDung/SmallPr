@@ -49,17 +49,20 @@
 
         <form id="task-form" class="task-form">
           <div class="field">
-            <label for="task-title">Title</label>
-            <input id="task-title" type="text" required />
+            <label for="task-title">Title <span class="field-max">(max 20 characters)</span></label>
+            <input id="task-title" type="text" required maxlength="20" />
+            <p id="title-error" class="field-error hidden"></p>
           </div>
           <div class="field">
-            <label for="task-description">Description</label>
-            <textarea id="task-description"></textarea>
+            <label for="task-description">Description <span class="field-max">(max 500 characters)</span></label>
+            <textarea id="task-description" maxlength="500"></textarea>
+            <p id="description-error" class="field-error hidden"></p>
           </div>
           <div class="field">
             <label for="task-time">Time Spent (minutes)</label>
             <input id="task-time" type="number" min="0" value="0" />
           </div>
+          <p id="form-error" class="field-error hidden"></p>
           <button type="submit">Add Task</button>
         </form>
 

@@ -81,6 +81,13 @@ label {
   color: var(--muted);
 }
 
+.field-max {
+  font-size: 12px;
+  font-weight: 500;
+  margin-left: 6px;
+  color: var(--muted);
+}
+
 input,
 textarea {
   width: 100%;
@@ -94,6 +101,13 @@ textarea {
 textarea {
   min-height: 100px;
   resize: vertical;
+}
+
+.field-error {
+  margin-top: 6px;
+  font-size: 14px;
+  color: var(--danger);
+  font-weight: 500;
 }
 
 button {
@@ -189,17 +203,20 @@ button.secondary {
 .weather-content {
   display: flex;
   align-items: center;
-  gap: 20px;
+  justify-content: space-between;
+  gap: 40px;
 }
 
 .weather-icon {
   font-size: 48px;
+  flex-shrink: 0;
 }
 
 .weather-info {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  flex-grow: 1;
 }
 
 .weather-location {
@@ -215,6 +232,26 @@ button.secondary {
 .weather-humidity {
   font-size: 14px;
   opacity: 0.85;
+}
+
+.weather-time {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.time-label {
+  font-size: 12px;
+  opacity: 0.8;
+  font-weight: 600;
+}
+
+.time-display {
+  font-size: 18px;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
 }
 
 @media (max-width: 640px) {
