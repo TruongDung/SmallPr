@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Task Manager</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Task Manager</h1>
+      <div id="user-area"></div>
+    </header>
+
+    <main>
+      <section id="auth-section" class="card hidden">
+        <div class="tabs">
+          <button id="show-login" class="active">Login</button>
+          <button id="show-signup">Sign Up</button>
+        </div>
+
+        <form id="auth-form">
+          <div class="field">
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" required />
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" required />
+          </div>
+          <button type="submit">Submit</button>
+          <p id="auth-message" class="message"></p>
+        </form>
+      </section>
+
+      <section id="task-section" class="card hidden">
+        <div class="task-header">
+          <h2>Your Tasks</h2>
+          <div class="export-buttons">
+            <button id="export-excel" class="secondary">Export to Excel</button>
+            <button id="export-pdf" class="secondary">Export to PDF</button>
+            <button id="export-word" class="secondary">Export to Word</button>
+          </div>
+          <button id="logout-button" class="secondary">Logout</button>
+        </div>
+
+        <form id="task-form" class="task-form">
+          <div class="field">
+            <label for="task-title">Title</label>
+            <input id="task-title" type="text" required />
+          </div>
+          <div class="field">
+            <label for="task-description">Description</label>
+            <textarea id="task-description"></textarea>
+          </div>
+          <button type="submit">Add Task</button>
+        </form>
+
+        <div id="task-list" class="task-list"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
