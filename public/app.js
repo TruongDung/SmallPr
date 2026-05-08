@@ -16,6 +16,112 @@ let currentMode = 'login';
 let currentUser = null;
 let tasks = [];
 
+// Helper function to format date in EST (New York)
+const formatDateEST = (dateString) => {
+  const date = new Date(dateString);
+  const estDate = new Date(date.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  return estDate.toLocaleString('en-US') + ' EST (NYC)';
+};
+
+// Helper function to get weather icon
+const getWeatherIcon = (weatherCode) => {
+  if (weatherCode === 0 || weatherCode === 1) return '☀️'; // Clear/Mostly clear
+  if (weatherCode === 2 || weatherCode === 3) return '⛅'; // Partly cloudy/Overcast
+  if (weatherCode === 45 || weatherCode === 48) return '🌫️'; // Foggy
+  if (weatherCode >= 51 && weatherCode <= 67) return '🌧️'; // Drizzle/Rain
+  if (weatherCode >= 71 && weatherCode <= 77) return '❄️'; // Snow
+  if (weatherCode === 80 || weatherCode === 81 || weatherCode === 82) return '🌧️'; // Showers
+  if (weatherCode >= 85 && weatherCode <= 86) return '🌨️'; // Showers/Snow
+  if (weatherCode === 95 || weatherCode === 96 || weatherCode === 99) return '⛈️'; // Thunderstorm
+  return '🌤️';
+};
+
+// Fetch weather data
+const fetchWeather = async () => {
+  try {
+    // Get user's geolocation
+    return new Promise((resolve) => {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (position) => {
+          const { latitude, longitude } = position.coords;
+          
+          // Fetch weather from Open-Meteo API (free, no API key needed)
+          const response = await fetch(
+            `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code,relative_humidity_2m&temperature_unit=fahrenheit&timezone=America/New_York`
+          );
+          const data = await response.json();
+          
+          if (data.current) {
+            const weather = data.current;
+            displayWeather(weather, latitude, longitude);
+          }
+          resolve();
+        }, () => {
+          // Fallback to New York City if geolocation fails
+          console.log('Geolocation failed, using NYC as default');
+          fetchWeatherForLocation(40.7128, -74.0060, 'New York City');
+          resolve();
+        });
+      } else {
+        console.log('Geolocation not supported');
+        resolve();
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching weather:', error);
+  }
+};
+
+// Fetch weather for a specific location
+const fetchWeatherForLocation = async (lat, lng, locationName) => {
+  try {
+    const response = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weather_code,relative_humidity_2m&temperature_unit=fahrenheit&timezone=America/New_York`
+    );
+    const data = await response.json();
+    if (data.current) {
+      displayWeather(data.current, lat, lng, locationName);
+    }
+  } catch (error) {
+    console.error('Error fetching weather:', error);
+  }
+};
+
+// Display weather on the widget
+const displayWeather = async (weather, lat, lng, locationName = '') => {
+  const weatherWidget = document.getElementById('weather-widget');
+  
+  // Get location name from coordinates if not provided
+  let cityName = locationName;
+  if (!cityName) {
+    try {
+      const geoResponse = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
+      );
+      const geoData = await geoResponse.json();
+      cityName = geoData.address.city || geoData.address.county || 'Current Location';
+    } catch {
+      cityName = 'Current Location';
+    }
+  }
+  
+  const icon = getWeatherIcon(weather.weather_code);
+  const temp = Math.round(weather.temperature_2m);
+  const humidity = weather.relative_humidity_2m;
+  
+  weatherWidget.innerHTML = `
+    <div class="weather-content">
+      <div class="weather-icon">${icon}</div>
+      <div class="weather-info">
+        <div class="weather-location">${cityName}</div>
+        <div class="weather-temp">${temp}°F</div>
+        <div class="weather-humidity">Humidity: ${humidity}%</div>
+      </div>
+    </div>
+  `;
+  weatherWidget.classList.remove('hidden');
+};
+
 const showSection = () => {
   if (!currentUser) {
     authSection.classList.remove('hidden');
@@ -28,6 +134,7 @@ const showSection = () => {
   taskSection.classList.remove('hidden');
   userArea.textContent = `Welcome, ${currentUser.username}`;
   loadTasks();
+  fetchWeather(); // Load weather when showing task section
 };
 
 const setMode = (mode) => {
@@ -85,6 +192,7 @@ const handleTaskSubmit = async (event) => {
   event.preventDefault();
   const title = document.getElementById('task-title').value.trim();
   const description = document.getElementById('task-description').value.trim();
+  const time_spent_minutes = parseInt(document.getElementById('task-time').value) || 0;
 
   if (!title) {
     return;
@@ -92,7 +200,7 @@ const handleTaskSubmit = async (event) => {
 
   const result = await request('/api/tasks', {
     method: 'POST',
-    body: JSON.stringify({ title, description }),
+    body: JSON.stringify({ title, description, time_spent_minutes }),
   });
 
   if (result.task) {
@@ -133,6 +241,10 @@ const renderTasks = (tasks) => {
     const description = document.createElement('p');
     description.textContent = task.description || 'No description provided.';
 
+    const timeSpent = document.createElement('p');
+    timeSpent.className = 'task-time';
+    timeSpent.textContent = `⏱ Time spent: ${task.time_spent_minutes} minutes`;
+
     const actions = document.createElement('div');
     actions.className = 'task-actions';
 
@@ -149,7 +261,7 @@ const renderTasks = (tasks) => {
     deleteButton.addEventListener('click', () => deleteTask(task.id));
 
     actions.append(toggleButton, editButton, deleteButton);
-    card.append(meta, description, actions);
+    card.append(meta, description, timeSpent, actions);
     taskList.append(card);
   });
 };
@@ -174,7 +286,9 @@ const editTask = (task) => {
   if (title === null) return;
   const description = prompt('Task description', task.description || '');
   if (description === null) return;
-  updateTask(task.id, { title, description, completed: task.completed });
+  const timeSpent = prompt('Time spent (minutes)', task.time_spent_minutes || '0');
+  if (timeSpent === null) return;
+  updateTask(task.id, { title, description, completed: task.completed, time_spent_minutes: parseInt(timeSpent) || 0 });
 };
 
 const handleLogout = async () => {
@@ -188,8 +302,9 @@ const exportToExcel = () => {
     Title: task.title,
     Description: task.description,
     Completed: task.completed ? 'Yes' : 'No',
-    Created: new Date(task.created_at).toLocaleDateString(),
-    Updated: new Date(task.updated_at).toLocaleDateString()
+    'Time Spent (minutes)': task.time_spent_minutes,
+    Created: formatDateEST(task.created_at),
+    Updated: formatDateEST(task.updated_at)
   }));
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
@@ -211,7 +326,7 @@ const exportToPdf = () => {
     y += 10;
     doc.text(`Completed: ${task.completed ? 'Yes' : 'No'}`, 20, y);
     y += 10;
-    doc.text(`Created: ${new Date(task.created_at).toLocaleDateString()}`, 20, y);
+    doc.text(`Created: ${formatDateEST(task.created_at)}`, 20, y);
     y += 15;
     if (y > 270) {
       doc.addPage();
@@ -257,7 +372,7 @@ const exportToWord = async () => {
           }),
           new Paragraph({
             children: [
-              new TextRun(`Created: ${new Date(task.created_at).toLocaleDateString()}`)
+              new TextRun(`Created: ${formatDateEST(task.created_at)}`)
             ]
           }),
           new Paragraph({

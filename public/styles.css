@@ -172,6 +172,51 @@ button.secondary {
   color: var(--muted);
 }
 
+.task-time {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.weather-widget {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 15px rgba(47, 112, 255, 0.3);
+}
+
+.weather-content {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.weather-icon {
+  font-size: 48px;
+}
+
+.weather-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.weather-location {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.weather-temp {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.weather-humidity {
+  font-size: 14px;
+  opacity: 0.85;
+}
+
 @media (max-width: 640px) {
   .container {
     padding: 16px;

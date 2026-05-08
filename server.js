@@ -28,6 +28,7 @@ db.serialize(() => {
     title TEXT NOT NULL,
     description TEXT,
     completed INTEGER NOT NULL DEFAULT 0,
+    time_spent_minutes INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id)
@@ -189,15 +190,15 @@ app.get('/api/tasks', authRequired, async (req, res) => {
 });
 
 app.post('/api/tasks', authRequired, async (req, res) => {
-  const { title, description } = req.body;
+  const { title, description, time_spent_minutes } = req.body;
   if (!title) {
     return res.status(400).json({ error: 'Task title is required' });
   }
 
   try {
     const result = await runAsync(
-      'INSERT INTO tasks (user_id, title, description, completed) VALUES (?, ?, ?, 0)',
-      [req.session.userId, title, description || '']
+      'INSERT INTO tasks (user_id, title, description, completed, time_spent_minutes) VALUES (?, ?, ?, 0, ?)',
+      [req.session.userId, title, description || '', time_spent_minutes || 0]
     );
     const task = await getAsync('SELECT * FROM tasks WHERE id = ?', [result.lastID]);
     res.json({ task });
@@ -209,7 +210,7 @@ app.post('/api/tasks', authRequired, async (req, res) => {
 
 app.put('/api/tasks/:id', authRequired, async (req, res) => {
   const { id } = req.params;
-  const { title, description, completed } = req.body;
+  const { title, description, completed, time_spent_minutes } = req.body;
 
   try {
     const task = await getAsync('SELECT * FROM tasks WHERE id = ? AND user_id = ?', [id, req.session.userId]);
@@ -218,8 +219,8 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
     }
 
     await runAsync(
-      `UPDATE tasks SET title = ?, description = ?, completed = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?`,
-      [title || task.title, description || task.description, completed ? 1 : 0, id, req.session.userId]
+      `UPDATE tasks SET title = ?, description = ?, completed = ?, time_spent_minutes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?`,
+      [title || task.title, description || task.description, completed ? 1 : 0, time_spent_minutes !== undefined ? time_spent_minutes : task.time_spent_minutes, id, req.session.userId]
     );
 
     const updatedTask = await getAsync('SELECT * FROM tasks WHERE id = ?', [id]);
