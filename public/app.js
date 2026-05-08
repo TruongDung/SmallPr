@@ -426,6 +426,10 @@ const exportToPdf = () => {
 
 const exportToWord = async () => {
   const { Document, Packer, Paragraph, TextRun } = window.docx;
+  const currentDateTime = new Date().toLocaleString('en-US', { 
+    timeZone: 'America/New_York'
+  }) + ' EST (NYC)';
+  
   const doc = new Document({
     sections: [{
       properties: {},
@@ -437,6 +441,16 @@ const exportToWord = async () => {
               bold: true,
               size: 32
             })
+          ]
+        }),
+        new Paragraph({
+          children: [
+            new TextRun(`Export Date: ${currentDateTime}`)
+          ]
+        }),
+        new Paragraph({
+          children: [
+            new TextRun('') // empty line
           ]
         }),
         ...tasks.flatMap(task => [
