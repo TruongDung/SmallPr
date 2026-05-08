@@ -29,10 +29,27 @@ db.serialize(() => {
     description TEXT,
     completed INTEGER NOT NULL DEFAULT 0,
     time_spent_minutes INTEGER DEFAULT 0,
+    reminder_at TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id)
   )`);
+
+  db.all('PRAGMA table_info(tasks)', (err, columns) => {
+    if (err) {
+      console.error('Error checking tasks table schema:', err);
+      return;
+    }
+
+    const hasReminderAt = columns.some((column) => column.name === 'reminder_at');
+    if (!hasReminderAt) {
+      db.run('ALTER TABLE tasks ADD COLUMN reminder_at TEXT', (alterErr) => {
+        if (alterErr) {
+          console.error('Error adding reminder_at column:', alterErr);
+        }
+      });
+    }
+  });
 
   // Create default admin user if not exists
   db.get('SELECT id FROM users WHERE username = ?', ['admin'], async (err, row) => {
@@ -190,7 +207,7 @@ app.get('/api/tasks', authRequired, async (req, res) => {
 });
 
 app.post('/api/tasks', authRequired, async (req, res) => {
-  const { title, description, time_spent_minutes } = req.body;
+  const { title, description, time_spent_minutes, reminder_at } = req.body;
   if (!title) {
     return res.status(400).json({ error: 'Task title is required' });
   }
@@ -205,8 +222,8 @@ app.post('/api/tasks', authRequired, async (req, res) => {
 
   try {
     const result = await runAsync(
-      'INSERT INTO tasks (user_id, title, description, completed, time_spent_minutes) VALUES (?, ?, ?, 0, ?)',
-      [req.session.userId, title, description || '', time_spent_minutes || 0]
+      'INSERT INTO tasks (user_id, title, description, completed, time_spent_minutes, reminder_at) VALUES (?, ?, ?, 0, ?, ?)',
+      [req.session.userId, title, description || '', time_spent_minutes || 0, reminder_at || null]
     );
     const task = await getAsync('SELECT * FROM tasks WHERE id = ?', [result.lastID]);
     res.json({ task });
@@ -218,7 +235,7 @@ app.post('/api/tasks', authRequired, async (req, res) => {
 
 app.put('/api/tasks/:id', authRequired, async (req, res) => {
   const { id } = req.params;
-  const { title, description, completed, time_spent_minutes } = req.body;
+  const { title, description, completed, time_spent_minutes, reminder_at } = req.body;
 
   try {
     const task = await getAsync('SELECT * FROM tasks WHERE id = ? AND user_id = ?', [id, req.session.userId]);
@@ -236,8 +253,16 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
     }
 
     await runAsync(
-      `UPDATE tasks SET title = ?, description = ?, completed = ?, time_spent_minutes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?`,
-      [title || task.title, description || task.description, completed ? 1 : 0, time_spent_minutes !== undefined ? time_spent_minutes : task.time_spent_minutes, id, req.session.userId]
+      `UPDATE tasks SET title = ?, description = ?, completed = ?, time_spent_minutes = ?, reminder_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?`,
+      [
+        title || task.title,
+        description || task.description,
+        completed ? 1 : 0,
+        time_spent_minutes !== undefined ? time_spent_minutes : task.time_spent_minutes,
+        reminder_at !== undefined ? reminder_at || null : task.reminder_at,
+        id,
+        req.session.userId
+      ]
     );
 
     const updatedTask = await getAsync('SELECT * FROM tasks WHERE id = ?', [id]);

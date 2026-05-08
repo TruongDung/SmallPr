@@ -191,6 +191,10 @@ button.secondary {
   color: var(--primary);
 }
 
+.task-reminder {
+  font-weight: 600;
+}
+
 .weather-widget {
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
   color: white;
