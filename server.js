@@ -63,12 +63,12 @@ db.serialize(() => {
     }
     if (!row) {
       try {
-        const hashedPassword = await bcrypt.hash('123456', 10);
+        const hashedPassword = await bcrypt.hash('a123456789', 10);
         db.run('INSERT INTO users (username, password) VALUES (?, ?)', ['admin', hashedPassword], function(err) {
           if (err) {
             console.error('Error creating admin user:', err);
           } else {
-            console.log('Default admin user created with username: admin, password: 123456');
+            console.log('Default admin user created with username: admin, password: a123456789');
           }
         });
       } catch (error) {
@@ -141,11 +141,18 @@ const sendTaskAlertEmail = async (task, user) => {
       })
     : 'Not set';
 
+  const taskAlertMarker = 'TaskManager';
+
   await transporter.sendMail({
     from,
     to: TASK_ALERT_TO,
-    subject: `New task added: ${task.title}`,
+    subject: `[${taskAlertMarker}] New task added: ${task.title}`,
+    headers: {
+      'X-Task-Manager-Alert': taskAlertMarker,
+    },
     text: [
+      taskAlertMarker,
+      '',
       `A new task was added by ${user.username}.`,
       '',
       `Title: ${task.title}`,
