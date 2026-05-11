@@ -34,6 +34,26 @@ header {
   margin-bottom: 24px;
 }
 
+.language-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.language-control label {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.language-control select {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+}
+
 h1,
 h2 {
   margin: 0;
@@ -455,5 +475,9 @@ button.danger {
 
   #user-area {
     justify-content: flex-start;
+  }
+
+  .language-control {
+    margin-left: 0;
   }
 }

@@ -2,6 +2,7 @@ const authSection = document.getElementById('auth-section');
 const taskSection = document.getElementById('task-section');
 const adminSection = document.getElementById('admin-section');
 const userArea = document.getElementById('user-area');
+const languageSelect = document.getElementById('language-select');
 const authForm = document.getElementById('auth-form');
 const taskForm = document.getElementById('task-form');
 const adminUserForm = document.getElementById('admin-user-form');
@@ -26,11 +27,208 @@ const confirmDeleteNo = document.getElementById('confirm-delete-no');
 let currentMode = 'login';
 let currentUser = null;
 let currentView = 'tasks';
+let currentLanguage = localStorage.getItem('task-manager-language') || 'en';
 let tasks = [];
+let users = [];
 const reminderTimers = new Map();
 let weatherClockTimer = null;
 let pendingDeleteTaskId = null;
 let pendingDeleteUser = null;
+
+const translations = {
+  en: {
+    appTitle: 'Task Manager',
+    language: 'Language',
+    login: 'Login',
+    signup: 'Sign Up',
+    username: 'Username',
+    password: 'Password',
+    submit: 'Submit',
+    yourTasks: 'Your Tasks',
+    sendEmail: 'Send Email',
+    exportExcel: 'Export to Excel',
+    exportPdf: 'Export to PDF',
+    exportWord: 'Export to Word',
+    logout: 'Logout',
+    title: 'Title',
+    max20: '(max 20 characters)',
+    description: 'Description',
+    max500: '(max 500 characters)',
+    dateTimeAlert: 'Date Time Alert',
+    addTask: 'Add Task',
+    manageUsers: 'Manage Users',
+    addUser: 'Add User',
+    id: 'ID',
+    tasks: 'Tasks',
+    actions: 'Actions',
+    welcome: 'Welcome, {username}',
+    authRequired: 'Username and password are required.',
+    resetPassword: 'Reset Password',
+    delete: 'Delete',
+    newPasswordFor: 'New password for {username}',
+    passwordRequired: 'Password is required',
+    passwordUpdated: 'Password updated.',
+    titleRequired: 'Title is required',
+    titleTooLong: 'Title must be 20 characters or less',
+    descriptionTooLong: 'Description must be 500 characters or less',
+    noTasks: 'No tasks yet. Add your first task!',
+    noRecords: 'No records in this column.',
+    recordsWithAlert: 'Records with Alert date',
+    alertNotSetColumn: 'Alert not set',
+    completed: 'Completed',
+    open: 'Open',
+    noDescription: 'No description provided.',
+    created: 'Created',
+    updated: 'Updated',
+    alert: 'Alert',
+    alertNotSet: 'Alert: Not set',
+    markOpen: 'Mark Open',
+    markDone: 'Mark Done',
+    edit: 'Edit',
+    deleteTaskTitle: 'Delete task?',
+    deleteTaskMessage: 'This task will be permanently removed.',
+    deleteUserTitle: 'Delete user?',
+    deleteUserMessage: '{username} and all of their tasks will be permanently removed.',
+    no: 'No',
+    yes: 'Yes',
+    taskTitlePrompt: 'Task title (max 20 characters)',
+    titleEmpty: 'Title cannot be empty',
+    taskDescriptionPrompt: 'Task description (max 500 characters)',
+    reminderPrompt: 'Date time alert (YYYY-MM-DDTHH:mm, leave empty for no alert)',
+    sending: 'Sending...',
+    emailSent: 'Email sent.',
+    taskReminderNow: 'Date time alert: {title} is happening now.',
+    weatherUnavailable: 'Location weather is unavailable in this browser.',
+    weatherUnable: 'Unable to load current city weather.',
+    weatherPermission: 'Allow location access to show current city weather.',
+    currentCity: 'Current City',
+    humidity: 'Humidity',
+    localTime: 'Local Time',
+    exportDate: 'Export Date',
+    myTasks: 'My Tasks',
+    notAvailable: 'N/A',
+  },
+  vi: {
+    appTitle: 'Quản lý công việc',
+    language: 'Ngôn ngữ',
+    login: 'Đăng nhập',
+    signup: 'Đăng ký',
+    username: 'Tên đăng nhập',
+    password: 'Mật khẩu',
+    submit: 'Gửi',
+    yourTasks: 'Công việc của bạn',
+    sendEmail: 'Gửi Email',
+    exportExcel: 'Xuất Excel',
+    exportPdf: 'Xuất PDF',
+    exportWord: 'Xuất Word',
+    logout: 'Đăng xuất',
+    title: 'Tiêu đề',
+    max20: '(tối đa 20 ký tự)',
+    description: 'Mô tả',
+    max500: '(tối đa 500 ký tự)',
+    dateTimeAlert: 'Ngày giờ nhắc',
+    addTask: 'Thêm công việc',
+    manageUsers: 'Quản lý người dùng',
+    addUser: 'Thêm người dùng',
+    id: 'ID',
+    tasks: 'Công việc',
+    actions: 'Thao tác',
+    welcome: 'Xin chào, {username}',
+    authRequired: 'Vui lòng nhập tên đăng nhập và mật khẩu.',
+    resetPassword: 'Đặt lại mật khẩu',
+    delete: 'Xóa',
+    newPasswordFor: 'Mật khẩu mới cho {username}',
+    passwordRequired: 'Vui lòng nhập mật khẩu',
+    passwordUpdated: 'Đã cập nhật mật khẩu.',
+    titleRequired: 'Vui lòng nhập tiêu đề',
+    titleTooLong: 'Tiêu đề phải từ 20 ký tự trở xuống',
+    descriptionTooLong: 'Mô tả phải từ 500 ký tự trở xuống',
+    noTasks: 'Chưa có công việc. Hãy thêm công việc đầu tiên!',
+    noRecords: 'Không có bản ghi trong cột này.',
+    recordsWithAlert: 'Bản ghi có ngày nhắc',
+    alertNotSetColumn: 'Chưa đặt nhắc',
+    completed: 'Hoàn thành',
+    open: 'Đang mở',
+    noDescription: 'Không có mô tả.',
+    created: 'Đã tạo',
+    updated: 'Đã cập nhật',
+    alert: 'Nhắc',
+    alertNotSet: 'Nhắc: Chưa đặt',
+    markOpen: 'Mở lại',
+    markDone: 'Đánh dấu xong',
+    edit: 'Sửa',
+    deleteTaskTitle: 'Xóa công việc?',
+    deleteTaskMessage: 'Công việc này sẽ bị xóa vĩnh viễn.',
+    deleteUserTitle: 'Xóa người dùng?',
+    deleteUserMessage: '{username} và tất cả công việc của người dùng này sẽ bị xóa vĩnh viễn.',
+    no: 'Không',
+    yes: 'Có',
+    taskTitlePrompt: 'Tiêu đề công việc (tối đa 20 ký tự)',
+    titleEmpty: 'Tiêu đề không được để trống',
+    taskDescriptionPrompt: 'Mô tả công việc (tối đa 500 ký tự)',
+    reminderPrompt: 'Ngày giờ nhắc (YYYY-MM-DDTHH:mm, để trống nếu không nhắc)',
+    sending: 'Đang gửi...',
+    emailSent: 'Đã gửi email.',
+    taskReminderNow: 'Nhắc ngày giờ: {title} đang diễn ra.',
+    weatherUnavailable: 'Trình duyệt này không hỗ trợ thời tiết theo vị trí.',
+    weatherUnable: 'Không thể tải thời tiết thành phố hiện tại.',
+    weatherPermission: 'Cho phép truy cập vị trí để hiển thị thời tiết thành phố hiện tại.',
+    currentCity: 'Thành phố hiện tại',
+    humidity: 'Độ ẩm',
+    localTime: 'Giờ địa phương',
+    exportDate: 'Ngày xuất',
+    myTasks: 'Công việc của tôi',
+    notAvailable: 'Không có',
+  },
+};
+
+const t = (key, values = {}) => {
+  const template = translations[currentLanguage]?.[key] || translations.en[key] || key;
+  return Object.entries(values).reduce(
+    (text, [name, value]) => text.replaceAll(`{${name}}`, value),
+    template
+  );
+};
+
+const setText = (selector, value) => {
+  const element = document.querySelector(selector);
+  if (element) element.textContent = value;
+};
+
+const applyTranslations = () => {
+  document.documentElement.lang = currentLanguage;
+  document.title = t('appTitle');
+  setText('h1', t('appTitle'));
+  setText('label[for="language-select"]', t('language'));
+  showLogin.textContent = t('login');
+  showSignup.textContent = t('signup');
+  setText('label[for="username"]', t('username'));
+  setText('label[for="password"]', t('password'));
+  setText('#auth-form button[type="submit"]', t('submit'));
+  setText('#task-section h2', t('yourTasks'));
+  sendSummaryEmailButton.textContent = t('sendEmail');
+  exportExcelButton.textContent = t('exportExcel');
+  exportPdfButton.textContent = t('exportPdf');
+  exportWordButton.textContent = t('exportWord');
+  logoutButton.textContent = t('logout');
+  setText('label[for="task-title"]', `${t('title')} ${t('max20')}`);
+  setText('label[for="task-description"]', `${t('description')} ${t('max500')}`);
+  setText('label[for="task-reminder"]', t('dateTimeAlert'));
+  setText('#task-form button[type="submit"]', t('addTask'));
+  setText('#admin-section h2', t('manageUsers'));
+  setText('label[for="admin-username"]', t('username'));
+  setText('label[for="admin-password"]', t('password'));
+  setText('#admin-user-form button[type="submit"]', t('addUser'));
+  setText('.user-table th:nth-child(1)', t('id'));
+  setText('.user-table th:nth-child(2)', t('username'));
+  setText('.user-table th:nth-child(3)', t('tasks'));
+  setText('.user-table th:nth-child(4)', t('actions'));
+  confirmDeleteNo.textContent = t('no');
+  confirmDeleteYes.textContent = t('yes');
+  if (currentUser) renderUserArea();
+  if (currentUser && currentView === 'tasks') renderTasks(tasks);
+  if (currentUser && currentView === 'admin') renderUsers(users);
+};
 
 // Helper function to format date in EST (New York)
 const formatDateEST = (dateString) => {
@@ -70,7 +268,7 @@ const clearReminderTimers = () => {
 
 const showTaskReminder = (task) => {
   localStorage.setItem(getReminderStorageKey(task), 'true');
-  alert(`Date time alert: ${task.title} is happening now.`);
+  alert(t('taskReminderNow', { title: task.title }));
 };
 
 const scheduleTaskReminders = (loadedTasks) => {
@@ -114,7 +312,7 @@ const getWeatherIcon = (weatherCode) => {
 // Fetch weather data
 const fetchWeather = async () => {
   if (!navigator.geolocation) {
-    showWeatherMessage('Location weather is unavailable in this browser.');
+    showWeatherMessage(t('weatherUnavailable'));
     return;
   }
 
@@ -125,12 +323,12 @@ const fetchWeather = async () => {
         await fetchWeatherForLocation(latitude, longitude); 
       } catch (error) {
         console.error('Error fetching weather:', error);
-        showWeatherMessage('Unable to load current city weather.');
+        showWeatherMessage(t('weatherUnable'));
       } finally {
         resolve();
       }
     }, () => {
-      showWeatherMessage('Allow location access to show current city weather.');
+      showWeatherMessage(t('weatherPermission'));
       resolve();
     }, {
       enableHighAccuracy: false,
@@ -152,7 +350,7 @@ const fetchWeatherForLocation = async (lat, lng, locationName) => {
     }
   } catch (error) {
     console.error('Error fetching weather:', error);
-    showWeatherMessage('Unable to load current city weather.');
+    showWeatherMessage(t('weatherUnable'));
   }
 };
 
@@ -190,9 +388,9 @@ const getCurrentCityName = async (lat, lng) => {
       || address.hamlet
       || address.municipality
       || address.county
-      || 'Current City';
+      || t('currentCity');
   } catch {
-    return 'Current City';
+    return t('currentCity');
   }
 };
 
@@ -213,10 +411,10 @@ const displayWeather = async (weather, lat, lng, locationName = '', timezone = '
       <div class="weather-info">
         <div class="weather-location">${cityName}</div>
         <div class="weather-temp">${temp}°F</div>
-        <div class="weather-humidity">Humidity: ${humidity}%</div>
+        <div class="weather-humidity">${t('humidity')}: ${humidity}%</div>
       </div>
       <div class="weather-time">
-        <div class="time-label">Local Time</div>
+        <div class="time-label">${t('localTime')}</div>
         <div class="time-display">${currentTime}</div>
       </div>
     </div>
@@ -264,14 +462,14 @@ const showSection = () => {
 const renderUserArea = () => {
   userArea.innerHTML = '';
   const welcome = document.createElement('span');
-  welcome.textContent = `Welcome, ${currentUser.username}`;
+  welcome.textContent = t('welcome', { username: currentUser.username });
   userArea.append(welcome);
 
   if (currentUser.username === 'admin') {
     const tasksButton = document.createElement('button');
     tasksButton.type = 'button';
     tasksButton.className = `secondary ${currentView === 'tasks' ? 'active-nav' : ''}`;
-    tasksButton.textContent = 'Tasks';
+    tasksButton.textContent = t('tasks');
     tasksButton.addEventListener('click', () => {
       currentView = 'tasks';
       showSection();
@@ -280,7 +478,7 @@ const renderUserArea = () => {
     const adminButton = document.createElement('button');
     adminButton.type = 'button';
     adminButton.className = `secondary ${currentView === 'admin' ? 'active-nav' : ''}`;
-    adminButton.textContent = 'Manage Users';
+    adminButton.textContent = t('manageUsers');
     adminButton.addEventListener('click', () => {
       currentView = 'admin';
       showSection();
@@ -294,6 +492,13 @@ const setMode = (mode) => {
   currentMode = mode;
   showLogin.classList.toggle('active', mode === 'login');
   showSignup.classList.toggle('active', mode === 'signup');
+};
+
+const setLanguage = (language) => {
+  currentLanguage = language;
+  localStorage.setItem('task-manager-language', language);
+  languageSelect.value = language;
+  applyTranslations();
 };
 
 const request = async (url, options = {}) => {
@@ -321,7 +526,7 @@ const handleAuthSubmit = async (event) => {
   const password = authForm.password.value.trim();
 
   if (!username || !password) {
-    authMessage.textContent = 'Username and password are required.';
+    authMessage.textContent = t('authRequired');
     return;
   }
 
@@ -349,7 +554,8 @@ const loadUsers = async () => {
     adminMessage.textContent = result.error;
     return;
   }
-  renderUsers(result.users || []);
+  users = result.users || [];
+  renderUsers(users);
 };
 
 const renderUsers = (users) => {
@@ -374,7 +580,7 @@ const renderUsers = (users) => {
     const resetButton = document.createElement('button');
     resetButton.type = 'button';
     resetButton.className = 'secondary';
-    resetButton.textContent = 'Reset Password';
+    resetButton.textContent = t('resetPassword');
     resetButton.addEventListener('click', () => resetUserPassword(user));
 
     actions.append(resetButton);
@@ -383,7 +589,7 @@ const renderUsers = (users) => {
       const deleteButton = document.createElement('button');
       deleteButton.type = 'button';
       deleteButton.className = 'danger';
-      deleteButton.textContent = 'Delete';
+      deleteButton.textContent = t('delete');
       deleteButton.addEventListener('click', () => showUserDeleteConfirm(user));
       actions.append(deleteButton);
     }
@@ -416,10 +622,10 @@ const handleAdminUserSubmit = async (event) => {
 };
 
 const resetUserPassword = async (user) => {
-  const password = prompt(`New password for ${user.username}`);
+  const password = prompt(t('newPasswordFor', { username: user.username }));
   if (password === null) return;
   if (!password.trim()) {
-    alert('Password is required');
+    alert(t('passwordRequired'));
     return;
   }
 
@@ -433,7 +639,7 @@ const resetUserPassword = async (user) => {
     return;
   }
 
-  alert('Password updated.');
+  alert(t('passwordUpdated'));
 };
 
 const deleteUser = async (user) => {
@@ -466,19 +672,19 @@ const handleTaskSubmit = async (event) => {
 
   // Validation
   if (!title) {
-    formError.textContent = 'Title is required';
+    formError.textContent = t('titleRequired');
     formError.classList.remove('hidden');
     return;
   }
   
   if (title.length > 20) {
-    titleError.textContent = 'Title must be 20 characters or less';
+    titleError.textContent = t('titleTooLong');
     titleError.classList.remove('hidden');
     return;
   }
   
   if (description.length > 500) {
-    descriptionError.textContent = 'Description must be 500 characters or less';
+    descriptionError.textContent = t('descriptionTooLong');
     descriptionError.classList.remove('hidden');
     return;
   }
@@ -511,7 +717,7 @@ const renderTasks = (tasks) => {
   taskList.innerHTML = '';
 
   if (tasks.length === 0) {
-    taskList.innerHTML = '<p>No tasks yet. Add your first task!</p>';
+    taskList.innerHTML = `<p>${t('noTasks')}</p>`;
     return;
   }
 
@@ -539,7 +745,7 @@ const renderTasks = (tasks) => {
     if (columnTasks.length === 0) {
       const empty = document.createElement('p');
       empty.className = 'task-empty';
-      empty.textContent = 'No records in this column.';
+      empty.textContent = t('noRecords');
       body.append(empty);
     } else {
       columnTasks.forEach((task) => body.append(createTaskCard(task)));
@@ -550,8 +756,8 @@ const renderTasks = (tasks) => {
   };
 
   taskList.append(
-    createColumn('Records with Alert date', tasksWithAlert),
-    createColumn('Alert not set', tasksWithoutAlert)
+    createColumn(t('recordsWithAlert'), tasksWithAlert),
+    createColumn(t('alertNotSetColumn'), tasksWithoutAlert)
   );
 };
 
@@ -564,35 +770,35 @@ const createTaskCard = (task) => {
     const title = document.createElement('strong');
     title.textContent = task.title;
     const status = document.createElement('span');
-    status.textContent = task.completed ? 'Completed' : 'Open';
+    status.textContent = task.completed ? t('completed') : t('open');
     meta.append(title, status);
 
     const description = document.createElement('p');
-    description.textContent = task.description || 'No description provided.';
+    description.textContent = task.description || t('noDescription');
 
     const datetime = document.createElement('p');
     datetime.className = 'task-datetime';
-    datetime.textContent = `📅 Created: ${formatDateEST(task.created_at)}`;
+    datetime.textContent = `📅 ${t('created')}: ${formatDateEST(task.created_at)}`;
 
     const reminder = document.createElement('p');
     reminder.className = 'task-reminder';
     reminder.textContent = task.reminder_at
-      ? `Alert: ${formatLocalDateTime(task.reminder_at)}`
-      : 'Alert: Not set';
+      ? `${t('alert')}: ${formatLocalDateTime(task.reminder_at)}`
+      : t('alertNotSet');
 
     const actions = document.createElement('div');
     actions.className = 'task-actions';
 
     const toggleButton = document.createElement('button');
-    toggleButton.textContent = task.completed ? 'Mark Open' : 'Mark Done';
+    toggleButton.textContent = task.completed ? t('markOpen') : t('markDone');
     toggleButton.addEventListener('click', () => updateTask(task.id, { completed: !task.completed }));
 
     const editButton = document.createElement('button');
-    editButton.textContent = 'Edit';
+    editButton.textContent = t('edit');
     editButton.addEventListener('click', () => editTask(task));
 
     const deleteButton = document.createElement('button');
-    deleteButton.textContent = 'Delete';
+    deleteButton.textContent = t('delete');
     deleteButton.className = 'danger';
     deleteButton.addEventListener('click', () => showDeleteConfirm(task.id));
 
@@ -619,8 +825,8 @@ const deleteTask = async (id) => {
 const showDeleteConfirm = (id) => {
   pendingDeleteTaskId = id;
   pendingDeleteUser = null;
-  deleteConfirmTitle.textContent = 'Delete task?';
-  deleteConfirmMessage.textContent = 'This task will be permanently removed.';
+  deleteConfirmTitle.textContent = t('deleteTaskTitle');
+  deleteConfirmMessage.textContent = t('deleteTaskMessage');
   deleteConfirmModal.classList.remove('hidden');
   confirmDeleteNo.focus();
 };
@@ -628,8 +834,8 @@ const showDeleteConfirm = (id) => {
 const showUserDeleteConfirm = (user) => {
   pendingDeleteTaskId = null;
   pendingDeleteUser = user;
-  deleteConfirmTitle.textContent = 'Delete user?';
-  deleteConfirmMessage.textContent = `${user.username} and all of their tasks will be permanently removed.`;
+  deleteConfirmTitle.textContent = t('deleteUserTitle');
+  deleteConfirmMessage.textContent = t('deleteUserMessage', { username: user.username });
   deleteConfirmModal.classList.remove('hidden');
   confirmDeleteNo.focus();
 };
@@ -667,28 +873,28 @@ document.addEventListener('keydown', (event) => {
 });
 
 const editTask = (task) => {
-  const title = prompt('Task title (max 20 characters)', task.title);
+  const title = prompt(t('taskTitlePrompt'), task.title);
   if (title === null) return;
   
   if (!title.trim()) {
-    alert('Title cannot be empty');
+    alert(t('titleEmpty'));
     return;
   }
   
   if (title.length > 20) {
-    alert('Title must be 20 characters or less');
+    alert(t('titleTooLong'));
     return;
   }
   
-  const description = prompt('Task description (max 500 characters)', task.description || '');
+  const description = prompt(t('taskDescriptionPrompt'), task.description || '');
   if (description === null) return;
   
   if (description.length > 500) {
-    alert('Description must be 500 characters or less');
+    alert(t('descriptionTooLong'));
     return;
   }
   
-  const reminderAt = prompt('Date time alert (YYYY-MM-DDTHH:mm, leave empty for no alert)', task.reminder_at || '');
+  const reminderAt = prompt(t('reminderPrompt'), task.reminder_at || '');
   if (reminderAt === null) return;
 
   updateTask(task.id, {
@@ -709,7 +915,7 @@ const handleLogout = async () => {
 const sendSummaryEmail = async () => {
   const originalText = sendSummaryEmailButton.textContent;
   sendSummaryEmailButton.disabled = true;
-  sendSummaryEmailButton.textContent = 'Sending...';
+  sendSummaryEmailButton.textContent = t('sending');
 
   try {
     const result = await request('/api/tasks/send-email', {
@@ -721,7 +927,7 @@ const sendSummaryEmail = async () => {
       return;
     }
 
-    alert('Email sent.');
+    alert(t('emailSent'));
   } finally {
     sendSummaryEmailButton.disabled = false;
     sendSummaryEmailButton.textContent = originalText;
@@ -734,17 +940,17 @@ const exportToExcel = () => {
   }) + ' EST (NYC)';
   
   const data = tasks.map(task => ({
-    'Export Date': currentDateTime,
-    Title: task.title,
-    Description: task.description,
-    Completed: task.completed ? 'Yes' : 'No',
-    'Date Time Alert': task.reminder_at ? formatLocalDateTime(task.reminder_at) : '',
-    Created: formatDateEST(task.created_at),
-    Updated: formatDateEST(task.updated_at)
+    [t('exportDate')]: currentDateTime,
+    [t('title')]: task.title,
+    [t('description')]: task.description,
+    [t('completed')]: task.completed ? t('yes') : t('no'),
+    [t('dateTimeAlert')]: task.reminder_at ? formatLocalDateTime(task.reminder_at) : '',
+    [t('created')]: formatDateEST(task.created_at),
+    [t('updated')]: formatDateEST(task.updated_at)
   }));
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Tasks');
+  XLSX.utils.book_append_sheet(wb, ws, t('tasks'));
   XLSX.writeFile(wb, 'tasks.xlsx');
 };
 
@@ -756,21 +962,21 @@ const exportToPdf = () => {
   }) + ' EST (NYC)';
   
   doc.setFontSize(16);
-  doc.text('My Tasks', 20, 20);
+  doc.text(t('myTasks'), 20, 20);
   doc.setFontSize(10);
-  doc.text(`Export Date: ${currentDateTime}`, 20, 30);
+  doc.text(`${t('exportDate')}: ${currentDateTime}`, 20, 30);
   let y = 40;
   tasks.forEach(task => {
     doc.setFontSize(12);
-    doc.text(`Title: ${task.title}`, 20, y);
+    doc.text(`${t('title')}: ${task.title}`, 20, y);
     y += 10;
-    doc.text(`Description: ${task.description || 'N/A'}`, 20, y);
+    doc.text(`${t('description')}: ${task.description || t('notAvailable')}`, 20, y);
     y += 10;
-    doc.text(`Completed: ${task.completed ? 'Yes' : 'No'}`, 20, y);
+    doc.text(`${t('completed')}: ${task.completed ? t('yes') : t('no')}`, 20, y);
     y += 10;
-    doc.text(`Date Time Alert: ${task.reminder_at ? formatLocalDateTime(task.reminder_at) : 'N/A'}`, 20, y);
+    doc.text(`${t('dateTimeAlert')}: ${task.reminder_at ? formatLocalDateTime(task.reminder_at) : t('notAvailable')}`, 20, y);
     y += 10;
-    doc.text(`Created: ${formatDateEST(task.created_at)}`, 20, y);
+    doc.text(`${t('created')}: ${formatDateEST(task.created_at)}`, 20, y);
     y += 15;
     if (y > 270) {
       doc.addPage();
@@ -793,7 +999,7 @@ const exportToWord = async () => {
         new Paragraph({
           children: [
             new TextRun({
-              text: 'My Tasks',
+              text: t('myTasks'),
               bold: true,
               size: 32
             })
@@ -801,7 +1007,7 @@ const exportToWord = async () => {
         }),
         new Paragraph({
           children: [
-            new TextRun(`Export Date: ${currentDateTime}`)
+            new TextRun(`${t('exportDate')}: ${currentDateTime}`)
           ]
         }),
         new Paragraph({
@@ -813,29 +1019,29 @@ const exportToWord = async () => {
           new Paragraph({
             children: [
               new TextRun({
-                text: `Title: ${task.title}`,
+                text: `${t('title')}: ${task.title}`,
                 bold: true
               })
             ]
           }),
           new Paragraph({
             children: [
-              new TextRun(`Description: ${task.description || 'N/A'}`)
+              new TextRun(`${t('description')}: ${task.description || t('notAvailable')}`)
             ]
           }),
           new Paragraph({
             children: [
-              new TextRun(`Completed: ${task.completed ? 'Yes' : 'No'}`)
+              new TextRun(`${t('completed')}: ${task.completed ? t('yes') : t('no')}`)
             ]
           }),
           new Paragraph({
             children: [
-              new TextRun(`Date Time Alert: ${task.reminder_at ? formatLocalDateTime(task.reminder_at) : 'N/A'}`)
+              new TextRun(`${t('dateTimeAlert')}: ${task.reminder_at ? formatLocalDateTime(task.reminder_at) : t('notAvailable')}`)
             ]
           }),
           new Paragraph({
             children: [
-              new TextRun(`Created: ${formatDateEST(task.created_at)}`)
+              new TextRun(`${t('created')}: ${formatDateEST(task.created_at)}`)
             ]
           }),
           new Paragraph({
@@ -858,6 +1064,7 @@ const exportToWord = async () => {
 
 showLogin.addEventListener('click', () => setMode('login'));
 showSignup.addEventListener('click', () => setMode('signup'));
+languageSelect.addEventListener('change', (event) => setLanguage(event.target.value));
 authForm.addEventListener('submit', handleAuthSubmit);
 taskForm.addEventListener('submit', handleTaskSubmit);
 adminUserForm.addEventListener('submit', handleAdminUserSubmit);
@@ -868,4 +1075,6 @@ exportPdfButton.addEventListener('click', exportToPdf);
 exportWordButton.addEventListener('click', exportToWord);
 
 setMode('login');
+languageSelect.value = currentLanguage;
+applyTranslations();
 init();
