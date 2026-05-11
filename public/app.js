@@ -17,6 +17,7 @@ let currentMode = 'login';
 let currentUser = null;
 let tasks = [];
 const reminderTimers = new Map();
+let weatherClockTimer = null;
 
 // Helper function to format date in EST (New York)
 const formatDateEST = (dateString) => {
@@ -109,83 +110,99 @@ const getWeatherIcon = (weatherCode) => {
 
 // Fetch weather data
 const fetchWeather = async () => {
-  try {
-    // Get user's geolocation
-    return new Promise((resolve) => {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(async (position) => {
-          const { latitude, longitude } = position.coords;
-          
-          // Fetch weather from Open-Meteo API (free, no API key needed)
-          const response = await fetch(
-            `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code,relative_humidity_2m&temperature_unit=fahrenheit&timezone=America/New_York`
-          );
-          const data = await response.json();
-          
-          if (data.current) {
-            const weather = data.current;
-            displayWeather(weather, latitude, longitude);
-          }
-          resolve();
-        }, () => {
-          // Fallback to New York City if geolocation fails
-          console.log('Geolocation failed, using NYC as default');
-          fetchWeatherForLocation(40.7128, -74.0060, 'New York City');
-          resolve();
-        });
-      } else {
-        console.log('Geolocation not supported');
+  if (!navigator.geolocation) {
+    showWeatherMessage('Location weather is unavailable in this browser.');
+    return;
+  }
+
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(async (position) => {
+      try {
+        const { latitude, longitude } = position.coords;
+        await fetchWeatherForLocation(latitude, longitude);
+      } catch (error) {
+        console.error('Error fetching weather:', error);
+        showWeatherMessage('Unable to load current city weather.');
+      } finally {
         resolve();
       }
+    }, () => {
+      showWeatherMessage('Allow location access to show current city weather.');
+      resolve();
+    }, {
+      enableHighAccuracy: false,
+      timeout: 10000,
+      maximumAge: 600000
     });
-  } catch (error) {
-    console.error('Error fetching weather:', error);
-  }
+  });
 };
 
 // Fetch weather for a specific location
 const fetchWeatherForLocation = async (lat, lng, locationName) => {
   try {
     const response = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weather_code,relative_humidity_2m&temperature_unit=fahrenheit&timezone=America/New_York`
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weather_code,relative_humidity_2m&temperature_unit=fahrenheit&timezone=auto`
     );
     const data = await response.json();
     if (data.current) {
-      displayWeather(data.current, lat, lng, locationName);
+      displayWeather(data.current, lat, lng, locationName, data.timezone);
     }
   } catch (error) {
     console.error('Error fetching weather:', error);
+    showWeatherMessage('Unable to load current city weather.');
   }
 };
 
 // Display weather on the widget
-// Get current time in EST timezone
-const getCurrentTimeEST = () => {
-  const now = new Date();
-  return now.toLocaleString('en-US', { timeZone: 'America/New_York' });
+const getCurrentTimeForTimezone = (timezone) => {
+  return new Date().toLocaleString('en-US', {
+    timeZone: timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
+  });
 };
 
-const displayWeather = async (weather, lat, lng, locationName = '') => {
+const showWeatherMessage = (message) => {
+  const weatherWidget = document.getElementById('weather-widget');
+
+  weatherWidget.innerHTML = `
+    <div class="weather-content">
+      <div class="weather-info">
+        <div class="weather-location">${message}</div>
+      </div>
+    </div>
+  `;
+  weatherWidget.classList.remove('hidden');
+};
+
+const getCurrentCityName = async (lat, lng) => {
+  try {
+    const geoResponse = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=10&addressdetails=1`
+    );
+    const geoData = await geoResponse.json();
+    const address = geoData.address || {};
+
+    return address.city
+      || address.town
+      || address.village
+      || address.hamlet
+      || address.municipality
+      || address.county
+      || 'Current City';
+  } catch {
+    return 'Current City';
+  }
+};
+
+const displayWeather = async (weather, lat, lng, locationName = '', timezone = '') => {
   const weatherWidget = document.getElementById('weather-widget');
   
   // Get location name from coordinates if not provided
-  let cityName = locationName;
-  if (!cityName) {
-    try {
-      const geoResponse = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`
-      );
-      const geoData = await geoResponse.json();
-      cityName = geoData.address.city || geoData.address.county || 'Current Location';
-    } catch {
-      cityName = 'Current Location';
-    }
-  }
+  const cityName = locationName || await getCurrentCityName(lat, lng);
   
   const icon = getWeatherIcon(weather.weather_code);
   const temp = Math.round(weather.temperature_2m);
   const humidity = weather.relative_humidity_2m;
-  const currentTime = getCurrentTimeEST();
+  const currentTime = getCurrentTimeForTimezone(timezone);
   
   weatherWidget.innerHTML = `
     <div class="weather-content">
@@ -196,7 +213,7 @@ const displayWeather = async (weather, lat, lng, locationName = '') => {
         <div class="weather-humidity">Humidity: ${humidity}%</div>
       </div>
       <div class="weather-time">
-        <div class="time-label">EST Time</div>
+        <div class="time-label">Local Time</div>
         <div class="time-display">${currentTime}</div>
       </div>
     </div>
@@ -204,10 +221,14 @@ const displayWeather = async (weather, lat, lng, locationName = '') => {
   weatherWidget.classList.remove('hidden');
   
   // Update time every second
-  setInterval(() => {
+  if (weatherClockTimer) {
+    clearInterval(weatherClockTimer);
+  }
+
+  weatherClockTimer = setInterval(() => {
     const timeDisplay = weatherWidget.querySelector('.time-display');
     if (timeDisplay) {
-      timeDisplay.textContent = getCurrentTimeEST();
+      timeDisplay.textContent = getCurrentTimeForTimezone(timezone);
     }
   }, 1000);
 };
