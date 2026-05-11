@@ -14,7 +14,6 @@ const PORT = process.env.PORT || 3000;
 const DB_FILE = '/tmp/data.db';
 const TASK_ALERT_TO = process.env.TASK_ALERT_TO;
 
-
 if (!fs.existsSync(DB_FILE)) {
   fs.writeFileSync(DB_FILE, '');
 }
