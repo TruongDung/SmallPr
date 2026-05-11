@@ -35,12 +35,27 @@ describe('Login API', () => {
     expect(loginResponse.body.user).toMatchObject({ username: 'testuser' });
   });
 
-  test('should reject invalid login credentials', async () => {
+  test('should reject invalid login credentials for nonexistent user', async () => {
     const response = await request(app)
       .post('/api/login')
       .send({ username: 'nonexistent', password: 'wrongpass' });
 
     expect(response.statusCode).toBe(401);
     expect(response.body).toHaveProperty('error', 'Invalid credentials');
+  });
+
+  test('should reject login with incorrect password for existing user', async () => {
+    const signupResponse = await request(app)
+      .post('/api/signup')
+      .send({ username: 'existinguser', password: 'CorrectPass1!' });
+
+    expect(signupResponse.statusCode).toBe(200);
+
+    const loginResponse = await request(app)
+      .post('/api/login')
+      .send({ username: 'existinguser', password: 'WrongPass1!' });
+
+    expect(loginResponse.statusCode).toBe(401);
+    expect(loginResponse.body).toHaveProperty('error', 'Invalid credentials');
   });
 });
