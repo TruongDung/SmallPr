@@ -196,11 +196,6 @@ button.danger {
   color: var(--muted);
 }
 
-.task-time {
-  font-weight: 600;
-  color: var(--primary);
-}
-
 .task-reminder {
   font-weight: 600;
 }

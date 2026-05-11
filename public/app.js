@@ -52,16 +52,6 @@ const formatLocalDateTime = (dateString) => {
   });
 };
 
-const getCurrentDateTimeInputValue = () => {
-  const now = new Date();
-  const timezoneOffset = now.getTimezoneOffset() * 60000;
-  return new Date(now.getTime() - timezoneOffset).toISOString().slice(0, 16);
-};
-
-const setDefaultReminderDateTime = () => {
-  taskReminderInput.value = getCurrentDateTimeInputValue();
-};
-
 const getReminderStorageKey = (task) => `task-reminder-alerted-${task.id}-${task.reminder_at}`;
 
 const clearReminderTimers = () => {
@@ -307,8 +297,7 @@ const handleTaskSubmit = async (event) => {
   event.preventDefault();
   const title = document.getElementById('task-title').value.trim();
   const description = document.getElementById('task-description').value.trim();
-  const time_spent_minutes = parseInt(document.getElementById('task-time').value) || 0;
-  const reminder_at = document.getElementById('task-reminder').value;
+  const reminder_at = taskReminderInput.value || null;
   
   const titleError = document.getElementById('title-error');
   const descriptionError = document.getElementById('description-error');
@@ -340,13 +329,12 @@ const handleTaskSubmit = async (event) => {
 
   const result = await request('/api/tasks', {
     method: 'POST',
-    body: JSON.stringify({ title, description, time_spent_minutes, reminder_at }),
+    body: JSON.stringify({ title, description, reminder_at }),
   });
 
   if (result.task) {
     authForm.reset();
     taskForm.reset();
-    setDefaultReminderDateTime();
     titleError.classList.add('hidden');
     descriptionError.classList.add('hidden');
     formError.classList.add('hidden');
@@ -386,10 +374,6 @@ const renderTasks = (tasks) => {
     const description = document.createElement('p');
     description.textContent = task.description || 'No description provided.';
 
-    const timeSpent = document.createElement('p');
-    timeSpent.className = 'task-time';
-    timeSpent.textContent = `⏱ Time spent: ${task.time_spent_minutes} minutes`;
-
     const datetime = document.createElement('p');
     datetime.className = 'task-datetime';
     datetime.textContent = `📅 Created: ${formatDateEST(task.created_at)}`;
@@ -417,7 +401,7 @@ const renderTasks = (tasks) => {
     deleteButton.addEventListener('click', () => showDeleteConfirm(task.id));
 
     actions.append(toggleButton, editButton, deleteButton);
-    card.append(meta, description, timeSpent, datetime, reminder, actions);
+    card.append(meta, description, datetime, reminder, actions);
     taskList.append(card);
   });
 };
@@ -491,9 +475,6 @@ const editTask = (task) => {
     return;
   }
   
-  const timeSpent = prompt('Time spent (minutes)', task.time_spent_minutes || '0');
-  if (timeSpent === null) return;
-  
   const reminderAt = prompt('Date time alert (YYYY-MM-DDTHH:mm, leave empty for no alert)', task.reminder_at || '');
   if (reminderAt === null) return;
 
@@ -501,7 +482,6 @@ const editTask = (task) => {
     title,
     description,
     completed: task.completed,
-    time_spent_minutes: parseInt(timeSpent) || 0,
     reminder_at: reminderAt
   });
 };
@@ -522,7 +502,6 @@ const exportToExcel = () => {
     Title: task.title,
     Description: task.description,
     Completed: task.completed ? 'Yes' : 'No',
-    'Time Spent (minutes)': task.time_spent_minutes,
     'Date Time Alert': task.reminder_at ? formatLocalDateTime(task.reminder_at) : '',
     Created: formatDateEST(task.created_at),
     Updated: formatDateEST(task.updated_at)
@@ -651,5 +630,4 @@ exportPdfButton.addEventListener('click', exportToPdf);
 exportWordButton.addEventListener('click', exportToWord);
 
 setMode('login');
-setDefaultReminderDateTime();
 init();
