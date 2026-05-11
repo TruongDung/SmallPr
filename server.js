@@ -63,12 +63,12 @@ db.serialize(() => {
     }
     if (!row) {
       try {
-        const hashedPassword = await bcrypt.hash('a123456', 10);
+        const hashedPassword = await bcrypt.hash('admin123456', 10);
         db.run('INSERT INTO users (username, password) VALUES (?, ?)', ['admin', hashedPassword], function(err) {
           if (err) {
             console.error('Error creating admin user:', err);
           } else {
-            console.log('Default admin user created with username: admin, password: a123456');
+            console.log('Default admin user created with username: admin, password: admin123456');
           }
         });
       } catch (error) {
