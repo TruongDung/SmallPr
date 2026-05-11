@@ -46,6 +46,8 @@ The app adds `Task Manager` to every Add Task email body and header so the filte
 
 5. Open http://localhost:3000 in your browser.
 
+6. Test link: https://small-pr.vercel.app/
+
 ## Default Credentials
 
 - Username: `admin`
