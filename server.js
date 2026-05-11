@@ -10,7 +10,7 @@ const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DB_FILE = process.env.DB_FILE || path.join(__dirname, 'tmp', 'data.db');
+const DB_FILE = process.env.DB_FILE || '/tmp/data.db';
 const TASK_ALERT_TO = process.env.TASK_ALERT_TO;
 
 if (!fs.existsSync(path.dirname(DB_FILE))) {
