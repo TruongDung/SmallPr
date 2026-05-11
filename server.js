@@ -10,9 +10,12 @@ const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-// const DB_FILE = path.join(__dirname, 'tmp', 'data.db');
-const DB_FILE = '/tmp/data.db';
+const DB_FILE = process.env.DB_FILE || path.join(__dirname, 'tmp', 'data.db');
 const TASK_ALERT_TO = process.env.TASK_ALERT_TO;
+
+if (!fs.existsSync(path.dirname(DB_FILE))) {
+  fs.mkdirSync(path.dirname(DB_FILE), { recursive: true });
+}
 
 if (!fs.existsSync(DB_FILE)) {
   fs.writeFileSync(DB_FILE, '');
@@ -536,6 +539,10 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+  });
+}
+
+module.exports = { app, db };
