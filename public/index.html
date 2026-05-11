@@ -69,13 +69,46 @@
 
         <div id="task-list" class="task-list"></div>
       </section>
+
+      <section id="admin-section" class="card hidden">
+        <div class="admin-header">
+          <h2>Manage Users</h2>
+          <p id="admin-message" class="message"></p>
+        </div>
+
+        <form id="admin-user-form" class="admin-user-form">
+          <div class="field">
+            <label for="admin-username">Username</label>
+            <input id="admin-username" type="text" required />
+          </div>
+          <div class="field">
+            <label for="admin-password">Password</label>
+            <input id="admin-password" type="password" required />
+          </div>
+          <button type="submit">Add User</button>
+        </form>
+
+        <div class="user-table-wrap">
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Tasks</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="user-list"></tbody>
+          </table>
+        </div>
+      </section>
     </main>
   </div>
 
   <div id="delete-confirm-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title">
     <div class="modal">
       <h3 id="delete-confirm-title">Delete task?</h3>
-      <p>This task will be permanently removed.</p>
+      <p id="delete-confirm-message">This task will be permanently removed.</p>
       <div class="modal-actions">
         <button id="confirm-delete-no" type="button" class="secondary">No</button>
         <button id="confirm-delete-yes" type="button" class="danger">Yes</button>

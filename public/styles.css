@@ -30,6 +30,7 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
   margin-bottom: 24px;
 }
 
@@ -126,6 +127,12 @@ button.secondary {
   border: 1px solid var(--border);
 }
 
+button.active-nav {
+  background: var(--primary);
+  color: white;
+  border-color: transparent;
+}
+
 button:disabled {
   cursor: not-allowed;
   opacity: 0.65;
@@ -139,6 +146,23 @@ button.danger {
 .message {
   margin-top: 12px;
   color: var(--danger);
+}
+
+#user-area {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#user-area span {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+#user-area button {
+  padding: 8px 12px;
 }
 
 .task-header {
@@ -246,6 +270,62 @@ button.danger {
 
 .task-reminder {
   font-weight: 600;
+}
+
+.admin-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.admin-header .message {
+  margin: 0;
+}
+
+.admin-user-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: end;
+  margin-bottom: 24px;
+}
+
+.admin-user-form .field {
+  margin-bottom: 0;
+}
+
+.user-table-wrap {
+  overflow-x: auto;
+}
+
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.user-table th,
+.user-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.user-table th {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.user-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.user-actions button {
+  padding: 8px 12px;
 }
 
 .weather-widget {
@@ -359,5 +439,21 @@ button.danger {
 @media (max-width: 640px) {
   .container {
     padding: 16px;
+  }
+
+  header,
+  .task-header,
+  .admin-header,
+  .admin-user-form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-user-form {
+    grid-template-columns: 1fr;
+  }
+
+  #user-area {
+    justify-content: flex-start;
   }
 }

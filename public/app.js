@@ -1,10 +1,14 @@
 const authSection = document.getElementById('auth-section');
 const taskSection = document.getElementById('task-section');
+const adminSection = document.getElementById('admin-section');
 const userArea = document.getElementById('user-area');
 const authForm = document.getElementById('auth-form');
 const taskForm = document.getElementById('task-form');
+const adminUserForm = document.getElementById('admin-user-form');
 const taskList = document.getElementById('task-list');
+const userList = document.getElementById('user-list');
 const authMessage = document.getElementById('auth-message');
+const adminMessage = document.getElementById('admin-message');
 const showLogin = document.getElementById('show-login');
 const showSignup = document.getElementById('show-signup');
 const logoutButton = document.getElementById('logout-button');
@@ -14,15 +18,19 @@ const exportPdfButton = document.getElementById('export-pdf');
 const exportWordButton = document.getElementById('export-word');
 const taskReminderInput = document.getElementById('task-reminder');
 const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+const deleteConfirmTitle = document.getElementById('delete-confirm-title');
+const deleteConfirmMessage = document.getElementById('delete-confirm-message');
 const confirmDeleteYes = document.getElementById('confirm-delete-yes');
 const confirmDeleteNo = document.getElementById('confirm-delete-no');
 
 let currentMode = 'login';
 let currentUser = null;
+let currentView = 'tasks';
 let tasks = [];
 const reminderTimers = new Map();
 let weatherClockTimer = null;
 let pendingDeleteTaskId = null;
+let pendingDeleteUser = null;
 
 // Helper function to format date in EST (New York)
 const formatDateEST = (dateString) => {
@@ -232,15 +240,54 @@ const showSection = () => {
   if (!currentUser) {
     authSection.classList.remove('hidden');
     taskSection.classList.add('hidden');
+    adminSection.classList.add('hidden');
     userArea.textContent = '';
     return;
   }
 
   authSection.classList.add('hidden');
-  taskSection.classList.remove('hidden');
-  userArea.textContent = `Welcome, ${currentUser.username}`;
+  renderUserArea();
+
+  const showAdmin = currentView === 'admin' && currentUser.username === 'admin';
+  taskSection.classList.toggle('hidden', showAdmin);
+  adminSection.classList.toggle('hidden', !showAdmin);
+
+  if (showAdmin) {
+    loadUsers();
+    return;
+  }
+
   loadTasks();
   fetchWeather(); // Load weather when showing task section
+};
+
+const renderUserArea = () => {
+  userArea.innerHTML = '';
+  const welcome = document.createElement('span');
+  welcome.textContent = `Welcome, ${currentUser.username}`;
+  userArea.append(welcome);
+
+  if (currentUser.username === 'admin') {
+    const tasksButton = document.createElement('button');
+    tasksButton.type = 'button';
+    tasksButton.className = `secondary ${currentView === 'tasks' ? 'active-nav' : ''}`;
+    tasksButton.textContent = 'Tasks';
+    tasksButton.addEventListener('click', () => {
+      currentView = 'tasks';
+      showSection();
+    });
+
+    const adminButton = document.createElement('button');
+    adminButton.type = 'button';
+    adminButton.className = `secondary ${currentView === 'admin' ? 'active-nav' : ''}`;
+    adminButton.textContent = 'Manage Users';
+    adminButton.addEventListener('click', () => {
+      currentView = 'admin';
+      showSection();
+    });
+
+    userArea.append(tasksButton, adminButton);
+  }
 };
 
 const setMode = (mode) => {
@@ -290,8 +337,116 @@ const handleAuthSubmit = async (event) => {
   }
 
   currentUser = result.user;
+  currentView = 'tasks';
   authForm.reset();
   showSection();
+};
+
+const loadUsers = async () => {
+  adminMessage.textContent = '';
+  const result = await request('/api/admin/users');
+  if (result.error) {
+    adminMessage.textContent = result.error;
+    return;
+  }
+  renderUsers(result.users || []);
+};
+
+const renderUsers = (users) => {
+  userList.innerHTML = '';
+
+  users.forEach((user) => {
+    const row = document.createElement('tr');
+
+    const idCell = document.createElement('td');
+    idCell.textContent = user.id;
+
+    const usernameCell = document.createElement('td');
+    usernameCell.textContent = user.username;
+
+    const taskCountCell = document.createElement('td');
+    taskCountCell.textContent = user.task_count;
+
+    const actionsCell = document.createElement('td');
+    const actions = document.createElement('div');
+    actions.className = 'user-actions';
+
+    const resetButton = document.createElement('button');
+    resetButton.type = 'button';
+    resetButton.className = 'secondary';
+    resetButton.textContent = 'Reset Password';
+    resetButton.addEventListener('click', () => resetUserPassword(user));
+
+    actions.append(resetButton);
+
+    if (user.username !== 'admin' && user.id !== currentUser.id) {
+      const deleteButton = document.createElement('button');
+      deleteButton.type = 'button';
+      deleteButton.className = 'danger';
+      deleteButton.textContent = 'Delete';
+      deleteButton.addEventListener('click', () => showUserDeleteConfirm(user));
+      actions.append(deleteButton);
+    }
+
+    actionsCell.append(actions);
+    row.append(idCell, usernameCell, taskCountCell, actionsCell);
+    userList.append(row);
+  });
+};
+
+const handleAdminUserSubmit = async (event) => {
+  event.preventDefault();
+  adminMessage.textContent = '';
+
+  const username = document.getElementById('admin-username').value.trim();
+  const password = document.getElementById('admin-password').value.trim();
+
+  const result = await request('/api/admin/users', {
+    method: 'POST',
+    body: JSON.stringify({ username, password }),
+  });
+
+  if (result.error) {
+    adminMessage.textContent = result.error;
+    return;
+  }
+
+  adminUserForm.reset();
+  loadUsers();
+};
+
+const resetUserPassword = async (user) => {
+  const password = prompt(`New password for ${user.username}`);
+  if (password === null) return;
+  if (!password.trim()) {
+    alert('Password is required');
+    return;
+  }
+
+  const result = await request(`/api/admin/users/${user.id}/password`, {
+    method: 'PUT',
+    body: JSON.stringify({ password }),
+  });
+
+  if (result.error) {
+    alert(result.error);
+    return;
+  }
+
+  alert('Password updated.');
+};
+
+const deleteUser = async (user) => {
+  const result = await request(`/api/admin/users/${user.id}`, {
+    method: 'DELETE',
+  });
+
+  if (result.error) {
+    alert(result.error);
+    return;
+  }
+
+  loadUsers();
 };
 
 const handleTaskSubmit = async (event) => {
@@ -463,22 +618,40 @@ const deleteTask = async (id) => {
 
 const showDeleteConfirm = (id) => {
   pendingDeleteTaskId = id;
+  pendingDeleteUser = null;
+  deleteConfirmTitle.textContent = 'Delete task?';
+  deleteConfirmMessage.textContent = 'This task will be permanently removed.';
+  deleteConfirmModal.classList.remove('hidden');
+  confirmDeleteNo.focus();
+};
+
+const showUserDeleteConfirm = (user) => {
+  pendingDeleteTaskId = null;
+  pendingDeleteUser = user;
+  deleteConfirmTitle.textContent = 'Delete user?';
+  deleteConfirmMessage.textContent = `${user.username} and all of their tasks will be permanently removed.`;
   deleteConfirmModal.classList.remove('hidden');
   confirmDeleteNo.focus();
 };
 
 const hideDeleteConfirm = () => {
   pendingDeleteTaskId = null;
+  pendingDeleteUser = null;
   deleteConfirmModal.classList.add('hidden');
 };
 
 confirmDeleteNo.addEventListener('click', hideDeleteConfirm);
 
 confirmDeleteYes.addEventListener('click', async () => {
-  if (!pendingDeleteTaskId) return;
+  if (!pendingDeleteTaskId && !pendingDeleteUser) return;
   const taskId = pendingDeleteTaskId;
+  const user = pendingDeleteUser;
   hideDeleteConfirm();
-  await deleteTask(taskId);
+  if (taskId) {
+    await deleteTask(taskId);
+    return;
+  }
+  await deleteUser(user);
 });
 
 deleteConfirmModal.addEventListener('click', (event) => {
@@ -529,6 +702,7 @@ const editTask = (task) => {
 const handleLogout = async () => {
   await request('/api/logout', { method: 'POST' });
   currentUser = null;
+  currentView = 'tasks';
   showSection();
 };
 
@@ -686,6 +860,7 @@ showLogin.addEventListener('click', () => setMode('login'));
 showSignup.addEventListener('click', () => setMode('signup'));
 authForm.addEventListener('submit', handleAuthSubmit);
 taskForm.addEventListener('submit', handleTaskSubmit);
+adminUserForm.addEventListener('submit', handleAdminUserSubmit);
 logoutButton.addEventListener('click', handleLogout);
 sendSummaryEmailButton.addEventListener('click', sendSummaryEmail);
 exportExcelButton.addEventListener('click', exportToExcel);
