@@ -1,13 +1,17 @@
+require('dotenv').config();
+
 const express = require('express');
 const bcrypt = require('bcrypt');
 const sqlite3 = require('sqlite3').verbose();
 const session = require('express-session');
 const path = require('path');
 const fs = require('fs');
+const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'data.db');
+const TASK_ALERT_TO = process.env.TASK_ALERT_TO || 'truongdung0502@gmail.com';
 
 if (!fs.existsSync(DB_FILE)) {
   fs.writeFileSync(DB_FILE, '');
@@ -97,6 +101,63 @@ const allAsync = (sql, params = []) =>
       resolve(rows);
     });
   });
+
+const createMailTransporter = () => {
+  const {
+    SMTP_HOST,
+    SMTP_PORT,
+    SMTP_SECURE,
+    SMTP_USER,
+    SMTP_PASS,
+  } = process.env;
+
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: Number(SMTP_PORT) || 587,
+    secure: SMTP_SECURE === 'true',
+    auth: {
+      user: SMTP_USER,
+      pass: SMTP_PASS,
+    },
+  });
+};
+
+const sendTaskAlertEmail = async (task, user) => {
+  const transporter = createMailTransporter();
+  if (!transporter) {
+    console.warn('Task alert email skipped: SMTP_HOST, SMTP_USER, and SMTP_PASS are required.');
+    return false;
+  }
+
+  const from = process.env.MAIL_FROM || process.env.SMTP_USER;
+  const reminder = task.reminder_at
+    ? new Date(task.reminder_at).toLocaleString('en-US', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })
+    : 'Not set';
+
+  await transporter.sendMail({
+    from,
+    to: TASK_ALERT_TO,
+    subject: `New task added: ${task.title}`,
+    text: [
+      `A new task was added by ${user.username}.`,
+      '',
+      `Title: ${task.title}`,
+      `Description: ${task.description || 'No description provided.'}`,
+      `Time spent: ${task.time_spent_minutes || 0} minutes`,
+      `Date time alert: ${reminder}`,
+      `Created: ${task.created_at}`,
+    ].join('\n'),
+  });
+
+  return true;
+};
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -226,7 +287,16 @@ app.post('/api/tasks', authRequired, async (req, res) => {
       [req.session.userId, title, description || '', time_spent_minutes || 0, reminder_at || null]
     );
     const task = await getAsync('SELECT * FROM tasks WHERE id = ?', [result.lastID]);
-    res.json({ task });
+    const user = await getUserById(req.session.userId);
+    let emailSent = false;
+
+    try {
+      emailSent = await sendTaskAlertEmail(task, user);
+    } catch (emailError) {
+      console.error('Failed to send task alert email:', emailError);
+    }
+
+    res.json({ task, emailSent });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to create task' });

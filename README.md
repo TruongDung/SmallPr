@@ -23,7 +23,21 @@ npm install
 npm start
 ```
 
-3. Open http://localhost:3000 in your browser.
+3. To send an email alert when a task is added, set these environment variables before starting the app:
+
+```bash
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_SECURE=true
+SMTP_USER=
+SMTP_PASS=
+MAIL_FROM=
+TASK_ALERT_TO=truongdung0502@gmail.com
+```
+
+`TASK_ALERT_TO` defaults to `truongdung0502@gmail.com` if it is not set.
+
+4. Open http://localhost:3000 in your browser.
 
 ## Default Credentials
 

@@ -12,12 +12,16 @@ const exportExcelButton = document.getElementById('export-excel');
 const exportPdfButton = document.getElementById('export-pdf');
 const exportWordButton = document.getElementById('export-word');
 const taskReminderInput = document.getElementById('task-reminder');
+const deleteConfirmModal = document.getElementById('delete-confirm-modal');
+const confirmDeleteYes = document.getElementById('confirm-delete-yes');
+const confirmDeleteNo = document.getElementById('confirm-delete-no');
 
 let currentMode = 'login';
 let currentUser = null;
 let tasks = [];
 const reminderTimers = new Map();
 let weatherClockTimer = null;
+let pendingDeleteTaskId = null;
 
 // Helper function to format date in EST (New York)
 const formatDateEST = (dateString) => {
@@ -119,7 +123,7 @@ const fetchWeather = async () => {
     navigator.geolocation.getCurrentPosition(async (position) => {
       try {
         const { latitude, longitude } = position.coords;
-        await fetchWeatherForLocation(latitude, longitude);
+        await fetchWeatherForLocation(latitude, longitude); 
       } catch (error) {
         console.error('Error fetching weather:', error);
         showWeatherMessage('Unable to load current city weather.');
@@ -409,7 +413,8 @@ const renderTasks = (tasks) => {
 
     const deleteButton = document.createElement('button');
     deleteButton.textContent = 'Delete';
-    deleteButton.addEventListener('click', () => deleteTask(task.id));
+    deleteButton.className = 'danger';
+    deleteButton.addEventListener('click', () => showDeleteConfirm(task.id));
 
     actions.append(toggleButton, editButton, deleteButton);
     card.append(meta, description, timeSpent, datetime, reminder, actions);
@@ -431,6 +436,38 @@ const deleteTask = async (id) => {
   });
   loadTasks();
 };
+
+const showDeleteConfirm = (id) => {
+  pendingDeleteTaskId = id;
+  deleteConfirmModal.classList.remove('hidden');
+  confirmDeleteNo.focus();
+};
+
+const hideDeleteConfirm = () => {
+  pendingDeleteTaskId = null;
+  deleteConfirmModal.classList.add('hidden');
+};
+
+confirmDeleteNo.addEventListener('click', hideDeleteConfirm);
+
+confirmDeleteYes.addEventListener('click', async () => {
+  if (!pendingDeleteTaskId) return;
+  const taskId = pendingDeleteTaskId;
+  hideDeleteConfirm();
+  await deleteTask(taskId);
+});
+
+deleteConfirmModal.addEventListener('click', (event) => {
+  if (event.target === deleteConfirmModal) {
+    hideDeleteConfirm();
+  }
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !deleteConfirmModal.classList.contains('hidden')) {
+    hideDeleteConfirm();
+  }
+});
 
 const editTask = (task) => {
   const title = prompt('Task title (max 20 characters)', task.title);
