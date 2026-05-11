@@ -2,5 +2,5 @@
 > task-manager-app@0.1.0 start
 > node server.js
 
-◇ injected env (7) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (7) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
 Server running at http://localhost:3000

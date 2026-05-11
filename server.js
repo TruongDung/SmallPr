@@ -141,7 +141,7 @@ const sendTaskAlertEmail = async (task, user) => {
       })
     : 'Not set';
 
-  const taskAlertMarker = 'TaskManager';
+  const taskAlertMarker = 'Task Manager';
 
   await transporter.sendMail({
     from,

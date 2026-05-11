@@ -39,10 +39,10 @@ TASK_ALERT_TO=truongdung0502@gmail.com
 
 4. To automatically star and label task alert emails in Gmail, create a Gmail filter in `truongdung0502@gmail.com`:
 
-- Search query: `from:muonkiepnhansinh1@gmail.com subject:TaskManager`
-- Filter actions: `Star it` and `Apply the label: TaskManager`
+- Search query: `from:muonkiepnhansinh1@gmail.com "Task Manager"`
+- Filter actions: `Star it` and `Apply the label: Task Manager`
 
-The app adds `TaskManager` to every Add Task email subject and body so the filter can reliably find it.
+The app adds `Task Manager` to every Add Task email body and header so the filter can reliably find it without adding `[Task Manager]` to the email title.
 
 5. Open http://localhost:3000 in your browser.
 
