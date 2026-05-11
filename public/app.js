@@ -8,6 +8,7 @@ const authMessage = document.getElementById('auth-message');
 const showLogin = document.getElementById('show-login');
 const showSignup = document.getElementById('show-signup');
 const logoutButton = document.getElementById('logout-button');
+const sendSummaryEmailButton = document.getElementById('send-summary-email');
 const exportExcelButton = document.getElementById('export-excel');
 const exportPdfButton = document.getElementById('export-pdf');
 const exportWordButton = document.getElementById('export-word');
@@ -492,6 +493,28 @@ const handleLogout = async () => {
   showSection();
 };
 
+const sendSummaryEmail = async () => {
+  const originalText = sendSummaryEmailButton.textContent;
+  sendSummaryEmailButton.disabled = true;
+  sendSummaryEmailButton.textContent = 'Sending...';
+
+  try {
+    const result = await request('/api/tasks/send-email', {
+      method: 'POST',
+    });
+
+    if (result.error) {
+      alert(result.error);
+      return;
+    }
+
+    alert('Email sent.');
+  } finally {
+    sendSummaryEmailButton.disabled = false;
+    sendSummaryEmailButton.textContent = originalText;
+  }
+};
+
 const exportToExcel = () => {
   const currentDateTime = new Date().toLocaleString('en-US', { 
     timeZone: 'America/New_York'
@@ -625,6 +648,7 @@ showSignup.addEventListener('click', () => setMode('signup'));
 authForm.addEventListener('submit', handleAuthSubmit);
 taskForm.addEventListener('submit', handleTaskSubmit);
 logoutButton.addEventListener('click', handleLogout);
+sendSummaryEmailButton.addEventListener('click', sendSummaryEmail);
 exportExcelButton.addEventListener('click', exportToExcel);
 exportPdfButton.addEventListener('click', exportToPdf);
 exportWordButton.addEventListener('click', exportToWord);

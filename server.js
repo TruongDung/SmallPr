@@ -11,7 +11,7 @@ const nodemailer = require('nodemailer');
 const app = express();
 const PORT = process.env.PORT || 3000;
 const DB_FILE = path.join(__dirname, 'data.db');
-const TASK_ALERT_TO = process.env.TASK_ALERT_TO || 'truongdung0502@gmail.com';
+const TASK_ALERT_TO = process.env.TASK_ALERT_TO;
 
 if (!fs.existsSync(DB_FILE)) {
   fs.writeFileSync(DB_FILE, '');
@@ -165,6 +165,45 @@ const sendTaskAlertEmail = async (task, user) => {
   return true;
 };
 
+const sendTaskSummaryEmail = async (tasks, user) => {
+  const transporter = createMailTransporter();
+  if (!transporter) {
+    console.warn('Task summary email skipped: SMTP_HOST, SMTP_USER, and SMTP_PASS are required.');
+    return false;
+  }
+
+  const from = process.env.MAIL_FROM || process.env.SMTP_USER;
+  const taskAlertMarker = 'Task Manager';
+  const taskLines = tasks.length
+    ? tasks.flatMap((task, index) => [
+        `${index + 1}. ${task.title}`,
+        `Description: ${task.description || 'No description provided.'}`,
+        `Status: ${task.completed ? 'Completed' : 'Open'}`,
+        `Date time alert: ${task.reminder_at ? new Date(task.reminder_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'Not set'}`,
+        `Created: ${task.created_at}`,
+        '',
+      ])
+    : ['No tasks found.'];
+
+  await transporter.sendMail({
+    from,
+    to: TASK_ALERT_TO,
+    subject: 'Task summary',
+    headers: {
+      'X-Task-Manager-Alert': taskAlertMarker,
+    },
+    text: [
+      taskAlertMarker,
+      '',
+      `Task summary requested by ${user.username}.`,
+      '',
+      ...taskLines,
+    ].join('\n'),
+  });
+
+  return true;
+};
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(
@@ -270,6 +309,23 @@ app.get('/api/tasks', authRequired, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to load tasks' });
+  }
+});
+
+app.post('/api/tasks/send-email', authRequired, async (req, res) => {
+  try {
+    const tasks = await allAsync('SELECT * FROM tasks WHERE user_id = ? ORDER BY created_at DESC', [req.session.userId]);
+    const user = await getUserById(req.session.userId);
+    const emailSent = await sendTaskSummaryEmail(tasks, user);
+
+    if (!emailSent) {
+      return res.status(500).json({ error: 'Email settings are not configured' });
+    }
+
+    res.json({ success: true, emailSent });
+  } catch (error) {
+    console.error('Failed to send task summary email:', error);
+    res.status(500).json({ error: 'Failed to send email' });
   }
 });
 

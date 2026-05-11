@@ -32,14 +32,14 @@ SMTP_SECURE=true
 SMTP_USER=
 SMTP_PASS=
 MAIL_FROM=
-TASK_ALERT_TO=truongdung0502@gmail.com
+TASK_ALERT_TO=
 ```
 
-`TASK_ALERT_TO` defaults to `truongdung0502@gmail.com` if it is not set.
+`TASK_ALERT_TO` defaults to `` if it is not set.
 
-4. To automatically star and label task alert emails in Gmail, create a Gmail filter in `truongdung0502@gmail.com`:
+4. To automatically star and label task alert emails in Gmail, create a Gmail filter in ``:
 
-- Search query: `from:muonkiepnhansinh1@gmail.com "Task Manager"`
+- Search query: `from:test@gmail.com "Task Manager"`
 - Filter actions: `Star it` and `Apply the label: Task Manager`
 
 The app adds `Task Manager` to every Add Task email body and header so the filter can reliably find it without adding `[Task Manager]` to the email title.
