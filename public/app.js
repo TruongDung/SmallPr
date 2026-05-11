@@ -360,7 +360,47 @@ const renderTasks = (tasks) => {
     return;
   }
 
-  tasks.forEach((task) => {
+  const tasksWithAlert = tasks.filter((task) => task.reminder_at);
+  const tasksWithoutAlert = tasks.filter((task) => !task.reminder_at);
+
+  const createColumn = (title, columnTasks) => {
+    const column = document.createElement('section');
+    column.className = 'task-column';
+
+    const heading = document.createElement('h3');
+    heading.textContent = title;
+
+    const count = document.createElement('span');
+    count.className = 'task-count';
+    count.textContent = columnTasks.length;
+
+    const header = document.createElement('div');
+    header.className = 'task-column-header';
+    header.append(heading, count);
+
+    const body = document.createElement('div');
+    body.className = 'task-column-body';
+
+    if (columnTasks.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'task-empty';
+      empty.textContent = 'No records in this column.';
+      body.append(empty);
+    } else {
+      columnTasks.forEach((task) => body.append(createTaskCard(task)));
+    }
+
+    column.append(header, body);
+    return column;
+  };
+
+  taskList.append(
+    createColumn('Records with Alert date', tasksWithAlert),
+    createColumn('Alert not set', tasksWithoutAlert)
+  );
+};
+
+const createTaskCard = (task) => {
     const card = document.createElement('div');
     card.className = `task-item ${task.completed ? 'completed' : ''}`;
 
@@ -403,8 +443,7 @@ const renderTasks = (tasks) => {
 
     actions.append(toggleButton, editButton, deleteButton);
     card.append(meta, description, datetime, reminder, actions);
-    taskList.append(card);
-  });
+    return card;
 };
 
 const updateTask = async (id, updates) => {
