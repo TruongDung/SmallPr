@@ -428,6 +428,10 @@ button.danger {
   box-shadow: 0 18px 50px rgba(15, 23, 42, 0.2);
 }
 
+.modal.edit-task-modal {
+  width: min(100%, 520px);
+}
+
 .modal h3 {
   margin: 0 0 10px;
 }
@@ -435,6 +439,14 @@ button.danger {
 .modal p {
   margin: 0;
   color: var(--muted);
+}
+
+.modal form {
+  margin-top: 18px;
+}
+
+.modal .field-error {
+  margin-top: 6px;
 }
 
 .modal-actions {

@@ -123,6 +123,33 @@
     </div>
   </div>
 
+  <div id="edit-task-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="edit-task-title">
+    <div class="modal edit-task-modal">
+      <h3 id="edit-task-title">Edit task</h3>
+      <form id="edit-task-form">
+        <div class="field">
+          <label for="edit-task-title-input">Title <span class="field-max">(max 20 characters)</span></label>
+          <input id="edit-task-title-input" type="text" required maxlength="20" />
+          <p id="edit-title-error" class="field-error hidden"></p>
+        </div>
+        <div class="field">
+          <label for="edit-task-description-input">Description <span class="field-max">(max 500 characters)</span></label>
+          <textarea id="edit-task-description-input" maxlength="500"></textarea>
+          <p id="edit-description-error" class="field-error hidden"></p>
+        </div>
+        <div class="field">
+          <label for="edit-task-reminder-input">Date Time Alert</label>
+          <input id="edit-task-reminder-input" type="datetime-local" />
+        </div>
+        <p id="edit-form-error" class="field-error hidden"></p>
+        <div class="modal-actions">
+          <button id="cancel-edit-task" type="button" class="secondary">Cancel</button>
+          <button id="save-edit-task" type="submit">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.min.js"></script>

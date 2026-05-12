@@ -23,6 +23,16 @@ const deleteConfirmTitle = document.getElementById('delete-confirm-title');
 const deleteConfirmMessage = document.getElementById('delete-confirm-message');
 const confirmDeleteYes = document.getElementById('confirm-delete-yes');
 const confirmDeleteNo = document.getElementById('confirm-delete-no');
+const editTaskModal = document.getElementById('edit-task-modal');
+const editTaskForm = document.getElementById('edit-task-form');
+const editTaskTitle = document.getElementById('edit-task-title');
+const editTaskTitleInput = document.getElementById('edit-task-title-input');
+const editTaskDescriptionInput = document.getElementById('edit-task-description-input');
+const editTaskReminderInput = document.getElementById('edit-task-reminder-input');
+const editTitleError = document.getElementById('edit-title-error');
+const editDescriptionError = document.getElementById('edit-description-error');
+const editFormError = document.getElementById('edit-form-error');
+const cancelEditTask = document.getElementById('cancel-edit-task');
 
 let currentMode = 'login';
 let currentUser = null;
@@ -34,6 +44,7 @@ const reminderTimers = new Map();
 let weatherClockTimer = null;
 let pendingDeleteTaskId = null;
 let pendingDeleteUser = null;
+let pendingEditTask = null;
 
 const translations = {
   en: {
@@ -85,6 +96,9 @@ const translations = {
     markOpen: 'Mark Open',
     markDone: 'Mark Done',
     edit: 'Edit',
+    editTaskTitle: 'Edit task',
+    save: 'Save',
+    cancel: 'Cancel',
     deleteTaskTitle: 'Delete task?',
     deleteTaskMessage: 'This task will be permanently removed.',
     deleteUserTitle: 'Delete user?',
@@ -157,6 +171,9 @@ const translations = {
     markOpen: 'Mở lại',
     markDone: 'Đánh dấu xong',
     edit: 'Sửa',
+    editTaskTitle: 'Sửa công việc',
+    save: 'Lưu',
+    cancel: 'Hủy',
     deleteTaskTitle: 'Xóa công việc?',
     deleteTaskMessage: 'Công việc này sẽ bị xóa vĩnh viễn.',
     deleteUserTitle: 'Xóa người dùng?',
@@ -215,6 +232,12 @@ const applyTranslations = () => {
   setText('label[for="task-description"]', `${t('description')} ${t('max500')}`);
   setText('label[for="task-reminder"]', t('dateTimeAlert'));
   setText('#task-form button[type="submit"]', t('addTask'));
+  editTaskTitle.textContent = t('editTaskTitle');
+  setText('label[for="edit-task-title-input"]', `${t('title')} ${t('max20')}`);
+  setText('label[for="edit-task-description-input"]', `${t('description')} ${t('max500')}`);
+  setText('label[for="edit-task-reminder-input"]', t('dateTimeAlert'));
+  cancelEditTask.textContent = t('cancel');
+  setText('#save-edit-task', t('save'));
   setText('#admin-section h2', t('manageUsers'));
   setText('label[for="admin-username"]', t('username'));
   setText('label[for="admin-password"]', t('password'));
@@ -795,7 +818,7 @@ const createTaskCard = (task) => {
 
     const editButton = document.createElement('button');
     editButton.textContent = t('edit');
-    editButton.addEventListener('click', () => editTask(task));
+    editButton.addEventListener('click', () => showEditTaskModal(task));
 
     const deleteButton = document.createElement('button');
     deleteButton.textContent = t('delete');
@@ -870,40 +893,86 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !deleteConfirmModal.classList.contains('hidden')) {
     hideDeleteConfirm();
   }
+
+  if (event.key === 'Escape' && !editTaskModal.classList.contains('hidden')) {
+    hideEditTaskModal();
+  }
 });
 
-const editTask = (task) => {
-  const title = prompt(t('taskTitlePrompt'), task.title);
-  if (title === null) return;
-  
+const formatDateTimeLocalValue = (dateString) => {
+  if (!dateString) return '';
+  return dateString.slice(0, 16);
+};
+
+const clearEditTaskErrors = () => {
+  editTitleError.classList.add('hidden');
+  editDescriptionError.classList.add('hidden');
+  editFormError.classList.add('hidden');
+};
+
+const showEditTaskModal = (task) => {
+  pendingEditTask = task;
+  clearEditTaskErrors();
+  editTaskTitleInput.value = task.title;
+  editTaskDescriptionInput.value = task.description || '';
+  editTaskReminderInput.value = formatDateTimeLocalValue(task.reminder_at);
+  editTaskModal.classList.remove('hidden');
+  editTaskTitleInput.focus();
+  editTaskTitleInput.select();
+};
+
+const hideEditTaskModal = () => {
+  pendingEditTask = null;
+  editTaskForm.reset();
+  clearEditTaskErrors();
+  editTaskModal.classList.add('hidden');
+};
+
+const handleEditTaskSubmit = async (event) => {
+  event.preventDefault();
+  if (!pendingEditTask) return;
+
+  clearEditTaskErrors();
+
+  const title = editTaskTitleInput.value.trim();
+  const description = editTaskDescriptionInput.value.trim();
+  const reminderAt = editTaskReminderInput.value || null;
+
   if (!title.trim()) {
-    alert(t('titleEmpty'));
+    editFormError.textContent = t('titleEmpty');
+    editFormError.classList.remove('hidden');
     return;
   }
   
   if (title.length > 20) {
-    alert(t('titleTooLong'));
+    editTitleError.textContent = t('titleTooLong');
+    editTitleError.classList.remove('hidden');
     return;
   }
-  
-  const description = prompt(t('taskDescriptionPrompt'), task.description || '');
-  if (description === null) return;
   
   if (description.length > 500) {
-    alert(t('descriptionTooLong'));
+    editDescriptionError.textContent = t('descriptionTooLong');
+    editDescriptionError.classList.remove('hidden');
     return;
   }
-  
-  const reminderAt = prompt(t('reminderPrompt'), task.reminder_at || '');
-  if (reminderAt === null) return;
 
-  updateTask(task.id, {
+  const task = pendingEditTask;
+  hideEditTaskModal();
+  await updateTask(task.id, {
     title,
     description,
     completed: task.completed,
     reminder_at: reminderAt
   });
 };
+
+cancelEditTask.addEventListener('click', hideEditTaskModal);
+
+editTaskModal.addEventListener('click', (event) => {
+  if (event.target === editTaskModal) {
+    hideEditTaskModal();
+  }
+});
 
 const handleLogout = async () => {
   await request('/api/logout', { method: 'POST' });
@@ -1067,6 +1136,7 @@ showSignup.addEventListener('click', () => setMode('signup'));
 languageSelect.addEventListener('change', (event) => setLanguage(event.target.value));
 authForm.addEventListener('submit', handleAuthSubmit);
 taskForm.addEventListener('submit', handleTaskSubmit);
+editTaskForm.addEventListener('submit', handleEditTaskSubmit);
 adminUserForm.addEventListener('submit', handleAdminUserSubmit);
 logoutButton.addEventListener('click', handleLogout);
 sendSummaryEmailButton.addEventListener('click', sendSummaryEmail);
