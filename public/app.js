@@ -66,7 +66,8 @@ const translations = {
     title: 'Title',
     max20: '(max 20 characters)',
     description: 'Description',
-    max500: '(max 500 characters)',
+    descriptionPlaceholder: 'Write notes, lists, and details here...',
+    max500: '(max 5000 characters)',
     dateTimeAlert: 'Date Time Alert',
     addTask: 'Add Task',
     manageUsers: 'Manage Users',
@@ -83,7 +84,7 @@ const translations = {
     passwordUpdated: 'Password updated.',
     titleRequired: 'Title is required',
     titleTooLong: 'Title must be 20 characters or less',
-    descriptionTooLong: 'Description must be 500 characters or less',
+    descriptionTooLong: 'Description must be 5000 characters or less',
     noTasks: 'No tasks yet. Add your first task!',
     noRecords: 'No records in this column.',
     recordsWithAlert: 'Records with Alert date',
@@ -107,9 +108,10 @@ const translations = {
     deleteUserMessage: '{username} and all of their tasks will be permanently removed.',
     no: 'No',
     yes: 'Yes',
+    userAdded: 'User added.',
     taskTitlePrompt: 'Task title (max 20 characters)',
     titleEmpty: 'Title cannot be empty',
-    taskDescriptionPrompt: 'Task description (max 500 characters)',
+    taskDescriptionPrompt: 'Task description (max 5000 characters)',
     reminderPrompt: 'Date time alert (YYYY-MM-DDTHH:mm, leave empty for no alert)',
     sending: 'Sending...',
     emailSent: 'Email sent.',
@@ -144,7 +146,8 @@ const translations = {
     title: 'Tiêu đề',
     max20: '(tối đa 20 ký tự)',
     description: 'Mô tả',
-    max500: '(tối đa 500 ký tự)',
+    descriptionPlaceholder: 'Nhập ghi chú, danh sách và chi tiết tại đây...',
+    max500: '(tối đa 5000 ký tự)',
     dateTimeAlert: 'Ngày giờ nhắc',
     addTask: 'Thêm công việc',
     manageUsers: 'Quản lý người dùng',
@@ -161,7 +164,7 @@ const translations = {
     passwordUpdated: 'Đã cập nhật mật khẩu.',
     titleRequired: 'Vui lòng nhập tiêu đề',
     titleTooLong: 'Tiêu đề phải từ 20 ký tự trở xuống',
-    descriptionTooLong: 'Mô tả phải từ 500 ký tự trở xuống',
+    descriptionTooLong: 'Mô tả phải từ 5000 ký tự trở xuống',
     noTasks: 'Chưa có công việc. Hãy thêm công việc đầu tiên!',
     noRecords: 'Không có bản ghi trong cột này.',
     recordsWithAlert: 'Bản ghi có ngày nhắc',
@@ -185,9 +188,10 @@ const translations = {
     deleteUserMessage: '{username} và tất cả công việc của người dùng này sẽ bị xóa vĩnh viễn.',
     no: 'Không',
     yes: 'Có',
+    userAdded: 'Đã thêm người dùng.',
     taskTitlePrompt: 'Tiêu đề công việc (tối đa 20 ký tự)',
     titleEmpty: 'Tiêu đề không được để trống',
-    taskDescriptionPrompt: 'Mô tả công việc (tối đa 500 ký tự)',
+    taskDescriptionPrompt: 'Mô tả công việc (tối đa 5000 ký tự)',
     reminderPrompt: 'Ngày giờ nhắc (YYYY-MM-DDTHH:mm, để trống nếu không nhắc)',
     sending: 'Đang gửi...',
     emailSent: 'Đã gửi email.',
@@ -238,11 +242,13 @@ const applyTranslations = () => {
   logoutButton.textContent = t('logout');
   setText('label[for="task-title"]', `${t('title')} ${t('max20')}`);
   setText('label[for="task-description"]', `${t('description')} ${t('max500')}`);
+  document.getElementById('task-description').setAttribute('data-placeholder', t('descriptionPlaceholder'));
   setText('label[for="task-reminder"]', t('dateTimeAlert'));
   setText('#task-form button[type="submit"]', t('addTask'));
   editTaskTitle.textContent = t('editTaskTitle');
   setText('label[for="edit-task-title-input"]', `${t('title')} ${t('max20')}`);
   setText('label[for="edit-task-description-input"]', `${t('description')} ${t('max500')}`);
+  editTaskDescriptionInput.setAttribute('data-placeholder', t('descriptionPlaceholder'));
   setText('label[for="edit-task-reminder-input"]', t('dateTimeAlert'));
   cancelEditTask.textContent = t('cancel');
   setText('#save-edit-task', t('save'));
@@ -287,6 +293,71 @@ const formatLocalDateTime = (dateString) => {
   return new Date(dateString).toLocaleString('en-US', {
     dateStyle: 'medium',
     timeStyle: 'short'
+  });
+};
+
+const richTextAllowedTags = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'UL', 'OL', 'LI', 'P', 'DIV', 'BR']);
+
+const hasRichTextMarkup = (value = '') => /<\/?(b|strong|i|em|u|ul|ol|li|p|div|br)\b/i.test(value);
+
+const sanitizeRichText = (html = '') => {
+  const template = document.createElement('template');
+  template.innerHTML = html;
+
+  template.content.querySelectorAll('*').forEach((element) => {
+    [...element.attributes].forEach((attribute) => element.removeAttribute(attribute.name));
+
+    if (!richTextAllowedTags.has(element.tagName)) {
+      element.replaceWith(...element.childNodes);
+    }
+  });
+
+  return template.innerHTML.trim();
+};
+
+const getRichTextPlainText = (html = '') => {
+  const container = document.createElement('div');
+  container.innerHTML = sanitizeRichText(html);
+  return container.textContent.trim();
+};
+
+const setRichEditorValue = (editor, value = '') => {
+  if (hasRichTextMarkup(value)) {
+    editor.innerHTML = sanitizeRichText(value);
+    return;
+  }
+
+  editor.textContent = value;
+};
+
+const getRichEditorValue = (editor) => {
+  const html = sanitizeRichText(editor.innerHTML);
+  return getRichTextPlainText(html) ? html : '';
+};
+
+const getRichEditorLength = (editor) => getRichTextPlainText(editor.innerHTML).length;
+
+const setupRichTextEditors = () => {
+  document.querySelectorAll('.rich-editor-toolbar button').forEach((button) => {
+    button.addEventListener('click', () => {
+      const editor = document.getElementById(button.dataset.editor);
+      if (!editor) return;
+
+      editor.focus();
+      document.execCommand(button.dataset.command, false, null);
+    });
+  });
+
+  document.querySelectorAll('.rich-editor-surface').forEach((editor) => {
+    editor.addEventListener('blur', () => {
+      editor.innerHTML = sanitizeRichText(editor.innerHTML);
+    });
+
+    editor.addEventListener('paste', (event) => {
+      event.preventDefault();
+      const text = event.clipboardData.getData('text/plain');
+      document.execCommand('insertText', false, text);
+    });
   });
 };
 
@@ -649,6 +720,7 @@ const handleAdminUserSubmit = async (event) => {
   }
 
   adminUserForm.reset();
+  showStatusToast(t('userAdded'));
   loadUsers();
 };
 
@@ -689,7 +761,8 @@ const deleteUser = async (user) => {
 const handleTaskSubmit = async (event) => {
   event.preventDefault();
   const title = document.getElementById('task-title').value.trim();
-  const description = document.getElementById('task-description').value.trim();
+  const descriptionEditor = document.getElementById('task-description');
+  const description = getRichEditorValue(descriptionEditor);
   const reminder_at = taskReminderInput.value || null;
   
   const titleError = document.getElementById('title-error');
@@ -714,7 +787,7 @@ const handleTaskSubmit = async (event) => {
     return;
   }
   
-  if (description.length > 500) {
+  if (getRichEditorLength(descriptionEditor) > 5000) {
     descriptionError.textContent = t('descriptionTooLong');
     descriptionError.classList.remove('hidden');
     return;
@@ -728,6 +801,7 @@ const handleTaskSubmit = async (event) => {
   if (result.task) {
     authForm.reset();
     taskForm.reset();
+    descriptionEditor.innerHTML = '';
     titleError.classList.add('hidden');
     descriptionError.classList.add('hidden');
     formError.classList.add('hidden');
@@ -804,8 +878,13 @@ const createTaskCard = (task) => {
     status.textContent = task.completed ? t('completed') : t('open');
     meta.append(title, status);
 
-    const description = document.createElement('p');
-    description.textContent = task.description || t('noDescription');
+    const description = document.createElement('div');
+    description.className = 'task-description';
+    if (task.description) {
+      description.innerHTML = sanitizeRichText(task.description);
+    } else {
+      description.textContent = t('noDescription');
+    }
 
     const datetime = document.createElement('p');
     datetime.className = 'task-datetime';
@@ -926,7 +1005,7 @@ const showEditTaskModal = (task) => {
   pendingEditTask = task;
   clearEditTaskErrors();
   editTaskTitleInput.value = task.title;
-  editTaskDescriptionInput.value = task.description || '';
+  setRichEditorValue(editTaskDescriptionInput, task.description || '');
   editTaskReminderInput.value = formatDateTimeLocalValue(task.reminder_at);
   editTaskModal.classList.remove('hidden');
   editTaskTitleInput.focus();
@@ -936,6 +1015,7 @@ const showEditTaskModal = (task) => {
 const hideEditTaskModal = () => {
   pendingEditTask = null;
   editTaskForm.reset();
+  editTaskDescriptionInput.innerHTML = '';
   clearEditTaskErrors();
   editTaskModal.classList.add('hidden');
 };
@@ -947,7 +1027,7 @@ const handleEditTaskSubmit = async (event) => {
   clearEditTaskErrors();
 
   const title = editTaskTitleInput.value.trim();
-  const description = editTaskDescriptionInput.value.trim();
+  const description = getRichEditorValue(editTaskDescriptionInput);
   const reminderAt = editTaskReminderInput.value || null;
 
   if (!title.trim()) {
@@ -962,7 +1042,7 @@ const handleEditTaskSubmit = async (event) => {
     return;
   }
   
-  if (description.length > 500) {
+  if (getRichEditorLength(editTaskDescriptionInput) > 5000) {
     editDescriptionError.textContent = t('descriptionTooLong');
     editDescriptionError.classList.remove('hidden');
     return;
@@ -1040,7 +1120,7 @@ const exportToExcel = () => {
   const data = tasks.map(task => ({
     [t('exportDate')]: currentDateTime,
     [t('title')]: task.title,
-    [t('description')]: task.description,
+    [t('description')]: getRichTextPlainText(task.description),
     [t('completed')]: task.completed ? t('yes') : t('no'),
     [t('dateTimeAlert')]: task.reminder_at ? formatLocalDateTime(task.reminder_at) : '',
     [t('created')]: formatDateEST(task.created_at),
@@ -1069,7 +1149,7 @@ const exportToPdf = () => {
     doc.setFontSize(12);
     doc.text(`${t('title')}: ${task.title}`, 20, y);
     y += 10;
-    doc.text(`${t('description')}: ${task.description || t('notAvailable')}`, 20, y);
+    doc.text(`${t('description')}: ${getRichTextPlainText(task.description) || t('notAvailable')}`, 20, y);
     y += 10;
     doc.text(`${t('completed')}: ${task.completed ? t('yes') : t('no')}`, 20, y);
     y += 10;
@@ -1126,7 +1206,7 @@ const exportToWord = async () => {
           }),
           new Paragraph({
             children: [
-              new TextRun(`${t('description')}: ${task.description || t('notAvailable')}`)
+              new TextRun(`${t('description')}: ${getRichTextPlainText(task.description) || t('notAvailable')}`)
             ]
           }),
           new Paragraph({
@@ -1177,6 +1257,7 @@ exportPdfButton.addEventListener('click', exportToPdf);
 exportWordButton.addEventListener('click', exportToWord);
 
 setMode('login');
+setupRichTextEditors();
 languageSelect.value = currentLanguage;
 applyTranslations();
 init();

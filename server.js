@@ -130,6 +130,19 @@ const createMailTransporter = () => {
   });
 };
 
+const stripHtml = (value = '') => String(value)
+  .replace(/<br\s*\/?>/gi, '\n')
+  .replace(/<\/(p|div|li)>/gi, '\n')
+  .replace(/<[^>]*>/g, '')
+  .replace(/&nbsp;/g, ' ')
+  .replace(/&amp;/g, '&')
+  .replace(/&lt;/g, '<')
+  .replace(/&gt;/g, '>')
+  .replace(/&quot;/g, '"')
+  .replace(/&#39;/g, "'")
+  .replace(/\n{3,}/g, '\n\n')
+  .trim();
+
 const sendTaskAlertEmail = async (task, user) => {
   const transporter = createMailTransporter();
   if (!transporter) {
@@ -160,7 +173,7 @@ const sendTaskAlertEmail = async (task, user) => {
       `A new task was added by ${user.username}.`,
       '',
       `Title: ${task.title}`,
-      `Description: ${task.description || 'No description provided.'}`,
+      `Description: ${stripHtml(task.description) || 'No description provided.'}`,
       `Date time alert: ${reminder}`,
       `Created: ${task.created_at}`,
     ].join('\n'),
@@ -181,7 +194,7 @@ const sendTaskSummaryEmail = async (tasks, user) => {
   const taskLines = tasks.length
     ? tasks.flatMap((task, index) => [
         `${index + 1}. ${task.title}`,
-        `Description: ${task.description || 'No description provided.'}`,
+        `Description: ${stripHtml(task.description) || 'No description provided.'}`,
         `Status: ${task.completed ? 'Completed' : 'Open'}`,
         `Date time alert: ${task.reminder_at ? new Date(task.reminder_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'Not set'}`,
         `Created: ${task.created_at}`,
@@ -452,8 +465,8 @@ app.post('/api/tasks', authRequired, async (req, res) => {
     return res.status(400).json({ error: 'Task title must be 20 characters or less' });
   }
   
-  if (description && description.length > 500) {
-    return res.status(400).json({ error: 'Task description must be 500 characters or less' });
+  if (description && stripHtml(description).length > 5000) {
+    return res.status(400).json({ error: 'Task description must be 5000 characters or less' });
   }
 
   try {
@@ -493,15 +506,15 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
       return res.status(400).json({ error: 'Task title must be 20 characters or less' });
     }
     
-    if (description && description.length > 500) {
-      return res.status(400).json({ error: 'Task description must be 500 characters or less' });
+    if (description && stripHtml(description).length > 5000) {
+      return res.status(400).json({ error: 'Task description must be 5000 characters or less' });
     }
 
     await runAsync(
       `UPDATE tasks SET title = ?, description = ?, completed = ?, time_spent_minutes = ?, reminder_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?`,
       [
         title || task.title,
-        description || task.description,
+        description !== undefined ? description : task.description,
         completed ? 1 : 0,
         time_spent_minutes !== undefined ? time_spent_minutes : task.time_spent_minutes,
         reminder_at !== undefined ? reminder_at || null : task.reminder_at,

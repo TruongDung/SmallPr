@@ -110,18 +110,69 @@ label {
 }
 
 input,
-textarea {
+textarea,
+.rich-editor-surface {
   width: 100%;
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 12px;
   font-size: 1rem;
   color: var(--text);
+  background: var(--surface);
 }
 
 textarea {
   min-height: 100px;
   resize: vertical;
+}
+
+.rich-editor {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.rich-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  background: #f8fafc;
+}
+
+.rich-editor-toolbar button {
+  min-width: 34px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.rich-editor-toolbar button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.rich-editor-surface {
+  min-height: 130px;
+  border: none;
+  border-radius: 0;
+  line-height: 1.5;
+  outline: none;
+  overflow-wrap: anywhere;
+}
+
+.rich-editor-surface:focus {
+  box-shadow: inset 0 0 0 2px rgba(47, 112, 255, 0.18);
+}
+
+.rich-editor-surface:empty::before {
+  content: attr(data-placeholder);
+  color: var(--muted);
 }
 
 .field-error {
@@ -286,6 +337,22 @@ button.danger {
 .task-item p {
   margin: 0;
   color: var(--muted);
+}
+
+.task-description {
+  color: var(--muted);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.task-description p,
+.task-description ul,
+.task-description ol {
+  margin: 0 0 8px;
+}
+
+.task-description :last-child {
+  margin-bottom: 0;
 }
 
 .task-reminder {
