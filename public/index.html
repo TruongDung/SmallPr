@@ -67,9 +67,9 @@
         </div>
 
         <form id="task-form" class="task-form">
-          <div class="field">
+          <div class="field title-field">
             <label for="task-title">Title <span class="field-max">(max 20 characters)</span></label>
-            <input id="task-title" type="text" required maxlength="20" />
+            <input id="task-title" type="text" required maxlength="20" size="20" />
             <p id="title-error" class="field-error hidden"></p>
           </div>
           <div class="field">
@@ -152,9 +152,9 @@
     <div class="modal edit-task-modal">
       <h3 id="edit-task-title">Edit task</h3>
       <form id="edit-task-form">
-        <div class="field">
+        <div class="field title-field">
           <label for="edit-task-title-input">Title <span class="field-max">(max 20 characters)</span></label>
-          <input id="edit-task-title-input" type="text" required maxlength="20" />
+          <input id="edit-task-title-input" type="text" required maxlength="20" size="20" />
           <p id="edit-title-error" class="field-error hidden"></p>
         </div>
         <div class="field">
