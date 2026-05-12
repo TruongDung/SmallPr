@@ -33,6 +33,7 @@ const editTitleError = document.getElementById('edit-title-error');
 const editDescriptionError = document.getElementById('edit-description-error');
 const editFormError = document.getElementById('edit-form-error');
 const cancelEditTask = document.getElementById('cancel-edit-task');
+const statusToast = document.getElementById('status-toast');
 
 let currentMode = 'login';
 let currentUser = null;
@@ -45,6 +46,7 @@ let weatherClockTimer = null;
 let pendingDeleteTaskId = null;
 let pendingDeleteUser = null;
 let pendingEditTask = null;
+let statusToastTimer = null;
 
 const translations = {
   en: {
@@ -111,6 +113,9 @@ const translations = {
     reminderPrompt: 'Date time alert (YYYY-MM-DDTHH:mm, leave empty for no alert)',
     sending: 'Sending...',
     emailSent: 'Email sent.',
+    excelExported: 'Excel exported.',
+    pdfExported: 'PDF exported.',
+    wordExported: 'Word exported.',
     taskReminderNow: 'Date time alert: {title} is happening now.',
     weatherUnavailable: 'Location weather is unavailable in this browser.',
     weatherUnable: 'Unable to load current city weather.',
@@ -186,6 +191,9 @@ const translations = {
     reminderPrompt: 'Ngày giờ nhắc (YYYY-MM-DDTHH:mm, để trống nếu không nhắc)',
     sending: 'Đang gửi...',
     emailSent: 'Đã gửi email.',
+    excelExported: 'Đã xuất Excel.',
+    pdfExported: 'Đã xuất PDF.',
+    wordExported: 'Đã xuất Word.',
     taskReminderNow: 'Nhắc ngày giờ: {title} đang diễn ra.',
     weatherUnavailable: 'Trình duyệt này không hỗ trợ thời tiết theo vị trí.',
     weatherUnable: 'Không thể tải thời tiết thành phố hiện tại.',
@@ -897,6 +905,10 @@ document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !editTaskModal.classList.contains('hidden')) {
     hideEditTaskModal();
   }
+
+  if (event.key === 'Escape' && !statusToast.classList.contains('hidden')) {
+    hideStatusToast();
+  }
 });
 
 const formatDateTimeLocalValue = (dateString) => {
@@ -974,6 +986,23 @@ editTaskModal.addEventListener('click', (event) => {
   }
 });
 
+const hideStatusToast = () => {
+  statusToast.classList.add('hidden');
+};
+
+const showStatusToast = (message) => {
+  if (statusToastTimer) {
+    clearTimeout(statusToastTimer);
+  }
+
+  statusToast.textContent = message;
+  statusToast.classList.remove('hidden');
+  statusToastTimer = setTimeout(() => {
+    hideStatusToast();
+    statusToastTimer = null;
+  }, 2000);
+};
+
 const handleLogout = async () => {
   await request('/api/logout', { method: 'POST' });
   currentUser = null;
@@ -996,7 +1025,7 @@ const sendSummaryEmail = async () => {
       return;
     }
 
-    alert(t('emailSent'));
+    showStatusToast(t('emailSent'));
   } finally {
     sendSummaryEmailButton.disabled = false;
     sendSummaryEmailButton.textContent = originalText;
@@ -1021,6 +1050,7 @@ const exportToExcel = () => {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, t('tasks'));
   XLSX.writeFile(wb, 'tasks.xlsx');
+  showStatusToast(t('excelExported'));
 };
 
 const exportToPdf = () => {
@@ -1053,6 +1083,7 @@ const exportToPdf = () => {
     }
   });
   doc.save('tasks.pdf');
+  showStatusToast(t('pdfExported'));
 };
 
 const exportToWord = async () => {
@@ -1129,6 +1160,7 @@ const exportToWord = async () => {
   a.download = 'tasks.docx';
   a.click();
   URL.revokeObjectURL(url);
+  showStatusToast(t('wordExported'));
 };
 
 showLogin.addEventListener('click', () => setMode('login'));
