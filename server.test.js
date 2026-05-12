@@ -4,22 +4,58 @@ const path = require('path');
 
 const TEST_DB_FILE = path.join(__dirname, 'tmp', 'test.db');
 process.env.DB_FILE = TEST_DB_FILE;
+process.env.TASK_ALERT_TO = '';
+process.env.SMTP_HOST = '';
+process.env.SMTP_USER = '';
+process.env.SMTP_PASS = '';
+
+if (!fs.existsSync(path.dirname(TEST_DB_FILE))) {
+  fs.mkdirSync(path.dirname(TEST_DB_FILE), { recursive: true });
+}
 
 if (fs.existsSync(TEST_DB_FILE)) {
   fs.unlinkSync(TEST_DB_FILE);
 }
 
 const { app, db } = require('./server');
+const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
-describe('Login API', () => {
-  afterAll((done) => {
-    db.close(done);
-    if (fs.existsSync(TEST_DB_FILE)) {
-      fs.unlinkSync(TEST_DB_FILE);
-    }
+const closeDb = () => new Promise((resolve, reject) => {
+  db.close((error) => {
+    if (error) reject(error);
+    else resolve();
   });
+});
 
-  test('should sign up a new user and log in successfully', async () => {
+const createAgent = async (username = `user-${Date.now()}-${Math.random()}`) => {
+  const agent = request.agent(app);
+  const response = await agent
+    .post('/api/signup')
+    .send({ username, password: 'Password123!' });
+
+  expect(response.statusCode).toBe(200);
+  expect(response.body.user).toMatchObject({ username });
+
+  return agent;
+};
+
+const attachment = (name = 'notes.txt', data = 'hello') => ({
+  name,
+  type: 'text/plain',
+  data: `data:text/plain;base64,${Buffer.from(data).toString('base64')}`,
+  size: Buffer.byteLength(data),
+});
+
+afterAll(async () => {
+  warnSpy.mockRestore();
+  await closeDb();
+  if (fs.existsSync(TEST_DB_FILE)) {
+    fs.unlinkSync(TEST_DB_FILE);
+  }
+});
+
+describe('Auth API', () => {
+  test('signs up a new user and logs in successfully', async () => {
     const signupResponse = await request(app)
       .post('/api/signup')
       .send({ username: 'testuser', password: 'Password123!' });
@@ -35,7 +71,27 @@ describe('Login API', () => {
     expect(loginResponse.body.user).toMatchObject({ username: 'testuser' });
   });
 
-  test('should reject invalid login credentials for nonexistent user', async () => {
+  test('rejects signup without required fields', async () => {
+    const response = await request(app)
+      .post('/api/signup')
+      .send({ username: '' });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toHaveProperty('error', 'Username and password are required');
+  });
+
+  test('rejects duplicate usernames', async () => {
+    await createAgent('duplicate-user');
+
+    const response = await request(app)
+      .post('/api/signup')
+      .send({ username: 'duplicate-user', password: 'Password123!' });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.body).toHaveProperty('error', 'Username already exists');
+  });
+
+  test('rejects invalid login credentials for nonexistent user', async () => {
     const response = await request(app)
       .post('/api/login')
       .send({ username: 'nonexistent', password: 'wrongpass' });
@@ -44,12 +100,8 @@ describe('Login API', () => {
     expect(response.body).toHaveProperty('error', 'Invalid credentials');
   });
 
-  test('should reject login with incorrect password for existing user', async () => {
-    const signupResponse = await request(app)
-      .post('/api/signup')
-      .send({ username: 'existinguser', password: 'CorrectPass1!' });
-
-    expect(signupResponse.statusCode).toBe(200);
+  test('rejects login with incorrect password for existing user', async () => {
+    await createAgent('existinguser');
 
     const loginResponse = await request(app)
       .post('/api/login')
@@ -57,5 +109,155 @@ describe('Login API', () => {
 
     expect(loginResponse.statusCode).toBe(401);
     expect(loginResponse.body).toHaveProperty('error', 'Invalid credentials');
+  });
+});
+
+describe('Task API', () => {
+  test('requires authentication before listing tasks', async () => {
+    const response = await request(app).get('/api/tasks');
+
+    expect(response.statusCode).toBe(401);
+    expect(response.body).toHaveProperty('error', 'Authentication required');
+  });
+
+  test('creates and lists a task with rich text and an attachment', async () => {
+    const agent = await createAgent('task-owner');
+    const file = attachment('plan.txt', 'project notes');
+
+    const createResponse = await agent
+      .post('/api/tasks')
+      .send({
+        title: 'Plan',
+        description: '<p><strong>Ship it</strong></p>',
+        reminder_at: '2026-05-13T09:30',
+        attachment: file,
+      });
+
+    expect(createResponse.statusCode).toBe(200);
+    expect(createResponse.body.task).toMatchObject({
+      title: 'Plan',
+      description: '<p><strong>Ship it</strong></p>',
+      reminder_at: '2026-05-13T09:30',
+      attachment_name: 'plan.txt',
+      attachment_type: 'text/plain',
+      attachment_size: file.size,
+    });
+
+    const listResponse = await agent.get('/api/tasks');
+
+    expect(listResponse.statusCode).toBe(200);
+    expect(listResponse.body.tasks).toHaveLength(1);
+    expect(listResponse.body.tasks[0]).toMatchObject({
+      title: 'Plan',
+      attachment_name: 'plan.txt',
+    });
+  });
+
+  test('rejects task titles over 20 characters', async () => {
+    const agent = await createAgent('long-title-owner');
+
+    const response = await agent
+      .post('/api/tasks')
+      .send({ title: 'This title is definitely too long' });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toHaveProperty('error', 'Task title must be 20 characters or less');
+  });
+
+  test('rejects invalid attachment payloads', async () => {
+    const agent = await createAgent('bad-attachment-owner');
+
+    const response = await agent
+      .post('/api/tasks')
+      .send({
+        title: 'Bad file',
+        attachment: {
+          name: 'bad.txt',
+          type: 'text/plain',
+          data: 'not-a-data-url',
+          size: 12,
+        },
+      });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toHaveProperty('error', 'Invalid attachment');
+  });
+
+  test('updates task fields while preserving the existing attachment', async () => {
+    const agent = await createAgent('preserve-attachment-owner');
+
+    const createResponse = await agent
+      .post('/api/tasks')
+      .send({
+        title: 'Draft',
+        description: 'Old description',
+        attachment: attachment('original.txt', 'original file'),
+      });
+
+    const taskId = createResponse.body.task.id;
+    const updateResponse = await agent
+      .put(`/api/tasks/${taskId}`)
+      .send({
+        title: 'Final',
+        description: '<p>New description</p>',
+        completed: true,
+      });
+
+    expect(updateResponse.statusCode).toBe(200);
+    expect(updateResponse.body.task).toMatchObject({
+      id: taskId,
+      title: 'Final',
+      description: '<p>New description</p>',
+      completed: 1,
+      attachment_name: 'original.txt',
+    });
+  });
+
+  test('replaces an attachment when editing a task', async () => {
+    const agent = await createAgent('replace-attachment-owner');
+
+    const createResponse = await agent
+      .post('/api/tasks')
+      .send({
+        title: 'Upload',
+        attachment: attachment('before.txt', 'before'),
+      });
+
+    const taskId = createResponse.body.task.id;
+    const newAttachment = attachment('after.txt', 'after');
+    const updateResponse = await agent
+      .put(`/api/tasks/${taskId}`)
+      .send({
+        title: 'Upload',
+        attachment: newAttachment,
+      });
+
+    expect(updateResponse.statusCode).toBe(200);
+    expect(updateResponse.body.task).toMatchObject({
+      id: taskId,
+      attachment_name: 'after.txt',
+      attachment_type: 'text/plain',
+      attachment_size: newAttachment.size,
+    });
+    expect(updateResponse.body.task.attachment_data).toBe(newAttachment.data);
+  });
+
+  test('deletes only tasks owned by the signed-in user', async () => {
+    const owner = await createAgent('delete-owner');
+    const otherUser = await createAgent('delete-other');
+
+    const createResponse = await owner
+      .post('/api/tasks')
+      .send({ title: 'Private task' });
+
+    const taskId = createResponse.body.task.id;
+    const forbiddenResponse = await otherUser.delete(`/api/tasks/${taskId}`);
+
+    expect(forbiddenResponse.statusCode).toBe(404);
+    expect(forbiddenResponse.body).toHaveProperty('error', 'Task not found');
+
+    const deleteResponse = await owner.delete(`/api/tasks/${taskId}`);
+    expect(deleteResponse.statusCode).toBe(200);
+    expect(deleteResponse.body).toHaveProperty('success', true);
   });
 });
