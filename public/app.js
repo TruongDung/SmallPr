@@ -610,7 +610,7 @@ const fetchWeatherForLocation = async (lat, lng, locationName) => {
 
 const fetchWeatherData = async (lat, lng) => {
   const response = await fetch(
-    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weather_code,relative_humidity_2m&temperature_unit=fahrenheit&timezone=auto`
+    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weather_code,relative_humidity_2m,is_day&temperature_unit=fahrenheit&timezone=auto`
   );
 
   return response.json();
@@ -788,9 +788,10 @@ const getWeatherCard = (weather, cityName, timezone = '', isSaved = false, cityI
   const tempC = Math.round((tempF - 32) * 5 / 9);
   const humidity = weather.relative_humidity_2m;
   const currentTime = getCurrentTimeForTimezone(timezone);
+  const dayNightClass = Number(weather.is_day) === 0 ? 'weather-night-card' : 'weather-day-card';
 
   return `
-    <div class="weather-card ${isSaved ? 'weather-city-card' : 'weather-current-card'}">
+    <div class="weather-card ${isSaved ? 'weather-city-card' : 'weather-current-card'} ${dayNightClass}">
       ${getWeatherRemoveButton(isSaved, cityId)}
       <div class="weather-content">
         <div class="weather-icon">${icon}</div>

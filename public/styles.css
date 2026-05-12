@@ -655,19 +655,73 @@ button.danger {
 
 .weather-cards {
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 12px;
 }
 
 .weather-card {
   position: relative;
-  padding: 16px;
+  min-width: 0;
+  min-height: 180px;
+  padding: 14px;
   border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
 }
 
 .weather-city-card {
   background: rgba(255, 255, 255, 0.18);
+}
+
+.weather-current-card {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.weather-day-card {
+  border-color: rgba(255, 255, 255, 0.34);
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.48), rgba(14, 165, 233, 0.2));
+}
+
+.weather-night-card {
+  border-color: rgba(191, 219, 254, 0.24);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.62), rgba(49, 46, 129, 0.36));
+}
+
+.weather-card .weather-content {
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.weather-card .weather-icon {
+  font-size: 30px;
+}
+
+.weather-card .weather-location {
+  padding-right: 28px;
+  font-size: 13px;
+}
+
+.weather-card .weather-temp {
+  font-size: 21px;
+}
+
+.weather-card .weather-temp span {
+  margin-left: 4px;
+  font-size: 14px;
+}
+
+.weather-card .weather-humidity,
+.weather-card .time-label {
+  font-size: 12px;
+}
+
+.weather-card .weather-time {
+  align-items: flex-start;
+}
+
+.weather-card .time-display {
+  font-size: 13px;
 }
 
 .weather-remove {
@@ -705,6 +759,7 @@ button.danger {
   align-items: center;
   justify-content: space-between;
   gap: 40px;
+  min-width: 0;
 }
 
 .weather-icon {
@@ -717,16 +772,19 @@ button.danger {
   flex-direction: column;
   gap: 4px;
   flex-grow: 1;
+  min-width: 0;
 }
 
 .weather-location {
   font-size: 14px;
   opacity: 0.9;
+  overflow-wrap: anywhere;
 }
 
 .weather-temp {
   font-size: 28px;
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .weather-temp span {
@@ -746,7 +804,12 @@ button.danger {
   flex-direction: column;
   align-items: flex-end;
   gap: 4px;
-  flex-shrink: 0;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.time-display {
+  overflow-wrap: anywhere;
 }
 
 .modal-backdrop {
