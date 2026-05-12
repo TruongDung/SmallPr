@@ -1,6 +1,7 @@
 const authSection = document.getElementById('auth-section');
 const taskSection = document.getElementById('task-section');
 const adminSection = document.getElementById('admin-section');
+const appContainer = document.querySelector('.container');
 const userArea = document.getElementById('user-area');
 const languageSelect = document.getElementById('language-select');
 const authForm = document.getElementById('auth-form');
@@ -36,7 +37,16 @@ const editTitleError = document.getElementById('edit-title-error');
 const editDescriptionError = document.getElementById('edit-description-error');
 const editFormError = document.getElementById('edit-form-error');
 const cancelEditTask = document.getElementById('cancel-edit-task');
+const previewTaskModal = document.getElementById('preview-task-modal');
+const previewTaskTitle = document.getElementById('preview-task-title');
+const previewTaskDescription = document.getElementById('preview-task-description');
+const closePreviewTask = document.getElementById('close-preview-task');
 const statusToast = document.getElementById('status-toast');
+const uploadProgressOverlay = document.getElementById('upload-progress-overlay');
+const uploadProgressTitle = document.getElementById('upload-progress-title');
+const uploadProgressText = document.getElementById('upload-progress-text');
+const uploadProgressFill = document.getElementById('upload-progress-fill');
+const uploadProgressPercent = document.getElementById('upload-progress-percent');
 
 let currentMode = 'login';
 let currentUser = null;
@@ -50,6 +60,7 @@ let pendingDeleteTaskId = null;
 let pendingDeleteUser = null;
 let pendingEditTask = null;
 let statusToastTimer = null;
+let preparedAttachment = null;
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 
 const translations = {
@@ -93,7 +104,11 @@ const translations = {
     titleTooLong: 'Title must be 20 characters or less',
     descriptionTooLong: 'Description must be 5000 characters or less',
     attachmentTooLarge: 'File must be 5 MB or less',
+    attachmentNotReady: 'Please wait for the file upload to finish',
     attachment: 'Attachment',
+    uploadingFile: 'Uploading file',
+    uploadPleaseWait: 'Please wait until the upload finishes.',
+    savingTask: 'Saving task...',
     noTasks: 'No tasks yet. Add your first task!',
     noRecords: 'No records in this column.',
     recordsWithAlert: 'Records with Alert date',
@@ -107,6 +122,9 @@ const translations = {
     alertNotSet: 'Alert: Not set',
     markOpen: 'Mark Open',
     markDone: 'Mark Done',
+    preview: 'Preview',
+    previewTaskTitle: 'Preview',
+    close: 'Close',
     edit: 'Edit',
     editTaskTitle: 'Edit task',
     save: 'Save',
@@ -178,7 +196,11 @@ const translations = {
     titleTooLong: 'Tiêu đề phải từ 20 ký tự trở xuống',
     descriptionTooLong: 'Mô tả phải từ 5000 ký tự trở xuống',
     attachmentTooLarge: 'Tệp phải từ 5 MB trở xuống',
+    attachmentNotReady: 'Vui lòng chờ tệp tải lên hoàn tất',
     attachment: 'Tệp đính kèm',
+    uploadingFile: 'Đang tải tệp lên',
+    uploadPleaseWait: 'Vui lòng chờ đến khi tải lên hoàn tất.',
+    savingTask: 'Đang lưu công việc...',
     noTasks: 'Chưa có công việc. Hãy thêm công việc đầu tiên!',
     noRecords: 'Không có bản ghi trong cột này.',
     recordsWithAlert: 'Bản ghi có ngày nhắc',
@@ -192,6 +214,9 @@ const translations = {
     alertNotSet: 'Nhắc: Chưa đặt',
     markOpen: 'Mở lại',
     markDone: 'Đánh dấu xong',
+    preview: 'Xem trước',
+    previewTaskTitle: 'Xem trước',
+    close: 'Đóng',
     edit: 'Sửa',
     editTaskTitle: 'Sửa công việc',
     save: 'Lưu',
@@ -265,6 +290,8 @@ const applyTranslations = () => {
   setText('label[for="task-attachment"]', t('uploadFile'));
   setText('#task-form button[type="submit"]', t('addTask'));
   editTaskTitle.textContent = t('editTaskTitle');
+  previewTaskTitle.textContent = t('previewTaskTitle');
+  closePreviewTask.textContent = t('close');
   setText('label[for="edit-task-title-input"]', `${t('title')} ${t('max20')}`);
   setText('label[for="edit-task-description-input"]', `${t('description')} ${t('max500')}`);
   editTaskDescriptionInput.setAttribute('data-placeholder', t('descriptionPlaceholder'));
@@ -380,14 +407,19 @@ const setupRichTextEditors = () => {
   });
 };
 
-const readAttachmentFile = (file) => new Promise((resolve, reject) => {
+const readAttachmentFile = (file, onProgress = () => {}) => new Promise((resolve, reject) => {
   if (!file) {
     resolve(null);
     return;
   }
 
   const reader = new FileReader();
+  reader.onprogress = (event) => {
+    if (!event.lengthComputable) return;
+    onProgress(Math.min(90, (event.loaded / event.total) * 90));
+  };
   reader.onload = () => {
+    onProgress(90);
     resolve({
       name: file.name,
       type: file.type || 'application/octet-stream',
@@ -398,6 +430,34 @@ const readAttachmentFile = (file) => new Promise((resolve, reject) => {
   reader.onerror = () => reject(new Error('Unable to read attachment'));
   reader.readAsDataURL(file);
 });
+
+const handleTaskAttachmentChange = async () => {
+  const attachmentError = document.getElementById('attachment-error');
+  attachmentError.classList.add('hidden');
+  preparedAttachment = null;
+
+  const attachmentFile = taskAttachmentInput.files[0] || null;
+  if (!attachmentFile) return;
+
+  if (attachmentFile.size > MAX_ATTACHMENT_BYTES) {
+    taskAttachmentInput.value = '';
+    attachmentError.textContent = t('attachmentTooLarge');
+    attachmentError.classList.remove('hidden');
+    return;
+  }
+
+  try {
+    showUploadProgress();
+    preparedAttachment = await readAttachmentFile(attachmentFile, setUploadProgress);
+    setUploadProgress(100);
+  } catch (error) {
+    taskAttachmentInput.value = '';
+    attachmentError.textContent = error.message;
+    attachmentError.classList.remove('hidden');
+  } finally {
+    setTimeout(hideUploadProgress, 250);
+  }
+};
 
 const getReminderStorageKey = (task) => `task-reminder-alerted-${task.id}-${task.reminder_at}`;
 
@@ -847,22 +907,38 @@ const handleTaskSubmit = async (event) => {
     return;
   }
 
-  const attachment = await readAttachmentFile(attachmentFile);
+  if (attachmentFile && !preparedAttachment) {
+    attachmentError.textContent = t('attachmentNotReady');
+    attachmentError.classList.remove('hidden');
+    return;
+  }
 
-  const result = await request('/api/tasks', {
-    method: 'POST',
-    body: JSON.stringify({ title, description, reminder_at, attachment }),
-  });
+  try {
+    const result = await request('/api/tasks', {
+      method: 'POST',
+      body: JSON.stringify({ title, description, reminder_at, attachment: preparedAttachment }),
+    });
 
-  if (result.task) {
-    authForm.reset();
-    taskForm.reset();
-    descriptionEditor.innerHTML = '';
-    titleError.classList.add('hidden');
-    descriptionError.classList.add('hidden');
-    attachmentError.classList.add('hidden');
-    formError.classList.add('hidden');
-    loadTasks();
+    if (result.error) {
+      formError.textContent = result.error;
+      formError.classList.remove('hidden');
+      return;
+    }
+
+    if (result.task) {
+      authForm.reset();
+      taskForm.reset();
+      descriptionEditor.innerHTML = '';
+      preparedAttachment = null;
+      titleError.classList.add('hidden');
+      descriptionError.classList.add('hidden');
+      attachmentError.classList.add('hidden');
+      formError.classList.add('hidden');
+      loadTasks();
+    }
+  } catch (error) {
+    formError.textContent = error.message;
+    formError.classList.remove('hidden');
   }
 };
 
@@ -968,6 +1044,10 @@ const createTaskCard = (task) => {
     toggleButton.textContent = task.completed ? t('markOpen') : t('markDone');
     toggleButton.addEventListener('click', () => updateTask(task.id, { completed: !task.completed }));
 
+    const previewButton = document.createElement('button');
+    previewButton.textContent = t('preview');
+    previewButton.addEventListener('click', () => showPreviewTaskModal(task));
+
     const editButton = document.createElement('button');
     editButton.textContent = t('edit');
     editButton.addEventListener('click', () => showEditTaskModal(task));
@@ -977,7 +1057,11 @@ const createTaskCard = (task) => {
     deleteButton.className = 'danger';
     deleteButton.addEventListener('click', () => showDeleteConfirm(task.id));
 
-    actions.append(toggleButton, editButton, deleteButton);
+    actions.append(toggleButton);
+    if (task.description && getRichTextPlainText(task.description).length > 180) {
+      actions.append(previewButton);
+    }
+    actions.append(editButton, deleteButton);
     card.append(meta, description, datetime, reminder);
     if (attachment.href) {
       card.append(attachment);
@@ -1052,6 +1136,10 @@ document.addEventListener('keydown', (event) => {
 
   if (event.key === 'Escape' && !editTaskModal.classList.contains('hidden')) {
     hideEditTaskModal();
+  }
+
+  if (event.key === 'Escape' && !previewTaskModal.classList.contains('hidden')) {
+    hidePreviewTaskModal();
   }
 
   if (event.key === 'Escape' && !statusToast.classList.contains('hidden')) {
@@ -1135,6 +1223,27 @@ editTaskModal.addEventListener('click', (event) => {
   }
 });
 
+const showPreviewTaskModal = (task) => {
+  previewTaskDescription.innerHTML = task.description
+    ? sanitizeRichText(task.description)
+    : t('noDescription');
+  previewTaskModal.classList.remove('hidden');
+  closePreviewTask.focus();
+};
+
+const hidePreviewTaskModal = () => {
+  previewTaskModal.classList.add('hidden');
+  previewTaskDescription.textContent = '';
+};
+
+closePreviewTask.addEventListener('click', hidePreviewTaskModal);
+
+previewTaskModal.addEventListener('click', (event) => {
+  if (event.target === previewTaskModal) {
+    hidePreviewTaskModal();
+  }
+});
+
 const hideStatusToast = () => {
   statusToast.classList.add('hidden');
 };
@@ -1150,6 +1259,30 @@ const showStatusToast = (message) => {
     hideStatusToast();
     statusToastTimer = null;
   }, 2000);
+};
+
+const setUploadProgress = (percent, message = t('uploadPleaseWait')) => {
+  const safePercent = Math.max(0, Math.min(100, Math.round(percent)));
+  uploadProgressText.textContent = message;
+  uploadProgressFill.style.width = `${safePercent}%`;
+  uploadProgressPercent.textContent = `${safePercent}%`;
+};
+
+const showUploadProgress = () => {
+  uploadProgressTitle.textContent = t('uploadingFile');
+  setUploadProgress(0);
+  appContainer.inert = true;
+  appContainer.setAttribute('aria-busy', 'true');
+  uploadProgressOverlay.classList.remove('hidden');
+  document.body.classList.add('is-uploading');
+};
+
+const hideUploadProgress = () => {
+  uploadProgressOverlay.classList.add('hidden');
+  appContainer.inert = false;
+  appContainer.removeAttribute('aria-busy');
+  document.body.classList.remove('is-uploading');
+  setUploadProgress(0);
 };
 
 const handleLogout = async () => {
@@ -1324,6 +1457,7 @@ showLogin.addEventListener('click', () => setMode('login'));
 showSignup.addEventListener('click', () => setMode('signup'));
 languageSelect.addEventListener('change', (event) => setLanguage(event.target.value));
 togglePasswordButton.addEventListener('click', togglePasswordVisibility);
+taskAttachmentInput.addEventListener('change', handleTaskAttachmentChange);
 authForm.addEventListener('submit', handleAuthSubmit);
 taskForm.addEventListener('submit', handleTaskSubmit);
 editTaskForm.addEventListener('submit', handleEditTaskSubmit);

@@ -178,7 +178,28 @@
     </div>
   </div>
 
+  <div id="preview-task-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="preview-task-title">
+    <div class="modal preview-task-modal">
+      <h3 id="preview-task-title">Preview</h3>
+      <div id="preview-task-description" class="preview-task-description"></div>
+      <div class="modal-actions">
+        <button id="close-preview-task" type="button" class="secondary">Close</button>
+      </div>
+    </div>
+  </div>
+
   <div id="status-toast" class="status-toast hidden" role="status" aria-live="polite"></div>
+
+  <div id="upload-progress-overlay" class="upload-progress-overlay hidden" role="alert" aria-live="assertive">
+    <div class="upload-progress-panel">
+      <h3 id="upload-progress-title">Uploading file</h3>
+      <p id="upload-progress-text">Please wait until the upload finishes.</p>
+      <div class="upload-progress-track" aria-hidden="true">
+        <div id="upload-progress-fill" class="upload-progress-fill"></div>
+      </div>
+      <div id="upload-progress-percent" class="upload-progress-percent">0%</div>
+    </div>
+  </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>

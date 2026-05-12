@@ -51,6 +51,6 @@ The app adds `Task Manager` to every Add Task email body and header so the filte
 ## Default Credentials
 
 - Username: `admin`
-- Password: `a123456`
+- Password: `admin123456`
 
 You can use these credentials to log in, or create a new account via the signup form.
