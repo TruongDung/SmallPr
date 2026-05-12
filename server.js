@@ -2,126 +2,96 @@ require('dotenv').config();
 
 const express = require('express');
 const bcrypt = require('bcrypt');
-const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 const session = require('express-session');
 const path = require('path');
-const fs = require('fs');
 const nodemailer = require('nodemailer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const DB_FILE = process.env.DB_FILE || '/tmp/data.db';
+const DATABASE_URL = process.env.DATABASE_URL;
 const TASK_ALERT_TO = process.env.TASK_ALERT_TO;
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 
-if (!fs.existsSync(path.dirname(DB_FILE))) {
-  fs.mkdirSync(path.dirname(DB_FILE), { recursive: true });
+if (!DATABASE_URL || DATABASE_URL.includes('[YOUR-PASSWORD]')) {
+  throw new Error('DATABASE_URL must be set to your Supabase Postgres connection string.');
 }
 
-if (!fs.existsSync(DB_FILE)) {
-  fs.writeFileSync(DB_FILE, '');
-}
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  ssl: /localhost|127\.0\.0\.1/.test(DATABASE_URL) ? false : { rejectUnauthorized: false },
+  connectionTimeoutMillis: 10000,
+});
 
-const db = new sqlite3.Database(DB_FILE);
+const toPostgresSql = (sql) => {
+  let index = 0;
+  return sql.replace(/\?/g, () => `$${++index}`);
+};
 
-db.serialize(() => {
-  db.run(`CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+const queryAsync = async (sql, params = []) => {
+  return pool.query(toPostgresSql(sql), params);
+};
+
+const runAsync = async (sql, params = []) => {
+  const result = await queryAsync(sql, params);
+  return {
+    changes: result.rowCount,
+    lastID: result.rows[0]?.id,
+  };
+};
+
+const getAsync = async (sql, params = []) => {
+  const result = await queryAsync(sql, params);
+  return result.rows[0];
+};
+
+const allAsync = async (sql, params = []) => {
+  const result = await queryAsync(sql, params);
+  return result.rows;
+};
+
+const initializeDatabase = async () => {
+  await pool.query(`CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL
   )`);
 
-  db.run(`CREATE TABLE IF NOT EXISTS tasks (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+  await pool.query(`CREATE TABLE IF NOT EXISTS tasks (
+    id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,
     title TEXT NOT NULL,
     description TEXT,
     completed INTEGER NOT NULL DEFAULT 0,
     time_spent_minutes INTEGER DEFAULT 0,
     reminder_at TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(user_id) REFERENCES users(id)
+    attachment_name TEXT,
+    attachment_type TEXT,
+    attachment_data TEXT,
+    attachment_size INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   )`);
 
-  db.all('PRAGMA table_info(tasks)', (err, columns) => {
-    if (err) {
-      console.error('Error checking tasks table schema:', err);
-      return;
-    }
+  await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminder_at TEXT');
+  await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_name TEXT');
+  await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_type TEXT');
+  await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_data TEXT');
+  await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_size INTEGER DEFAULT 0');
 
-    const hasReminderAt = columns.some((column) => column.name === 'reminder_at');
-    if (!hasReminderAt) {
-      db.run('ALTER TABLE tasks ADD COLUMN reminder_at TEXT', (alterErr) => {
-        if (alterErr) {
-          console.error('Error adding reminder_at column:', alterErr);
-        }
-      });
-    }
+  const admin = await getAsync('SELECT id FROM users WHERE username = ?', ['admin']);
+  if (!admin) {
+    const hashedPassword = await bcrypt.hash('admin123456', 10);
+    await runAsync(
+      'INSERT INTO users (username, password) VALUES (?, ?) RETURNING id',
+      ['admin', hashedPassword]
+    );
+    console.log('Default admin user created with username: admin, password: admin123456');
+  }
+};
 
-    [
-      ['attachment_name', 'TEXT'],
-      ['attachment_type', 'TEXT'],
-      ['attachment_data', 'TEXT'],
-      ['attachment_size', 'INTEGER DEFAULT 0'],
-    ].forEach(([name, definition]) => {
-      const hasColumn = columns.some((column) => column.name === name);
-      if (!hasColumn) {
-        db.run(`ALTER TABLE tasks ADD COLUMN ${name} ${definition}`, (alterErr) => {
-          if (alterErr) {
-            console.error(`Error adding ${name} column:`, alterErr);
-          }
-        });
-      }
-    });
-  });
-
-  // Create default admin user if not exists
-  db.get('SELECT id FROM users WHERE username = ?', ['admin'], async (err, row) => {
-    if (err) {
-      console.error('Error checking for admin user:', err);
-      return;
-    }
-    if (!row) {
-      try {
-        const hashedPassword = await bcrypt.hash('admin123456', 10);
-        db.run('INSERT INTO users (username, password) VALUES (?, ?)', ['admin', hashedPassword], function(err) {
-          if (err) {
-            console.error('Error creating admin user:', err);
-          } else {
-            console.log('Default admin user created with username: admin, password: admin123456');
-          }
-        });
-      } catch (error) {
-        console.error('Error hashing password for admin:', error);
-      }
-    }
-  });
-});
-
-const runAsync = (sql, params = []) =>
-  new Promise((resolve, reject) => {
-    db.run(sql, params, function (err) {
-      if (err) return reject(err);
-      resolve(this);
-    });
-  });
-
-const getAsync = (sql, params = []) =>
-  new Promise((resolve, reject) => {
-    db.get(sql, params, (err, row) => {
-      if (err) return reject(err);
-      resolve(row);
-    });
-  });
-
-const allAsync = (sql, params = []) =>
-  new Promise((resolve, reject) => {
-    db.all(sql, params, (err, rows) => {
-      if (err) return reject(err);
-      resolve(rows);
-    });
-  });
+const dbReady = initializeDatabase();
 
 const createMailTransporter = () => {
   const {
@@ -274,6 +244,16 @@ app.use(
   })
 );
 
+app.use(async (req, res, next) => {
+  try {
+    await dbReady;
+    next();
+  } catch (error) {
+    console.error('Database initialization failed:', error);
+    res.status(500).json({ error: 'Database is not configured correctly' });
+  }
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 const authRequired = (req, res, next) => {
@@ -318,7 +298,7 @@ app.post('/api/signup', async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const result = await runAsync('INSERT INTO users (username, password) VALUES (?, ?)', [username, hashedPassword]);
+    const result = await runAsync('INSERT INTO users (username, password) VALUES (?, ?) RETURNING id', [username, hashedPassword]);
     req.session.userId = result.lastID;
 
     res.json({ user: { id: result.lastID, username } });
@@ -390,7 +370,7 @@ app.get('/api/tasks', authRequired, async (req, res) => {
 app.get('/api/admin/users', adminRequired, async (req, res) => {
   try {
     const users = await allAsync(
-      `SELECT users.id, users.username, COUNT(tasks.id) AS task_count
+      `SELECT users.id, users.username, COUNT(tasks.id)::int AS task_count
        FROM users
        LEFT JOIN tasks ON tasks.user_id = users.id
        GROUP BY users.id, users.username
@@ -416,9 +396,9 @@ app.post('/api/admin/users', adminRequired, async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const result = await runAsync('INSERT INTO users (username, password) VALUES (?, ?)', [username, hashedPassword]);
+    const result = await runAsync('INSERT INTO users (username, password) VALUES (?, ?) RETURNING id', [username, hashedPassword]);
     const user = await getAsync(
-      `SELECT users.id, users.username, COUNT(tasks.id) AS task_count
+      `SELECT users.id, users.username, COUNT(tasks.id)::int AS task_count
        FROM users
        LEFT JOIN tasks ON tasks.user_id = users.id
        WHERE users.id = ?
@@ -521,7 +501,7 @@ app.post('/api/tasks', authRequired, async (req, res) => {
       `INSERT INTO tasks (
         user_id, title, description, completed, time_spent_minutes, reminder_at,
         attachment_name, attachment_type, attachment_data, attachment_size
-      ) VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?) RETURNING id`,
       [
         req.session.userId,
         title,
@@ -638,10 +618,16 @@ app.get('*', (req, res) => {
 });
 
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-  });
+  dbReady
+    .then(() => {
+      app.listen(PORT, () => {
+        console.log(`Server running at http://localhost:${PORT}`);
+      });
+    })
+    .catch((error) => {
+      console.error('Failed to initialize database:', error);
+      process.exit(1);
+    });
 }
 
-// module.exports = { app, db };
 module.exports = app;

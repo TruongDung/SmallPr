@@ -23,7 +23,15 @@ npm install
 npm start
 ```
 
-3. To send an email alert when a task is added, set these environment variables before starting the app:
+3. Configure Supabase Postgres in `.env`:
+
+```bash
+DATABASE_URL=postgresql://postgres:<url-encoded-password>@db.your-project-ref.supabase.co:5432/postgres
+```
+
+If your password contains special characters like `#` or `@`, URL-encode them before putting the password in `DATABASE_URL`.
+
+4. To send an email alert when a task is added, set these environment variables before starting the app:
 
 ```bash
 SMTP_HOST=smtp.gmail.com
@@ -37,16 +45,16 @@ TASK_ALERT_TO= test@gmail.com
 
 `TASK_ALERT_TO` defaults to `test@gmail.com` if it is not set.
 
-4. To automatically star and label task alert emails in Gmail, create a Gmail filter in ``:
+5. To automatically star and label task alert emails in Gmail, create a Gmail filter in ``:
 
 - Search query: `from:test@gmail.com "Task Manager"`
 - Filter actions: `Star it` and `Apply the label: Task Manager`
 
 The app adds `Task Manager` to every Add Task email body and header so the filter can reliably find it without adding `[Task Manager]` to the email title.
 
-5. Open http://localhost:3000 in your browser.
+6. Open http://localhost:3000 in your browser.
 
-6. Test link: https://small-pr.vercel.app/
+7. Test link: https://small-pr.vercel.app/
 
 ## Default Credentials
 

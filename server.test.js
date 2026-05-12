@@ -1,33 +1,18 @@
 const request = require('supertest');
-const fs = require('fs');
-const path = require('path');
 
-const TEST_DB_FILE = path.join(__dirname, 'tmp', 'test.db');
-process.env.DB_FILE = TEST_DB_FILE;
 process.env.TASK_ALERT_TO = '';
 process.env.SMTP_HOST = '';
 process.env.SMTP_USER = '';
 process.env.SMTP_PASS = '';
 
-if (!fs.existsSync(path.dirname(TEST_DB_FILE))) {
-  fs.mkdirSync(path.dirname(TEST_DB_FILE), { recursive: true });
-}
+const RUN_ID = `test-${Date.now()}-${Math.round(Math.random() * 100000)}`;
+const testUsername = (name) => `${RUN_ID}-${name}`;
 
-if (fs.existsSync(TEST_DB_FILE)) {
-  fs.unlinkSync(TEST_DB_FILE);
-}
-
-const { app, db } = require('./server');
+const { app, db, dbReady } = require('./server');
 const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+jest.setTimeout(30000);
 
-const closeDb = () => new Promise((resolve, reject) => {
-  db.close((error) => {
-    if (error) reject(error);
-    else resolve();
-  });
-});
-
-const createAgent = async (username = `user-${Date.now()}-${Math.random()}`) => {
+const createAgent = async (username = testUsername(`user-${Math.random()}`)) => {
   const agent = request.agent(app);
   const response = await agent
     .post('/api/signup')
@@ -46,29 +31,39 @@ const attachment = (name = 'notes.txt', data = 'hello') => ({
   size: Buffer.byteLength(data),
 });
 
+beforeAll(async () => {
+  await dbReady;
+});
+
 afterAll(async () => {
   warnSpy.mockRestore();
-  await closeDb();
-  if (fs.existsSync(TEST_DB_FILE)) {
-    fs.unlinkSync(TEST_DB_FILE);
+  try {
+    await db.query('DELETE FROM users WHERE username LIKE $1', [`${RUN_ID}%`]);
+  } catch (error) {
+    if (process.env.JEST_WORKER_ID) {
+      console.error('Test cleanup skipped:', error.message);
+    }
+  } finally {
+    await db.end();
   }
 });
 
 describe('Auth API', () => {
   test('signs up a new user and logs in successfully', async () => {
+    const username = testUsername('testuser');
     const signupResponse = await request(app)
       .post('/api/signup')
-      .send({ username: 'testuser', password: 'Password123!' });
+      .send({ username, password: 'Password123!' });
 
     expect(signupResponse.statusCode).toBe(200);
-    expect(signupResponse.body.user).toMatchObject({ username: 'testuser' });
+    expect(signupResponse.body.user).toMatchObject({ username });
 
     const loginResponse = await request(app)
       .post('/api/login')
-      .send({ username: 'testuser', password: 'Password123!' });
+      .send({ username, password: 'Password123!' });
 
     expect(loginResponse.statusCode).toBe(200);
-    expect(loginResponse.body.user).toMatchObject({ username: 'testuser' });
+    expect(loginResponse.body.user).toMatchObject({ username });
   });
 
   test('rejects signup without required fields', async () => {
@@ -81,11 +76,12 @@ describe('Auth API', () => {
   });
 
   test('rejects duplicate usernames', async () => {
-    await createAgent('duplicate-user');
+    const username = testUsername('duplicate-user');
+    await createAgent(username);
 
     const response = await request(app)
       .post('/api/signup')
-      .send({ username: 'duplicate-user', password: 'Password123!' });
+      .send({ username, password: 'Password123!' });
 
     expect(response.statusCode).toBe(409);
     expect(response.body).toHaveProperty('error', 'Username already exists');
@@ -101,11 +97,12 @@ describe('Auth API', () => {
   });
 
   test('rejects login with incorrect password for existing user', async () => {
-    await createAgent('existinguser');
+    const username = testUsername('existinguser');
+    await createAgent(username);
 
     const loginResponse = await request(app)
       .post('/api/login')
-      .send({ username: 'existinguser', password: 'WrongPass1!' });
+      .send({ username, password: 'WrongPass1!' });
 
     expect(loginResponse.statusCode).toBe(401);
     expect(loginResponse.body).toHaveProperty('error', 'Invalid credentials');
@@ -121,7 +118,7 @@ describe('Task API', () => {
   });
 
   test('creates and lists a task with rich text and an attachment', async () => {
-    const agent = await createAgent('task-owner');
+    const agent = await createAgent(testUsername('task-owner'));
     const file = attachment('plan.txt', 'project notes');
 
     const createResponse = await agent
@@ -154,7 +151,7 @@ describe('Task API', () => {
   });
 
   test('rejects task titles over 20 characters', async () => {
-    const agent = await createAgent('long-title-owner');
+    const agent = await createAgent(testUsername('long-title-owner'));
 
     const response = await agent
       .post('/api/tasks')
@@ -165,7 +162,7 @@ describe('Task API', () => {
   });
 
   test('rejects invalid attachment payloads', async () => {
-    const agent = await createAgent('bad-attachment-owner');
+    const agent = await createAgent(testUsername('bad-attachment-owner'));
 
     const response = await agent
       .post('/api/tasks')
@@ -184,7 +181,7 @@ describe('Task API', () => {
   });
 
   test('updates task fields while preserving the existing attachment', async () => {
-    const agent = await createAgent('preserve-attachment-owner');
+    const agent = await createAgent(testUsername('preserve-attachment-owner'));
 
     const createResponse = await agent
       .post('/api/tasks')
@@ -214,7 +211,7 @@ describe('Task API', () => {
   });
 
   test('replaces an attachment when editing a task', async () => {
-    const agent = await createAgent('replace-attachment-owner');
+    const agent = await createAgent(testUsername('replace-attachment-owner'));
 
     const createResponse = await agent
       .post('/api/tasks')
@@ -243,8 +240,8 @@ describe('Task API', () => {
   });
 
   test('deletes only tasks owned by the signed-in user', async () => {
-    const owner = await createAgent('delete-owner');
-    const otherUser = await createAgent('delete-other');
+    const owner = await createAgent(testUsername('delete-owner'));
+    const otherUser = await createAgent(testUsername('delete-other'));
 
     const createResponse = await owner
       .post('/api/tasks')
