@@ -38,7 +38,12 @@
             <div class="password-input-wrap">
               <input id="password" name="password" type="password" required />
               <button id="toggle-password" class="password-toggle" type="button" aria-label="Show password" aria-pressed="false">
-                <span class="password-icon password-icon-show" aria-hidden="true"></span>
+                <svg class="password-icon" viewBox="0 0 24 24" aria-hidden="true">
+                  <path class="password-lashes" d="M7 7.4 5.8 5.2M12 6.5V4M17 7.4l1.2-2.2" />
+                  <path class="password-eye" d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
+                  <circle class="password-eye-dot" cx="12" cy="12" r="3" />
+                  <path class="password-eye-slash" d="M4 20 20 4" />
+                </svg>
               </button>
             </div>
           </div>
