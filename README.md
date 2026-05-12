@@ -29,13 +29,13 @@ npm start
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=465
 SMTP_SECURE=true
-SMTP_USER=
-SMTP_PASS=
-MAIL_FROM=
-TASK_ALERT_TO=
+SMTP_USER=test@gmail.com
+SMTP_PASS= testpass
+MAIL_FROM=test@gmail.com
+TASK_ALERT_TO= test@gmail.com
 ```
 
-`TASK_ALERT_TO` defaults to `` if it is not set.
+`TASK_ALERT_TO` defaults to `test@gmail.com` if it is not set.
 
 4. To automatically star and label task alert emails in Gmail, create a Gmail filter in ``:
 

@@ -1332,17 +1332,18 @@ const hideStatusToast = () => {
   statusToast.classList.add('hidden');
 };
 
-const showStatusToast = (message) => {
+const showStatusToast = (message, tone = 'success') => {
   if (statusToastTimer) {
     clearTimeout(statusToastTimer);
   }
 
   statusToast.textContent = message;
+  statusToast.classList.toggle('status-toast-error', tone === 'error');
   statusToast.classList.remove('hidden');
   statusToastTimer = setTimeout(() => {
     hideStatusToast();
     statusToastTimer = null;
-  }, 2000);
+  }, tone === 'error' ? 3500 : 2000);
 };
 
 const setUploadProgress = (percent, message = t('uploadPleaseWait')) => {
@@ -1387,7 +1388,7 @@ const sendSummaryEmail = async () => {
     });
 
     if (result.error) {
-      alert(result.error);
+      showStatusToast(result.error, 'error');
       return;
     }
 
