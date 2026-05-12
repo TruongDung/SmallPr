@@ -646,7 +646,7 @@ const displayWeather = async (weather, lat, lng, locationName = '', timezone = '
       <div class="weather-icon">${icon}</div>
       <div class="weather-info">
         <div class="weather-location">${cityName}</div>
-        <div class="weather-temp">${tempF}°F <span>${tempC}°C</span></div>
+        <div class="weather-temp">${tempF}°F <span>/ ${tempC}°C</span></div>
         <div class="weather-humidity">${t('humidity')}: ${humidity}%</div>
       </div>
       <div class="weather-time">
