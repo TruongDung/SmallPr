@@ -33,13 +33,17 @@ const editTaskTitle = document.getElementById('edit-task-title');
 const editTaskTitleInput = document.getElementById('edit-task-title-input');
 const editTaskDescriptionInput = document.getElementById('edit-task-description-input');
 const editTaskReminderInput = document.getElementById('edit-task-reminder-input');
+const editTaskAttachmentInput = document.getElementById('edit-task-attachment-input');
+const editCurrentAttachment = document.getElementById('edit-current-attachment');
 const editTitleError = document.getElementById('edit-title-error');
 const editDescriptionError = document.getElementById('edit-description-error');
+const editAttachmentError = document.getElementById('edit-attachment-error');
 const editFormError = document.getElementById('edit-form-error');
 const cancelEditTask = document.getElementById('cancel-edit-task');
 const previewTaskModal = document.getElementById('preview-task-modal');
 const previewTaskTitle = document.getElementById('preview-task-title');
 const previewTaskDescription = document.getElementById('preview-task-description');
+const editPreviewTask = document.getElementById('edit-preview-task');
 const closePreviewTask = document.getElementById('close-preview-task');
 const statusToast = document.getElementById('status-toast');
 const uploadProgressOverlay = document.getElementById('upload-progress-overlay');
@@ -59,8 +63,10 @@ let weatherClockTimer = null;
 let pendingDeleteTaskId = null;
 let pendingDeleteUser = null;
 let pendingEditTask = null;
+let pendingPreviewTask = null;
 let statusToastTimer = null;
 let preparedAttachment = null;
+let preparedEditAttachment = null;
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 
 const translations = {
@@ -291,11 +297,13 @@ const applyTranslations = () => {
   setText('#task-form button[type="submit"]', t('addTask'));
   editTaskTitle.textContent = t('editTaskTitle');
   previewTaskTitle.textContent = t('previewTaskTitle');
+  editPreviewTask.textContent = t('edit');
   closePreviewTask.textContent = t('close');
   setText('label[for="edit-task-title-input"]', `${t('title')} ${t('max20')}`);
   setText('label[for="edit-task-description-input"]', `${t('description')} ${t('max500')}`);
   editTaskDescriptionInput.setAttribute('data-placeholder', t('descriptionPlaceholder'));
   setText('label[for="edit-task-reminder-input"]', t('dateTimeAlert'));
+  setText('label[for="edit-task-attachment-input"]', t('uploadFile'));
   cancelEditTask.textContent = t('cancel');
   setText('#save-edit-task', t('save'));
   setText('#admin-section h2', t('manageUsers'));
@@ -454,6 +462,33 @@ const handleTaskAttachmentChange = async () => {
     taskAttachmentInput.value = '';
     attachmentError.textContent = error.message;
     attachmentError.classList.remove('hidden');
+  } finally {
+    setTimeout(hideUploadProgress, 250);
+  }
+};
+
+const handleEditTaskAttachmentChange = async () => {
+  editAttachmentError.classList.add('hidden');
+  preparedEditAttachment = null;
+
+  const attachmentFile = editTaskAttachmentInput.files[0] || null;
+  if (!attachmentFile) return;
+
+  if (attachmentFile.size > MAX_ATTACHMENT_BYTES) {
+    editTaskAttachmentInput.value = '';
+    editAttachmentError.textContent = t('attachmentTooLarge');
+    editAttachmentError.classList.remove('hidden');
+    return;
+  }
+
+  try {
+    showUploadProgress();
+    preparedEditAttachment = await readAttachmentFile(attachmentFile, setUploadProgress);
+    setUploadProgress(100);
+  } catch (error) {
+    editTaskAttachmentInput.value = '';
+    editAttachmentError.textContent = error.message;
+    editAttachmentError.classList.remove('hidden');
   } finally {
     setTimeout(hideUploadProgress, 250);
   }
@@ -1155,15 +1190,31 @@ const formatDateTimeLocalValue = (dateString) => {
 const clearEditTaskErrors = () => {
   editTitleError.classList.add('hidden');
   editDescriptionError.classList.add('hidden');
+  editAttachmentError.classList.add('hidden');
   editFormError.classList.add('hidden');
 };
 
 const showEditTaskModal = (task) => {
   pendingEditTask = task;
+  preparedEditAttachment = null;
   clearEditTaskErrors();
   editTaskTitleInput.value = task.title;
   setRichEditorValue(editTaskDescriptionInput, task.description || '');
   editTaskReminderInput.value = formatDateTimeLocalValue(task.reminder_at);
+  editTaskAttachmentInput.value = '';
+
+  if (task.attachment_data && task.attachment_name) {
+    editCurrentAttachment.href = task.attachment_data;
+    editCurrentAttachment.download = task.attachment_name;
+    editCurrentAttachment.textContent = `${t('attachment')}: ${task.attachment_name}`;
+    editCurrentAttachment.classList.remove('hidden');
+  } else {
+    editCurrentAttachment.removeAttribute('href');
+    editCurrentAttachment.removeAttribute('download');
+    editCurrentAttachment.textContent = '';
+    editCurrentAttachment.classList.add('hidden');
+  }
+
   editTaskModal.classList.remove('hidden');
   editTaskTitleInput.focus();
   editTaskTitleInput.select();
@@ -1171,8 +1222,13 @@ const showEditTaskModal = (task) => {
 
 const hideEditTaskModal = () => {
   pendingEditTask = null;
+  preparedEditAttachment = null;
   editTaskForm.reset();
   editTaskDescriptionInput.innerHTML = '';
+  editCurrentAttachment.removeAttribute('href');
+  editCurrentAttachment.removeAttribute('download');
+  editCurrentAttachment.textContent = '';
+  editCurrentAttachment.classList.add('hidden');
   clearEditTaskErrors();
   editTaskModal.classList.add('hidden');
 };
@@ -1186,6 +1242,7 @@ const handleEditTaskSubmit = async (event) => {
   const title = editTaskTitleInput.value.trim();
   const description = getRichEditorValue(editTaskDescriptionInput);
   const reminderAt = editTaskReminderInput.value || null;
+  const attachmentFile = editTaskAttachmentInput.files[0] || null;
 
   if (!title.trim()) {
     editFormError.textContent = t('titleEmpty');
@@ -1205,14 +1262,32 @@ const handleEditTaskSubmit = async (event) => {
     return;
   }
 
+  if (attachmentFile && attachmentFile.size > MAX_ATTACHMENT_BYTES) {
+    editAttachmentError.textContent = t('attachmentTooLarge');
+    editAttachmentError.classList.remove('hidden');
+    return;
+  }
+
+  if (attachmentFile && !preparedEditAttachment) {
+    editAttachmentError.textContent = t('attachmentNotReady');
+    editAttachmentError.classList.remove('hidden');
+    return;
+  }
+
   const task = pendingEditTask;
-  hideEditTaskModal();
-  await updateTask(task.id, {
+  const updates = {
     title,
     description,
     completed: task.completed,
     reminder_at: reminderAt
-  });
+  };
+
+  if (preparedEditAttachment) {
+    updates.attachment = preparedEditAttachment;
+  }
+
+  hideEditTaskModal();
+  await updateTask(task.id, updates);
 };
 
 cancelEditTask.addEventListener('click', hideEditTaskModal);
@@ -1224,17 +1299,26 @@ editTaskModal.addEventListener('click', (event) => {
 });
 
 const showPreviewTaskModal = (task) => {
+  pendingPreviewTask = task;
   previewTaskDescription.innerHTML = task.description
     ? sanitizeRichText(task.description)
     : t('noDescription');
   previewTaskModal.classList.remove('hidden');
-  closePreviewTask.focus();
+  editPreviewTask.focus();
 };
 
 const hidePreviewTaskModal = () => {
+  pendingPreviewTask = null;
   previewTaskModal.classList.add('hidden');
   previewTaskDescription.textContent = '';
 };
+
+editPreviewTask.addEventListener('click', () => {
+  if (!pendingPreviewTask) return;
+  const task = pendingPreviewTask;
+  hidePreviewTaskModal();
+  showEditTaskModal(task);
+});
 
 closePreviewTask.addEventListener('click', hidePreviewTaskModal);
 
@@ -1458,6 +1542,7 @@ showSignup.addEventListener('click', () => setMode('signup'));
 languageSelect.addEventListener('change', (event) => setLanguage(event.target.value));
 togglePasswordButton.addEventListener('click', togglePasswordVisibility);
 taskAttachmentInput.addEventListener('change', handleTaskAttachmentChange);
+editTaskAttachmentInput.addEventListener('change', handleEditTaskAttachmentChange);
 authForm.addEventListener('submit', handleAuthSubmit);
 taskForm.addEventListener('submit', handleTaskSubmit);
 editTaskForm.addEventListener('submit', handleEditTaskSubmit);

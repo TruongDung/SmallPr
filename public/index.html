@@ -169,6 +169,12 @@
           <label for="edit-task-reminder-input">Date Time Alert</label>
           <input id="edit-task-reminder-input" type="datetime-local" />
         </div>
+        <div class="field">
+          <label for="edit-task-attachment-input">Upload File</label>
+          <a id="edit-current-attachment" class="task-attachment hidden"></a>
+          <input id="edit-task-attachment-input" type="file" />
+          <p id="edit-attachment-error" class="field-error hidden"></p>
+        </div>
         <p id="edit-form-error" class="field-error hidden"></p>
         <div class="modal-actions">
           <button id="cancel-edit-task" type="button" class="secondary">Cancel</button>
@@ -183,6 +189,7 @@
       <h3 id="preview-task-title">Preview</h3>
       <div id="preview-task-description" class="preview-task-description"></div>
       <div class="modal-actions">
+        <button id="edit-preview-task" type="button">Edit</button>
         <button id="close-preview-task" type="button" class="secondary">Close</button>
       </div>
     </div>

@@ -553,7 +553,8 @@ app.post('/api/tasks', authRequired, async (req, res) => {
 
 app.put('/api/tasks/:id', authRequired, async (req, res) => {
   const { id } = req.params;
-  const { title, description, completed, time_spent_minutes, reminder_at } = req.body;
+  const { title, description, completed, time_spent_minutes, reminder_at, attachment } = req.body;
+  const hasAttachmentUpdate = Object.prototype.hasOwnProperty.call(req.body, 'attachment');
 
   try {
     const task = await getAsync('SELECT * FROM tasks WHERE id = ? AND user_id = ?', [id, req.session.userId]);
@@ -570,14 +571,38 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
       return res.status(400).json({ error: 'Task description must be 5000 characters or less' });
     }
 
+    let parsedAttachment = null;
+    if (hasAttachmentUpdate) {
+      try {
+        parsedAttachment = parseAttachment(attachment);
+      } catch (attachmentError) {
+        return res.status(400).json({ error: attachmentError.message });
+      }
+    }
+
     await runAsync(
-      `UPDATE tasks SET title = ?, description = ?, completed = ?, time_spent_minutes = ?, reminder_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?`,
+      `UPDATE tasks SET
+        title = ?,
+        description = ?,
+        completed = ?,
+        time_spent_minutes = ?,
+        reminder_at = ?,
+        attachment_name = ?,
+        attachment_type = ?,
+        attachment_data = ?,
+        attachment_size = ?,
+        updated_at = CURRENT_TIMESTAMP
+       WHERE id = ? AND user_id = ?`,
       [
         title || task.title,
         description !== undefined ? description : task.description,
-        completed ? 1 : 0,
+        completed !== undefined ? (completed ? 1 : 0) : task.completed,
         time_spent_minutes !== undefined ? time_spent_minutes : task.time_spent_minutes,
         reminder_at !== undefined ? reminder_at || null : task.reminder_at,
+        hasAttachmentUpdate ? parsedAttachment?.name || null : task.attachment_name,
+        hasAttachmentUpdate ? parsedAttachment?.type || null : task.attachment_type,
+        hasAttachmentUpdate ? parsedAttachment?.data || null : task.attachment_data,
+        hasAttachmentUpdate ? parsedAttachment?.size || 0 : task.attachment_size,
         id,
         req.session.userId
       ]

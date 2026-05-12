@@ -462,6 +462,10 @@ button.danger {
   border-color: var(--primary);
 }
 
+.field .task-attachment {
+  margin-bottom: 10px;
+}
+
 .task-reminder {
   font-weight: 600;
 }
