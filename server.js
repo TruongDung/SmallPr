@@ -12,6 +12,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const DB_FILE = process.env.DB_FILE || '/tmp/data.db';
 const TASK_ALERT_TO = process.env.TASK_ALERT_TO;
+const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 
 if (!fs.existsSync(path.dirname(DB_FILE))) {
   fs.mkdirSync(path.dirname(DB_FILE), { recursive: true });
@@ -57,6 +58,22 @@ db.serialize(() => {
         }
       });
     }
+
+    [
+      ['attachment_name', 'TEXT'],
+      ['attachment_type', 'TEXT'],
+      ['attachment_data', 'TEXT'],
+      ['attachment_size', 'INTEGER DEFAULT 0'],
+    ].forEach(([name, definition]) => {
+      const hasColumn = columns.some((column) => column.name === name);
+      if (!hasColumn) {
+        db.run(`ALTER TABLE tasks ADD COLUMN ${name} ${definition}`, (alterErr) => {
+          if (alterErr) {
+            console.error(`Error adding ${name} column:`, alterErr);
+          }
+        });
+      }
+    });
   });
 
   // Create default admin user if not exists
@@ -143,6 +160,27 @@ const stripHtml = (value = '') => String(value)
   .replace(/\n{3,}/g, '\n\n')
   .trim();
 
+const sanitizeFileName = (name = '') => path.basename(String(name)).replace(/[<>:"/\\|?*\u0000-\u001F]/g, '_').slice(0, 180);
+
+const parseAttachment = (attachment) => {
+  if (!attachment) return null;
+
+  const name = sanitizeFileName(attachment.name);
+  const data = String(attachment.data || '');
+  const type = String(attachment.type || 'application/octet-stream').slice(0, 120);
+  const size = Number(attachment.size) || 0;
+
+  if (!name || !data.startsWith('data:')) {
+    throw new Error('Invalid attachment');
+  }
+
+  if (size > MAX_ATTACHMENT_BYTES || Buffer.byteLength(data, 'utf8') > MAX_ATTACHMENT_BYTES * 1.5) {
+    throw new Error('File must be 5 MB or less');
+  }
+
+  return { name, type, data, size };
+};
+
 const sendTaskAlertEmail = async (task, user) => {
   const transporter = createMailTransporter();
   if (!transporter) {
@@ -174,6 +212,7 @@ const sendTaskAlertEmail = async (task, user) => {
       '',
       `Title: ${task.title}`,
       `Description: ${stripHtml(task.description) || 'No description provided.'}`,
+      `Attachment: ${task.attachment_name || 'No attachment'}`,
       `Date time alert: ${reminder}`,
       `Created: ${task.created_at}`,
     ].join('\n'),
@@ -195,6 +234,7 @@ const sendTaskSummaryEmail = async (tasks, user) => {
     ? tasks.flatMap((task, index) => [
         `${index + 1}. ${task.title}`,
         `Description: ${stripHtml(task.description) || 'No description provided.'}`,
+        `Attachment: ${task.attachment_name || 'No attachment'}`,
         `Status: ${task.completed ? 'Completed' : 'Open'}`,
         `Date time alert: ${task.reminder_at ? new Date(task.reminder_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'Not set'}`,
         `Created: ${task.created_at}`,
@@ -221,7 +261,7 @@ const sendTaskSummaryEmail = async (tasks, user) => {
   return true;
 };
 
-app.use(express.json());
+app.use(express.json({ limit: '8mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(
   session({
@@ -456,7 +496,7 @@ app.post('/api/tasks/send-email', authRequired, async (req, res) => {
 });
 
 app.post('/api/tasks', authRequired, async (req, res) => {
-  const { title, description, time_spent_minutes, reminder_at } = req.body;
+  const { title, description, time_spent_minutes, reminder_at, attachment } = req.body;
   if (!title) {
     return res.status(400).json({ error: 'Task title is required' });
   }
@@ -469,10 +509,30 @@ app.post('/api/tasks', authRequired, async (req, res) => {
     return res.status(400).json({ error: 'Task description must be 5000 characters or less' });
   }
 
+  let parsedAttachment = null;
+  try {
+    parsedAttachment = parseAttachment(attachment);
+  } catch (attachmentError) {
+    return res.status(400).json({ error: attachmentError.message });
+  }
+
   try {
     const result = await runAsync(
-      'INSERT INTO tasks (user_id, title, description, completed, time_spent_minutes, reminder_at) VALUES (?, ?, ?, 0, ?, ?)',
-      [req.session.userId, title, description || '', time_spent_minutes || 0, reminder_at || null]
+      `INSERT INTO tasks (
+        user_id, title, description, completed, time_spent_minutes, reminder_at,
+        attachment_name, attachment_type, attachment_data, attachment_size
+      ) VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?)`,
+      [
+        req.session.userId,
+        title,
+        description || '',
+        time_spent_minutes || 0,
+        reminder_at || null,
+        parsedAttachment?.name || null,
+        parsedAttachment?.type || null,
+        parsedAttachment?.data || null,
+        parsedAttachment?.size || 0,
+      ]
     );
     const task = await getAsync('SELECT * FROM tasks WHERE id = ?', [result.lastID]);
     const user = await getUserById(req.session.userId);

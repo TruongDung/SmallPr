@@ -18,6 +18,7 @@ const exportExcelButton = document.getElementById('export-excel');
 const exportPdfButton = document.getElementById('export-pdf');
 const exportWordButton = document.getElementById('export-word');
 const taskReminderInput = document.getElementById('task-reminder');
+const taskAttachmentInput = document.getElementById('task-attachment');
 const passwordInput = document.getElementById('password');
 const togglePasswordButton = document.getElementById('toggle-password');
 const deleteConfirmModal = document.getElementById('delete-confirm-modal');
@@ -49,6 +50,7 @@ let pendingDeleteTaskId = null;
 let pendingDeleteUser = null;
 let pendingEditTask = null;
 let statusToastTimer = null;
+const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 
 const translations = {
   en: {
@@ -73,6 +75,7 @@ const translations = {
     descriptionPlaceholder: 'Write notes, lists, and details here...',
     max500: '(max 5000 characters)',
     dateTimeAlert: 'Date Time Alert',
+    uploadFile: 'Upload File',
     addTask: 'Add Task',
     manageUsers: 'Manage Users',
     addUser: 'Add User',
@@ -89,6 +92,8 @@ const translations = {
     titleRequired: 'Title is required',
     titleTooLong: 'Title must be 20 characters or less',
     descriptionTooLong: 'Description must be 5000 characters or less',
+    attachmentTooLarge: 'File must be 5 MB or less',
+    attachment: 'Attachment',
     noTasks: 'No tasks yet. Add your first task!',
     noRecords: 'No records in this column.',
     recordsWithAlert: 'Records with Alert date',
@@ -155,6 +160,7 @@ const translations = {
     descriptionPlaceholder: 'Nhập ghi chú, danh sách và chi tiết tại đây...',
     max500: '(tối đa 5000 ký tự)',
     dateTimeAlert: 'Ngày giờ nhắc',
+    uploadFile: 'Tải tệp lên',
     addTask: 'Thêm công việc',
     manageUsers: 'Quản lý người dùng',
     addUser: 'Thêm người dùng',
@@ -171,6 +177,8 @@ const translations = {
     titleRequired: 'Vui lòng nhập tiêu đề',
     titleTooLong: 'Tiêu đề phải từ 20 ký tự trở xuống',
     descriptionTooLong: 'Mô tả phải từ 5000 ký tự trở xuống',
+    attachmentTooLarge: 'Tệp phải từ 5 MB trở xuống',
+    attachment: 'Tệp đính kèm',
     noTasks: 'Chưa có công việc. Hãy thêm công việc đầu tiên!',
     noRecords: 'Không có bản ghi trong cột này.',
     recordsWithAlert: 'Bản ghi có ngày nhắc',
@@ -254,6 +262,7 @@ const applyTranslations = () => {
   setText('label[for="task-description"]', `${t('description')} ${t('max500')}`);
   document.getElementById('task-description').setAttribute('data-placeholder', t('descriptionPlaceholder'));
   setText('label[for="task-reminder"]', t('dateTimeAlert'));
+  setText('label[for="task-attachment"]', t('uploadFile'));
   setText('#task-form button[type="submit"]', t('addTask'));
   editTaskTitle.textContent = t('editTaskTitle');
   setText('label[for="edit-task-title-input"]', `${t('title')} ${t('max20')}`);
@@ -370,6 +379,25 @@ const setupRichTextEditors = () => {
     });
   });
 };
+
+const readAttachmentFile = (file) => new Promise((resolve, reject) => {
+  if (!file) {
+    resolve(null);
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    resolve({
+      name: file.name,
+      type: file.type || 'application/octet-stream',
+      data: reader.result,
+      size: file.size,
+    });
+  };
+  reader.onerror = () => reject(new Error('Unable to read attachment'));
+  reader.readAsDataURL(file);
+});
 
 const getReminderStorageKey = (task) => `task-reminder-alerted-${task.id}-${task.reminder_at}`;
 
@@ -781,14 +809,17 @@ const handleTaskSubmit = async (event) => {
   const descriptionEditor = document.getElementById('task-description');
   const description = getRichEditorValue(descriptionEditor);
   const reminder_at = taskReminderInput.value || null;
+  const attachmentFile = taskAttachmentInput.files[0] || null;
   
   const titleError = document.getElementById('title-error');
   const descriptionError = document.getElementById('description-error');
+  const attachmentError = document.getElementById('attachment-error');
   const formError = document.getElementById('form-error');
   
   // Clear previous errors
   titleError.classList.add('hidden');
   descriptionError.classList.add('hidden');
+  attachmentError.classList.add('hidden');
   formError.classList.add('hidden');
 
   // Validation
@@ -810,9 +841,17 @@ const handleTaskSubmit = async (event) => {
     return;
   }
 
+  if (attachmentFile && attachmentFile.size > MAX_ATTACHMENT_BYTES) {
+    attachmentError.textContent = t('attachmentTooLarge');
+    attachmentError.classList.remove('hidden');
+    return;
+  }
+
+  const attachment = await readAttachmentFile(attachmentFile);
+
   const result = await request('/api/tasks', {
     method: 'POST',
-    body: JSON.stringify({ title, description, reminder_at }),
+    body: JSON.stringify({ title, description, reminder_at, attachment }),
   });
 
   if (result.task) {
@@ -821,6 +860,7 @@ const handleTaskSubmit = async (event) => {
     descriptionEditor.innerHTML = '';
     titleError.classList.add('hidden');
     descriptionError.classList.add('hidden');
+    attachmentError.classList.add('hidden');
     formError.classList.add('hidden');
     loadTasks();
   }
@@ -913,6 +953,14 @@ const createTaskCard = (task) => {
       ? `${t('alert')}: ${formatLocalDateTime(task.reminder_at)}`
       : t('alertNotSet');
 
+    const attachment = document.createElement('a');
+    if (task.attachment_data && task.attachment_name) {
+      attachment.className = 'task-attachment';
+      attachment.href = task.attachment_data;
+      attachment.download = task.attachment_name;
+      attachment.textContent = `${t('attachment')}: ${task.attachment_name}`;
+    }
+
     const actions = document.createElement('div');
     actions.className = 'task-actions';
 
@@ -930,7 +978,11 @@ const createTaskCard = (task) => {
     deleteButton.addEventListener('click', () => showDeleteConfirm(task.id));
 
     actions.append(toggleButton, editButton, deleteButton);
-    card.append(meta, description, datetime, reminder, actions);
+    card.append(meta, description, datetime, reminder);
+    if (attachment.href) {
+      card.append(attachment);
+    }
+    card.append(actions);
     return card;
 };
 
@@ -1138,6 +1190,7 @@ const exportToExcel = () => {
     [t('exportDate')]: currentDateTime,
     [t('title')]: task.title,
     [t('description')]: getRichTextPlainText(task.description),
+    [t('attachment')]: task.attachment_name || '',
     [t('completed')]: task.completed ? t('yes') : t('no'),
     [t('dateTimeAlert')]: task.reminder_at ? formatLocalDateTime(task.reminder_at) : '',
     [t('created')]: formatDateEST(task.created_at),
@@ -1167,6 +1220,8 @@ const exportToPdf = () => {
     doc.text(`${t('title')}: ${task.title}`, 20, y);
     y += 10;
     doc.text(`${t('description')}: ${getRichTextPlainText(task.description) || t('notAvailable')}`, 20, y);
+    y += 10;
+    doc.text(`${t('attachment')}: ${task.attachment_name || t('notAvailable')}`, 20, y);
     y += 10;
     doc.text(`${t('completed')}: ${task.completed ? t('yes') : t('no')}`, 20, y);
     y += 10;
@@ -1224,6 +1279,11 @@ const exportToWord = async () => {
           new Paragraph({
             children: [
               new TextRun(`${t('description')}: ${getRichTextPlainText(task.description) || t('notAvailable')}`)
+            ]
+          }),
+          new Paragraph({
+            children: [
+              new TextRun(`${t('attachment')}: ${task.attachment_name || t('notAvailable')}`)
             ]
           }),
           new Paragraph({

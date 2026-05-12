@@ -121,6 +121,22 @@ textarea,
   background: var(--surface);
 }
 
+input[type="file"] {
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #f8fafc;
+  color: var(--text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .password-input-wrap {
   position: relative;
 }
@@ -414,6 +430,26 @@ button.danger {
 
 .task-description :last-child {
   margin-bottom: 0;
+}
+
+.task-attachment {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #f8fafc;
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.task-attachment:hover {
+  border-color: var(--primary);
 }
 
 .task-reminder {
