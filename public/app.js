@@ -879,6 +879,7 @@ const renderUserArea = () => {
   const welcome = document.createElement('span');
   welcome.textContent = t('welcome', { username: currentUser.username });
   userArea.append(welcome);
+  logoutButton.className = 'secondary';
 
   if (currentUser.username === 'admin') {
     const tasksButton = document.createElement('button');
@@ -901,6 +902,8 @@ const renderUserArea = () => {
 
     userArea.append(tasksButton, adminButton);
   }
+
+  userArea.append(logoutButton);
 };
 
 const setMode = (mode) => {
