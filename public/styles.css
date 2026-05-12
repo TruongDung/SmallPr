@@ -657,6 +657,13 @@ button.danger {
   font-weight: 700;
 }
 
+.weather-temp span {
+  margin-left: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  opacity: 0.9;
+}
+
 .weather-humidity {
   font-size: 14px;
   opacity: 0.85;

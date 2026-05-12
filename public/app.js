@@ -636,7 +636,8 @@ const displayWeather = async (weather, lat, lng, locationName = '', timezone = '
   const cityName = locationName || await getCurrentCityName(lat, lng);
   
   const icon = getWeatherIcon(weather.weather_code);
-  const temp = Math.round(weather.temperature_2m);
+  const tempF = Math.round(weather.temperature_2m);
+  const tempC = Math.round((tempF - 32) * 5 / 9);
   const humidity = weather.relative_humidity_2m;
   const currentTime = getCurrentTimeForTimezone(timezone);
   
@@ -645,7 +646,7 @@ const displayWeather = async (weather, lat, lng, locationName = '', timezone = '
       <div class="weather-icon">${icon}</div>
       <div class="weather-info">
         <div class="weather-location">${cityName}</div>
-        <div class="weather-temp">${temp}°F</div>
+        <div class="weather-temp">${tempF}°F <span>${tempC}°C</span></div>
         <div class="weather-humidity">${t('humidity')}: ${humidity}%</div>
       </div>
       <div class="weather-time">
