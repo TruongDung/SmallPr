@@ -18,6 +18,8 @@ const exportExcelButton = document.getElementById('export-excel');
 const exportPdfButton = document.getElementById('export-pdf');
 const exportWordButton = document.getElementById('export-word');
 const taskReminderInput = document.getElementById('task-reminder');
+const passwordInput = document.getElementById('password');
+const togglePasswordButton = document.getElementById('toggle-password');
 const deleteConfirmModal = document.getElementById('delete-confirm-modal');
 const deleteConfirmTitle = document.getElementById('delete-confirm-title');
 const deleteConfirmMessage = document.getElementById('delete-confirm-message');
@@ -56,6 +58,8 @@ const translations = {
     signup: 'Sign Up',
     username: 'Username',
     password: 'Password',
+    showPassword: 'Show password',
+    hidePassword: 'Hide password',
     submit: 'Submit',
     yourTasks: 'Your Tasks',
     sendEmail: 'Send Email',
@@ -136,6 +140,8 @@ const translations = {
     signup: 'Đăng ký',
     username: 'Tên đăng nhập',
     password: 'Mật khẩu',
+    showPassword: 'Hiện mật khẩu',
+    hidePassword: 'Ẩn mật khẩu',
     submit: 'Gửi',
     yourTasks: 'Công việc của bạn',
     sendEmail: 'Gửi Email',
@@ -233,6 +239,10 @@ const applyTranslations = () => {
   showSignup.textContent = t('signup');
   setText('label[for="username"]', t('username'));
   setText('label[for="password"]', t('password'));
+  togglePasswordButton.setAttribute(
+    'aria-label',
+    passwordInput.type === 'password' ? t('showPassword') : t('hidePassword')
+  );
   setText('#auth-form button[type="submit"]', t('submit'));
   setText('#task-section h2', t('yourTasks'));
   sendSummaryEmailButton.textContent = t('sendEmail');
@@ -601,6 +611,13 @@ const setLanguage = (language) => {
   localStorage.setItem('task-manager-language', language);
   languageSelect.value = language;
   applyTranslations();
+};
+
+const togglePasswordVisibility = () => {
+  const isHidden = passwordInput.type === 'password';
+  passwordInput.type = isHidden ? 'text' : 'password';
+  togglePasswordButton.setAttribute('aria-pressed', String(isHidden));
+  togglePasswordButton.setAttribute('aria-label', isHidden ? t('hidePassword') : t('showPassword'));
 };
 
 const request = async (url, options = {}) => {
@@ -1246,6 +1263,7 @@ const exportToWord = async () => {
 showLogin.addEventListener('click', () => setMode('login'));
 showSignup.addEventListener('click', () => setMode('signup'));
 languageSelect.addEventListener('change', (event) => setLanguage(event.target.value));
+togglePasswordButton.addEventListener('click', togglePasswordVisibility);
 authForm.addEventListener('submit', handleAuthSubmit);
 taskForm.addEventListener('submit', handleTaskSubmit);
 editTaskForm.addEventListener('submit', handleEditTaskSubmit);

@@ -34,7 +34,12 @@
           </div>
           <div class="field">
             <label for="password">Password</label>
-            <input id="password" name="password" type="password" required />
+            <div class="password-input-wrap">
+              <input id="password" name="password" type="password" required />
+              <button id="toggle-password" class="password-toggle" type="button" aria-label="Show password" aria-pressed="false">
+                <span class="password-icon password-icon-show" aria-hidden="true"></span>
+              </button>
+            </div>
           </div>
           <button type="submit">Submit</button>
           <p id="auth-message" class="message"></p>

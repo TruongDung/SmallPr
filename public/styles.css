@@ -121,6 +121,67 @@ textarea,
   background: var(--surface);
 }
 
+.password-input-wrap {
+  position: relative;
+}
+
+.password-input-wrap input {
+  padding-right: 48px;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  transform: translateY(-50%);
+}
+
+.password-toggle:hover {
+  background: #f3f4f6;
+  color: var(--text);
+}
+
+.password-icon {
+  position: relative;
+  width: 20px;
+  height: 13px;
+  border: 2px solid currentColor;
+  border-radius: 50% / 60%;
+}
+
+.password-icon::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  transform: translate(-50%, -50%);
+}
+
+.password-toggle[aria-pressed="true"] .password-icon::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: -3px;
+  width: 26px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  transform: rotate(-35deg);
+}
+
 textarea {
   min-height: 100px;
   resize: vertical;
