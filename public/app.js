@@ -174,6 +174,7 @@ const translations = {
     markOpen: 'Mark Open',
     markDone: 'Mark Done',
     preview: 'Preview',
+    viewingTask: 'Viewing task',
     previewTaskTitle: 'Preview',
     close: 'Close',
     edit: 'Edit',
@@ -300,6 +301,7 @@ const translations = {
     markOpen: 'Mở lại',
     markDone: 'Đánh dấu xong',
     preview: 'Xem trước',
+    viewingTask: 'Đang xem công việc',
     previewTaskTitle: 'Xem trước',
     close: 'Đóng',
     edit: 'Sửa',
@@ -1410,7 +1412,7 @@ const handleTaskSubmit = async (event) => {
   try {
     const result = await request('/api/tasks', {
       method: 'POST',
-      body: JSON.stringify({ title, tag, description, priority, status, reminder_at, attachment: preparedAttachment }),
+      body: JSON.stringify({ title, tag, description, priority, status, reminder_at, attachment: preparedAttachment, language: currentLanguage }),
     });
 
     if (result.error) {
@@ -1535,6 +1537,7 @@ const createTaskCard = (task) => {
     card.draggable = !isArchived;
     card.dataset.taskId = task.id;
     card.dataset.status = currentStatus;
+    card.tabIndex = 0;
     if (!isArchived) {
       card.addEventListener('dragstart', handleTaskDragStart);
       card.addEventListener('dragend', handleTaskDragEnd);
@@ -1590,6 +1593,30 @@ const createTaskCard = (task) => {
     const actions = document.createElement('div');
     actions.className = 'task-actions';
 
+    const hoverMessage = document.createElement('div');
+    hoverMessage.className = 'task-hover-popover';
+    hoverMessage.setAttribute('role', 'status');
+
+    const hoverTitle = document.createElement('strong');
+    hoverTitle.textContent = t('viewingTask');
+    hoverMessage.append(hoverTitle);
+
+    const addHoverDetail = (label, value) => {
+      const row = document.createElement('p');
+      const labelElement = document.createElement('span');
+      labelElement.textContent = `${label}: `;
+      row.append(labelElement, document.createTextNode(value));
+      hoverMessage.append(row);
+    };
+
+    addHoverDetail(t('title'), task.title);
+    addHoverDetail(t('tag'), task.tag || t('notAvailable'));
+    addHoverDetail(t('priority'), priorityLabel(task.priority));
+    addHoverDetail(t('status'), statusLabel(currentStatus));
+    addHoverDetail(t('description'), getRichTextPlainText(task.description) || t('noDescription'));
+    addHoverDetail(t('dateTimeAlert'), task.reminder_at ? formatLocalDateTime(task.reminder_at) : t('notAvailable'));
+    addHoverDetail(t('created'), formatDateEST(task.created_at));
+
     const toggleButton = document.createElement('button');
     toggleButton.textContent = currentStatus === 'done' ? t('markOpen') : t('markDone');
     toggleButton.addEventListener('click', () => updateTask(task.id, { status: currentStatus === 'done' ? 'todo' : 'done' }));
@@ -1618,7 +1645,7 @@ const createTaskCard = (task) => {
       actions.append(previewButton);
     }
     actions.append(editButton, archiveButton, deleteButton);
-    card.append(meta, description, datetime, reminder);
+    card.append(hoverMessage, meta, description, datetime, reminder);
     if (attachment.href) {
       card.append(attachment);
     }
@@ -1964,6 +1991,7 @@ const sendSummaryEmail = async () => {
   try {
     const result = await request('/api/tasks/send-email', {
       method: 'POST',
+      body: JSON.stringify({ language: currentLanguage }),
     });
 
     if (result.error) {

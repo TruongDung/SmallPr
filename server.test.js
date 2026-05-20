@@ -440,24 +440,36 @@ describe('Task API', () => {
         description: '<p>Review & ship</p>',
         reminder_at: '2026-05-13T09:30',
       });
+    await agent
+      .post('/api/tasks')
+      .send({
+        title: 'Todo email',
+        tag: 'Client',
+        priority: 'medium',
+      });
 
     process.env.SMTP_HOST = 'smtp.test.local';
     process.env.SMTP_USER = 'sender@test.local';
     process.env.SMTP_PASS = 'secret';
     mockSendMail.mockClear();
 
-    const response = await agent.post('/api/tasks/send-email');
+    const response = await agent
+      .post('/api/tasks/send-email')
+      .send({ language: 'vi' });
 
     expect(response.statusCode).toBe(200);
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     const mailOptions = mockSendMail.mock.calls[0][0];
     expect(mailOptions.html).toContain('<table');
-    expect(mailOptions.html).toContain('<th style="border:1px solid #d1d5db;padding:8px;background:#f3f4f6;text-align:left;">Title</th>');
+    expect(mailOptions.subject).toBe('Tóm tắt công việc');
+    expect(mailOptions.html).toContain('<th style="border:1px solid #d1d5db;padding:8px;background:#f3f4f6;text-align:left;">Tiêu đề</th>');
     expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Email table</td>');
     expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Client</td>');
+    expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Cần làm</td>');
     expect(mailOptions.html).toContain('Review &amp; ship');
-    expect(mailOptions.text).toContain('#\tTitle\tTag\tPriority\tStatus\tDescription\tAttachment\tDate time alert\tCreated');
-    expect(mailOptions.text).toContain('Email table\tClient\thigh\tin_progress\tReview & ship');
+    expect(mailOptions.text).toContain('#\tTiêu đề\tNhãn\tƯu tiên\tTrạng thái\tMô tả\tTệp đính kèm\tNgày giờ nhắc\tĐã tạo');
+    expect(mailOptions.text).toContain('Email table\tClient\tCao\tĐang làm\tReview & ship');
+    expect(mailOptions.text).toContain('Todo email\tClient\tTrung bình\tCần làm\tKhông có mô tả.');
 
     process.env.SMTP_HOST = originalEnv.SMTP_HOST;
     process.env.SMTP_USER = originalEnv.SMTP_USER;

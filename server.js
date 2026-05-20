@@ -140,6 +140,78 @@ const normalizeStatus = (status, fallback = 'todo') => {
   return VALID_STATUSES.has(normalized) ? normalized : null;
 };
 
+const EMAIL_TRANSLATIONS = {
+  en: {
+    taskManager: 'Task Manager',
+    newTaskSubject: 'New task added',
+    newTaskMessage: 'A new task was added by {username}.',
+    summarySubject: 'Task summary',
+    summaryMessage: 'Task summary requested by {username}.',
+    number: '#',
+    title: 'Title',
+    tag: 'Tag',
+    priority: 'Priority',
+    status: 'Status',
+    description: 'Description',
+    attachment: 'Attachment',
+    dateTimeAlert: 'Date time alert',
+    created: 'Created',
+    todo: 'Todo',
+    in_progress: 'In Progress',
+    done: 'Done',
+    low: 'Low',
+    medium: 'Medium',
+    high: 'High',
+    noTag: 'No tag',
+    noDescription: 'No description provided.',
+    noAttachment: 'No attachment',
+    notSet: 'Not set',
+    noTasks: 'No tasks found.',
+  },
+  vi: {
+    taskManager: 'Quản lý công việc',
+    newTaskSubject: 'Công việc mới đã được thêm',
+    newTaskMessage: 'Một công việc mới đã được thêm bởi {username}.',
+    summarySubject: 'Tóm tắt công việc',
+    summaryMessage: 'Tóm tắt công việc được yêu cầu bởi {username}.',
+    number: '#',
+    title: 'Tiêu đề',
+    tag: 'Nhãn',
+    priority: 'Ưu tiên',
+    status: 'Trạng thái',
+    description: 'Mô tả',
+    attachment: 'Tệp đính kèm',
+    dateTimeAlert: 'Ngày giờ nhắc',
+    created: 'Đã tạo',
+    todo: 'Cần làm',
+    in_progress: 'Đang làm',
+    done: 'Hoàn thành',
+    low: 'Thấp',
+    medium: 'Trung bình',
+    high: 'Cao',
+    noTag: 'Không có nhãn',
+    noDescription: 'Không có mô tả.',
+    noAttachment: 'Không có tệp đính kèm',
+    notSet: 'Chưa đặt',
+    noTasks: 'Không có công việc.',
+  },
+};
+
+const normalizeLanguage = (language) => (language === 'vi' ? 'vi' : 'en');
+
+const tEmail = (language, key, values = {}) => {
+  const dictionary = EMAIL_TRANSLATIONS[normalizeLanguage(language)];
+  const template = dictionary[key] || EMAIL_TRANSLATIONS.en[key] || key;
+  return Object.entries(values).reduce(
+    (text, [name, value]) => text.replaceAll(`{${name}}`, value),
+    template
+  );
+};
+
+const formatTaskStatus = (status = 'todo', language = 'en') => tEmail(language, status);
+
+const formatTaskPriority = (priority = 'medium', language = 'en') => tEmail(language, priority);
+
 const normalizeTag = (tag) => {
   if (tag === undefined || tag === null) {
     return '';
@@ -233,7 +305,7 @@ const parseAttachment = (attachment) => {
   return { name, type, data, size };
 };
 
-const sendTaskAlertEmail = async (task, user) => {
+const sendTaskAlertEmail = async (task, user, language = 'en') => {
   const transporter = createMailTransporter();
   if (!transporter) {
     console.warn('Task alert email skipped: SMTP_HOST, SMTP_USER, and SMTP_PASS are required.');
@@ -241,42 +313,43 @@ const sendTaskAlertEmail = async (task, user) => {
   }
 
   const from = process.env.MAIL_FROM || process.env.SMTP_USER;
+  const locale = normalizeLanguage(language) === 'vi' ? 'vi-VN' : 'en-US';
   const reminder = task.reminder_at
-    ? new Date(task.reminder_at).toLocaleString('en-US', {
+    ? new Date(task.reminder_at).toLocaleString(locale, {
         dateStyle: 'medium',
         timeStyle: 'short',
       })
-    : 'Not set';
+    : tEmail(language, 'notSet');
 
-  const taskAlertMarker = 'Task Manager';
+  const taskAlertMarker = tEmail(language, 'taskManager');
 
   await transporter.sendMail({
     from,
     to: TASK_ALERT_TO,
-    subject: `New task added: ${task.title}`,
+    subject: `${tEmail(language, 'newTaskSubject')}: ${task.title}`,
     headers: {
       'X-Task-Manager-Alert': taskAlertMarker,
     },
     text: [
       taskAlertMarker,
       '',
-      `A new task was added by ${user.username}.`,
+      tEmail(language, 'newTaskMessage', { username: user.username }),
       '',
-      `Title: ${task.title}`,
-      `Tag: ${task.tag || 'No tag'}`,
-      `Priority: ${task.priority || 'medium'}`,
-      `Status: ${task.status || (task.completed ? 'done' : 'todo')}`,
-      `Description: ${stripHtml(task.description) || 'No description provided.'}`,
-      `Attachment: ${task.attachment_name || 'No attachment'}`,
-      `Date time alert: ${reminder}`,
-      `Created: ${task.created_at}`,
+      `${tEmail(language, 'title')}: ${task.title}`,
+      `${tEmail(language, 'tag')}: ${task.tag || tEmail(language, 'noTag')}`,
+      `${tEmail(language, 'priority')}: ${formatTaskPriority(task.priority || 'medium', language)}`,
+      `${tEmail(language, 'status')}: ${formatTaskStatus(task.status || (task.completed ? 'done' : 'todo'), language)}`,
+      `${tEmail(language, 'description')}: ${stripHtml(task.description) || tEmail(language, 'noDescription')}`,
+      `${tEmail(language, 'attachment')}: ${task.attachment_name || tEmail(language, 'noAttachment')}`,
+      `${tEmail(language, 'dateTimeAlert')}: ${reminder}`,
+      `${tEmail(language, 'created')}: ${task.created_at}`,
     ].join('\n'),
   });
 
   return true;
 };
 
-const sendTaskSummaryEmail = async (tasks, user) => {
+const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
   const transporter = createMailTransporter();
   if (!transporter) {
     console.warn('Task summary email skipped: SMTP_HOST, SMTP_USER, and SMTP_PASS are required.');
@@ -284,25 +357,37 @@ const sendTaskSummaryEmail = async (tasks, user) => {
   }
 
   const from = process.env.MAIL_FROM || process.env.SMTP_USER;
-  const taskAlertMarker = 'Task Manager';
+  const locale = normalizeLanguage(language) === 'vi' ? 'vi-VN' : 'en-US';
+  const taskAlertMarker = tEmail(language, 'taskManager');
   const formatReminder = (task) => task.reminder_at
-    ? new Date(task.reminder_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
-    : 'Not set';
-  const getTaskStatus = (task) => task.status || (task.completed ? 'done' : 'todo');
+    ? new Date(task.reminder_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })
+    : tEmail(language, 'notSet');
+  const getTaskStatus = (task) => formatTaskStatus(task.status || (task.completed ? 'done' : 'todo'), language);
+  const headings = [
+    tEmail(language, 'number'),
+    tEmail(language, 'title'),
+    tEmail(language, 'tag'),
+    tEmail(language, 'priority'),
+    tEmail(language, 'status'),
+    tEmail(language, 'description'),
+    tEmail(language, 'attachment'),
+    tEmail(language, 'dateTimeAlert'),
+    tEmail(language, 'created'),
+  ];
   const taskTableRows = tasks.map((task, index) => ({
     number: index + 1,
     title: task.title,
-    tag: task.tag || 'No tag',
-    priority: task.priority || 'medium',
+    tag: task.tag || tEmail(language, 'noTag'),
+    priority: formatTaskPriority(task.priority || 'medium', language),
     status: getTaskStatus(task),
-    description: stripHtml(task.description) || 'No description provided.',
-    attachment: task.attachment_name || 'No attachment',
+    description: stripHtml(task.description) || tEmail(language, 'noDescription'),
+    attachment: task.attachment_name || tEmail(language, 'noAttachment'),
     reminder: formatReminder(task),
     created: task.created_at,
   }));
   const textTable = taskTableRows.length
     ? [
-        ['#', 'Title', 'Tag', 'Priority', 'Status', 'Description', 'Attachment', 'Date time alert', 'Created'].join('\t'),
+        headings.join('\t'),
         ...taskTableRows.map((task) => [
           task.number,
           task.title,
@@ -315,13 +400,13 @@ const sendTaskSummaryEmail = async (tasks, user) => {
           task.created,
         ].join('\t')),
       ]
-    : ['No tasks found.'];
+    : [tEmail(language, 'noTasks')];
   const htmlTable = taskTableRows.length
     ? `<table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;">
         <thead>
           <tr>
-            ${['#', 'Title', 'Tag', 'Priority', 'Status', 'Description', 'Attachment', 'Date time alert', 'Created'].map((heading) => (
-              `<th style="border:1px solid #d1d5db;padding:8px;background:#f3f4f6;text-align:left;">${heading}</th>`
+            ${headings.map((heading) => (
+              `<th style="border:1px solid #d1d5db;padding:8px;background:#f3f4f6;text-align:left;">${escapeHtml(heading)}</th>`
             )).join('')}
           </tr>
         </thead>
@@ -341,26 +426,26 @@ const sendTaskSummaryEmail = async (tasks, user) => {
           )).join('')}
         </tbody>
       </table>`
-    : '<p>No tasks found.</p>';
+    : `<p>${escapeHtml(tEmail(language, 'noTasks'))}</p>`;
 
   await transporter.sendMail({
     from,
     to: TASK_ALERT_TO,
-    subject: 'Task summary',
+    subject: tEmail(language, 'summarySubject'),
     headers: {
       'X-Task-Manager-Alert': taskAlertMarker,
     },
     text: [
       taskAlertMarker,
       '',
-      `Task summary requested by ${user.username}.`,
+      tEmail(language, 'summaryMessage', { username: user.username }),
       '',
       ...textTable,
     ].join('\n'),
     html: `
       <div style="font-family:Arial,sans-serif;color:#111827;">
         <p><strong>${taskAlertMarker}</strong></p>
-        <p>Task summary requested by ${escapeHtml(user.username)}.</p>
+        <p>${escapeHtml(tEmail(language, 'summaryMessage', { username: user.username }))}</p>
         ${htmlTable}
       </div>
     `,
@@ -691,7 +776,7 @@ app.post('/api/tasks/send-email', authRequired, async (req, res) => {
   try {
     const tasks = await allAsync('SELECT * FROM tasks WHERE user_id = ? ORDER BY created_at DESC', [req.session.userId]);
     const user = await getUserById(req.session.userId);
-    const emailSent = await sendTaskSummaryEmail(tasks, user);
+    const emailSent = await sendTaskSummaryEmail(tasks, user, req.body.language);
 
     if (!emailSent) {
       return res.status(500).json({ error: 'Email settings are not configured' });
@@ -705,7 +790,7 @@ app.post('/api/tasks/send-email', authRequired, async (req, res) => {
 });
 
 app.post('/api/tasks', authRequired, async (req, res) => {
-  const { title, tag, description, priority, status, time_spent_minutes, reminder_at, attachment } = req.body;
+  const { title, tag, description, priority, status, time_spent_minutes, reminder_at, attachment, language } = req.body;
   if (!title) {
     return res.status(400).json({ error: 'Task title is required' });
   }
@@ -768,7 +853,7 @@ app.post('/api/tasks', authRequired, async (req, res) => {
     let emailSent = false;
 
     try {
-      emailSent = await sendTaskAlertEmail(task, user);
+      emailSent = await sendTaskAlertEmail(task, user, language);
     } catch (emailError) {
       console.error('Failed to send task alert email:', emailError);
     }
