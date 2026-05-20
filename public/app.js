@@ -174,7 +174,6 @@ const translations = {
     markOpen: 'Mark Open',
     markDone: 'Mark Done',
     preview: 'Preview',
-    viewingTask: 'Viewing task',
     previewTaskTitle: 'Preview',
     close: 'Close',
     edit: 'Edit',
@@ -301,7 +300,6 @@ const translations = {
     markOpen: 'Mở lại',
     markDone: 'Đánh dấu xong',
     preview: 'Xem trước',
-    viewingTask: 'Đang xem công việc',
     previewTaskTitle: 'Xem trước',
     close: 'Đóng',
     edit: 'Sửa',
@@ -1597,25 +1595,7 @@ const createTaskCard = (task) => {
     hoverMessage.className = 'task-hover-popover';
     hoverMessage.setAttribute('role', 'status');
 
-    const hoverTitle = document.createElement('strong');
-    hoverTitle.textContent = t('viewingTask');
-    hoverMessage.append(hoverTitle);
-
-    const addHoverDetail = (label, value) => {
-      const row = document.createElement('p');
-      const labelElement = document.createElement('span');
-      labelElement.textContent = `${label}: `;
-      row.append(labelElement, document.createTextNode(value));
-      hoverMessage.append(row);
-    };
-
-    addHoverDetail(t('title'), task.title);
-    addHoverDetail(t('tag'), task.tag || t('notAvailable'));
-    addHoverDetail(t('priority'), priorityLabel(task.priority));
-    addHoverDetail(t('status'), statusLabel(currentStatus));
-    addHoverDetail(t('description'), getRichTextPlainText(task.description) || t('noDescription'));
-    addHoverDetail(t('dateTimeAlert'), task.reminder_at ? formatLocalDateTime(task.reminder_at) : t('notAvailable'));
-    addHoverDetail(t('created'), formatDateEST(task.created_at));
+    hoverMessage.textContent = getRichTextPlainText(task.description) || t('noDescription');
 
     const toggleButton = document.createElement('button');
     toggleButton.textContent = currentStatus === 'done' ? t('markOpen') : t('markDone');

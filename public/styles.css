@@ -675,43 +675,25 @@ body.theme-dark .tag-manager-name {
 
 .task-hover-popover {
   position: absolute;
-  left: 14px;
-  right: 14px;
-  top: 14px;
+  left: 10px;
+  right: 10px;
+  top: 10px;
   z-index: 4;
-  max-height: calc(100% - 28px);
+  min-height: 72%;
+  max-height: calc(100% - 20px);
   overflow: auto;
-  padding: 12px 14px;
+  padding: 18px 20px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
   color: var(--text);
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
-  font-size: 0.86rem;
-  line-height: 1.4;
+  font-size: 0.96rem;
+  line-height: 1.55;
   opacity: 0;
   pointer-events: none;
   transform: translateY(-6px);
   transition: opacity 0.16s ease, transform 0.16s ease;
-}
-
-.task-hover-popover strong {
-  display: block;
-  margin-bottom: 8px;
-}
-
-.task-hover-popover p {
-  margin: 0 0 6px;
-  color: var(--text);
-}
-
-.task-hover-popover p:last-child {
-  margin-bottom: 0;
-}
-
-.task-hover-popover span {
-  font-weight: 700;
-  color: var(--muted);
 }
 
 .task-item:hover .task-hover-popover,
