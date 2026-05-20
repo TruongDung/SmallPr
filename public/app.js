@@ -949,6 +949,7 @@ const showSection = () => {
     return;
   }
 
+  taskForm.classList.toggle('hidden', currentView === 'archived');
   loadTasks();
   loadSavedWeatherCities();
   loadSavedWeatherCityCards();
