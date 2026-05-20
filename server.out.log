@@ -1,2 +1,2 @@
-◇ injected env (8) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (8) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
 Server running at http://localhost:3000

@@ -1233,7 +1233,7 @@ const renderTasks = (tasks) => {
   const inProgressTasks = tasks.filter((task) => taskStatus(task) === 'in_progress');
   const doneTasks = tasks.filter((task) => taskStatus(task) === 'done');
 
-  const createColumn = (title, columnTasks) => {
+  const createColumn = (title, status, columnTasks) => {
     const column = document.createElement('section');
     column.className = 'task-column';
 
@@ -1250,6 +1250,11 @@ const renderTasks = (tasks) => {
 
     const body = document.createElement('div');
     body.className = 'task-column-body';
+    body.dataset.status = status;
+    body.addEventListener('dragover', handleTaskDragOver);
+    body.addEventListener('dragenter', handleTaskDragEnter);
+    body.addEventListener('dragleave', handleTaskDragLeave);
+    body.addEventListener('drop', handleTaskDrop);
 
     if (columnTasks.length === 0) {
       const empty = document.createElement('p');
@@ -1265,9 +1270,9 @@ const renderTasks = (tasks) => {
   };
 
   taskList.append(
-    createColumn(t('todo'), todoTasks),
-    createColumn(t('in_progress'), inProgressTasks),
-    createColumn(t('done'), doneTasks)
+    createColumn(t('todo'), 'todo', todoTasks),
+    createColumn(t('in_progress'), 'in_progress', inProgressTasks),
+    createColumn(t('done'), 'done', doneTasks)
   );
 };
 
@@ -1275,6 +1280,11 @@ const createTaskCard = (task) => {
     const currentStatus = taskStatus(task);
     const card = document.createElement('div');
     card.className = `task-item ${currentStatus === 'done' ? 'completed' : ''}`;
+    card.draggable = true;
+    card.dataset.taskId = task.id;
+    card.dataset.status = currentStatus;
+    card.addEventListener('dragstart', handleTaskDragStart);
+    card.addEventListener('dragend', handleTaskDragEnd);
 
     const meta = document.createElement('div');
     meta.className = 'task-meta';
@@ -1348,6 +1358,53 @@ const createTaskCard = (task) => {
     }
     card.append(actions);
     return card;
+};
+
+const handleTaskDragStart = (event) => {
+  const card = event.currentTarget;
+  event.dataTransfer.effectAllowed = 'move';
+  event.dataTransfer.setData('text/plain', card.dataset.taskId);
+  event.dataTransfer.setData('application/x-task-status', card.dataset.status);
+  card.classList.add('dragging');
+};
+
+const handleTaskDragEnd = (event) => {
+  event.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.task-column-body.drag-over').forEach((column) => {
+    column.classList.remove('drag-over');
+  });
+};
+
+const handleTaskDragOver = (event) => {
+  event.preventDefault();
+  event.dataTransfer.dropEffect = 'move';
+};
+
+const handleTaskDragEnter = (event) => {
+  event.preventDefault();
+  event.currentTarget.classList.add('drag-over');
+};
+
+const handleTaskDragLeave = (event) => {
+  if (!event.currentTarget.contains(event.relatedTarget)) {
+    event.currentTarget.classList.remove('drag-over');
+  }
+};
+
+const handleTaskDrop = async (event) => {
+  event.preventDefault();
+  const column = event.currentTarget;
+  column.classList.remove('drag-over');
+
+  const taskId = event.dataTransfer.getData('text/plain');
+  const nextStatus = column.dataset.status;
+  const task = tasks.find((item) => String(item.id) === taskId);
+
+  if (!task || taskStatus(task) === nextStatus) {
+    return;
+  }
+
+  await updateTask(task.id, { status: nextStatus });
 };
 
 const updateTask = async (id, updates) => {
