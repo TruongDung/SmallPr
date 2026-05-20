@@ -7,10 +7,14 @@ const languageSelect = document.getElementById('language-select');
 const themeToggle = document.getElementById('theme-toggle');
 const authForm = document.getElementById('auth-form');
 const taskForm = document.getElementById('task-form');
+const tagForm = document.getElementById('tag-form');
+const tagManager = document.querySelector('.tag-manager');
 const adminUserForm = document.getElementById('admin-user-form');
 const taskList = document.getElementById('task-list');
+const tagList = document.getElementById('tag-list');
 const userList = document.getElementById('user-list');
 const authMessage = document.getElementById('auth-message');
+const tagMessage = document.getElementById('tag-message');
 const adminMessage = document.getElementById('admin-message');
 const showLogin = document.getElementById('show-login');
 const showSignup = document.getElementById('show-signup');
@@ -21,6 +25,8 @@ const exportPdfButton = document.getElementById('export-pdf');
 const exportWordButton = document.getElementById('export-word');
 const taskPriorityInput = document.getElementById('task-priority');
 const taskStatusInput = document.getElementById('task-status');
+const taskTagInput = document.getElementById('task-tag');
+const taskTagOptions = document.getElementById('task-tag-options');
 const taskReminderInput = document.getElementById('task-reminder');
 const taskAttachmentInput = document.getElementById('task-attachment');
 const passwordInput = document.getElementById('password');
@@ -36,6 +42,7 @@ const editTaskTitle = document.getElementById('edit-task-title');
 const editTaskTitleInput = document.getElementById('edit-task-title-input');
 const editTaskPriorityInput = document.getElementById('edit-task-priority-input');
 const editTaskStatusInput = document.getElementById('edit-task-status-input');
+const editTaskTagInput = document.getElementById('edit-task-tag-input');
 const editTaskDescriptionInput = document.getElementById('edit-task-description-input');
 const editTaskReminderInput = document.getElementById('edit-task-reminder-input');
 const editTaskAttachmentInput = document.getElementById('edit-task-attachment-input');
@@ -63,6 +70,7 @@ let currentView = 'tasks';
 let currentLanguage = localStorage.getItem('task-manager-language') || 'en';
 let currentTheme = localStorage.getItem('task-manager-theme') || 'light';
 let tasks = [];
+let tags = [];
 let users = [];
 const reminderTimers = new Map();
 let weatherClockTimer = null;
@@ -106,6 +114,18 @@ const translations = {
     medium: 'Medium',
     high: 'High',
     status: 'Status',
+    tag: 'Tag',
+    tagPlaceholder: 'Work, personal, urgent...',
+    manageTags: 'Manage Tags',
+    tagName: 'Tag name',
+    addTag: 'Add Tag',
+    noTags: 'No tags yet.',
+    tagRequired: 'Tag name is required',
+    tagTooLong: 'Tag name must be 40 characters or less',
+    tagAdded: 'Tag added.',
+    tagUpdated: 'Tag updated.',
+    tagDeleted: 'Tag deleted.',
+    renameTag: 'Rename tag',
     todo: 'Todo',
     in_progress: 'In Progress',
     done: 'Done',
@@ -199,15 +219,27 @@ const translations = {
     medium: 'Trung binh',
     high: 'Cao',
     status: 'Trang thai',
-    todo: 'Can lam',
-    in_progress: 'Dang lam',
-    done: 'Hoan thanh',
+    tag: 'Nhãn',
+    tagPlaceholder: 'Công việc, cá nhân, khẩn...',
+    manageTags: 'Quản lý nhãn',
+    tagName: 'Tên nhãn',
+    addTag: 'Thêm nhãn',
+    noTags: 'Chưa có nhãn.',
+    tagRequired: 'Vui lòng nhập tên nhãn',
+    tagTooLong: 'Tên nhãn phải từ 40 ký tự trở xuống',
+    tagAdded: 'Đã thêm nhãn.',
+    tagUpdated: 'Đã cập nhật nhãn.',
+    tagDeleted: 'Đã xóa nhãn.',
+    renameTag: 'Đổi tên nhãn',
+    todo: 'Cần làm',
+    in_progress: 'Đang làm',
+    done: 'Hoàn thành',
     appTitle: 'Quản lý công việc',
     language: 'Ngôn ngữ',
-    darkMode: 'Toi',
-    lightMode: 'Sang',
-    switchToDarkMode: 'Chuyen sang che do toi',
-    switchToLightMode: 'Chuyen sang che do sang',
+    darkMode: 'Tối',
+    lightMode: 'Sáng',
+    switchToDarkMode: 'Chuyển sang chế độ tối',
+    switchToLightMode: 'Chuyển sang chế độ sáng',
     login: 'Đăng nhập',
     signup: 'Đăng ký',
     username: 'Tên đăng nhập',
@@ -389,6 +421,12 @@ const applyTranslations = () => {
   updatePriorityOptions(taskPriorityInput);
   setText('label[for="task-status"]', t('status'));
   updateStatusOptions(taskStatusInput);
+  setText('label[for="task-tag"]', t('tag'));
+  taskTagInput.placeholder = t('tagPlaceholder');
+  setText('#tag-manager-title', t('manageTags'));
+  setText('label[for="tag-name"]', t('tagName'));
+  document.getElementById('tag-name').placeholder = t('tagPlaceholder');
+  setText('#tag-form button[type="submit"]', t('addTag'));
   setText('label[for="task-description"]', `${t('description')} ${t('max500')}`);
   document.getElementById('task-description').setAttribute('data-placeholder', t('descriptionPlaceholder'));
   setText('label[for="task-reminder"]', t('dateTimeAlert'));
@@ -403,6 +441,8 @@ const applyTranslations = () => {
   updatePriorityOptions(editTaskPriorityInput);
   setText('label[for="edit-task-status-input"]', t('status'));
   updateStatusOptions(editTaskStatusInput);
+  setText('label[for="edit-task-tag-input"]', t('tag'));
+  editTaskTagInput.placeholder = t('tagPlaceholder');
   setText('label[for="edit-task-description-input"]', `${t('description')} ${t('max500')}`);
   editTaskDescriptionInput.setAttribute('data-placeholder', t('descriptionPlaceholder'));
   setText('label[for="edit-task-reminder-input"]', t('dateTimeAlert'));
@@ -420,6 +460,7 @@ const applyTranslations = () => {
   confirmDeleteNo.textContent = t('no');
   confirmDeleteYes.textContent = t('yes');
   if (currentUser) renderUserArea();
+  if (currentUser) renderTags(tags);
   if (currentUser && (currentView === 'tasks' || currentView === 'archived')) renderTasks(tasks);
   if (currentUser && currentView === 'admin') renderUsers(users);
 };
@@ -950,6 +991,8 @@ const showSection = () => {
   }
 
   taskForm.classList.toggle('hidden', currentView === 'archived');
+  tagManager.classList.toggle('hidden', currentView === 'archived');
+  loadTags();
   loadTasks();
   loadSavedWeatherCities();
   loadSavedWeatherCityCards();
@@ -1003,6 +1046,7 @@ const setMode = (mode) => {
   currentMode = mode;
   showLogin.classList.toggle('active', mode === 'login');
   showSignup.classList.toggle('active', mode === 'signup');
+  passwordInput.setAttribute('autocomplete', mode === 'login' ? 'current-password' : 'new-password');
 };
 
 const setLanguage = (language) => {
@@ -1063,6 +1107,142 @@ const handleAuthSubmit = async (event) => {
   currentView = 'tasks';
   authForm.reset();
   showSection();
+};
+
+const loadTags = async () => {
+  tagMessage.textContent = '';
+  const result = await request('/api/tags');
+  if (result.error) {
+    tagMessage.textContent = result.error;
+    return;
+  }
+  tags = result.tags || [];
+  renderTags(tags);
+};
+
+const renderTags = (tags) => {
+  taskTagOptions.innerHTML = '';
+  tagList.innerHTML = '';
+
+  tags.forEach((tag) => {
+    const option = document.createElement('option');
+    option.value = tag.name;
+    taskTagOptions.append(option);
+  });
+
+  if (!tags.length) {
+    const empty = document.createElement('p');
+    empty.className = 'tag-empty';
+    empty.textContent = t('noTags');
+    tagList.append(empty);
+    return;
+  }
+
+  tags.forEach((tag) => {
+    const item = document.createElement('div');
+    item.className = 'tag-manager-item';
+
+    const name = document.createElement('button');
+    name.type = 'button';
+    name.className = 'tag-manager-name';
+    name.textContent = tag.name;
+    name.addEventListener('click', () => {
+      taskTagInput.value = tag.name;
+      taskTagInput.focus();
+    });
+
+    const actions = document.createElement('div');
+    actions.className = 'tag-manager-actions';
+
+    const editButton = document.createElement('button');
+    editButton.type = 'button';
+    editButton.className = 'secondary';
+    editButton.textContent = t('edit');
+    editButton.addEventListener('click', () => renameTag(tag));
+
+    const deleteButton = document.createElement('button');
+    deleteButton.type = 'button';
+    deleteButton.className = 'danger';
+    deleteButton.textContent = t('delete');
+    deleteButton.addEventListener('click', () => deleteTag(tag));
+
+    actions.append(editButton, deleteButton);
+    item.append(name, actions);
+    tagList.append(item);
+  });
+};
+
+const handleTagSubmit = async (event) => {
+  event.preventDefault();
+  tagMessage.textContent = '';
+
+  const tagNameInput = document.getElementById('tag-name');
+  const name = tagNameInput.value.trim();
+  if (!name) {
+    tagMessage.textContent = t('tagRequired');
+    return;
+  }
+  if (name.length > 40) {
+    tagMessage.textContent = t('tagTooLong');
+    return;
+  }
+
+  const result = await request('/api/tags', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  });
+
+  if (result.error) {
+    tagMessage.textContent = result.error;
+    return;
+  }
+
+  tagForm.reset();
+  showStatusToast(t('tagAdded'));
+  loadTags();
+};
+
+const renameTag = async (tag) => {
+  const name = prompt(t('renameTag'), tag.name);
+  if (name === null) return;
+  const normalizedName = name.trim();
+  if (!normalizedName) {
+    alert(t('tagRequired'));
+    return;
+  }
+  if (normalizedName.length > 40) {
+    alert(t('tagTooLong'));
+    return;
+  }
+
+  const result = await request(`/api/tags/${tag.id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ name: normalizedName }),
+  });
+
+  if (result.error) {
+    alert(result.error);
+    return;
+  }
+
+  showStatusToast(t('tagUpdated'));
+  await loadTags();
+  loadTasks();
+};
+
+const deleteTag = async (tag) => {
+  const result = await request(`/api/tags/${tag.id}`, {
+    method: 'DELETE',
+  });
+
+  if (result.error) {
+    alert(result.error);
+    return;
+  }
+
+  showStatusToast(t('tagDeleted'));
+  await loadTags();
+  loadTasks();
 };
 
 const loadUsers = async () => {
@@ -1179,6 +1359,7 @@ const handleTaskSubmit = async (event) => {
   const title = document.getElementById('task-title').value.trim();
   const priority = taskPriorityInput.value;
   const status = taskStatusInput.value;
+  const tag = taskTagInput.value.trim();
   const descriptionEditor = document.getElementById('task-description');
   const description = getRichEditorValue(descriptionEditor);
   const reminder_at = taskReminderInput.value || null;
@@ -1229,7 +1410,7 @@ const handleTaskSubmit = async (event) => {
   try {
     const result = await request('/api/tasks', {
       method: 'POST',
-      body: JSON.stringify({ title, description, priority, status, reminder_at, attachment: preparedAttachment }),
+      body: JSON.stringify({ title, tag, description, priority, status, reminder_at, attachment: preparedAttachment }),
     });
 
     if (result.error) {
@@ -1249,6 +1430,7 @@ const handleTaskSubmit = async (event) => {
       descriptionError.classList.add('hidden');
       attachmentError.classList.add('hidden');
       formError.classList.add('hidden');
+      loadTags();
       loadTasks();
     }
   } catch (error) {
@@ -1371,6 +1553,12 @@ const createTaskCard = (task) => {
     priority.className = `priority-badge priority-${task.priority || 'medium'}`;
     priority.textContent = priorityLabel(task.priority);
     badges.append(priority, status);
+    if (task.tag) {
+      const tag = document.createElement('span');
+      tag.className = 'tag-badge';
+      tag.textContent = task.tag;
+      badges.append(tag);
+    }
     meta.append(title, badges);
 
     const description = document.createElement('div');
@@ -1490,6 +1678,9 @@ const updateTask = async (id, updates) => {
     method: 'PUT',
     body: JSON.stringify(updates),
   });
+  if (Object.prototype.hasOwnProperty.call(updates, 'tag')) {
+    loadTags();
+  }
   loadTasks();
 };
 
@@ -1581,6 +1772,7 @@ const showEditTaskModal = (task) => {
   editTaskTitleInput.value = task.title;
   editTaskPriorityInput.value = task.priority || 'medium';
   editTaskStatusInput.value = taskStatus(task);
+  editTaskTagInput.value = task.tag || '';
   setRichEditorValue(editTaskDescriptionInput, task.description || '');
   editTaskReminderInput.value = formatDateTimeLocalValue(task.reminder_at);
   editTaskAttachmentInput.value = '';
@@ -1624,6 +1816,7 @@ const handleEditTaskSubmit = async (event) => {
   const title = editTaskTitleInput.value.trim();
   const priority = editTaskPriorityInput.value;
   const status = editTaskStatusInput.value;
+  const tag = editTaskTagInput.value.trim();
   const description = getRichEditorValue(editTaskDescriptionInput);
   const reminderAt = editTaskReminderInput.value || null;
   const attachmentFile = editTaskAttachmentInput.files[0] || null;
@@ -1661,6 +1854,7 @@ const handleEditTaskSubmit = async (event) => {
   const task = pendingEditTask;
   const updates = {
     title,
+    tag,
     priority,
     status,
     description,
@@ -1792,6 +1986,7 @@ const exportToExcel = () => {
   const data = tasks.map(task => ({
     [t('exportDate')]: currentDateTime,
     [t('title')]: task.title,
+    [t('tag')]: task.tag || '',
     [t('priority')]: priorityLabel(task.priority),
     [t('status')]: statusLabel(taskStatus(task)),
     [t('description')]: getRichTextPlainText(task.description),
@@ -1808,9 +2003,40 @@ const exportToExcel = () => {
   showStatusToast(t('excelExported'));
 };
 
-const exportToPdf = () => {
+const arrayBufferToBase64 = (buffer) => {
+  let binary = '';
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  for (let index = 0; index < bytes.length; index += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(index, index + chunkSize));
+  }
+  return btoa(binary);
+};
+
+const loadPdfUnicodeFont = async (doc) => {
+  const fontName = 'TaskManagerUnicode';
+  if (!window.taskManagerPdfFontBase64) {
+    const response = await fetch('fonts/arial.ttf');
+    if (!response.ok) {
+      throw new Error('Unable to load PDF font');
+    }
+    window.taskManagerPdfFontBase64 = arrayBufferToBase64(await response.arrayBuffer());
+  }
+
+  doc.addFileToVFS('arial.ttf', window.taskManagerPdfFontBase64);
+  doc.addFont('arial.ttf', fontName, 'normal');
+  doc.setFont(fontName, 'normal');
+};
+
+const exportToPdf = async () => {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
+  try {
+    await loadPdfUnicodeFont(doc);
+  } catch (error) {
+    console.warn('PDF Unicode font could not be loaded:', error);
+  }
+
   const currentDateTime = new Date().toLocaleString('en-US', { 
     timeZone: 'America/New_York'
   }) + ' EST (NYC)';
@@ -1823,6 +2049,8 @@ const exportToPdf = () => {
   tasks.forEach(task => {
     doc.setFontSize(12);
     doc.text(`${t('title')}: ${task.title}`, 20, y);
+    y += 10;
+    doc.text(`${t('tag')}: ${task.tag || t('notAvailable')}`, 20, y);
     y += 10;
     doc.text(`${t('priority')}: ${priorityLabel(task.priority)}`, 20, y);
     y += 10;
@@ -1892,6 +2120,11 @@ const exportToWord = async () => {
           }),
           new Paragraph({
             children: [
+              new TextRun(`${t('tag')}: ${task.tag || t('notAvailable')}`)
+            ]
+          }),
+          new Paragraph({
+            children: [
               new TextRun(`${t('priority')}: ${priorityLabel(task.priority)}`)
             ]
           }),
@@ -1948,6 +2181,7 @@ taskAttachmentInput.addEventListener('change', handleTaskAttachmentChange);
 editTaskAttachmentInput.addEventListener('change', handleEditTaskAttachmentChange);
 authForm.addEventListener('submit', handleAuthSubmit);
 taskForm.addEventListener('submit', handleTaskSubmit);
+tagForm.addEventListener('submit', handleTagSubmit);
 editTaskForm.addEventListener('submit', handleEditTaskSubmit);
 adminUserForm.addEventListener('submit', handleAdminUserSubmit);
 logoutButton.addEventListener('click', handleLogout);

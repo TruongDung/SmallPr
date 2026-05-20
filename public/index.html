@@ -32,15 +32,15 @@
           <button id="show-signup">Sign Up</button>
         </div>
 
-        <form id="auth-form">
+        <form id="auth-form" autocomplete="on">
           <div class="field">
             <label for="username">Username</label>
-            <input id="username" name="username" type="text" required />
+            <input id="username" name="username" type="text" required autocomplete="username" />
           </div>
           <div class="field">
             <label for="password">Password</label>
             <div class="password-input-wrap">
-              <input id="password" name="password" type="password" required />
+              <input id="password" name="password" type="password" required autocomplete="current-password" />
               <button id="toggle-password" class="password-toggle" type="button" aria-label="Show password" aria-pressed="false">
                 <svg class="password-icon" viewBox="0 0 24 24" aria-hidden="true">
                   <path class="password-lashes" d="M7 7.4 5.8 5.2M12 6.5V4M17 7.4l1.2-2.2" />
@@ -93,6 +93,11 @@
             </select>
           </div>
           <div class="field">
+            <label for="task-tag">Tag</label>
+            <input id="task-tag" type="text" maxlength="40" placeholder="Work, personal, urgent..." list="task-tag-options" />
+            <datalist id="task-tag-options"></datalist>
+          </div>
+          <div class="field">
             <label for="task-description">Description <span class="field-max">(max 5000 characters)</span></label>
             <div class="rich-editor">
               <div class="rich-editor-toolbar" aria-label="Description formatting">
@@ -118,6 +123,21 @@
           <p id="form-error" class="field-error hidden"></p>
           <button type="submit">Add Task</button>
         </form>
+
+        <section class="tag-manager" aria-labelledby="tag-manager-title">
+          <div class="tag-manager-header">
+            <h3 id="tag-manager-title">Manage Tags</h3>
+            <p id="tag-message" class="message"></p>
+          </div>
+          <form id="tag-form" class="tag-form">
+            <div class="field">
+              <label for="tag-name">Tag name</label>
+              <input id="tag-name" type="text" maxlength="40" placeholder="Work, personal, urgent..." />
+            </div>
+            <button type="submit" class="secondary">Add Tag</button>
+          </form>
+          <div id="tag-list" class="tag-list"></div>
+        </section>
 
         <div id="task-list" class="task-list"></div>
       </section>
@@ -192,6 +212,10 @@
             <option value="in_progress">In Progress</option>
             <option value="done">Done</option>
           </select>
+        </div>
+        <div class="field">
+          <label for="edit-task-tag-input">Tag</label>
+          <input id="edit-task-tag-input" type="text" maxlength="40" placeholder="Work, personal, urgent..." list="task-tag-options" />
         </div>
         <div class="field">
           <label for="edit-task-description-input">Description <span class="field-max">(max 5000 characters)</span></label>

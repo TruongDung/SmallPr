@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 3000;
 const DATABASE_URL = process.env.DATABASE_URL;
 const TASK_ALERT_TO = process.env.TASK_ALERT_TO;
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+const MAX_TAG_LENGTH = 40;
 const VALID_PRIORITIES = new Set(['low', 'medium', 'high']);
 const VALID_STATUSES = new Set(['todo', 'in_progress', 'done']);
 
@@ -63,6 +64,7 @@ const initializeDatabase = async () => {
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,
     title TEXT NOT NULL,
+    tag TEXT,
     description TEXT,
     priority TEXT NOT NULL DEFAULT 'medium',
     status TEXT NOT NULL DEFAULT 'todo',
@@ -79,7 +81,18 @@ const initializeDatabase = async () => {
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   )`);
 
+  await pool.query(`CREATE TABLE IF NOT EXISTS task_tags (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    normalized_name TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, normalized_name),
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`);
+
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminder_at TEXT');
+  await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS tag TEXT');
   await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS priority TEXT NOT NULL DEFAULT 'medium'");
   await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'todo'");
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS archived INTEGER NOT NULL DEFAULT 0');
@@ -88,6 +101,13 @@ const initializeDatabase = async () => {
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_type TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_data TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_size INTEGER DEFAULT 0');
+  await pool.query(`
+    INSERT INTO task_tags (user_id, name, normalized_name)
+    SELECT DISTINCT user_id, tag, LOWER(tag)
+    FROM tasks
+    WHERE tag IS NOT NULL AND TRIM(tag) <> ''
+    ON CONFLICT (user_id, normalized_name) DO NOTHING
+  `);
 
   const admin = await getAsync('SELECT id FROM users WHERE username = ?', ['admin']);
   if (!admin) {
@@ -118,6 +138,34 @@ const normalizeStatus = (status, fallback = 'todo') => {
 
   const normalized = String(status).toLowerCase();
   return VALID_STATUSES.has(normalized) ? normalized : null;
+};
+
+const normalizeTag = (tag) => {
+  if (tag === undefined || tag === null) {
+    return '';
+  }
+
+  return String(tag).trim();
+};
+
+const ensureTaskTag = async (userId, tag) => {
+  const normalizedTag = normalizeTag(tag);
+  if (!normalizedTag) {
+    return null;
+  }
+
+  const normalizedName = normalizedTag.toLowerCase();
+  await runAsync(
+    `INSERT INTO task_tags (user_id, name, normalized_name)
+     VALUES (?, ?, ?)
+     ON CONFLICT (user_id, normalized_name) DO NOTHING
+     RETURNING id`,
+    [userId, normalizedTag, normalizedName]
+  );
+  return getAsync(
+    'SELECT id, name FROM task_tags WHERE user_id = ? AND normalized_name = ?',
+    [userId, normalizedName]
+  );
 };
 
 const createMailTransporter = () => {
@@ -156,6 +204,13 @@ const stripHtml = (value = '') => String(value)
   .replace(/&#39;/g, "'")
   .replace(/\n{3,}/g, '\n\n')
   .trim();
+
+const escapeHtml = (value = '') => String(value)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;');
 
 const sanitizeFileName = (name = '') => path.basename(String(name)).replace(/[<>:"/\\|?*\u0000-\u001F]/g, '_').slice(0, 180);
 
@@ -208,6 +263,7 @@ const sendTaskAlertEmail = async (task, user) => {
       `A new task was added by ${user.username}.`,
       '',
       `Title: ${task.title}`,
+      `Tag: ${task.tag || 'No tag'}`,
       `Priority: ${task.priority || 'medium'}`,
       `Status: ${task.status || (task.completed ? 'done' : 'todo')}`,
       `Description: ${stripHtml(task.description) || 'No description provided.'}`,
@@ -229,18 +285,63 @@ const sendTaskSummaryEmail = async (tasks, user) => {
 
   const from = process.env.MAIL_FROM || process.env.SMTP_USER;
   const taskAlertMarker = 'Task Manager';
-  const taskLines = tasks.length
-    ? tasks.flatMap((task, index) => [
-        `${index + 1}. ${task.title}`,
-        `Priority: ${task.priority || 'medium'}`,
-        `Status: ${task.status || (task.completed ? 'done' : 'todo')}`,
-        `Description: ${stripHtml(task.description) || 'No description provided.'}`,
-        `Attachment: ${task.attachment_name || 'No attachment'}`,
-        `Date time alert: ${task.reminder_at ? new Date(task.reminder_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'Not set'}`,
-        `Created: ${task.created_at}`,
-        '',
-      ])
+  const formatReminder = (task) => task.reminder_at
+    ? new Date(task.reminder_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
+    : 'Not set';
+  const getTaskStatus = (task) => task.status || (task.completed ? 'done' : 'todo');
+  const taskTableRows = tasks.map((task, index) => ({
+    number: index + 1,
+    title: task.title,
+    tag: task.tag || 'No tag',
+    priority: task.priority || 'medium',
+    status: getTaskStatus(task),
+    description: stripHtml(task.description) || 'No description provided.',
+    attachment: task.attachment_name || 'No attachment',
+    reminder: formatReminder(task),
+    created: task.created_at,
+  }));
+  const textTable = taskTableRows.length
+    ? [
+        ['#', 'Title', 'Tag', 'Priority', 'Status', 'Description', 'Attachment', 'Date time alert', 'Created'].join('\t'),
+        ...taskTableRows.map((task) => [
+          task.number,
+          task.title,
+          task.tag,
+          task.priority,
+          task.status,
+          task.description,
+          task.attachment,
+          task.reminder,
+          task.created,
+        ].join('\t')),
+      ]
     : ['No tasks found.'];
+  const htmlTable = taskTableRows.length
+    ? `<table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;">
+        <thead>
+          <tr>
+            ${['#', 'Title', 'Tag', 'Priority', 'Status', 'Description', 'Attachment', 'Date time alert', 'Created'].map((heading) => (
+              `<th style="border:1px solid #d1d5db;padding:8px;background:#f3f4f6;text-align:left;">${heading}</th>`
+            )).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${taskTableRows.map((task) => (
+            `<tr>
+              <td style="border:1px solid #d1d5db;padding:8px;">${task.number}</td>
+              <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.title)}</td>
+              <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.tag)}</td>
+              <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.priority)}</td>
+              <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.status)}</td>
+              <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.description)}</td>
+              <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.attachment)}</td>
+              <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.reminder)}</td>
+              <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.created)}</td>
+            </tr>`
+          )).join('')}
+        </tbody>
+      </table>`
+    : '<p>No tasks found.</p>';
 
   await transporter.sendMail({
     from,
@@ -254,8 +355,15 @@ const sendTaskSummaryEmail = async (tasks, user) => {
       '',
       `Task summary requested by ${user.username}.`,
       '',
-      ...taskLines,
+      ...textTable,
     ].join('\n'),
+    html: `
+      <div style="font-family:Arial,sans-serif;color:#111827;">
+        <p><strong>${taskAlertMarker}</strong></p>
+        <p>Task summary requested by ${escapeHtml(user.username)}.</p>
+        ${htmlTable}
+      </div>
+    `,
   });
 
   return true;
@@ -398,6 +506,96 @@ app.get('/api/tasks', authRequired, async (req, res) => {
   }
 });
 
+app.get('/api/tags', authRequired, async (req, res) => {
+  try {
+    const tags = await allAsync(
+      'SELECT id, name FROM task_tags WHERE user_id = ? ORDER BY LOWER(name), name',
+      [req.session.userId]
+    );
+    res.json({ tags });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to load tags' });
+  }
+});
+
+app.post('/api/tags', authRequired, async (req, res) => {
+  const name = normalizeTag(req.body.name);
+  if (!name) {
+    return res.status(400).json({ error: 'Tag name is required' });
+  }
+  if (name.length > MAX_TAG_LENGTH) {
+    return res.status(400).json({ error: `Tag name must be ${MAX_TAG_LENGTH} characters or less` });
+  }
+
+  try {
+    const tag = await ensureTaskTag(req.session.userId, name);
+    res.json({ tag });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to save tag' });
+  }
+});
+
+app.put('/api/tags/:id', authRequired, async (req, res) => {
+  const { id } = req.params;
+  const name = normalizeTag(req.body.name);
+  if (!name) {
+    return res.status(400).json({ error: 'Tag name is required' });
+  }
+  if (name.length > MAX_TAG_LENGTH) {
+    return res.status(400).json({ error: `Tag name must be ${MAX_TAG_LENGTH} characters or less` });
+  }
+
+  try {
+    const tag = await getAsync('SELECT id, name FROM task_tags WHERE id = ? AND user_id = ?', [id, req.session.userId]);
+    if (!tag) {
+      return res.status(404).json({ error: 'Tag not found' });
+    }
+
+    const normalizedName = name.toLowerCase();
+    const existing = await getAsync(
+      'SELECT id, name FROM task_tags WHERE user_id = ? AND normalized_name = ?',
+      [req.session.userId, normalizedName]
+    );
+
+    if (existing && Number(existing.id) !== Number(id)) {
+      await runAsync('UPDATE tasks SET tag = ? WHERE user_id = ? AND LOWER(tag) = LOWER(?)', [existing.name, req.session.userId, tag.name]);
+      await runAsync('DELETE FROM task_tags WHERE id = ? AND user_id = ?', [id, req.session.userId]);
+      return res.json({ tag: existing });
+    }
+
+    await runAsync(
+      'UPDATE task_tags SET name = ?, normalized_name = ? WHERE id = ? AND user_id = ?',
+      [name, normalizedName, id, req.session.userId]
+    );
+    await runAsync('UPDATE tasks SET tag = ? WHERE user_id = ? AND LOWER(tag) = LOWER(?)', [name, req.session.userId, tag.name]);
+    const updatedTag = await getAsync('SELECT id, name FROM task_tags WHERE id = ? AND user_id = ?', [id, req.session.userId]);
+    res.json({ tag: updatedTag });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update tag' });
+  }
+});
+
+app.delete('/api/tags/:id', authRequired, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const tag = await getAsync('SELECT id, name FROM task_tags WHERE id = ? AND user_id = ?', [id, req.session.userId]);
+    if (!tag) {
+      return res.status(404).json({ error: 'Tag not found' });
+    }
+
+    await runAsync('UPDATE tasks SET tag = ? WHERE user_id = ? AND LOWER(tag) = LOWER(?)', ['', req.session.userId, tag.name]);
+    await runAsync('DELETE FROM task_tags WHERE id = ? AND user_id = ?', [id, req.session.userId]);
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to delete tag' });
+  }
+});
+
 app.get('/api/admin/users', adminRequired, async (req, res) => {
   try {
     const users = await allAsync(
@@ -507,9 +705,14 @@ app.post('/api/tasks/send-email', authRequired, async (req, res) => {
 });
 
 app.post('/api/tasks', authRequired, async (req, res) => {
-  const { title, description, priority, status, time_spent_minutes, reminder_at, attachment } = req.body;
+  const { title, tag, description, priority, status, time_spent_minutes, reminder_at, attachment } = req.body;
   if (!title) {
     return res.status(400).json({ error: 'Task title is required' });
+  }
+
+  const normalizedTag = normalizeTag(tag);
+  if (normalizedTag.length > MAX_TAG_LENGTH) {
+    return res.status(400).json({ error: `Task tag must be ${MAX_TAG_LENGTH} characters or less` });
   }
 
   const normalizedPriority = normalizePriority(priority);
@@ -540,12 +743,13 @@ app.post('/api/tasks', authRequired, async (req, res) => {
   try {
     const result = await runAsync(
       `INSERT INTO tasks (
-        user_id, title, description, priority, status, completed, time_spent_minutes, reminder_at,
+        user_id, title, tag, description, priority, status, completed, time_spent_minutes, reminder_at,
         attachment_name, attachment_type, attachment_data, attachment_size
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       [
         req.session.userId,
         title,
+        normalizedTag,
         description || '',
         normalizedPriority,
         normalizedStatus,
@@ -558,6 +762,7 @@ app.post('/api/tasks', authRequired, async (req, res) => {
         parsedAttachment?.size || 0,
       ]
     );
+    await ensureTaskTag(req.session.userId, normalizedTag);
     const task = await getAsync('SELECT * FROM tasks WHERE id = ?', [result.lastID]);
     const user = await getUserById(req.session.userId);
     let emailSent = false;
@@ -577,9 +782,10 @@ app.post('/api/tasks', authRequired, async (req, res) => {
 
 app.put('/api/tasks/:id', authRequired, async (req, res) => {
   const { id } = req.params;
-  const { title, description, priority, status, archived, completed, time_spent_minutes, reminder_at, attachment } = req.body;
+  const { title, tag, description, priority, status, archived, completed, time_spent_minutes, reminder_at, attachment } = req.body;
   const hasAttachmentUpdate = Object.prototype.hasOwnProperty.call(req.body, 'attachment');
   const hasStatusUpdate = Object.prototype.hasOwnProperty.call(req.body, 'status');
+  const hasTagUpdate = Object.prototype.hasOwnProperty.call(req.body, 'tag');
 
   try {
     const task = await getAsync('SELECT * FROM tasks WHERE id = ? AND user_id = ?', [id, req.session.userId]);
@@ -590,6 +796,11 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
     // Validation
     if (title && title.length > 20) {
       return res.status(400).json({ error: 'Task title must be 20 characters or less' });
+    }
+
+    const normalizedTag = normalizeTag(tag);
+    if (hasTagUpdate && normalizedTag.length > MAX_TAG_LENGTH) {
+      return res.status(400).json({ error: `Task tag must be ${MAX_TAG_LENGTH} characters or less` });
     }
     
     if (description && stripHtml(description).length > 5000) {
@@ -621,6 +832,7 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
     await runAsync(
       `UPDATE tasks SET
         title = ?,
+        tag = ?,
         description = ?,
         priority = ?,
         status = ?,
@@ -636,6 +848,7 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
        WHERE id = ? AND user_id = ?`,
       [
         title || task.title,
+        hasTagUpdate ? normalizedTag : task.tag,
         description !== undefined ? description : task.description,
         normalizedPriority,
         normalizedStatus,
@@ -651,6 +864,9 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
         req.session.userId
       ]
     );
+    if (hasTagUpdate) {
+      await ensureTaskTag(req.session.userId, normalizedTag);
+    }
 
     const updatedTask = await getAsync('SELECT * FROM tasks WHERE id = ?', [id]);
     res.json({ task: updatedTask });

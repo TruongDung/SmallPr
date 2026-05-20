@@ -5,6 +5,11 @@ process.env.SMTP_HOST = '';
 process.env.SMTP_USER = '';
 process.env.SMTP_PASS = '';
 
+const mockSendMail = jest.fn().mockResolvedValue({});
+jest.mock('nodemailer', () => ({
+  createTransport: jest.fn(() => ({ sendMail: mockSendMail })),
+}));
+
 const RUN_ID = `test-${Date.now()}-${Math.round(Math.random() * 100000)}`;
 const testUsername = (name) => `${RUN_ID}-${name}`;
 
@@ -125,6 +130,7 @@ describe('Task API', () => {
       .post('/api/tasks')
       .send({
         title: 'Plan',
+        tag: 'Launch',
         priority: 'high',
         status: 'in_progress',
         description: '<p><strong>Ship it</strong></p>',
@@ -135,6 +141,7 @@ describe('Task API', () => {
     expect(createResponse.statusCode).toBe(200);
     expect(createResponse.body.task).toMatchObject({
       title: 'Plan',
+      tag: 'Launch',
       priority: 'high',
       status: 'in_progress',
       completed: 0,
@@ -151,6 +158,7 @@ describe('Task API', () => {
     expect(listResponse.body.tasks).toHaveLength(1);
     expect(listResponse.body.tasks[0]).toMatchObject({
       title: 'Plan',
+      tag: 'Launch',
       priority: 'high',
       status: 'in_progress',
       attachment_name: 'plan.txt',
@@ -219,6 +227,17 @@ describe('Task API', () => {
     expect(response.body).toHaveProperty('error', 'Task title must be 20 characters or less');
   });
 
+  test('rejects task tags over 40 characters', async () => {
+    const agent = await createAgent(testUsername('long-tag-owner'));
+
+    const response = await agent
+      .post('/api/tasks')
+      .send({ title: 'Tagged', tag: 'x'.repeat(41) });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toHaveProperty('error', 'Task tag must be 40 characters or less');
+  });
+
   test('rejects invalid attachment payloads', async () => {
     const agent = await createAgent(testUsername('bad-attachment-owner'));
 
@@ -254,6 +273,7 @@ describe('Task API', () => {
       .put(`/api/tasks/${taskId}`)
       .send({
         title: 'Final',
+        tag: 'Review',
         priority: 'low',
         status: 'done',
         description: '<p>New description</p>',
@@ -263,6 +283,7 @@ describe('Task API', () => {
     expect(updateResponse.body.task).toMatchObject({
       id: taskId,
       title: 'Final',
+      tag: 'Review',
       priority: 'low',
       status: 'done',
       description: '<p>New description</p>',
@@ -357,5 +378,89 @@ describe('Task API', () => {
     const deleteResponse = await owner.delete(`/api/tasks/${taskId}`);
     expect(deleteResponse.statusCode).toBe(200);
     expect(deleteResponse.body).toHaveProperty('success', true);
+  });
+
+  test('manages tags and keeps task tag values in sync', async () => {
+    const agent = await createAgent(testUsername('tag-manager-owner'));
+
+    const createTagResponse = await agent
+      .post('/api/tags')
+      .send({ name: 'Work' });
+
+    expect(createTagResponse.statusCode).toBe(200);
+    expect(createTagResponse.body.tag).toMatchObject({ name: 'Work' });
+
+    const duplicateTagResponse = await agent
+      .post('/api/tags')
+      .send({ name: 'work' });
+
+    expect(duplicateTagResponse.statusCode).toBe(200);
+    expect(duplicateTagResponse.body.tag.id).toBe(createTagResponse.body.tag.id);
+
+    const createTaskResponse = await agent
+      .post('/api/tasks')
+      .send({ title: 'Tagged', tag: 'Work' });
+
+    expect(createTaskResponse.statusCode).toBe(200);
+    expect(createTaskResponse.body.task).toMatchObject({ tag: 'Work' });
+
+    const renameResponse = await agent
+      .put(`/api/tags/${createTagResponse.body.tag.id}`)
+      .send({ name: 'Client' });
+
+    expect(renameResponse.statusCode).toBe(200);
+    expect(renameResponse.body.tag).toMatchObject({ name: 'Client' });
+
+    const renamedTasksResponse = await agent.get('/api/tasks');
+    expect(renamedTasksResponse.body.tasks[0]).toMatchObject({ title: 'Tagged', tag: 'Client' });
+
+    const deleteResponse = await agent.delete(`/api/tags/${createTagResponse.body.tag.id}`);
+
+    expect(deleteResponse.statusCode).toBe(200);
+    expect(deleteResponse.body).toHaveProperty('success', true);
+
+    const clearedTasksResponse = await agent.get('/api/tasks');
+    expect(clearedTasksResponse.body.tasks[0]).toMatchObject({ title: 'Tagged', tag: '' });
+  });
+
+  test('sends task summary email with an HTML table', async () => {
+    const originalEnv = {
+      SMTP_HOST: process.env.SMTP_HOST,
+      SMTP_USER: process.env.SMTP_USER,
+      SMTP_PASS: process.env.SMTP_PASS,
+    };
+    const agent = await createAgent(testUsername('summary-email-owner'));
+    await agent
+      .post('/api/tasks')
+      .send({
+        title: 'Email table',
+        tag: 'Client',
+        priority: 'high',
+        status: 'in_progress',
+        description: '<p>Review & ship</p>',
+        reminder_at: '2026-05-13T09:30',
+      });
+
+    process.env.SMTP_HOST = 'smtp.test.local';
+    process.env.SMTP_USER = 'sender@test.local';
+    process.env.SMTP_PASS = 'secret';
+    mockSendMail.mockClear();
+
+    const response = await agent.post('/api/tasks/send-email');
+
+    expect(response.statusCode).toBe(200);
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+    const mailOptions = mockSendMail.mock.calls[0][0];
+    expect(mailOptions.html).toContain('<table');
+    expect(mailOptions.html).toContain('<th style="border:1px solid #d1d5db;padding:8px;background:#f3f4f6;text-align:left;">Title</th>');
+    expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Email table</td>');
+    expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Client</td>');
+    expect(mailOptions.html).toContain('Review &amp; ship');
+    expect(mailOptions.text).toContain('#\tTitle\tTag\tPriority\tStatus\tDescription\tAttachment\tDate time alert\tCreated');
+    expect(mailOptions.text).toContain('Email table\tClient\thigh\tin_progress\tReview & ship');
+
+    process.env.SMTP_HOST = originalEnv.SMTP_HOST;
+    process.env.SMTP_USER = originalEnv.SMTP_USER;
+    process.env.SMTP_PASS = originalEnv.SMTP_PASS;
   });
 });
