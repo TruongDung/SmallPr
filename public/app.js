@@ -4,6 +4,7 @@ const adminSection = document.getElementById('admin-section');
 const appContainer = document.querySelector('.container');
 const userArea = document.getElementById('user-area');
 const languageSelect = document.getElementById('language-select');
+const themeToggle = document.getElementById('theme-toggle');
 const authForm = document.getElementById('auth-form');
 const taskForm = document.getElementById('task-form');
 const adminUserForm = document.getElementById('admin-user-form');
@@ -60,6 +61,7 @@ let currentMode = 'login';
 let currentUser = null;
 let currentView = 'tasks';
 let currentLanguage = localStorage.getItem('task-manager-language') || 'en';
+let currentTheme = localStorage.getItem('task-manager-theme') || 'light';
 let tasks = [];
 let users = [];
 const reminderTimers = new Map();
@@ -80,6 +82,10 @@ const translations = {
   en: {
     appTitle: 'Task Manager',
     language: 'Language',
+    darkMode: 'Dark',
+    lightMode: 'Light',
+    switchToDarkMode: 'Switch to dark mode',
+    switchToLightMode: 'Switch to light mode',
     login: 'Login',
     signup: 'Sign Up',
     username: 'Username',
@@ -113,6 +119,10 @@ const translations = {
     addUser: 'Add User',
     id: 'ID',
     tasks: 'Tasks',
+    archive: 'Archive',
+    archived: 'Archived',
+    restore: 'Restore',
+    noArchivedTasks: 'No archived tasks.',
     actions: 'Actions',
     welcome: 'Welcome, {username}',
     authRequired: 'Username and password are required.',
@@ -194,6 +204,10 @@ const translations = {
     done: 'Hoan thanh',
     appTitle: 'Quản lý công việc',
     language: 'Ngôn ngữ',
+    darkMode: 'Toi',
+    lightMode: 'Sang',
+    switchToDarkMode: 'Chuyen sang che do toi',
+    switchToLightMode: 'Chuyen sang che do sang',
     login: 'Đăng nhập',
     signup: 'Đăng ký',
     username: 'Tên đăng nhập',
@@ -219,6 +233,10 @@ const translations = {
     addUser: 'Thêm người dùng',
     id: 'ID',
     tasks: 'Công việc',
+    archive: 'Luu tru',
+    archived: 'Da luu tru',
+    restore: 'Khoi phuc',
+    noArchivedTasks: 'Khong co cong viec da luu tru.',
     actions: 'Thao tác',
     welcome: 'Xin chào, {username}',
     authRequired: 'Vui lòng nhập tên đăng nhập và mật khẩu.',
@@ -304,6 +322,20 @@ const setText = (selector, value) => {
   if (element) element.textContent = value;
 };
 
+const applyTheme = () => {
+  const isDark = currentTheme === 'dark';
+  document.body.classList.toggle('theme-dark', isDark);
+  themeToggle.setAttribute('aria-pressed', String(isDark));
+  themeToggle.setAttribute('aria-label', isDark ? t('switchToLightMode') : t('switchToDarkMode'));
+  themeToggle.querySelector('.theme-toggle-text').textContent = isDark ? t('lightMode') : t('darkMode');
+};
+
+const toggleTheme = () => {
+  currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('task-manager-theme', currentTheme);
+  applyTheme();
+};
+
 const priorityLabel = (priority = 'medium') => t(priority || 'medium');
 
 const taskStatus = (task) => task.status || (task.completed ? 'done' : 'todo');
@@ -335,6 +367,7 @@ const applyTranslations = () => {
   document.documentElement.lang = currentLanguage;
   document.title = t('appTitle');
   setText('h1', t('appTitle'));
+  applyTheme();
   setText('label[for="language-select"]', t('language'));
   showLogin.textContent = t('login');
   showSignup.textContent = t('signup');
@@ -929,16 +962,27 @@ const renderUserArea = () => {
   userArea.append(welcome);
   logoutButton.className = 'secondary';
 
-  if (currentUser.username === 'admin') {
-    const tasksButton = document.createElement('button');
-    tasksButton.type = 'button';
-    tasksButton.className = `secondary ${currentView === 'tasks' ? 'active-nav' : ''}`;
-    tasksButton.textContent = t('tasks');
-    tasksButton.addEventListener('click', () => {
-      currentView = 'tasks';
-      showSection();
-    });
+  const tasksButton = document.createElement('button');
+  tasksButton.type = 'button';
+  tasksButton.className = `secondary ${currentView === 'tasks' ? 'active-nav' : ''}`;
+  tasksButton.textContent = t('tasks');
+  tasksButton.addEventListener('click', () => {
+    currentView = 'tasks';
+    showSection();
+  });
 
+  const archivedButton = document.createElement('button');
+  archivedButton.type = 'button';
+  archivedButton.className = `secondary ${currentView === 'archived' ? 'active-nav' : ''}`;
+  archivedButton.textContent = t('archived');
+  archivedButton.addEventListener('click', () => {
+    currentView = 'archived';
+    showSection();
+  });
+
+  userArea.append(tasksButton, archivedButton);
+
+  if (currentUser.username === 'admin') {
     const adminButton = document.createElement('button');
     adminButton.type = 'button';
     adminButton.className = `secondary ${currentView === 'admin' ? 'active-nav' : ''}`;
@@ -948,7 +992,7 @@ const renderUserArea = () => {
       showSection();
     });
 
-    userArea.append(tasksButton, adminButton);
+    userArea.append(adminButton);
   }
 
   userArea.append(logoutButton);
@@ -1213,19 +1257,43 @@ const handleTaskSubmit = async (event) => {
 };
 
 const loadTasks = async () => {
-  const result = await request('/api/tasks');
+  const showingArchived = currentView === 'archived';
+  const result = await request(`/api/tasks${showingArchived ? '?archived=true' : ''}`);
   if (result.tasks) {
     tasks = result.tasks;
     renderTasks(result.tasks);
-    scheduleTaskReminders(result.tasks);
+    if (!showingArchived) {
+      scheduleTaskReminders(result.tasks);
+    }
   }
 };
 
 const renderTasks = (tasks) => {
   taskList.innerHTML = '';
+  const showingArchived = currentView === 'archived';
+  setText('#task-section h2', showingArchived ? t('archived') : t('yourTasks'));
 
   if (tasks.length === 0) {
-    taskList.innerHTML = `<p>${t('noTasks')}</p>`;
+    taskList.innerHTML = `<p>${showingArchived ? t('noArchivedTasks') : t('noTasks')}</p>`;
+    return;
+  }
+
+  if (showingArchived) {
+    const column = document.createElement('section');
+    column.className = 'task-column task-column-wide';
+    const header = document.createElement('div');
+    header.className = 'task-column-header';
+    const heading = document.createElement('h3');
+    heading.textContent = t('archived');
+    const count = document.createElement('span');
+    count.className = 'task-count';
+    count.textContent = tasks.length;
+    header.append(heading, count);
+    const body = document.createElement('div');
+    body.className = 'task-column-body';
+    tasks.forEach((task) => body.append(createTaskCard(task)));
+    column.append(header, body);
+    taskList.append(column);
     return;
   }
 
@@ -1278,13 +1346,16 @@ const renderTasks = (tasks) => {
 
 const createTaskCard = (task) => {
     const currentStatus = taskStatus(task);
+    const isArchived = Boolean(task.archived);
     const card = document.createElement('div');
-    card.className = `task-item ${currentStatus === 'done' ? 'completed' : ''}`;
-    card.draggable = true;
+    card.className = `task-item ${currentStatus === 'done' ? 'completed' : ''} ${isArchived ? 'archived' : ''}`;
+    card.draggable = !isArchived;
     card.dataset.taskId = task.id;
     card.dataset.status = currentStatus;
-    card.addEventListener('dragstart', handleTaskDragStart);
-    card.addEventListener('dragend', handleTaskDragEnd);
+    if (!isArchived) {
+      card.addEventListener('dragstart', handleTaskDragStart);
+      card.addEventListener('dragend', handleTaskDragEnd);
+    }
 
     const meta = document.createElement('div');
     meta.className = 'task-meta';
@@ -1334,6 +1405,10 @@ const createTaskCard = (task) => {
     toggleButton.textContent = currentStatus === 'done' ? t('markOpen') : t('markDone');
     toggleButton.addEventListener('click', () => updateTask(task.id, { status: currentStatus === 'done' ? 'todo' : 'done' }));
 
+    const archiveButton = document.createElement('button');
+    archiveButton.textContent = isArchived ? t('restore') : t('archive');
+    archiveButton.addEventListener('click', () => updateTask(task.id, { archived: !isArchived }));
+
     const previewButton = document.createElement('button');
     previewButton.textContent = t('preview');
     previewButton.addEventListener('click', () => showPreviewTaskModal(task));
@@ -1347,11 +1422,13 @@ const createTaskCard = (task) => {
     deleteButton.className = 'danger';
     deleteButton.addEventListener('click', () => showDeleteConfirm(task.id));
 
-    actions.append(toggleButton);
+    if (!isArchived) {
+      actions.append(toggleButton);
+    }
     if (task.description && getRichTextPlainText(task.description).length > 180) {
       actions.append(previewButton);
     }
-    actions.append(editButton, deleteButton);
+    actions.append(editButton, archiveButton, deleteButton);
     card.append(meta, description, datetime, reminder);
     if (attachment.href) {
       card.append(attachment);
@@ -1864,6 +1941,7 @@ const exportToWord = async () => {
 showLogin.addEventListener('click', () => setMode('login'));
 showSignup.addEventListener('click', () => setMode('signup'));
 languageSelect.addEventListener('change', (event) => setLanguage(event.target.value));
+themeToggle.addEventListener('click', toggleTheme);
 togglePasswordButton.addEventListener('click', togglePasswordVisibility);
 taskAttachmentInput.addEventListener('change', handleTaskAttachmentChange);
 editTaskAttachmentInput.addEventListener('change', handleEditTaskAttachmentChange);

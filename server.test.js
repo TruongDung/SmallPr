@@ -300,6 +300,46 @@ describe('Task API', () => {
     expect(updateResponse.body.task.attachment_data).toBe(newAttachment.data);
   });
 
+  test('archives and restores a task', async () => {
+    const agent = await createAgent(testUsername('archive-owner'));
+
+    const createResponse = await agent
+      .post('/api/tasks')
+      .send({ title: 'Archive me' });
+
+    const taskId = createResponse.body.task.id;
+    const archiveResponse = await agent
+      .put(`/api/tasks/${taskId}`)
+      .send({ archived: true });
+
+    expect(archiveResponse.statusCode).toBe(200);
+    expect(archiveResponse.body.task).toMatchObject({
+      id: taskId,
+      archived: 1,
+    });
+
+    const activeResponse = await agent.get('/api/tasks');
+    expect(activeResponse.body.tasks).toHaveLength(0);
+
+    const archivedResponse = await agent.get('/api/tasks?archived=true');
+    expect(archivedResponse.body.tasks).toHaveLength(1);
+    expect(archivedResponse.body.tasks[0]).toMatchObject({
+      id: taskId,
+      title: 'Archive me',
+      archived: 1,
+    });
+
+    const restoreResponse = await agent
+      .put(`/api/tasks/${taskId}`)
+      .send({ archived: false });
+
+    expect(restoreResponse.statusCode).toBe(200);
+    expect(restoreResponse.body.task).toMatchObject({
+      id: taskId,
+      archived: 0,
+    });
+  });
+
   test('deletes only tasks owned by the signed-in user', async () => {
     const owner = await createAgent(testUsername('delete-owner'));
     const otherUser = await createAgent(testUsername('delete-other'));

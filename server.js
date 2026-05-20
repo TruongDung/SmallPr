@@ -66,6 +66,7 @@ const initializeDatabase = async () => {
     description TEXT,
     priority TEXT NOT NULL DEFAULT 'medium',
     status TEXT NOT NULL DEFAULT 'todo',
+    archived INTEGER NOT NULL DEFAULT 0,
     completed INTEGER NOT NULL DEFAULT 0,
     time_spent_minutes INTEGER DEFAULT 0,
     reminder_at TEXT,
@@ -81,6 +82,7 @@ const initializeDatabase = async () => {
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminder_at TEXT');
   await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS priority TEXT NOT NULL DEFAULT 'medium'");
   await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'todo'");
+  await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS archived INTEGER NOT NULL DEFAULT 0');
   await pool.query("UPDATE tasks SET status = 'done' WHERE completed = 1 AND status = 'todo'");
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_name TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_type TEXT');
@@ -387,7 +389,8 @@ app.get('/api/me', async (req, res) => {
 
 app.get('/api/tasks', authRequired, async (req, res) => {
   try {
-    const tasks = await allAsync('SELECT * FROM tasks WHERE user_id = ? ORDER BY created_at DESC', [req.session.userId]);
+    const archived = req.query.archived === 'true' ? 1 : 0;
+    const tasks = await allAsync('SELECT * FROM tasks WHERE user_id = ? AND archived = ? ORDER BY created_at DESC', [req.session.userId, archived]);
     res.json({ tasks });
   } catch (error) {
     console.error(error);
@@ -574,7 +577,7 @@ app.post('/api/tasks', authRequired, async (req, res) => {
 
 app.put('/api/tasks/:id', authRequired, async (req, res) => {
   const { id } = req.params;
-  const { title, description, priority, status, completed, time_spent_minutes, reminder_at, attachment } = req.body;
+  const { title, description, priority, status, archived, completed, time_spent_minutes, reminder_at, attachment } = req.body;
   const hasAttachmentUpdate = Object.prototype.hasOwnProperty.call(req.body, 'attachment');
   const hasStatusUpdate = Object.prototype.hasOwnProperty.call(req.body, 'status');
 
@@ -621,6 +624,7 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
         description = ?,
         priority = ?,
         status = ?,
+        archived = ?,
         completed = ?,
         time_spent_minutes = ?,
         reminder_at = ?,
@@ -635,6 +639,7 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
         description !== undefined ? description : task.description,
         normalizedPriority,
         normalizedStatus,
+        archived !== undefined ? (archived ? 1 : 0) : task.archived,
         normalizedStatus === 'done' ? 1 : 0,
         time_spent_minutes !== undefined ? time_spent_minutes : task.time_spent_minutes,
         reminder_at !== undefined ? reminder_at || null : task.reminder_at,
