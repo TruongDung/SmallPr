@@ -81,6 +81,14 @@
             </select>
           </div>
           <div class="field">
+            <label for="task-status">Status</label>
+            <select id="task-status">
+              <option value="todo" selected>Todo</option>
+              <option value="in_progress">In Progress</option>
+              <option value="done">Done</option>
+            </select>
+          </div>
+          <div class="field">
             <label for="task-description">Description <span class="field-max">(max 5000 characters)</span></label>
             <div class="rich-editor">
               <div class="rich-editor-toolbar" aria-label="Description formatting">
@@ -171,6 +179,14 @@
             <option value="low">Low</option>
             <option value="medium">Medium</option>
             <option value="high">High</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="edit-task-status-input">Status</label>
+          <select id="edit-task-status-input">
+            <option value="todo">Todo</option>
+            <option value="in_progress">In Progress</option>
+            <option value="done">Done</option>
           </select>
         </div>
         <div class="field">

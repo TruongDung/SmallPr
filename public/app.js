@@ -19,6 +19,7 @@ const exportExcelButton = document.getElementById('export-excel');
 const exportPdfButton = document.getElementById('export-pdf');
 const exportWordButton = document.getElementById('export-word');
 const taskPriorityInput = document.getElementById('task-priority');
+const taskStatusInput = document.getElementById('task-status');
 const taskReminderInput = document.getElementById('task-reminder');
 const taskAttachmentInput = document.getElementById('task-attachment');
 const passwordInput = document.getElementById('password');
@@ -33,6 +34,7 @@ const editTaskForm = document.getElementById('edit-task-form');
 const editTaskTitle = document.getElementById('edit-task-title');
 const editTaskTitleInput = document.getElementById('edit-task-title-input');
 const editTaskPriorityInput = document.getElementById('edit-task-priority-input');
+const editTaskStatusInput = document.getElementById('edit-task-status-input');
 const editTaskDescriptionInput = document.getElementById('edit-task-description-input');
 const editTaskReminderInput = document.getElementById('edit-task-reminder-input');
 const editTaskAttachmentInput = document.getElementById('edit-task-attachment-input');
@@ -97,6 +99,10 @@ const translations = {
     low: 'Low',
     medium: 'Medium',
     high: 'High',
+    status: 'Status',
+    todo: 'Todo',
+    in_progress: 'In Progress',
+    done: 'Done',
     description: 'Description',
     descriptionPlaceholder: 'Write notes, lists, and details here...',
     max500: '(max 5000 characters)',
@@ -182,6 +188,10 @@ const translations = {
     low: 'Thap',
     medium: 'Trung binh',
     high: 'Cao',
+    status: 'Trang thai',
+    todo: 'Can lam',
+    in_progress: 'Dang lam',
+    done: 'Hoan thanh',
     appTitle: 'Quản lý công việc',
     language: 'Ngôn ngữ',
     login: 'Đăng nhập',
@@ -296,11 +306,22 @@ const setText = (selector, value) => {
 
 const priorityLabel = (priority = 'medium') => t(priority || 'medium');
 
+const taskStatus = (task) => task.status || (task.completed ? 'done' : 'todo');
+
+const statusLabel = (status = 'todo') => t(status || 'todo');
+
 const updatePriorityOptions = (select) => {
   if (!select) return;
   select.querySelector('option[value="low"]').textContent = t('low');
   select.querySelector('option[value="medium"]').textContent = t('medium');
   select.querySelector('option[value="high"]').textContent = t('high');
+};
+
+const updateStatusOptions = (select) => {
+  if (!select) return;
+  select.querySelector('option[value="todo"]').textContent = t('todo');
+  select.querySelector('option[value="in_progress"]').textContent = t('in_progress');
+  select.querySelector('option[value="done"]').textContent = t('done');
 };
 
 const escapeHtml = (value = '') => String(value)
@@ -333,6 +354,8 @@ const applyTranslations = () => {
   setText('label[for="task-title"]', `${t('title')} ${t('max20')}`);
   setText('label[for="task-priority"]', t('priority'));
   updatePriorityOptions(taskPriorityInput);
+  setText('label[for="task-status"]', t('status'));
+  updateStatusOptions(taskStatusInput);
   setText('label[for="task-description"]', `${t('description')} ${t('max500')}`);
   document.getElementById('task-description').setAttribute('data-placeholder', t('descriptionPlaceholder'));
   setText('label[for="task-reminder"]', t('dateTimeAlert'));
@@ -345,6 +368,8 @@ const applyTranslations = () => {
   setText('label[for="edit-task-title-input"]', `${t('title')} ${t('max20')}`);
   setText('label[for="edit-task-priority-input"]', t('priority'));
   updatePriorityOptions(editTaskPriorityInput);
+  setText('label[for="edit-task-status-input"]', t('status'));
+  updateStatusOptions(editTaskStatusInput);
   setText('label[for="edit-task-description-input"]', `${t('description')} ${t('max500')}`);
   editTaskDescriptionInput.setAttribute('data-placeholder', t('descriptionPlaceholder'));
   setText('label[for="edit-task-reminder-input"]', t('dateTimeAlert'));
@@ -555,7 +580,7 @@ const scheduleTaskReminders = (loadedTasks) => {
   clearReminderTimers();
 
   loadedTasks.forEach((task) => {
-    if (!task.reminder_at || task.completed) return;
+    if (!task.reminder_at || taskStatus(task) === 'done') return;
     if (localStorage.getItem(getReminderStorageKey(task))) return;
 
     const reminderTime = new Date(task.reminder_at).getTime();
@@ -1108,6 +1133,7 @@ const handleTaskSubmit = async (event) => {
   event.preventDefault();
   const title = document.getElementById('task-title').value.trim();
   const priority = taskPriorityInput.value;
+  const status = taskStatusInput.value;
   const descriptionEditor = document.getElementById('task-description');
   const description = getRichEditorValue(descriptionEditor);
   const reminder_at = taskReminderInput.value || null;
@@ -1158,7 +1184,7 @@ const handleTaskSubmit = async (event) => {
   try {
     const result = await request('/api/tasks', {
       method: 'POST',
-      body: JSON.stringify({ title, description, priority, reminder_at, attachment: preparedAttachment }),
+      body: JSON.stringify({ title, description, priority, status, reminder_at, attachment: preparedAttachment }),
     });
 
     if (result.error) {
@@ -1171,6 +1197,7 @@ const handleTaskSubmit = async (event) => {
       authForm.reset();
       taskForm.reset();
       taskPriorityInput.value = 'medium';
+      taskStatusInput.value = 'todo';
       descriptionEditor.innerHTML = '';
       preparedAttachment = null;
       titleError.classList.add('hidden');
@@ -1202,8 +1229,9 @@ const renderTasks = (tasks) => {
     return;
   }
 
-  const tasksWithAlert = tasks.filter((task) => task.reminder_at);
-  const tasksWithoutAlert = tasks.filter((task) => !task.reminder_at);
+  const todoTasks = tasks.filter((task) => taskStatus(task) === 'todo');
+  const inProgressTasks = tasks.filter((task) => taskStatus(task) === 'in_progress');
+  const doneTasks = tasks.filter((task) => taskStatus(task) === 'done');
 
   const createColumn = (title, columnTasks) => {
     const column = document.createElement('section');
@@ -1237,21 +1265,24 @@ const renderTasks = (tasks) => {
   };
 
   taskList.append(
-    createColumn(t('recordsWithAlert'), tasksWithAlert),
-    createColumn(t('alertNotSetColumn'), tasksWithoutAlert)
+    createColumn(t('todo'), todoTasks),
+    createColumn(t('in_progress'), inProgressTasks),
+    createColumn(t('done'), doneTasks)
   );
 };
 
 const createTaskCard = (task) => {
+    const currentStatus = taskStatus(task);
     const card = document.createElement('div');
-    card.className = `task-item ${task.completed ? 'completed' : ''}`;
+    card.className = `task-item ${currentStatus === 'done' ? 'completed' : ''}`;
 
     const meta = document.createElement('div');
     meta.className = 'task-meta';
     const title = document.createElement('strong');
     title.textContent = task.title;
     const status = document.createElement('span');
-    status.textContent = task.completed ? t('completed') : t('open');
+    status.className = `status-badge status-${currentStatus}`;
+    status.textContent = statusLabel(currentStatus);
     const badges = document.createElement('div');
     badges.className = 'task-badges';
     const priority = document.createElement('span');
@@ -1290,8 +1321,8 @@ const createTaskCard = (task) => {
     actions.className = 'task-actions';
 
     const toggleButton = document.createElement('button');
-    toggleButton.textContent = task.completed ? t('markOpen') : t('markDone');
-    toggleButton.addEventListener('click', () => updateTask(task.id, { completed: !task.completed }));
+    toggleButton.textContent = currentStatus === 'done' ? t('markOpen') : t('markDone');
+    toggleButton.addEventListener('click', () => updateTask(task.id, { status: currentStatus === 'done' ? 'todo' : 'done' }));
 
     const previewButton = document.createElement('button');
     previewButton.textContent = t('preview');
@@ -1414,6 +1445,7 @@ const showEditTaskModal = (task) => {
   clearEditTaskErrors();
   editTaskTitleInput.value = task.title;
   editTaskPriorityInput.value = task.priority || 'medium';
+  editTaskStatusInput.value = taskStatus(task);
   setRichEditorValue(editTaskDescriptionInput, task.description || '');
   editTaskReminderInput.value = formatDateTimeLocalValue(task.reminder_at);
   editTaskAttachmentInput.value = '';
@@ -1456,6 +1488,7 @@ const handleEditTaskSubmit = async (event) => {
 
   const title = editTaskTitleInput.value.trim();
   const priority = editTaskPriorityInput.value;
+  const status = editTaskStatusInput.value;
   const description = getRichEditorValue(editTaskDescriptionInput);
   const reminderAt = editTaskReminderInput.value || null;
   const attachmentFile = editTaskAttachmentInput.files[0] || null;
@@ -1494,8 +1527,8 @@ const handleEditTaskSubmit = async (event) => {
   const updates = {
     title,
     priority,
+    status,
     description,
-    completed: task.completed,
     reminder_at: reminderAt
   };
 
@@ -1625,6 +1658,7 @@ const exportToExcel = () => {
     [t('exportDate')]: currentDateTime,
     [t('title')]: task.title,
     [t('priority')]: priorityLabel(task.priority),
+    [t('status')]: statusLabel(taskStatus(task)),
     [t('description')]: getRichTextPlainText(task.description),
     [t('attachment')]: task.attachment_name || '',
     [t('completed')]: task.completed ? t('yes') : t('no'),
@@ -1656,6 +1690,8 @@ const exportToPdf = () => {
     doc.text(`${t('title')}: ${task.title}`, 20, y);
     y += 10;
     doc.text(`${t('priority')}: ${priorityLabel(task.priority)}`, 20, y);
+    y += 10;
+    doc.text(`${t('status')}: ${statusLabel(taskStatus(task))}`, 20, y);
     y += 10;
     doc.text(`${t('description')}: ${getRichTextPlainText(task.description) || t('notAvailable')}`, 20, y);
     y += 10;
@@ -1722,6 +1758,11 @@ const exportToWord = async () => {
           new Paragraph({
             children: [
               new TextRun(`${t('priority')}: ${priorityLabel(task.priority)}`)
+            ]
+          }),
+          new Paragraph({
+            children: [
+              new TextRun(`${t('status')}: ${statusLabel(taskStatus(task))}`)
             ]
           }),
           new Paragraph({

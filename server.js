@@ -13,6 +13,7 @@ const DATABASE_URL = process.env.DATABASE_URL;
 const TASK_ALERT_TO = process.env.TASK_ALERT_TO;
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const VALID_PRIORITIES = new Set(['low', 'medium', 'high']);
+const VALID_STATUSES = new Set(['todo', 'in_progress', 'done']);
 
 if (!DATABASE_URL || DATABASE_URL.includes('[YOUR-PASSWORD]')) {
   throw new Error('DATABASE_URL must be set to your Supabase Postgres connection string.');
@@ -64,6 +65,7 @@ const initializeDatabase = async () => {
     title TEXT NOT NULL,
     description TEXT,
     priority TEXT NOT NULL DEFAULT 'medium',
+    status TEXT NOT NULL DEFAULT 'todo',
     completed INTEGER NOT NULL DEFAULT 0,
     time_spent_minutes INTEGER DEFAULT 0,
     reminder_at TEXT,
@@ -78,6 +80,8 @@ const initializeDatabase = async () => {
 
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminder_at TEXT');
   await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS priority TEXT NOT NULL DEFAULT 'medium'");
+  await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'todo'");
+  await pool.query("UPDATE tasks SET status = 'done' WHERE completed = 1 AND status = 'todo'");
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_name TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_type TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_data TEXT');
@@ -103,6 +107,15 @@ const normalizePriority = (priority, fallback = 'medium') => {
 
   const normalized = String(priority).toLowerCase();
   return VALID_PRIORITIES.has(normalized) ? normalized : null;
+};
+
+const normalizeStatus = (status, fallback = 'todo') => {
+  if (status === undefined || status === null || status === '') {
+    return fallback;
+  }
+
+  const normalized = String(status).toLowerCase();
+  return VALID_STATUSES.has(normalized) ? normalized : null;
 };
 
 const createMailTransporter = () => {
@@ -194,6 +207,7 @@ const sendTaskAlertEmail = async (task, user) => {
       '',
       `Title: ${task.title}`,
       `Priority: ${task.priority || 'medium'}`,
+      `Status: ${task.status || (task.completed ? 'done' : 'todo')}`,
       `Description: ${stripHtml(task.description) || 'No description provided.'}`,
       `Attachment: ${task.attachment_name || 'No attachment'}`,
       `Date time alert: ${reminder}`,
@@ -217,9 +231,9 @@ const sendTaskSummaryEmail = async (tasks, user) => {
     ? tasks.flatMap((task, index) => [
         `${index + 1}. ${task.title}`,
         `Priority: ${task.priority || 'medium'}`,
+        `Status: ${task.status || (task.completed ? 'done' : 'todo')}`,
         `Description: ${stripHtml(task.description) || 'No description provided.'}`,
         `Attachment: ${task.attachment_name || 'No attachment'}`,
-        `Status: ${task.completed ? 'Completed' : 'Open'}`,
         `Date time alert: ${task.reminder_at ? new Date(task.reminder_at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'Not set'}`,
         `Created: ${task.created_at}`,
         '',
@@ -490,7 +504,7 @@ app.post('/api/tasks/send-email', authRequired, async (req, res) => {
 });
 
 app.post('/api/tasks', authRequired, async (req, res) => {
-  const { title, description, priority, time_spent_minutes, reminder_at, attachment } = req.body;
+  const { title, description, priority, status, time_spent_minutes, reminder_at, attachment } = req.body;
   if (!title) {
     return res.status(400).json({ error: 'Task title is required' });
   }
@@ -498,6 +512,11 @@ app.post('/api/tasks', authRequired, async (req, res) => {
   const normalizedPriority = normalizePriority(priority);
   if (!normalizedPriority) {
     return res.status(400).json({ error: 'Task priority must be low, medium, or high' });
+  }
+
+  const normalizedStatus = normalizeStatus(status);
+  if (!normalizedStatus) {
+    return res.status(400).json({ error: 'Task status must be todo, in_progress, or done' });
   }
   
   if (title.length > 20) {
@@ -518,14 +537,16 @@ app.post('/api/tasks', authRequired, async (req, res) => {
   try {
     const result = await runAsync(
       `INSERT INTO tasks (
-        user_id, title, description, priority, completed, time_spent_minutes, reminder_at,
+        user_id, title, description, priority, status, completed, time_spent_minutes, reminder_at,
         attachment_name, attachment_type, attachment_data, attachment_size
-      ) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?) RETURNING id`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       [
         req.session.userId,
         title,
         description || '',
         normalizedPriority,
+        normalizedStatus,
+        normalizedStatus === 'done' ? 1 : 0,
         time_spent_minutes || 0,
         reminder_at || null,
         parsedAttachment?.name || null,
@@ -553,8 +574,9 @@ app.post('/api/tasks', authRequired, async (req, res) => {
 
 app.put('/api/tasks/:id', authRequired, async (req, res) => {
   const { id } = req.params;
-  const { title, description, priority, completed, time_spent_minutes, reminder_at, attachment } = req.body;
+  const { title, description, priority, status, completed, time_spent_minutes, reminder_at, attachment } = req.body;
   const hasAttachmentUpdate = Object.prototype.hasOwnProperty.call(req.body, 'attachment');
+  const hasStatusUpdate = Object.prototype.hasOwnProperty.call(req.body, 'status');
 
   try {
     const task = await getAsync('SELECT * FROM tasks WHERE id = ? AND user_id = ?', [id, req.session.userId]);
@@ -576,6 +598,14 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
       return res.status(400).json({ error: 'Task priority must be low, medium, or high' });
     }
 
+    let normalizedStatus = normalizeStatus(status, task.status || (task.completed ? 'done' : 'todo'));
+    if (hasStatusUpdate && !normalizedStatus) {
+      return res.status(400).json({ error: 'Task status must be todo, in_progress, or done' });
+    }
+    if (!hasStatusUpdate && completed !== undefined) {
+      normalizedStatus = completed ? 'done' : 'todo';
+    }
+
     let parsedAttachment = null;
     if (hasAttachmentUpdate) {
       try {
@@ -590,6 +620,7 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
         title = ?,
         description = ?,
         priority = ?,
+        status = ?,
         completed = ?,
         time_spent_minutes = ?,
         reminder_at = ?,
@@ -603,7 +634,8 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
         title || task.title,
         description !== undefined ? description : task.description,
         normalizedPriority,
-        completed !== undefined ? (completed ? 1 : 0) : task.completed,
+        normalizedStatus,
+        normalizedStatus === 'done' ? 1 : 0,
         time_spent_minutes !== undefined ? time_spent_minutes : task.time_spent_minutes,
         reminder_at !== undefined ? reminder_at || null : task.reminder_at,
         hasAttachmentUpdate ? parsedAttachment?.name || null : task.attachment_name,

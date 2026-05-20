@@ -126,6 +126,7 @@ describe('Task API', () => {
       .send({
         title: 'Plan',
         priority: 'high',
+        status: 'in_progress',
         description: '<p><strong>Ship it</strong></p>',
         reminder_at: '2026-05-13T09:30',
         attachment: file,
@@ -135,6 +136,8 @@ describe('Task API', () => {
     expect(createResponse.body.task).toMatchObject({
       title: 'Plan',
       priority: 'high',
+      status: 'in_progress',
+      completed: 0,
       description: '<p><strong>Ship it</strong></p>',
       reminder_at: '2026-05-13T09:30',
       attachment_name: 'plan.txt',
@@ -149,6 +152,7 @@ describe('Task API', () => {
     expect(listResponse.body.tasks[0]).toMatchObject({
       title: 'Plan',
       priority: 'high',
+      status: 'in_progress',
       attachment_name: 'plan.txt',
     });
   });
@@ -167,6 +171,21 @@ describe('Task API', () => {
     });
   });
 
+  test('defaults task status to todo', async () => {
+    const agent = await createAgent(testUsername('default-status-owner'));
+
+    const response = await agent
+      .post('/api/tasks')
+      .send({ title: 'Default status' });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.task).toMatchObject({
+      title: 'Default status',
+      status: 'todo',
+      completed: 0,
+    });
+  });
+
   test('rejects invalid task priorities', async () => {
     const agent = await createAgent(testUsername('bad-priority-owner'));
 
@@ -176,6 +195,17 @@ describe('Task API', () => {
 
     expect(response.statusCode).toBe(400);
     expect(response.body).toHaveProperty('error', 'Task priority must be low, medium, or high');
+  });
+
+  test('rejects invalid task statuses', async () => {
+    const agent = await createAgent(testUsername('bad-status-owner'));
+
+    const response = await agent
+      .post('/api/tasks')
+      .send({ title: 'Bad status', status: 'blocked' });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toHaveProperty('error', 'Task status must be todo, in_progress, or done');
   });
 
   test('rejects task titles over 20 characters', async () => {
@@ -225,8 +255,8 @@ describe('Task API', () => {
       .send({
         title: 'Final',
         priority: 'low',
+        status: 'done',
         description: '<p>New description</p>',
-        completed: true,
       });
 
     expect(updateResponse.statusCode).toBe(200);
@@ -234,6 +264,7 @@ describe('Task API', () => {
       id: taskId,
       title: 'Final',
       priority: 'low',
+      status: 'done',
       description: '<p>New description</p>',
       completed: 1,
       attachment_name: 'original.txt',

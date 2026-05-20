@@ -424,7 +424,7 @@ button.danger {
 .task-list {
   margin-top: 24px;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
   align-items: start;
 }
@@ -520,6 +520,30 @@ button.danger {
 .priority-high {
   background: #fef2f2;
   color: #b91c1c;
+}
+
+.status-badge {
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  background: #f8fafc;
+  color: var(--muted);
+}
+
+.status-todo {
+  background: #eef2ff;
+  color: #3730a3;
+}
+
+.status-in_progress {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.status-done {
+  background: #f0fdf4;
+  color: #15803d;
 }
 
 .task-actions {
