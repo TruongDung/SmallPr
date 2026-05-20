@@ -420,7 +420,7 @@ const applyTranslations = () => {
   confirmDeleteNo.textContent = t('no');
   confirmDeleteYes.textContent = t('yes');
   if (currentUser) renderUserArea();
-  if (currentUser && currentView === 'tasks') renderTasks(tasks);
+  if (currentUser && (currentView === 'tasks' || currentView === 'archived')) renderTasks(tasks);
   if (currentUser && currentView === 'admin') renderUsers(users);
 };
 
