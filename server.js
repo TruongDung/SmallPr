@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 3000;
 const DATABASE_URL = process.env.DATABASE_URL;
 const TASK_ALERT_TO = process.env.TASK_ALERT_TO;
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+const VALID_PRIORITIES = new Set(['low', 'medium', 'high']);
 
 if (!DATABASE_URL || DATABASE_URL.includes('[YOUR-PASSWORD]')) {
   throw new Error('DATABASE_URL must be set to your Supabase Postgres connection string.');
@@ -62,6 +63,7 @@ const initializeDatabase = async () => {
     user_id INTEGER NOT NULL,
     title TEXT NOT NULL,
     description TEXT,
+    priority TEXT NOT NULL DEFAULT 'medium',
     completed INTEGER NOT NULL DEFAULT 0,
     time_spent_minutes INTEGER DEFAULT 0,
     reminder_at TEXT,
@@ -75,6 +77,7 @@ const initializeDatabase = async () => {
   )`);
 
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminder_at TEXT');
+  await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS priority TEXT NOT NULL DEFAULT 'medium'");
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_name TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_type TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_data TEXT');
@@ -92,6 +95,15 @@ const initializeDatabase = async () => {
 };
 
 const dbReady = initializeDatabase();
+
+const normalizePriority = (priority, fallback = 'medium') => {
+  if (priority === undefined || priority === null || priority === '') {
+    return fallback;
+  }
+
+  const normalized = String(priority).toLowerCase();
+  return VALID_PRIORITIES.has(normalized) ? normalized : null;
+};
 
 const createMailTransporter = () => {
   const {
@@ -181,6 +193,7 @@ const sendTaskAlertEmail = async (task, user) => {
       `A new task was added by ${user.username}.`,
       '',
       `Title: ${task.title}`,
+      `Priority: ${task.priority || 'medium'}`,
       `Description: ${stripHtml(task.description) || 'No description provided.'}`,
       `Attachment: ${task.attachment_name || 'No attachment'}`,
       `Date time alert: ${reminder}`,
@@ -203,6 +216,7 @@ const sendTaskSummaryEmail = async (tasks, user) => {
   const taskLines = tasks.length
     ? tasks.flatMap((task, index) => [
         `${index + 1}. ${task.title}`,
+        `Priority: ${task.priority || 'medium'}`,
         `Description: ${stripHtml(task.description) || 'No description provided.'}`,
         `Attachment: ${task.attachment_name || 'No attachment'}`,
         `Status: ${task.completed ? 'Completed' : 'Open'}`,
@@ -476,9 +490,14 @@ app.post('/api/tasks/send-email', authRequired, async (req, res) => {
 });
 
 app.post('/api/tasks', authRequired, async (req, res) => {
-  const { title, description, time_spent_minutes, reminder_at, attachment } = req.body;
+  const { title, description, priority, time_spent_minutes, reminder_at, attachment } = req.body;
   if (!title) {
     return res.status(400).json({ error: 'Task title is required' });
+  }
+
+  const normalizedPriority = normalizePriority(priority);
+  if (!normalizedPriority) {
+    return res.status(400).json({ error: 'Task priority must be low, medium, or high' });
   }
   
   if (title.length > 20) {
@@ -499,13 +518,14 @@ app.post('/api/tasks', authRequired, async (req, res) => {
   try {
     const result = await runAsync(
       `INSERT INTO tasks (
-        user_id, title, description, completed, time_spent_minutes, reminder_at,
+        user_id, title, description, priority, completed, time_spent_minutes, reminder_at,
         attachment_name, attachment_type, attachment_data, attachment_size
-      ) VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?) RETURNING id`,
+      ) VALUES (?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?) RETURNING id`,
       [
         req.session.userId,
         title,
         description || '',
+        normalizedPriority,
         time_spent_minutes || 0,
         reminder_at || null,
         parsedAttachment?.name || null,
@@ -533,7 +553,7 @@ app.post('/api/tasks', authRequired, async (req, res) => {
 
 app.put('/api/tasks/:id', authRequired, async (req, res) => {
   const { id } = req.params;
-  const { title, description, completed, time_spent_minutes, reminder_at, attachment } = req.body;
+  const { title, description, priority, completed, time_spent_minutes, reminder_at, attachment } = req.body;
   const hasAttachmentUpdate = Object.prototype.hasOwnProperty.call(req.body, 'attachment');
 
   try {
@@ -551,6 +571,11 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
       return res.status(400).json({ error: 'Task description must be 5000 characters or less' });
     }
 
+    const normalizedPriority = normalizePriority(priority, task.priority || 'medium');
+    if (!normalizedPriority) {
+      return res.status(400).json({ error: 'Task priority must be low, medium, or high' });
+    }
+
     let parsedAttachment = null;
     if (hasAttachmentUpdate) {
       try {
@@ -564,6 +589,7 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
       `UPDATE tasks SET
         title = ?,
         description = ?,
+        priority = ?,
         completed = ?,
         time_spent_minutes = ?,
         reminder_at = ?,
@@ -576,6 +602,7 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
       [
         title || task.title,
         description !== undefined ? description : task.description,
+        normalizedPriority,
         completed !== undefined ? (completed ? 1 : 0) : task.completed,
         time_spent_minutes !== undefined ? time_spent_minutes : task.time_spent_minutes,
         reminder_at !== undefined ? reminder_at || null : task.reminder_at,
@@ -631,3 +658,6 @@ if (require.main === module) {
 }
 
 module.exports = app;
+module.exports.app = app;
+module.exports.db = pool;
+module.exports.dbReady = dbReady;

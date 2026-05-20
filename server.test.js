@@ -125,6 +125,7 @@ describe('Task API', () => {
       .post('/api/tasks')
       .send({
         title: 'Plan',
+        priority: 'high',
         description: '<p><strong>Ship it</strong></p>',
         reminder_at: '2026-05-13T09:30',
         attachment: file,
@@ -133,6 +134,7 @@ describe('Task API', () => {
     expect(createResponse.statusCode).toBe(200);
     expect(createResponse.body.task).toMatchObject({
       title: 'Plan',
+      priority: 'high',
       description: '<p><strong>Ship it</strong></p>',
       reminder_at: '2026-05-13T09:30',
       attachment_name: 'plan.txt',
@@ -146,8 +148,34 @@ describe('Task API', () => {
     expect(listResponse.body.tasks).toHaveLength(1);
     expect(listResponse.body.tasks[0]).toMatchObject({
       title: 'Plan',
+      priority: 'high',
       attachment_name: 'plan.txt',
     });
+  });
+
+  test('defaults task priority to medium', async () => {
+    const agent = await createAgent(testUsername('default-priority-owner'));
+
+    const response = await agent
+      .post('/api/tasks')
+      .send({ title: 'Default' });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.task).toMatchObject({
+      title: 'Default',
+      priority: 'medium',
+    });
+  });
+
+  test('rejects invalid task priorities', async () => {
+    const agent = await createAgent(testUsername('bad-priority-owner'));
+
+    const response = await agent
+      .post('/api/tasks')
+      .send({ title: 'Bad priority', priority: 'urgent' });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toHaveProperty('error', 'Task priority must be low, medium, or high');
   });
 
   test('rejects task titles over 20 characters', async () => {
@@ -196,6 +224,7 @@ describe('Task API', () => {
       .put(`/api/tasks/${taskId}`)
       .send({
         title: 'Final',
+        priority: 'low',
         description: '<p>New description</p>',
         completed: true,
       });
@@ -204,6 +233,7 @@ describe('Task API', () => {
     expect(updateResponse.body.task).toMatchObject({
       id: taskId,
       title: 'Final',
+      priority: 'low',
       description: '<p>New description</p>',
       completed: 1,
       attachment_name: 'original.txt',

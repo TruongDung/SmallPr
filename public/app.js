@@ -18,6 +18,7 @@ const sendSummaryEmailButton = document.getElementById('send-summary-email');
 const exportExcelButton = document.getElementById('export-excel');
 const exportPdfButton = document.getElementById('export-pdf');
 const exportWordButton = document.getElementById('export-word');
+const taskPriorityInput = document.getElementById('task-priority');
 const taskReminderInput = document.getElementById('task-reminder');
 const taskAttachmentInput = document.getElementById('task-attachment');
 const passwordInput = document.getElementById('password');
@@ -31,6 +32,7 @@ const editTaskModal = document.getElementById('edit-task-modal');
 const editTaskForm = document.getElementById('edit-task-form');
 const editTaskTitle = document.getElementById('edit-task-title');
 const editTaskTitleInput = document.getElementById('edit-task-title-input');
+const editTaskPriorityInput = document.getElementById('edit-task-priority-input');
 const editTaskDescriptionInput = document.getElementById('edit-task-description-input');
 const editTaskReminderInput = document.getElementById('edit-task-reminder-input');
 const editTaskAttachmentInput = document.getElementById('edit-task-attachment-input');
@@ -91,6 +93,10 @@ const translations = {
     logout: 'Logout',
     title: 'Title',
     max20: '(max 20 characters)',
+    priority: 'Priority',
+    low: 'Low',
+    medium: 'Medium',
+    high: 'High',
     description: 'Description',
     descriptionPlaceholder: 'Write notes, lists, and details here...',
     max500: '(max 5000 characters)',
@@ -172,6 +178,10 @@ const translations = {
     notAvailable: 'N/A',
   },
   vi: {
+    priority: 'Uu tien',
+    low: 'Thap',
+    medium: 'Trung binh',
+    high: 'Cao',
     appTitle: 'Quản lý công việc',
     language: 'Ngôn ngữ',
     login: 'Đăng nhập',
@@ -284,6 +294,15 @@ const setText = (selector, value) => {
   if (element) element.textContent = value;
 };
 
+const priorityLabel = (priority = 'medium') => t(priority || 'medium');
+
+const updatePriorityOptions = (select) => {
+  if (!select) return;
+  select.querySelector('option[value="low"]').textContent = t('low');
+  select.querySelector('option[value="medium"]').textContent = t('medium');
+  select.querySelector('option[value="high"]').textContent = t('high');
+};
+
 const escapeHtml = (value = '') => String(value)
   .replaceAll('&', '&amp;')
   .replaceAll('<', '&lt;')
@@ -312,6 +331,8 @@ const applyTranslations = () => {
   exportWordButton.textContent = t('exportWord');
   logoutButton.textContent = t('logout');
   setText('label[for="task-title"]', `${t('title')} ${t('max20')}`);
+  setText('label[for="task-priority"]', t('priority'));
+  updatePriorityOptions(taskPriorityInput);
   setText('label[for="task-description"]', `${t('description')} ${t('max500')}`);
   document.getElementById('task-description').setAttribute('data-placeholder', t('descriptionPlaceholder'));
   setText('label[for="task-reminder"]', t('dateTimeAlert'));
@@ -322,6 +343,8 @@ const applyTranslations = () => {
   editPreviewTask.textContent = t('edit');
   closePreviewTask.textContent = t('close');
   setText('label[for="edit-task-title-input"]', `${t('title')} ${t('max20')}`);
+  setText('label[for="edit-task-priority-input"]', t('priority'));
+  updatePriorityOptions(editTaskPriorityInput);
   setText('label[for="edit-task-description-input"]', `${t('description')} ${t('max500')}`);
   editTaskDescriptionInput.setAttribute('data-placeholder', t('descriptionPlaceholder'));
   setText('label[for="edit-task-reminder-input"]', t('dateTimeAlert'));
@@ -1084,6 +1107,7 @@ const deleteUser = async (user) => {
 const handleTaskSubmit = async (event) => {
   event.preventDefault();
   const title = document.getElementById('task-title').value.trim();
+  const priority = taskPriorityInput.value;
   const descriptionEditor = document.getElementById('task-description');
   const description = getRichEditorValue(descriptionEditor);
   const reminder_at = taskReminderInput.value || null;
@@ -1134,7 +1158,7 @@ const handleTaskSubmit = async (event) => {
   try {
     const result = await request('/api/tasks', {
       method: 'POST',
-      body: JSON.stringify({ title, description, reminder_at, attachment: preparedAttachment }),
+      body: JSON.stringify({ title, description, priority, reminder_at, attachment: preparedAttachment }),
     });
 
     if (result.error) {
@@ -1146,6 +1170,7 @@ const handleTaskSubmit = async (event) => {
     if (result.task) {
       authForm.reset();
       taskForm.reset();
+      taskPriorityInput.value = 'medium';
       descriptionEditor.innerHTML = '';
       preparedAttachment = null;
       titleError.classList.add('hidden');
@@ -1227,7 +1252,13 @@ const createTaskCard = (task) => {
     title.textContent = task.title;
     const status = document.createElement('span');
     status.textContent = task.completed ? t('completed') : t('open');
-    meta.append(title, status);
+    const badges = document.createElement('div');
+    badges.className = 'task-badges';
+    const priority = document.createElement('span');
+    priority.className = `priority-badge priority-${task.priority || 'medium'}`;
+    priority.textContent = priorityLabel(task.priority);
+    badges.append(priority, status);
+    meta.append(title, badges);
 
     const description = document.createElement('div');
     description.className = 'task-description';
@@ -1382,6 +1413,7 @@ const showEditTaskModal = (task) => {
   preparedEditAttachment = null;
   clearEditTaskErrors();
   editTaskTitleInput.value = task.title;
+  editTaskPriorityInput.value = task.priority || 'medium';
   setRichEditorValue(editTaskDescriptionInput, task.description || '');
   editTaskReminderInput.value = formatDateTimeLocalValue(task.reminder_at);
   editTaskAttachmentInput.value = '';
@@ -1423,6 +1455,7 @@ const handleEditTaskSubmit = async (event) => {
   clearEditTaskErrors();
 
   const title = editTaskTitleInput.value.trim();
+  const priority = editTaskPriorityInput.value;
   const description = getRichEditorValue(editTaskDescriptionInput);
   const reminderAt = editTaskReminderInput.value || null;
   const attachmentFile = editTaskAttachmentInput.files[0] || null;
@@ -1460,6 +1493,7 @@ const handleEditTaskSubmit = async (event) => {
   const task = pendingEditTask;
   const updates = {
     title,
+    priority,
     description,
     completed: task.completed,
     reminder_at: reminderAt
@@ -1590,6 +1624,7 @@ const exportToExcel = () => {
   const data = tasks.map(task => ({
     [t('exportDate')]: currentDateTime,
     [t('title')]: task.title,
+    [t('priority')]: priorityLabel(task.priority),
     [t('description')]: getRichTextPlainText(task.description),
     [t('attachment')]: task.attachment_name || '',
     [t('completed')]: task.completed ? t('yes') : t('no'),
@@ -1619,6 +1654,8 @@ const exportToPdf = () => {
   tasks.forEach(task => {
     doc.setFontSize(12);
     doc.text(`${t('title')}: ${task.title}`, 20, y);
+    y += 10;
+    doc.text(`${t('priority')}: ${priorityLabel(task.priority)}`, 20, y);
     y += 10;
     doc.text(`${t('description')}: ${getRichTextPlainText(task.description) || t('notAvailable')}`, 20, y);
     y += 10;
@@ -1680,6 +1717,11 @@ const exportToWord = async () => {
           new Paragraph({
             children: [
               new TextRun(`${t('description')}: ${getRichTextPlainText(task.description) || t('notAvailable')}`)
+            ]
+          }),
+          new Paragraph({
+            children: [
+              new TextRun(`${t('priority')}: ${priorityLabel(task.priority)}`)
             ]
           }),
           new Paragraph({

@@ -73,6 +73,14 @@
             <p id="title-error" class="field-error hidden"></p>
           </div>
           <div class="field">
+            <label for="task-priority">Priority</label>
+            <select id="task-priority">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+          <div class="field">
             <label for="task-description">Description <span class="field-max">(max 5000 characters)</span></label>
             <div class="rich-editor">
               <div class="rich-editor-toolbar" aria-label="Description formatting">
@@ -156,6 +164,14 @@
           <label for="edit-task-title-input">Title <span class="field-max">(max 20 characters)</span></label>
           <input id="edit-task-title-input" type="text" required maxlength="20" size="20" />
           <p id="edit-title-error" class="field-error hidden"></p>
+        </div>
+        <div class="field">
+          <label for="edit-task-priority-input">Priority</label>
+          <select id="edit-task-priority-input">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
         </div>
         <div class="field">
           <label for="edit-task-description-input">Description <span class="field-max">(max 5000 characters)</span></label>
