@@ -1673,15 +1673,12 @@ const createTaskCard = (task) => {
     meta.className = 'task-meta';
     const title = document.createElement('strong');
     title.textContent = task.title;
-    const status = document.createElement('span');
-    status.className = `status-badge status-${currentStatus}`;
-    status.textContent = statusLabel(currentStatus);
     const badges = document.createElement('div');
     badges.className = 'task-badges';
     const priority = document.createElement('span');
     priority.className = `priority-badge priority-${task.priority || 'medium'}`;
     priority.textContent = priorityLabel(task.priority);
-    badges.append(priority, status);
+    badges.append(priority);
     if (task.tag) {
       const tag = document.createElement('span');
       tag.className = 'tag-badge';

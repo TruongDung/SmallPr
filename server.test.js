@@ -353,6 +353,41 @@ describe('Task API', () => {
     });
   });
 
+  test('sends task alert email with multiline description values on separate lines', async () => {
+    const originalEnv = {
+      SMTP_HOST: process.env.SMTP_HOST,
+      SMTP_USER: process.env.SMTP_USER,
+      SMTP_PASS: process.env.SMTP_PASS,
+    };
+    const agent = await createAgent(testUsername('alert-email-owner'));
+    process.env.SMTP_HOST = 'smtp.test.local';
+    process.env.SMTP_USER = 'sender@test.local';
+    process.env.SMTP_PASS = 'secret';
+    mockSendMail.mockClear();
+
+    const response = await agent
+      .post('/api/tasks')
+      .send({
+        title: 'Links',
+        description: 'link:\\nhttps://www.youtube.com/watch?v=g-ZtK5u-iiw\\nhttps://www.youtube.com/watch?v=rNzXtp11rg0',
+      });
+
+    expect(response.statusCode).toBe(200);
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+    const mailOptions = mockSendMail.mock.calls[0][0];
+    expect(mailOptions.text).toContain([
+      'Description:',
+      'link:',
+      'https://www.youtube.com/watch?v=g-ZtK5u-iiw',
+      'https://www.youtube.com/watch?v=rNzXtp11rg0',
+      'Comment:',
+    ].join('\n'));
+
+    process.env.SMTP_HOST = originalEnv.SMTP_HOST;
+    process.env.SMTP_USER = originalEnv.SMTP_USER;
+    process.env.SMTP_PASS = originalEnv.SMTP_PASS;
+  });
+
   test('replaces an attachment when editing a task', async () => {
     const agent = await createAgent(testUsername('replace-attachment-owner'));
 

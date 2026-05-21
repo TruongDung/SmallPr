@@ -303,6 +303,8 @@ const normalizeLineBreaks = (value = '') => String(value)
   .replace(/\\r\\n|\\n|\\r/g, '\n')
   .replace(/\r\n|\r|\n/g, '\n');
 
+const formatPlainTextValue = (value = '') => normalizeLineBreaks(stripHtml(value));
+
 const formatMultilineHtml = (value = '') => normalizeLineBreaks(value)
   .split('\n')
   .map((line) => escapeHtml(line))
@@ -346,6 +348,7 @@ const sendTaskAlertEmail = async (task, user, language = 'en') => {
     : tEmail(language, 'notSet');
 
   const taskAlertMarker = tEmail(language, 'taskManager');
+  const description = formatPlainTextValue(task.description) || tEmail(language, 'noDescription');
 
   await transporter.sendMail({
     from,
@@ -363,7 +366,8 @@ const sendTaskAlertEmail = async (task, user, language = 'en') => {
       `${tEmail(language, 'tag')}: ${task.tag || tEmail(language, 'noTag')}`,
       `${tEmail(language, 'priority')}: ${formatTaskPriority(task.priority || 'medium', language)}`,
       `${tEmail(language, 'status')}: ${formatTaskStatus(task.status || (task.completed ? 'done' : 'todo'), language)}`,
-      `${tEmail(language, 'description')}: ${stripHtml(task.description) || tEmail(language, 'noDescription')}`,
+      `${tEmail(language, 'description')}:`,
+      description,
       `${tEmail(language, 'comment')}: ${task.comment || tEmail(language, 'noComment')}`,
       `${tEmail(language, 'attachment')}: ${task.attachment_name || tEmail(language, 'noAttachment')}`,
       `${tEmail(language, 'dateTimeAlert')}: ${reminder}`,
@@ -404,7 +408,7 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
     tag: task.tag || tEmail(language, 'noTag'),
     priority: formatTaskPriority(task.priority || 'medium', language),
     status: getTaskStatus(task),
-    description: stripHtml(task.description) || tEmail(language, 'noDescription'),
+    description: formatPlainTextValue(task.description) || tEmail(language, 'noDescription'),
     comment: task.comment || tEmail(language, 'noComment'),
     attachment: task.attachment_name || tEmail(language, 'noAttachment'),
     reminder: formatReminder(task),
