@@ -401,6 +401,16 @@ const toggleTheme = () => {
 
 const priorityLabel = (priority = 'medium') => t(priority || 'medium');
 
+const priorityRank = (priority = 'medium') => ({
+  high: 0,
+  medium: 1,
+  low: 2,
+}[priority] ?? 3);
+
+const sortTasksByPriority = (taskList = []) => [...taskList].sort((first, second) => (
+  priorityRank(first.priority) - priorityRank(second.priority)
+));
+
 const taskStatus = (task) => task.status || (task.completed ? 'done' : 'todo');
 
 const statusLabel = (status = 'todo') => t(status || 'todo');
@@ -1598,9 +1608,9 @@ const renderTasks = (tasks) => {
     return;
   }
 
-  const todoTasks = visibleTasks.filter((task) => taskStatus(task) === 'todo');
-  const inProgressTasks = visibleTasks.filter((task) => taskStatus(task) === 'in_progress');
-  const doneTasks = visibleTasks.filter((task) => taskStatus(task) === 'done');
+  const todoTasks = sortTasksByPriority(visibleTasks.filter((task) => taskStatus(task) === 'todo'));
+  const inProgressTasks = sortTasksByPriority(visibleTasks.filter((task) => taskStatus(task) === 'in_progress'));
+  const doneTasks = sortTasksByPriority(visibleTasks.filter((task) => taskStatus(task) === 'done'));
 
   const createColumn = (title, status, columnTasks) => {
     const column = document.createElement('section');

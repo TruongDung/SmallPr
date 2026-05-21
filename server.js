@@ -299,6 +299,8 @@ const escapeHtml = (value = '') => String(value)
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&#39;');
 
+const formatMultilineHtml = (value = '') => escapeHtml(value).replace(/\r?\n/g, '<br>');
+
 const sanitizeFileName = (name = '') => path.basename(String(name)).replace(/[<>:"/\\|?*\u0000-\u001F]/g, '_').slice(0, 180);
 
 const parseAttachment = (attachment) => {
@@ -438,7 +440,7 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.priority)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.status)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.description)}</td>
-              <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.comment)}</td>
+              <td style="border:1px solid #d1d5db;padding:8px;white-space:normal;">${formatMultilineHtml(task.comment)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.attachment)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.reminder)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.created)}</td>

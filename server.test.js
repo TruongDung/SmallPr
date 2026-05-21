@@ -499,7 +499,7 @@ describe('Task API', () => {
         priority: 'high',
         status: 'in_progress',
         description: '<p>Review & ship</p>',
-        comment: 'Bring docs & notes',
+        comment: 'Bring docs & notes\nConfirm <launch>',
         reminder_at: '2026-05-13T09:30',
       });
     await agent
@@ -529,10 +529,10 @@ describe('Task API', () => {
     expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Client</td>');
     expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Cần làm</td>');
     expect(mailOptions.html).toContain('Review &amp; ship');
-    expect(mailOptions.html).toContain('Bring docs &amp; notes');
+    expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;white-space:normal;">Bring docs &amp; notes<br>Confirm &lt;launch&gt;</td>');
     expect(mailOptions.html.indexOf('Email table')).toBeLessThan(mailOptions.html.indexOf('Todo email'));
     expect(mailOptions.text).toContain('#\tTiêu đề\tNhãn\tƯu tiên\tTrạng thái\tMô tả\tBình luận\tTệp đính kèm\tNgày giờ nhắc\tĐã tạo');
-    expect(mailOptions.text).toContain('Email table\tClient\tCao\tĐang làm\tReview & ship\tBring docs & notes');
+    expect(mailOptions.text).toContain('Email table\tClient\tCao\tĐang làm\tReview & ship\tBring docs & notes\nConfirm <launch>');
     expect(mailOptions.text).toContain('Todo email\tClient\tTrung bình\tCần làm\tKhông có mô tả.\tKhông có bình luận');
     expect(mailOptions.text.indexOf('Email table')).toBeLessThan(mailOptions.text.indexOf('Todo email'));
 
