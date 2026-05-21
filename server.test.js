@@ -1,4 +1,4 @@
-const request = require('supertest');
+﻿const request = require('supertest');
 
 process.env.TASK_ALERT_TO = '';
 process.env.SMTP_HOST = '';
@@ -491,6 +491,28 @@ describe('Task API', () => {
       SMTP_PASS: process.env.SMTP_PASS,
     };
     const agent = await createAgent(testUsername('summary-email-owner'));
+    const comment = [
+      '- TPA -> RDU',
+      '-- Dung Truong : HKZMZR',
+      '-- ngoc ngo + jennie:',
+      'H282KG',
+      '',
+      '- RDU -> TPA',
+      '-- Dung Truong + jennie:',
+      'H2PXRG',
+      '-- ngoc ngo + sophia:',
+      'H24344',
+      '',
+      '- da cancel : H3H2MS',
+    ].join('\n');
+    const description = [
+      '- TPA -> RDU',
+      '-- Dung Truong : HKZMZR',
+      '',
+      '- RDU -> TPA',
+      '-- ngoc ngo + sophia:',
+      'H24344',
+    ].join('\n');
     await agent
       .post('/api/tasks')
       .send({
@@ -498,8 +520,8 @@ describe('Task API', () => {
         tag: 'Client',
         priority: 'high',
         status: 'in_progress',
-        description: '<p>Review & ship</p>',
-        comment: 'Bring docs & notes\nConfirm <launch>',
+        description,
+        comment,
         reminder_at: '2026-05-13T09:30',
       });
     await agent
@@ -523,17 +545,42 @@ describe('Task API', () => {
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     const mailOptions = mockSendMail.mock.calls[0][0];
     expect(mailOptions.html).toContain('<table');
-    expect(mailOptions.subject).toBe('Tóm tắt công việc');
-    expect(mailOptions.html).toContain('<th style="border:1px solid #d1d5db;padding:8px;background:#f3f4f6;text-align:left;">Tiêu đề</th>');
+    expect(mailOptions.subject).toBe('TÃ³m táº¯t cÃ´ng viá»‡c');
+    expect(mailOptions.html).toContain('<th style="border:1px solid #d1d5db;padding:8px;background:#f3f4f6;text-align:left;">TiÃªu Ä‘á»</th>');
     expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Email table</td>');
     expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Client</td>');
-    expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Cần làm</td>');
-    expect(mailOptions.html).toContain('Review &amp; ship');
-    expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;white-space:normal;">Bring docs &amp; notes<br>Confirm &lt;launch&gt;</td>');
+    expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Cáº§n lÃ m</td>');
+    expect(mailOptions.html).toContain([
+      '<td style="border:1px solid #d1d5db;padding:8px;white-space:pre-line;">',
+      '- TPA -&gt; RDU',
+      '<br>-- Dung Truong : HKZMZR',
+      '<br>',
+      '<br>- RDU -&gt; TPA',
+      '<br>-- ngoc ngo + sophia:',
+      '<br>H24344',
+      '</td>',
+    ].join(''));
+    expect(mailOptions.html).toContain([
+      '<td style="border:1px solid #d1d5db;padding:8px;white-space:pre-line;">',
+      '- TPA -&gt; RDU',
+      '<br>-- Dung Truong : HKZMZR',
+      '<br>-- ngoc ngo + jennie:',
+      '<br>H282KG',
+      '<br>',
+      '<br>- RDU -&gt; TPA',
+      '<br>-- Dung Truong + jennie:',
+      '<br>H2PXRG',
+      '<br>-- ngoc ngo + sophia:',
+      '<br>H24344',
+      '<br>',
+      '<br>- da cancel : H3H2MS',
+      '</td>',
+    ].join(''));
     expect(mailOptions.html.indexOf('Email table')).toBeLessThan(mailOptions.html.indexOf('Todo email'));
-    expect(mailOptions.text).toContain('#\tTiêu đề\tNhãn\tƯu tiên\tTrạng thái\tMô tả\tBình luận\tTệp đính kèm\tNgày giờ nhắc\tĐã tạo');
-    expect(mailOptions.text).toContain('Email table\tClient\tCao\tĐang làm\tReview & ship\tBring docs & notes\nConfirm <launch>');
-    expect(mailOptions.text).toContain('Todo email\tClient\tTrung bình\tCần làm\tKhông có mô tả.\tKhông có bình luận');
+    const headerLine = mailOptions.text.split('\n').find((line) => line.startsWith('#\t'));
+    expect(headerLine.split('\t')).toHaveLength(9);
+    expect(mailOptions.text).toContain(`Email table\tClient\tCao\tÄang lÃ m\t${description}\t${comment}`);
+    expect(mailOptions.text).toContain('Todo email\tClient\tTrung bÃ¬nh\tCáº§n lÃ m\tKhÃ´ng cÃ³ mÃ´ táº£.\tKhÃ´ng cÃ³ bÃ¬nh luáº­n');
     expect(mailOptions.text.indexOf('Email table')).toBeLessThan(mailOptions.text.indexOf('Todo email'));
 
     process.env.SMTP_HOST = originalEnv.SMTP_HOST;

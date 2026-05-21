@@ -299,7 +299,14 @@ const escapeHtml = (value = '') => String(value)
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&#39;');
 
-const formatMultilineHtml = (value = '') => escapeHtml(value).replace(/\r?\n/g, '<br>');
+const normalizeLineBreaks = (value = '') => String(value)
+  .replace(/\\r\\n|\\n|\\r/g, '\n')
+  .replace(/\r\n|\r|\n/g, '\n');
+
+const formatMultilineHtml = (value = '') => normalizeLineBreaks(value)
+  .split('\n')
+  .map((line) => escapeHtml(line))
+  .join('<br>');
 
 const sanitizeFileName = (name = '') => path.basename(String(name)).replace(/[<>:"/\\|?*\u0000-\u001F]/g, '_').slice(0, 180);
 
@@ -360,7 +367,6 @@ const sendTaskAlertEmail = async (task, user, language = 'en') => {
       `${tEmail(language, 'comment')}: ${task.comment || tEmail(language, 'noComment')}`,
       `${tEmail(language, 'attachment')}: ${task.attachment_name || tEmail(language, 'noAttachment')}`,
       `${tEmail(language, 'dateTimeAlert')}: ${reminder}`,
-      `${tEmail(language, 'created')}: ${task.created_at}`,
     ].join('\n'),
   });
 
@@ -391,7 +397,6 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
     tEmail(language, 'comment'),
     tEmail(language, 'attachment'),
     tEmail(language, 'dateTimeAlert'),
-    tEmail(language, 'created'),
   ];
   const taskTableRows = tasks.map((task, index) => ({
     number: index + 1,
@@ -403,7 +408,6 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
     comment: task.comment || tEmail(language, 'noComment'),
     attachment: task.attachment_name || tEmail(language, 'noAttachment'),
     reminder: formatReminder(task),
-    created: task.created_at,
   }));
   const textTable = taskTableRows.length
     ? [
@@ -418,7 +422,6 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
           task.comment,
           task.attachment,
           task.reminder,
-          task.created,
         ].join('\t')),
       ]
     : [tEmail(language, 'noTasks')];
@@ -439,11 +442,10 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.tag)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.priority)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.status)}</td>
-              <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.description)}</td>
-              <td style="border:1px solid #d1d5db;padding:8px;white-space:normal;">${formatMultilineHtml(task.comment)}</td>
+              <td style="border:1px solid #d1d5db;padding:8px;white-space:pre-line;">${formatMultilineHtml(task.description)}</td>
+              <td style="border:1px solid #d1d5db;padding:8px;white-space:pre-line;">${formatMultilineHtml(task.comment)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.attachment)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.reminder)}</td>
-              <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.created)}</td>
             </tr>`
           )).join('')}
         </tbody>
