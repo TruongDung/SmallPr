@@ -1701,6 +1701,7 @@ const createTaskCard = (task) => {
     const comment = document.createElement('p');
     comment.className = 'task-comment';
     comment.textContent = `${t('comment')}: ${task.comment}`;
+    comment.title = `${t('comment')}: ${task.comment}`;
 
     const datetime = document.createElement('p');
     datetime.className = 'task-datetime';

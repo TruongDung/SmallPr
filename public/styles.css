@@ -305,8 +305,11 @@ label {
 }
 
 #preview-task-comment-input {
-  min-height: 96px;
-  resize: vertical;
+  height: 44px;
+  min-height: 44px;
+  max-height: 44px;
+  resize: none;
+  overflow-y: auto;
 }
 
 input,
@@ -989,8 +992,9 @@ body.theme-dark .status-in_progress {
   background: var(--surface-soft);
   color: var(--text);
   line-height: 1.45;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .task-attachment {
