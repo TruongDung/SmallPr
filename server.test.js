@@ -545,11 +545,11 @@ describe('Task API', () => {
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     const mailOptions = mockSendMail.mock.calls[0][0];
     expect(mailOptions.html).toContain('<table');
-    expect(mailOptions.subject).toBe('TÃ³m táº¯t cÃ´ng viá»‡c');
-    expect(mailOptions.html).toContain('<th style="border:1px solid #d1d5db;padding:8px;background:#f3f4f6;text-align:left;">TiÃªu Ä‘á»</th>');
+    expect(mailOptions.subject).toBe('Tóm tắt công việc');
+    expect(mailOptions.html).toContain('<th style="border:1px solid #d1d5db;padding:8px;background:#f3f4f6;text-align:left;">Tiêu đề</th>');
     expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Email table</td>');
     expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Client</td>');
-    expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Cáº§n lÃ m</td>');
+    expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Cần làm</td>');
     expect(mailOptions.html).toContain([
       '<td style="border:1px solid #d1d5db;padding:8px;white-space:pre-line;">',
       '- TPA -&gt; RDU',
@@ -579,8 +579,8 @@ describe('Task API', () => {
     expect(mailOptions.html.indexOf('Email table')).toBeLessThan(mailOptions.html.indexOf('Todo email'));
     const headerLine = mailOptions.text.split('\n').find((line) => line.startsWith('#\t'));
     expect(headerLine.split('\t')).toHaveLength(9);
-    expect(mailOptions.text).toContain(`Email table\tClient\tCao\tÄang lÃ m\t${description}\t${comment}`);
-    expect(mailOptions.text).toContain('Todo email\tClient\tTrung bÃ¬nh\tCáº§n lÃ m\tKhÃ´ng cÃ³ mÃ´ táº£.\tKhÃ´ng cÃ³ bÃ¬nh luáº­n');
+    expect(mailOptions.text).toContain(`Email table\tClient\tCao\tĐang làm\t${description}\t${comment}`);
+    expect(mailOptions.text).toContain('Todo email\tClient\tTrung bình\tCần làm\tKhông có mô tả.\tKhông có bình luận');
     expect(mailOptions.text.indexOf('Email table')).toBeLessThan(mailOptions.text.indexOf('Todo email'));
 
     process.env.SMTP_HOST = originalEnv.SMTP_HOST;
