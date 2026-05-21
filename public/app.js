@@ -53,7 +53,6 @@ const editTaskDescriptionInput = document.getElementById('edit-task-description-
 const editTaskCommentInput = document.getElementById('edit-task-comment-input');
 const editTaskReminderInput = document.getElementById('edit-task-reminder-input');
 const editTaskAttachmentInput = document.getElementById('edit-task-attachment-input');
-const editCurrentAttachment = document.getElementById('edit-current-attachment');
 const editTitleError = document.getElementById('edit-title-error');
 const editDescriptionError = document.getElementById('edit-description-error');
 const editAttachmentError = document.getElementById('edit-attachment-error');
@@ -1821,9 +1820,9 @@ const updateTask = async (id, updates) => {
     return result;
   }
   if (Object.prototype.hasOwnProperty.call(updates, 'tag')) {
-    loadTags();
+    await loadTags();
   }
-  loadTasks();
+  await loadTasks();
   return result;
 };
 
@@ -1958,18 +1957,6 @@ const showEditTaskModal = (task) => {
   editTaskReminderInput.value = formatDateTimeLocalValue(task.reminder_at);
   editTaskAttachmentInput.value = '';
 
-  if (task.attachment_data && task.attachment_name) {
-    editCurrentAttachment.href = task.attachment_data;
-    editCurrentAttachment.download = task.attachment_name;
-    editCurrentAttachment.textContent = `${t('attachment')}: ${task.attachment_name}`;
-    editCurrentAttachment.classList.remove('hidden');
-  } else {
-    editCurrentAttachment.removeAttribute('href');
-    editCurrentAttachment.removeAttribute('download');
-    editCurrentAttachment.textContent = '';
-    editCurrentAttachment.classList.add('hidden');
-  }
-
   editTaskModal.classList.remove('hidden');
   editTaskTitleInput.focus();
   editTaskTitleInput.select();
@@ -1981,10 +1968,6 @@ const hideEditTaskModal = () => {
   editTaskForm.reset();
   editTaskDescriptionInput.innerHTML = '';
   editTaskCommentInput.value = '';
-  editCurrentAttachment.removeAttribute('href');
-  editCurrentAttachment.removeAttribute('download');
-  editCurrentAttachment.textContent = '';
-  editCurrentAttachment.classList.add('hidden');
   clearEditTaskErrors();
   editTaskModal.classList.add('hidden');
 };
@@ -2093,7 +2076,10 @@ savePreviewComment.addEventListener('click', async () => {
   const task = pendingPreviewTask;
   const comment = previewTaskCommentInput.value.trim();
   hidePreviewTaskModal();
-  await updateTask(task.id, { comment });
+  const result = await updateTask(task.id, { comment });
+  if (!result?.error) {
+    showStatusToast(t('taskSaved'));
+  }
 });
 
 closePreviewTask.addEventListener('click', hidePreviewTaskModal);

@@ -299,6 +299,37 @@ describe('Task API', () => {
     });
   });
 
+  test('saves a comment-only task update', async () => {
+    const agent = await createAgent(testUsername('comment-only-owner'));
+
+    const createResponse = await agent
+      .post('/api/tasks')
+      .send({
+        title: 'Comment',
+        description: 'Task detail',
+      });
+
+    const taskId = createResponse.body.task.id;
+    const updateResponse = await agent
+      .put(`/api/tasks/${taskId}`)
+      .send({
+        comment: 'Saved from task detail',
+      });
+
+    expect(updateResponse.statusCode).toBe(200);
+    expect(updateResponse.body.task).toMatchObject({
+      id: taskId,
+      title: 'Comment',
+      description: 'Task detail',
+      comment: 'Saved from task detail',
+    });
+
+    const listResponse = await agent.get('/api/tasks');
+    expect(listResponse.body.tasks.find((task) => task.id === taskId)).toMatchObject({
+      comment: 'Saved from task detail',
+    });
+  });
+
   test('replaces an attachment when editing a task', async () => {
     const agent = await createAgent(testUsername('replace-attachment-owner'));
 
