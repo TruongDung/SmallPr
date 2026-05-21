@@ -66,6 +66,7 @@ const initializeDatabase = async () => {
     title TEXT NOT NULL,
     tag TEXT,
     description TEXT,
+    comment TEXT,
     priority TEXT NOT NULL DEFAULT 'medium',
     status TEXT NOT NULL DEFAULT 'todo',
     archived INTEGER NOT NULL DEFAULT 0,
@@ -93,6 +94,7 @@ const initializeDatabase = async () => {
 
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminder_at TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS tag TEXT');
+  await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS comment TEXT');
   await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS priority TEXT NOT NULL DEFAULT 'medium'");
   await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'todo'");
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS archived INTEGER NOT NULL DEFAULT 0');
@@ -802,7 +804,7 @@ app.post('/api/tasks/send-email', authRequired, async (req, res) => {
 });
 
 app.post('/api/tasks', authRequired, async (req, res) => {
-  const { title, tag, description, priority, status, time_spent_minutes, reminder_at, attachment, language } = req.body;
+  const { title, tag, description, comment, priority, status, time_spent_minutes, reminder_at, attachment, language } = req.body;
   if (!title) {
     return res.status(400).json({ error: 'Task title is required' });
   }
@@ -840,14 +842,15 @@ app.post('/api/tasks', authRequired, async (req, res) => {
   try {
     const result = await runAsync(
       `INSERT INTO tasks (
-        user_id, title, tag, description, priority, status, completed, time_spent_minutes, reminder_at,
+        user_id, title, tag, description, comment, priority, status, completed, time_spent_minutes, reminder_at,
         attachment_name, attachment_type, attachment_data, attachment_size
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       [
         req.session.userId,
         title,
         normalizedTag,
         description || '',
+        comment || '',
         normalizedPriority,
         normalizedStatus,
         normalizedStatus === 'done' ? 1 : 0,
@@ -879,7 +882,7 @@ app.post('/api/tasks', authRequired, async (req, res) => {
 
 app.put('/api/tasks/:id', authRequired, async (req, res) => {
   const { id } = req.params;
-  const { title, tag, description, priority, status, archived, completed, time_spent_minutes, reminder_at, attachment } = req.body;
+  const { title, tag, description, comment, priority, status, archived, completed, time_spent_minutes, reminder_at, attachment } = req.body;
   const hasAttachmentUpdate = Object.prototype.hasOwnProperty.call(req.body, 'attachment');
   const hasStatusUpdate = Object.prototype.hasOwnProperty.call(req.body, 'status');
   const hasTagUpdate = Object.prototype.hasOwnProperty.call(req.body, 'tag');
@@ -931,6 +934,7 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
         title = ?,
         tag = ?,
         description = ?,
+        comment = ?,
         priority = ?,
         status = ?,
         archived = ?,
@@ -947,6 +951,7 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
         title || task.title,
         hasTagUpdate ? normalizedTag : task.tag,
         description !== undefined ? description : task.description,
+        comment !== undefined ? comment : task.comment,
         normalizedPriority,
         normalizedStatus,
         archived !== undefined ? (archived ? 1 : 0) : task.archived,

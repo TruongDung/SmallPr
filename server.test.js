@@ -277,6 +277,7 @@ describe('Task API', () => {
         priority: 'low',
         status: 'done',
         description: '<p>New description</p>',
+        comment: 'Ready for review',
       });
 
     expect(updateResponse.statusCode).toBe(200);
@@ -287,8 +288,14 @@ describe('Task API', () => {
       priority: 'low',
       status: 'done',
       description: '<p>New description</p>',
+      comment: 'Ready for review',
       completed: 1,
       attachment_name: 'original.txt',
+    });
+
+    const listResponse = await agent.get('/api/tasks');
+    expect(listResponse.body.tasks.find((task) => task.id === taskId)).toMatchObject({
+      comment: 'Ready for review',
     });
   });
 

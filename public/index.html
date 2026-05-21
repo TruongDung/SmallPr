@@ -257,6 +257,10 @@
           <p id="edit-description-error" class="field-error hidden"></p>
         </div>
         <div class="field">
+          <label for="edit-task-comment-input">Add comment</label>
+          <textarea id="edit-task-comment-input" rows="4" maxlength="1000" placeholder="Add a comment about this task..."></textarea>
+        </div>
+        <div class="field">
           <label for="edit-task-reminder-input">Date Time Alert</label>
           <input id="edit-task-reminder-input" type="datetime-local" />
         </div>
@@ -279,8 +283,13 @@
     <div class="modal preview-task-modal">
       <h3 id="preview-task-title">Preview</h3>
       <div id="preview-task-description" class="preview-task-description"></div>
+      <div class="field preview-task-comment-field">
+        <label for="preview-task-comment-input">Add comment</label>
+        <textarea id="preview-task-comment-input" rows="4" maxlength="1000" placeholder="Add a comment about this task..."></textarea>
+      </div>
       <div class="modal-actions">
         <button id="edit-preview-task" type="button">Edit</button>
+        <button id="save-preview-comment" type="button">Save</button>
         <button id="close-preview-task" type="button" class="secondary">Close</button>
       </div>
     </div>

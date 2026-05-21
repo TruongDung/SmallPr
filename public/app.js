@@ -50,6 +50,7 @@ const editTaskPriorityInput = document.getElementById('edit-task-priority-input'
 const editTaskStatusInput = document.getElementById('edit-task-status-input');
 const editTaskTagInput = document.getElementById('edit-task-tag-input');
 const editTaskDescriptionInput = document.getElementById('edit-task-description-input');
+const editTaskCommentInput = document.getElementById('edit-task-comment-input');
 const editTaskReminderInput = document.getElementById('edit-task-reminder-input');
 const editTaskAttachmentInput = document.getElementById('edit-task-attachment-input');
 const editCurrentAttachment = document.getElementById('edit-current-attachment');
@@ -61,7 +62,9 @@ const cancelEditTask = document.getElementById('cancel-edit-task');
 const previewTaskModal = document.getElementById('preview-task-modal');
 const previewTaskTitle = document.getElementById('preview-task-title');
 const previewTaskDescription = document.getElementById('preview-task-description');
+const previewTaskCommentInput = document.getElementById('preview-task-comment-input');
 const editPreviewTask = document.getElementById('edit-preview-task');
+const savePreviewComment = document.getElementById('save-preview-comment');
 const closePreviewTask = document.getElementById('close-preview-task');
 const statusToast = document.getElementById('status-toast');
 const uploadProgressOverlay = document.getElementById('upload-progress-overlay');
@@ -144,6 +147,9 @@ const translations = {
     done: 'Done',
     description: 'Description',
     descriptionPlaceholder: 'Write notes, lists, and details here...',
+    addComment: 'Add comment',
+    comment: 'Comment',
+    commentPlaceholder: 'Add a comment about this task...',
     max500: '(max 5000 characters)',
     dateTimeAlert: 'Date Time Alert',
     uploadFile: 'Upload File',
@@ -173,6 +179,7 @@ const translations = {
     uploadingFile: 'Uploading file',
     uploadPleaseWait: 'Please wait until the upload finishes.',
     savingTask: 'Saving task...',
+    taskSaved: 'Task saved successfully.',
     noTasks: 'No tasks yet. Add your first task!',
     noRecords: 'No records in this column.',
     recordsWithAlert: 'Records with Alert date',
@@ -276,6 +283,9 @@ const translations = {
     max20: '(tối đa 20 ký tự)',
     description: 'Mô tả',
     descriptionPlaceholder: 'Nhập ghi chú, danh sách và chi tiết tại đây...',
+    addComment: 'Thêm bình luận',
+    comment: 'Bình luận',
+    commentPlaceholder: 'Thêm bình luận về công việc này...',
     max500: '(tối đa 5000 ký tự)',
     dateTimeAlert: 'Ngày giờ nhắc',
     uploadFile: 'Tải tệp lên',
@@ -305,6 +315,7 @@ const translations = {
     uploadingFile: 'Đang tải tệp lên',
     uploadPleaseWait: 'Vui lòng chờ đến khi tải lên hoàn tất.',
     savingTask: 'Đang lưu công việc...',
+    taskSaved: 'Đã lưu công việc.',
     noTasks: 'Chưa có công việc. Hãy thêm công việc đầu tiên!',
     noRecords: 'Không có bản ghi trong cột này.',
     recordsWithAlert: 'Bản ghi có ngày nhắc',
@@ -461,7 +472,10 @@ const applyTranslations = () => {
   setText('#task-form button[type="submit"]', t('addTask'));
   editTaskTitle.textContent = t('editTaskTitle');
   previewTaskTitle.textContent = t('previewTaskTitle');
+  setText('label[for="preview-task-comment-input"]', t('addComment'));
+  previewTaskCommentInput.placeholder = t('commentPlaceholder');
   editPreviewTask.textContent = t('edit');
+  savePreviewComment.textContent = t('save');
   closePreviewTask.textContent = t('close');
   setText('label[for="edit-task-title-input"]', `${t('title')} ${t('max20')}`);
   setText('label[for="edit-task-priority-input"]', t('priority'));
@@ -472,6 +486,8 @@ const applyTranslations = () => {
   editTaskTagInput.placeholder = t('tagPlaceholder');
   setText('label[for="edit-task-description-input"]', `${t('description')} ${t('max500')}`);
   editTaskDescriptionInput.setAttribute('data-placeholder', t('descriptionPlaceholder'));
+  setText('label[for="edit-task-comment-input"]', t('addComment'));
+  editTaskCommentInput.placeholder = t('commentPlaceholder');
   setText('label[for="edit-task-reminder-input"]', t('dateTimeAlert'));
   setText('label[for="edit-task-attachment-input"]', t('uploadFile'));
   cancelEditTask.textContent = t('cancel');
@@ -1673,6 +1689,10 @@ const createTaskCard = (task) => {
       description.textContent = t('noDescription');
     }
 
+    const comment = document.createElement('p');
+    comment.className = 'task-comment';
+    comment.textContent = `${t('comment')}: ${task.comment}`;
+
     const datetime = document.createElement('p');
     datetime.className = 'task-datetime';
     datetime.textContent = `📅 ${t('created')}: ${formatDateEST(task.created_at)}`;
@@ -1732,7 +1752,11 @@ const createTaskCard = (task) => {
       actions.append(previewButton);
     }
     actions.append(editButton, archiveButton, deleteButton);
-    card.append(hoverMessage, meta, description, datetime, reminder);
+    card.append(hoverMessage, meta, description);
+    if (task.comment) {
+      card.append(comment);
+    }
+    card.append(datetime, reminder);
     if (attachment.href) {
       card.append(attachment);
     }
@@ -1788,14 +1812,19 @@ const handleTaskDrop = async (event) => {
 };
 
 const updateTask = async (id, updates) => {
-  await request(`/api/tasks/${id}`, {
+  const result = await request(`/api/tasks/${id}`, {
     method: 'PUT',
     body: JSON.stringify(updates),
   });
+  if (result.error) {
+    showStatusToast(result.error, 'error');
+    return result;
+  }
   if (Object.prototype.hasOwnProperty.call(updates, 'tag')) {
     loadTags();
   }
   loadTasks();
+  return result;
 };
 
 const deleteTask = async (id) => {
@@ -1925,6 +1954,7 @@ const showEditTaskModal = (task) => {
   editTaskStatusInput.value = taskStatus(task);
   editTaskTagInput.value = task.tag || '';
   setRichEditorValue(editTaskDescriptionInput, task.description || '');
+  editTaskCommentInput.value = task.comment || '';
   editTaskReminderInput.value = formatDateTimeLocalValue(task.reminder_at);
   editTaskAttachmentInput.value = '';
 
@@ -1950,6 +1980,7 @@ const hideEditTaskModal = () => {
   preparedEditAttachment = null;
   editTaskForm.reset();
   editTaskDescriptionInput.innerHTML = '';
+  editTaskCommentInput.value = '';
   editCurrentAttachment.removeAttribute('href');
   editCurrentAttachment.removeAttribute('download');
   editCurrentAttachment.textContent = '';
@@ -1969,6 +2000,7 @@ const handleEditTaskSubmit = async (event) => {
   const status = editTaskStatusInput.value;
   const tag = editTaskTagInput.value.trim();
   const description = getRichEditorValue(editTaskDescriptionInput);
+  const comment = editTaskCommentInput.value.trim();
   const reminderAt = editTaskReminderInput.value || null;
   const attachmentFile = editTaskAttachmentInput.files[0] || null;
 
@@ -2009,6 +2041,7 @@ const handleEditTaskSubmit = async (event) => {
     priority,
     status,
     description,
+    comment,
     reminder_at: reminderAt
   };
 
@@ -2017,7 +2050,10 @@ const handleEditTaskSubmit = async (event) => {
   }
 
   hideEditTaskModal();
-  await updateTask(task.id, updates);
+  const result = await updateTask(task.id, updates);
+  if (!result?.error) {
+    showStatusToast(t('taskSaved'));
+  }
 };
 
 cancelEditTask.addEventListener('click', hideEditTaskModal);
@@ -2033,14 +2069,16 @@ const showPreviewTaskModal = (task) => {
   previewTaskDescription.innerHTML = task.description
     ? sanitizeRichText(task.description)
     : t('noDescription');
+  previewTaskCommentInput.value = task.comment || '';
   previewTaskModal.classList.remove('hidden');
-  editPreviewTask.focus();
+  previewTaskCommentInput.focus();
 };
 
 const hidePreviewTaskModal = () => {
   pendingPreviewTask = null;
   previewTaskModal.classList.add('hidden');
   previewTaskDescription.textContent = '';
+  previewTaskCommentInput.value = '';
 };
 
 editPreviewTask.addEventListener('click', () => {
@@ -2048,6 +2086,14 @@ editPreviewTask.addEventListener('click', () => {
   const task = pendingPreviewTask;
   hidePreviewTaskModal();
   showEditTaskModal(task);
+});
+
+savePreviewComment.addEventListener('click', async () => {
+  if (!pendingPreviewTask) return;
+  const task = pendingPreviewTask;
+  const comment = previewTaskCommentInput.value.trim();
+  hidePreviewTaskModal();
+  await updateTask(task.id, { comment });
 });
 
 closePreviewTask.addEventListener('click', hidePreviewTaskModal);
@@ -2142,6 +2188,7 @@ const exportToExcel = () => {
     [t('priority')]: priorityLabel(task.priority),
     [t('status')]: statusLabel(taskStatus(task)),
     [t('description')]: getRichTextPlainText(task.description),
+    [t('comment')]: task.comment || '',
     [t('attachment')]: task.attachment_name || '',
     [t('completed')]: task.completed ? t('yes') : t('no'),
     [t('dateTimeAlert')]: task.reminder_at ? formatLocalDateTime(task.reminder_at) : '',
@@ -2225,6 +2272,7 @@ const exportToPdf = async () => {
     addPdfLine(t('priority'), priorityLabel(task.priority));
     addPdfLine(t('status'), statusLabel(taskStatus(task)));
     addPdfLine(t('description'), getRichTextPlainText(task.description));
+    addPdfLine(t('comment'), task.comment);
     addPdfLine(t('attachment'), task.attachment_name);
     addPdfLine(t('completed'), task.completed ? t('yes') : t('no'));
     addPdfLine(t('dateTimeAlert'), task.reminder_at ? formatLocalDateTime(task.reminder_at) : '');
@@ -2276,6 +2324,11 @@ const exportToWord = async () => {
           new Paragraph({
             children: [
               new TextRun(`${t('description')}: ${getRichTextPlainText(task.description) || t('notAvailable')}`)
+            ]
+          }),
+          new Paragraph({
+            children: [
+              new TextRun(`${t('comment')}: ${task.comment || t('notAvailable')}`)
             ]
           }),
           new Paragraph({

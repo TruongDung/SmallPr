@@ -287,6 +287,16 @@ label {
   max-width: 100%;
 }
 
+#edit-task-comment-input {
+  min-height: 96px;
+  resize: vertical;
+}
+
+#preview-task-comment-input {
+  min-height: 96px;
+  resize: vertical;
+}
+
 input,
 select,
 textarea,
@@ -960,6 +970,17 @@ body.theme-dark .status-in_progress {
   margin-bottom: 0;
 }
 
+.task-comment {
+  padding: 10px 12px;
+  border-left: 3px solid var(--primary);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .task-attachment {
   display: inline-flex;
   align-items: center;
@@ -1268,6 +1289,14 @@ body.theme-dark .status-in_progress {
 
 .modal.edit-task-modal {
   width: min(100%, 520px);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+#edit-task-description-input {
+  max-height: min(34dvh, 260px);
+  overflow-y: auto;
 }
 
 .modal.preview-task-modal {
@@ -1310,6 +1339,10 @@ body.theme-dark .status-in_progress {
 
 .preview-task-description :last-child {
   margin-bottom: 0;
+}
+
+.preview-task-comment-field {
+  margin-top: 14px;
 }
 
 .modal-actions {
