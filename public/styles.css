@@ -703,6 +703,11 @@ body.theme-dark .tag-manager-name {
   transform: translateY(0);
 }
 
+.task-item.suppress-task-hover .task-hover-popover {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
 .task-item.dragging {
   opacity: 0.55;
   cursor: grabbing;

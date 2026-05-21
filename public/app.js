@@ -1590,6 +1590,10 @@ const createTaskCard = (task) => {
 
     const actions = document.createElement('div');
     actions.className = 'task-actions';
+    actions.addEventListener('mouseenter', () => card.classList.add('suppress-task-hover'));
+    actions.addEventListener('mouseleave', () => card.classList.remove('suppress-task-hover'));
+    actions.addEventListener('focusin', () => card.classList.add('suppress-task-hover'));
+    actions.addEventListener('focusout', () => card.classList.remove('suppress-task-hover'));
 
     const hoverMessage = document.createElement('div');
     hoverMessage.className = 'task-hover-popover';
