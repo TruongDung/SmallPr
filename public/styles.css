@@ -64,12 +64,67 @@ body.is-uploading {
   padding: 24px;
 }
 
-header {
+.app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
   margin-bottom: 24px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface) 88%, var(--surface-tint));
+  box-shadow: 0 10px 30px var(--card-shadow);
+}
+
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.app-brand-mark {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 12px;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+body.theme-dark .app-brand-mark {
+  color: #101522;
+}
+
+.app-brand-copy {
+  min-width: 0;
+}
+
+.app-brand-copy h1 {
+  font-size: 1.55rem;
+  line-height: 1.1;
+}
+
+.app-subtitle {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .language-control {
@@ -92,7 +147,6 @@ header {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-left: auto;
   padding: 8px 12px;
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -498,6 +552,7 @@ button.danger {
   justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 #user-area span {
@@ -527,6 +582,28 @@ button.danger {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
   align-items: start;
+}
+
+.task-filter-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.task-filter-bar button {
+  padding: 7px 10px;
+}
+
+.task-list > p {
+  grid-column: 1 / -1;
 }
 
 .tag-manager {
@@ -582,6 +659,9 @@ button.danger {
 }
 
 .tag-manager-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 5px 8px;
   border-radius: 999px;
   background: #f0fdfa;
@@ -590,9 +670,34 @@ button.danger {
   font-weight: 700;
 }
 
+.tag-manager-count {
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.14);
+  color: inherit;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.tag-manager-name.active {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.tag-manager-name.active .tag-manager-count {
+  background: rgba(255, 255, 255, 0.22);
+}
+
 body.theme-dark .tag-manager-name {
   background: #123a37;
   color: #99f6e4;
+}
+
+body.theme-dark .tag-manager-name.active {
+  background: var(--primary);
+  color: #101522;
 }
 
 .tag-manager-actions {
@@ -679,8 +784,7 @@ body.theme-dark .tag-manager-name {
   right: 10px;
   top: 10px;
   z-index: 4;
-  min-height: 72%;
-  max-height: calc(100% - 20px);
+  max-height: min(60vh, 420px);
   overflow: auto;
   padding: 18px 20px;
   border: 1px solid var(--border);
@@ -690,6 +794,8 @@ body.theme-dark .tag-manager-name {
   box-shadow: 0 16px 40px rgba(15, 23, 42, 0.18);
   font-size: 0.96rem;
   line-height: 1.55;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
   opacity: 0;
   pointer-events: none;
   transform: translateY(-6px);
@@ -1312,12 +1418,20 @@ body.theme-dark .status-in_progress {
     padding: 16px;
   }
 
-  header,
+  .app-header,
   .task-header,
   .admin-header,
   .admin-user-form {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .app-header {
+    padding: 14px;
+  }
+
+  .header-actions {
+    justify-content: flex-start;
   }
 
   .admin-user-form {

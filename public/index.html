@@ -9,8 +9,15 @@
 </head>
 <body>
   <div class="container">
-    <header>
-      <h1>Task Manager</h1>
+    <header class="app-header">
+      <div class="app-brand">
+        <span class="app-brand-mark" aria-hidden="true">TM</span>
+        <div class="app-brand-copy">
+          <h1>Task Manager</h1>
+          <p class="app-subtitle">Plan, tag, and track your work</p>
+        </div>
+      </div>
+      <div class="header-actions">
       <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode" aria-pressed="false">
         <span class="theme-toggle-icon" aria-hidden="true"></span>
         <span class="theme-toggle-text">Dark</span>
@@ -23,6 +30,7 @@
         </select>
       </div>
       <div id="user-area"></div>
+      </div>
     </header>
 
     <main>
@@ -185,6 +193,23 @@
         <button id="confirm-delete-no" type="button" class="secondary">No</button>
         <button id="confirm-delete-yes" type="button" class="danger">Yes</button>
       </div>
+    </div>
+  </div>
+
+  <div id="edit-tag-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="edit-tag-title">
+    <div class="modal">
+      <h3 id="edit-tag-title">Rename tag</h3>
+      <form id="edit-tag-form">
+        <div class="field">
+          <label for="edit-tag-name-input">Tag name</label>
+          <input id="edit-tag-name-input" type="text" maxlength="40" placeholder="Work, personal, urgent..." />
+          <p id="edit-tag-error" class="field-error hidden"></p>
+        </div>
+        <div class="modal-actions">
+          <button id="cancel-edit-tag" type="button" class="secondary">Cancel</button>
+          <button id="save-edit-tag" type="submit">Save</button>
+        </div>
+      </form>
     </div>
   </div>
 

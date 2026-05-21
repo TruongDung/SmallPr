@@ -36,6 +36,12 @@ const deleteConfirmTitle = document.getElementById('delete-confirm-title');
 const deleteConfirmMessage = document.getElementById('delete-confirm-message');
 const confirmDeleteYes = document.getElementById('confirm-delete-yes');
 const confirmDeleteNo = document.getElementById('confirm-delete-no');
+const editTagModal = document.getElementById('edit-tag-modal');
+const editTagForm = document.getElementById('edit-tag-form');
+const editTagTitle = document.getElementById('edit-tag-title');
+const editTagNameInput = document.getElementById('edit-tag-name-input');
+const editTagError = document.getElementById('edit-tag-error');
+const cancelEditTag = document.getElementById('cancel-edit-tag');
 const editTaskModal = document.getElementById('edit-task-modal');
 const editTaskForm = document.getElementById('edit-task-form');
 const editTaskTitle = document.getElementById('edit-task-title');
@@ -69,6 +75,7 @@ let currentUser = null;
 let currentView = 'tasks';
 let currentLanguage = localStorage.getItem('task-manager-language') || 'en';
 let currentTheme = localStorage.getItem('task-manager-theme') || 'light';
+let currentTagFilter = '';
 let tasks = [];
 let tags = [];
 let users = [];
@@ -76,6 +83,8 @@ const reminderTimers = new Map();
 let weatherClockTimer = null;
 let pendingDeleteTaskId = null;
 let pendingDeleteUser = null;
+let pendingDeleteTag = null;
+let pendingEditTag = null;
 let pendingEditTask = null;
 let pendingPreviewTask = null;
 let statusToastTimer = null;
@@ -89,6 +98,7 @@ const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const translations = {
   en: {
     appTitle: 'Task Manager',
+    appSubtitle: 'Plan, tag, and track your work',
     language: 'Language',
     darkMode: 'Dark',
     lightMode: 'Light',
@@ -120,6 +130,9 @@ const translations = {
     tagName: 'Tag name',
     addTag: 'Add Tag',
     noTags: 'No tags yet.',
+    tasksForTag: 'Tasks tagged "{tag}"',
+    clearTagFilter: 'Clear filter',
+    noTaggedTasks: 'No tasks match this tag.',
     tagRequired: 'Tag name is required',
     tagTooLong: 'Tag name must be 40 characters or less',
     tagAdded: 'Tag added.',
@@ -182,6 +195,8 @@ const translations = {
     cancel: 'Cancel',
     deleteTaskTitle: 'Delete task?',
     deleteTaskMessage: 'This task will be permanently removed.',
+    deleteTagTitle: 'Delete tag?',
+    deleteTagMessage: '"{tag}" will be removed from your tag list and cleared from matching tasks.',
     deleteUserTitle: 'Delete user?',
     deleteUserMessage: '{username} and all of their tasks will be permanently removed.',
     no: 'No',
@@ -225,6 +240,9 @@ const translations = {
     tagName: 'Tên nhãn',
     addTag: 'Thêm nhãn',
     noTags: 'Chưa có nhãn.',
+    tasksForTag: 'Công việc có nhãn "{tag}"',
+    clearTagFilter: 'Xóa bộ lọc',
+    noTaggedTasks: 'Không có công việc nào khớp với nhãn này.',
     tagRequired: 'Vui lòng nhập tên nhãn',
     tagTooLong: 'Tên nhãn phải từ 40 ký tự trở xuống',
     tagAdded: 'Đã thêm nhãn.',
@@ -235,6 +253,7 @@ const translations = {
     in_progress: 'Đang làm',
     done: 'Hoàn thành',
     appTitle: 'Quản lý công việc',
+    appSubtitle: 'Sắp xếp, gắn nhãn và theo dõi công việc',
     language: 'Ngôn ngữ',
     darkMode: 'Tối',
     lightMode: 'Sáng',
@@ -308,6 +327,8 @@ const translations = {
     cancel: 'Hủy',
     deleteTaskTitle: 'Xóa công việc?',
     deleteTaskMessage: 'Công việc này sẽ bị xóa vĩnh viễn.',
+    deleteTagTitle: 'Xóa nhãn?',
+    deleteTagMessage: '"{tag}" sẽ bị xóa khỏi danh sách nhãn và gỡ khỏi các công việc phù hợp.',
     deleteUserTitle: 'Xóa người dùng?',
     deleteUserMessage: '{username} và tất cả công việc của người dùng này sẽ bị xóa vĩnh viễn.',
     no: 'Không',
@@ -399,6 +420,7 @@ const applyTranslations = () => {
   document.documentElement.lang = currentLanguage;
   document.title = t('appTitle');
   setText('h1', t('appTitle'));
+  setText('.app-subtitle', t('appSubtitle'));
   applyTheme();
   setText('label[for="language-select"]', t('language'));
   showLogin.textContent = t('login');
@@ -427,6 +449,11 @@ const applyTranslations = () => {
   setText('label[for="tag-name"]', t('tagName'));
   document.getElementById('tag-name').placeholder = t('tagPlaceholder');
   setText('#tag-form button[type="submit"]', t('addTag'));
+  editTagTitle.textContent = t('renameTag');
+  setText('label[for="edit-tag-name-input"]', t('tagName'));
+  editTagNameInput.placeholder = t('tagPlaceholder');
+  cancelEditTag.textContent = t('cancel');
+  setText('#save-edit-tag', t('save'));
   setText('label[for="task-description"]', `${t('description')} ${t('max500')}`);
   document.getElementById('task-description').setAttribute('data-placeholder', t('descriptionPlaceholder'));
   setText('label[for="task-reminder"]', t('dateTimeAlert'));
@@ -1117,6 +1144,9 @@ const loadTags = async () => {
     return;
   }
   tags = result.tags || [];
+  if (currentTagFilter && !tags.some((tag) => tag.name.toLowerCase() === currentTagFilter.toLowerCase())) {
+    currentTagFilter = '';
+  }
   renderTags(tags);
 };
 
@@ -1141,31 +1171,44 @@ const renderTags = (tags) => {
   tags.forEach((tag) => {
     const item = document.createElement('div');
     item.className = 'tag-manager-item';
+    const tagTaskCount = tasks.filter((task) => (task.tag || '').toLowerCase() === tag.name.toLowerCase()).length;
 
     const name = document.createElement('button');
     name.type = 'button';
-    name.className = 'tag-manager-name';
-    name.textContent = tag.name;
+    name.className = `tag-manager-name ${currentTagFilter.toLowerCase() === tag.name.toLowerCase() ? 'active' : ''}`;
+    const nameText = document.createElement('span');
+    nameText.textContent = tag.name;
+    name.append(nameText);
+    if (tagTaskCount > 1) {
+      const count = document.createElement('span');
+      count.className = 'tag-manager-count';
+      count.textContent = tagTaskCount;
+      name.append(count);
+    }
     name.addEventListener('click', () => {
-      taskTagInput.value = tag.name;
-      taskTagInput.focus();
+      currentTagFilter = tag.name;
+      currentView = 'tasks';
+      renderUserArea();
+      taskForm.classList.remove('hidden');
+      tagManager.classList.remove('hidden');
+      renderTags(tags);
+      renderTasks(tasks);
     });
-
-    const actions = document.createElement('div');
-    actions.className = 'tag-manager-actions';
 
     const editButton = document.createElement('button');
     editButton.type = 'button';
     editButton.className = 'secondary';
     editButton.textContent = t('edit');
-    editButton.addEventListener('click', () => renameTag(tag));
+    editButton.addEventListener('click', () => showEditTagModal(tag));
 
     const deleteButton = document.createElement('button');
     deleteButton.type = 'button';
     deleteButton.className = 'danger';
     deleteButton.textContent = t('delete');
-    deleteButton.addEventListener('click', () => deleteTag(tag));
+    deleteButton.addEventListener('click', () => showTagDeleteConfirm(tag));
 
+    const actions = document.createElement('div');
+    actions.className = 'tag-manager-actions';
     actions.append(editButton, deleteButton);
     item.append(name, actions);
     tagList.append(item);
@@ -1202,16 +1245,37 @@ const handleTagSubmit = async (event) => {
   loadTags();
 };
 
-const renameTag = async (tag) => {
-  const name = prompt(t('renameTag'), tag.name);
-  if (name === null) return;
+const clearEditTagError = () => {
+  editTagError.textContent = '';
+  editTagError.classList.add('hidden');
+};
+
+const showEditTagModal = (tag) => {
+  pendingEditTag = tag;
+  clearEditTagError();
+  editTagNameInput.value = tag.name;
+  editTagModal.classList.remove('hidden');
+  editTagNameInput.focus();
+  editTagNameInput.select();
+};
+
+const hideEditTagModal = () => {
+  pendingEditTag = null;
+  editTagForm.reset();
+  clearEditTagError();
+  editTagModal.classList.add('hidden');
+};
+
+const renameTag = async (tag, name) => {
   const normalizedName = name.trim();
   if (!normalizedName) {
-    alert(t('tagRequired'));
+    editTagError.textContent = t('tagRequired');
+    editTagError.classList.remove('hidden');
     return;
   }
   if (normalizedName.length > 40) {
-    alert(t('tagTooLong'));
+    editTagError.textContent = t('tagTooLong');
+    editTagError.classList.remove('hidden');
     return;
   }
 
@@ -1221,10 +1285,15 @@ const renameTag = async (tag) => {
   });
 
   if (result.error) {
-    alert(result.error);
+    editTagError.textContent = result.error;
+    editTagError.classList.remove('hidden');
     return;
   }
 
+  if (currentTagFilter.toLowerCase() === tag.name.toLowerCase()) {
+    currentTagFilter = normalizedName;
+  }
+  hideEditTagModal();
   showStatusToast(t('tagUpdated'));
   await loadTags();
   loadTasks();
@@ -1240,6 +1309,9 @@ const deleteTag = async (tag) => {
     return;
   }
 
+  if (currentTagFilter.toLowerCase() === tag.name.toLowerCase()) {
+    currentTagFilter = '';
+  }
   showStatusToast(t('tagDeleted'));
   await loadTags();
   loadTasks();
@@ -1444,6 +1516,9 @@ const loadTasks = async () => {
   const result = await request(`/api/tasks${showingArchived ? '?archived=true' : ''}`);
   if (result.tasks) {
     tasks = result.tasks;
+    if (!showingArchived) {
+      renderTags(tags);
+    }
     renderTasks(result.tasks);
     if (!showingArchived) {
       scheduleTaskReminders(result.tasks);
@@ -1455,9 +1530,37 @@ const renderTasks = (tasks) => {
   taskList.innerHTML = '';
   const showingArchived = currentView === 'archived';
   setText('#task-section h2', showingArchived ? t('archived') : t('yourTasks'));
+  const activeTagFilter = !showingArchived && currentTagFilter;
+  const visibleTasks = activeTagFilter
+    ? tasks.filter((task) => (task.tag || '').toLowerCase() === currentTagFilter.toLowerCase())
+    : tasks;
 
-  if (tasks.length === 0) {
-    taskList.innerHTML = `<p>${showingArchived ? t('noArchivedTasks') : t('noTasks')}</p>`;
+  if (activeTagFilter) {
+    const filterBar = document.createElement('div');
+    filterBar.className = 'task-filter-bar';
+    const filterText = document.createElement('span');
+    filterText.textContent = t('tasksForTag', { tag: currentTagFilter });
+    const clearButton = document.createElement('button');
+    clearButton.type = 'button';
+    clearButton.className = 'secondary';
+    clearButton.textContent = t('clearTagFilter');
+    clearButton.addEventListener('click', () => {
+      currentTagFilter = '';
+      renderTags(tags);
+      renderTasks(tasks);
+    });
+    filterBar.append(filterText, clearButton);
+    taskList.append(filterBar);
+  }
+
+  if (visibleTasks.length === 0) {
+    const empty = document.createElement('p');
+    empty.textContent = activeTagFilter
+      ? t('noTaggedTasks')
+      : showingArchived
+        ? t('noArchivedTasks')
+        : t('noTasks');
+    taskList.append(empty);
     return;
   }
 
@@ -1470,19 +1573,19 @@ const renderTasks = (tasks) => {
     heading.textContent = t('archived');
     const count = document.createElement('span');
     count.className = 'task-count';
-    count.textContent = tasks.length;
+    count.textContent = visibleTasks.length;
     header.append(heading, count);
     const body = document.createElement('div');
     body.className = 'task-column-body';
-    tasks.forEach((task) => body.append(createTaskCard(task)));
+    visibleTasks.forEach((task) => body.append(createTaskCard(task)));
     column.append(header, body);
     taskList.append(column);
     return;
   }
 
-  const todoTasks = tasks.filter((task) => taskStatus(task) === 'todo');
-  const inProgressTasks = tasks.filter((task) => taskStatus(task) === 'in_progress');
-  const doneTasks = tasks.filter((task) => taskStatus(task) === 'done');
+  const todoTasks = visibleTasks.filter((task) => taskStatus(task) === 'todo');
+  const inProgressTasks = visibleTasks.filter((task) => taskStatus(task) === 'in_progress');
+  const doneTasks = visibleTasks.filter((task) => taskStatus(task) === 'done');
 
   const createColumn = (title, status, columnTasks) => {
     const column = document.createElement('section');
@@ -1705,6 +1808,7 @@ const deleteTask = async (id) => {
 const showDeleteConfirm = (id) => {
   pendingDeleteTaskId = id;
   pendingDeleteUser = null;
+  pendingDeleteTag = null;
   deleteConfirmTitle.textContent = t('deleteTaskTitle');
   deleteConfirmMessage.textContent = t('deleteTaskMessage');
   deleteConfirmModal.classList.remove('hidden');
@@ -1714,8 +1818,19 @@ const showDeleteConfirm = (id) => {
 const showUserDeleteConfirm = (user) => {
   pendingDeleteTaskId = null;
   pendingDeleteUser = user;
+  pendingDeleteTag = null;
   deleteConfirmTitle.textContent = t('deleteUserTitle');
   deleteConfirmMessage.textContent = t('deleteUserMessage', { username: user.username });
+  deleteConfirmModal.classList.remove('hidden');
+  confirmDeleteNo.focus();
+};
+
+const showTagDeleteConfirm = (tag) => {
+  pendingDeleteTaskId = null;
+  pendingDeleteUser = null;
+  pendingDeleteTag = tag;
+  deleteConfirmTitle.textContent = t('deleteTagTitle');
+  deleteConfirmMessage.textContent = t('deleteTagMessage', { tag: tag.name });
   deleteConfirmModal.classList.remove('hidden');
   confirmDeleteNo.focus();
 };
@@ -1723,18 +1838,24 @@ const showUserDeleteConfirm = (user) => {
 const hideDeleteConfirm = () => {
   pendingDeleteTaskId = null;
   pendingDeleteUser = null;
+  pendingDeleteTag = null;
   deleteConfirmModal.classList.add('hidden');
 };
 
 confirmDeleteNo.addEventListener('click', hideDeleteConfirm);
 
 confirmDeleteYes.addEventListener('click', async () => {
-  if (!pendingDeleteTaskId && !pendingDeleteUser) return;
+  if (!pendingDeleteTaskId && !pendingDeleteUser && !pendingDeleteTag) return;
   const taskId = pendingDeleteTaskId;
   const user = pendingDeleteUser;
+  const tag = pendingDeleteTag;
   hideDeleteConfirm();
   if (taskId) {
     await deleteTask(taskId);
+    return;
+  }
+  if (tag) {
+    await deleteTag(tag);
     return;
   }
   await deleteUser(user);
@@ -1746,9 +1867,28 @@ deleteConfirmModal.addEventListener('click', (event) => {
   }
 });
 
+editTagForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!pendingEditTag) return;
+  clearEditTagError();
+  await renameTag(pendingEditTag, editTagNameInput.value);
+});
+
+cancelEditTag.addEventListener('click', hideEditTagModal);
+
+editTagModal.addEventListener('click', (event) => {
+  if (event.target === editTagModal) {
+    hideEditTagModal();
+  }
+});
+
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !deleteConfirmModal.classList.contains('hidden')) {
     hideDeleteConfirm();
+  }
+
+  if (event.key === 'Escape' && !editTagModal.classList.contains('hidden')) {
+    hideEditTagModal();
   }
 
   if (event.key === 'Escape' && !editTaskModal.classList.contains('hidden')) {
@@ -2058,30 +2198,38 @@ const exportToPdf = async () => {
   doc.setFontSize(10);
   doc.text(`${t('exportDate')}: ${currentDateTime}`, 20, 30);
   let y = 40;
-  tasks.forEach(task => {
-    doc.setFontSize(12);
-    doc.text(`${t('title')}: ${task.title}`, 20, y);
-    y += 10;
-    doc.text(`${t('tag')}: ${task.tag || t('notAvailable')}`, 20, y);
-    y += 10;
-    doc.text(`${t('priority')}: ${priorityLabel(task.priority)}`, 20, y);
-    y += 10;
-    doc.text(`${t('status')}: ${statusLabel(taskStatus(task))}`, 20, y);
-    y += 10;
-    doc.text(`${t('description')}: ${getRichTextPlainText(task.description) || t('notAvailable')}`, 20, y);
-    y += 10;
-    doc.text(`${t('attachment')}: ${task.attachment_name || t('notAvailable')}`, 20, y);
-    y += 10;
-    doc.text(`${t('completed')}: ${task.completed ? t('yes') : t('no')}`, 20, y);
-    y += 10;
-    doc.text(`${t('dateTimeAlert')}: ${task.reminder_at ? formatLocalDateTime(task.reminder_at) : t('notAvailable')}`, 20, y);
-    y += 10;
-    doc.text(`${t('created')}: ${formatDateEST(task.created_at)}`, 20, y);
-    y += 15;
-    if (y > 270) {
+
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const contentBottom = pageHeight - 20;
+  const maxTextWidth = 170;
+
+  const ensurePdfSpace = (heightNeeded) => {
+    if (y + heightNeeded > contentBottom) {
       doc.addPage();
       y = 20;
     }
+  };
+
+  const addPdfLine = (label, value) => {
+    const text = `${label}: ${value || t('notAvailable')}`;
+    const lines = doc.splitTextToSize(text, maxTextWidth);
+    ensurePdfSpace(lines.length * 6);
+    doc.text(lines, 20, y);
+    y += lines.length * 6 + 4;
+  };
+
+  tasks.forEach(task => {
+    doc.setFontSize(12);
+    addPdfLine(t('title'), task.title);
+    addPdfLine(t('tag'), task.tag);
+    addPdfLine(t('priority'), priorityLabel(task.priority));
+    addPdfLine(t('status'), statusLabel(taskStatus(task)));
+    addPdfLine(t('description'), getRichTextPlainText(task.description));
+    addPdfLine(t('attachment'), task.attachment_name);
+    addPdfLine(t('completed'), task.completed ? t('yes') : t('no'));
+    addPdfLine(t('dateTimeAlert'), task.reminder_at ? formatLocalDateTime(task.reminder_at) : '');
+    addPdfLine(t('created'), formatDateEST(task.created_at));
+    y += 5;
   });
   doc.save('tasks.pdf');
   showStatusToast(t('pdfExported'));
