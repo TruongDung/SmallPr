@@ -194,6 +194,29 @@ describe('Task API', () => {
     });
   });
 
+  test('lists higher priority tasks first', async () => {
+    const agent = await createAgent(testUsername('priority-order-owner'));
+
+    await agent
+      .post('/api/tasks')
+      .send({ title: 'Low item', priority: 'low' });
+    await agent
+      .post('/api/tasks')
+      .send({ title: 'High item', priority: 'high' });
+    await agent
+      .post('/api/tasks')
+      .send({ title: 'Medium item', priority: 'medium' });
+
+    const response = await agent.get('/api/tasks');
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.tasks.map((task) => task.title)).toEqual([
+      'High item',
+      'Medium item',
+      'Low item',
+    ]);
+  });
+
   test('rejects invalid task priorities', async () => {
     const agent = await createAgent(testUsername('bad-priority-owner'));
 
@@ -476,6 +499,7 @@ describe('Task API', () => {
         priority: 'high',
         status: 'in_progress',
         description: '<p>Review & ship</p>',
+        comment: 'Bring docs & notes',
         reminder_at: '2026-05-13T09:30',
       });
     await agent
@@ -505,10 +529,11 @@ describe('Task API', () => {
     expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Client</td>');
     expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Cần làm</td>');
     expect(mailOptions.html).toContain('Review &amp; ship');
+    expect(mailOptions.html).toContain('Bring docs &amp; notes');
     expect(mailOptions.html.indexOf('Email table')).toBeLessThan(mailOptions.html.indexOf('Todo email'));
-    expect(mailOptions.text).toContain('#\tTiêu đề\tNhãn\tƯu tiên\tTrạng thái\tMô tả\tTệp đính kèm\tNgày giờ nhắc\tĐã tạo');
-    expect(mailOptions.text).toContain('Email table\tClient\tCao\tĐang làm\tReview & ship');
-    expect(mailOptions.text).toContain('Todo email\tClient\tTrung bình\tCần làm\tKhông có mô tả.');
+    expect(mailOptions.text).toContain('#\tTiêu đề\tNhãn\tƯu tiên\tTrạng thái\tMô tả\tBình luận\tTệp đính kèm\tNgày giờ nhắc\tĐã tạo');
+    expect(mailOptions.text).toContain('Email table\tClient\tCao\tĐang làm\tReview & ship\tBring docs & notes');
+    expect(mailOptions.text).toContain('Todo email\tClient\tTrung bình\tCần làm\tKhông có mô tả.\tKhông có bình luận');
     expect(mailOptions.text.indexOf('Email table')).toBeLessThan(mailOptions.text.indexOf('Todo email'));
 
     process.env.SMTP_HOST = originalEnv.SMTP_HOST;

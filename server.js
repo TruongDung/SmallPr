@@ -15,6 +15,15 @@ const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const MAX_TAG_LENGTH = 40;
 const VALID_PRIORITIES = new Set(['low', 'medium', 'high']);
 const VALID_STATUSES = new Set(['todo', 'in_progress', 'done']);
+const TASK_PRIORITY_ORDER_SQL = `
+  CASE priority
+    WHEN 'high' THEN 0
+    WHEN 'medium' THEN 1
+    WHEN 'low' THEN 2
+    ELSE 3
+  END,
+  created_at DESC
+`;
 
 if (!DATABASE_URL || DATABASE_URL.includes('[YOUR-PASSWORD]')) {
   throw new Error('DATABASE_URL must be set to your Supabase Postgres connection string.');
@@ -155,6 +164,7 @@ const EMAIL_TRANSLATIONS = {
     priority: 'Priority',
     status: 'Status',
     description: 'Description',
+    comment: 'Comment',
     attachment: 'Attachment',
     dateTimeAlert: 'Date time alert',
     created: 'Created',
@@ -166,6 +176,7 @@ const EMAIL_TRANSLATIONS = {
     high: 'High',
     noTag: 'No tag',
     noDescription: 'No description provided.',
+    noComment: 'No comment',
     noAttachment: 'No attachment',
     notSet: 'Not set',
     noTasks: 'No tasks found.',
@@ -182,6 +193,7 @@ const EMAIL_TRANSLATIONS = {
     priority: 'Ưu tiên',
     status: 'Trạng thái',
     description: 'Mô tả',
+    comment: 'Bình luận',
     attachment: 'Tệp đính kèm',
     dateTimeAlert: 'Ngày giờ nhắc',
     created: 'Đã tạo',
@@ -193,6 +205,7 @@ const EMAIL_TRANSLATIONS = {
     high: 'Cao',
     noTag: 'Không có nhãn',
     noDescription: 'Không có mô tả.',
+    noComment: 'Không có bình luận',
     noAttachment: 'Không có tệp đính kèm',
     notSet: 'Chưa đặt',
     noTasks: 'Không có công việc.',
@@ -342,6 +355,7 @@ const sendTaskAlertEmail = async (task, user, language = 'en') => {
       `${tEmail(language, 'priority')}: ${formatTaskPriority(task.priority || 'medium', language)}`,
       `${tEmail(language, 'status')}: ${formatTaskStatus(task.status || (task.completed ? 'done' : 'todo'), language)}`,
       `${tEmail(language, 'description')}: ${stripHtml(task.description) || tEmail(language, 'noDescription')}`,
+      `${tEmail(language, 'comment')}: ${task.comment || tEmail(language, 'noComment')}`,
       `${tEmail(language, 'attachment')}: ${task.attachment_name || tEmail(language, 'noAttachment')}`,
       `${tEmail(language, 'dateTimeAlert')}: ${reminder}`,
       `${tEmail(language, 'created')}: ${task.created_at}`,
@@ -372,6 +386,7 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
     tEmail(language, 'priority'),
     tEmail(language, 'status'),
     tEmail(language, 'description'),
+    tEmail(language, 'comment'),
     tEmail(language, 'attachment'),
     tEmail(language, 'dateTimeAlert'),
     tEmail(language, 'created'),
@@ -383,6 +398,7 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
     priority: formatTaskPriority(task.priority || 'medium', language),
     status: getTaskStatus(task),
     description: stripHtml(task.description) || tEmail(language, 'noDescription'),
+    comment: task.comment || tEmail(language, 'noComment'),
     attachment: task.attachment_name || tEmail(language, 'noAttachment'),
     reminder: formatReminder(task),
     created: task.created_at,
@@ -397,6 +413,7 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
           task.priority,
           task.status,
           task.description,
+          task.comment,
           task.attachment,
           task.reminder,
           task.created,
@@ -421,6 +438,7 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.priority)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.status)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.description)}</td>
+              <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.comment)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.attachment)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.reminder)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.created)}</td>
@@ -585,7 +603,12 @@ app.get('/api/me', async (req, res) => {
 app.get('/api/tasks', authRequired, async (req, res) => {
   try {
     const archived = req.query.archived === 'true' ? 1 : 0;
-    const tasks = await allAsync('SELECT * FROM tasks WHERE user_id = ? AND archived = ? ORDER BY created_at DESC', [req.session.userId, archived]);
+    const tasks = await allAsync(
+      `SELECT * FROM tasks
+       WHERE user_id = ? AND archived = ?
+       ORDER BY ${TASK_PRIORITY_ORDER_SQL}`,
+      [req.session.userId, archived]
+    );
     res.json({ tasks });
   } catch (error) {
     console.error(error);
@@ -779,14 +802,7 @@ app.post('/api/tasks/send-email', authRequired, async (req, res) => {
     const tasks = await allAsync(
       `SELECT * FROM tasks
        WHERE user_id = ?
-       ORDER BY
-         CASE priority
-           WHEN 'high' THEN 0
-           WHEN 'medium' THEN 1
-           WHEN 'low' THEN 2
-           ELSE 3
-         END,
-         created_at DESC`,
+       ORDER BY ${TASK_PRIORITY_ORDER_SQL}`,
       [req.session.userId]
     );
     const user = await getUserById(req.session.userId);
