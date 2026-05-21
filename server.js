@@ -774,7 +774,19 @@ app.delete('/api/admin/users/:id', adminRequired, async (req, res) => {
 
 app.post('/api/tasks/send-email', authRequired, async (req, res) => {
   try {
-    const tasks = await allAsync('SELECT * FROM tasks WHERE user_id = ? ORDER BY created_at DESC', [req.session.userId]);
+    const tasks = await allAsync(
+      `SELECT * FROM tasks
+       WHERE user_id = ?
+       ORDER BY
+         CASE priority
+           WHEN 'high' THEN 0
+           WHEN 'medium' THEN 1
+           WHEN 'low' THEN 2
+           ELSE 3
+         END,
+         created_at DESC`,
+      [req.session.userId]
+    );
     const user = await getUserById(req.session.userId);
     const emailSent = await sendTaskSummaryEmail(tasks, user, req.body.language);
 

@@ -467,9 +467,11 @@ describe('Task API', () => {
     expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Client</td>');
     expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Cần làm</td>');
     expect(mailOptions.html).toContain('Review &amp; ship');
+    expect(mailOptions.html.indexOf('Email table')).toBeLessThan(mailOptions.html.indexOf('Todo email'));
     expect(mailOptions.text).toContain('#\tTiêu đề\tNhãn\tƯu tiên\tTrạng thái\tMô tả\tTệp đính kèm\tNgày giờ nhắc\tĐã tạo');
     expect(mailOptions.text).toContain('Email table\tClient\tCao\tĐang làm\tReview & ship');
     expect(mailOptions.text).toContain('Todo email\tClient\tTrung bình\tCần làm\tKhông có mô tả.');
+    expect(mailOptions.text.indexOf('Email table')).toBeLessThan(mailOptions.text.indexOf('Todo email'));
 
     process.env.SMTP_HOST = originalEnv.SMTP_HOST;
     process.env.SMTP_USER = originalEnv.SMTP_USER;
