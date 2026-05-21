@@ -305,10 +305,10 @@ label {
 }
 
 #preview-task-comment-input {
-  height: 44px;
-  min-height: 44px;
-  max-height: 44px;
-  resize: none;
+  height: min(30vh, 260px);
+  min-height: 140px;
+  max-height: min(30vh, 260px);
+  resize: vertical;
   overflow-y: auto;
 }
 
