@@ -18,6 +18,8 @@
   --error-bg: #fff1f2;
   --error-text: #991b1b;
   --error-border: #fecaca;
+  --priority-high-task-bg: #fff7f7;
+  --priority-high-task-border: #fde2e2;
 }
 
 body.theme-dark {
@@ -40,6 +42,8 @@ body.theme-dark {
   --error-bg: #37151d;
   --error-text: #fecaca;
   --error-border: #7f1d1d;
+  --priority-high-task-bg: #2a2027;
+  --priority-high-task-border: #5f3138;
 }
 
 * {
@@ -962,8 +966,8 @@ body.theme-dark .tag-manager-name.active {
 }
 
 .task-item.priority-high-task {
-  background: var(--error-bg);
-  border-color: var(--error-border);
+  background: var(--priority-high-task-bg);
+  border-color: var(--priority-high-task-border);
 }
 
 .task-item.completed {
@@ -971,7 +975,7 @@ body.theme-dark .tag-manager-name.active {
 }
 
 .task-item.priority-high-task.completed {
-  background: color-mix(in srgb, var(--error-bg) 74%, var(--completed-bg));
+  background: color-mix(in srgb, var(--priority-high-task-bg) 74%, var(--completed-bg));
 }
 
 .task-meta {
