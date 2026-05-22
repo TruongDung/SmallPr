@@ -1135,6 +1135,46 @@ body.theme-dark .status-in_progress {
   margin-bottom: 10px;
 }
 
+.edit-current-attachment {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.edit-current-attachment.hidden {
+  display: none;
+}
+
+.edit-current-attachment-label {
+  flex-basis: 100%;
+  color: var(--muted);
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.edit-current-attachment .task-attachment {
+  margin-bottom: 0;
+}
+
+.edit-current-attachment-name {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.edit-remove-attachment {
+  min-height: 34px;
+  padding: 7px 10px;
+  font-size: 0.9rem;
+}
+
 .task-reminder {
   font-weight: 600;
 }

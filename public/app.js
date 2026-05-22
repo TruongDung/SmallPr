@@ -56,6 +56,7 @@ const editTaskDescriptionInput = document.getElementById('edit-task-description-
 const editTaskCommentInput = document.getElementById('edit-task-comment-input');
 const editTaskReminderInput = document.getElementById('edit-task-reminder-input');
 const editTaskAttachmentInput = document.getElementById('edit-task-attachment-input');
+const editCurrentAttachment = document.getElementById('edit-current-attachment');
 const editTitleError = document.getElementById('edit-title-error');
 const editDescriptionError = document.getElementById('edit-description-error');
 const editAttachmentError = document.getElementById('edit-attachment-error');
@@ -102,6 +103,7 @@ let statusToastTimer = null;
 let reminderAlertPreviousFocus = null;
 let preparedAttachment = null;
 let preparedEditAttachment = null;
+let removeEditAttachment = false;
 let currentWeatherCardHtml = '';
 let savedWeatherCities = [];
 const savedWeatherCards = new Map();
@@ -186,6 +188,10 @@ const translations = {
     attachmentTooLarge: 'File must be 5 MB or less',
     attachmentNotReady: 'Please wait for the file upload to finish',
     attachment: 'Attachment',
+    currentAttachment: 'Current attachment',
+    newAttachment: 'New attachment',
+    removeAttachment: 'Remove attachment',
+    noAttachment: 'No attachment',
     uploadingFile: 'Uploading file',
     uploadPleaseWait: 'Please wait until the upload finishes.',
     savingTask: 'Saving task...',
@@ -518,6 +524,7 @@ const applyTranslations = () => {
   editTaskCommentInput.placeholder = t('commentPlaceholder');
   setText('label[for="edit-task-reminder-input"]', t('dateTimeAlert'));
   setText('label[for="edit-task-attachment-input"]', t('uploadFile'));
+  renderEditAttachmentState();
   cancelEditTask.textContent = t('cancel');
   setText('#save-edit-task', t('save'));
   setText('#admin-section h2', t('manageUsers'));
@@ -741,14 +748,19 @@ const handleTaskAttachmentChange = async () => {
 const handleEditTaskAttachmentChange = async () => {
   editAttachmentError.classList.add('hidden');
   preparedEditAttachment = null;
+  removeEditAttachment = false;
 
   const attachmentFile = editTaskAttachmentInput.files[0] || null;
-  if (!attachmentFile) return;
+  if (!attachmentFile) {
+    renderEditAttachmentState();
+    return;
+  }
 
   if (attachmentFile.size > MAX_ATTACHMENT_BYTES) {
     editTaskAttachmentInput.value = '';
     editAttachmentError.textContent = t('attachmentTooLarge');
     editAttachmentError.classList.remove('hidden');
+    renderEditAttachmentState();
     return;
   }
 
@@ -761,6 +773,7 @@ const handleEditTaskAttachmentChange = async () => {
     editAttachmentError.textContent = error.message;
     editAttachmentError.classList.remove('hidden');
   } finally {
+    renderEditAttachmentState();
     setTimeout(hideUploadProgress, 250);
   }
 };
@@ -2129,9 +2142,60 @@ const clearEditTaskErrors = () => {
   editFormError.classList.add('hidden');
 };
 
+const renderEditAttachmentState = () => {
+  if (!editCurrentAttachment) return;
+
+  editCurrentAttachment.innerHTML = '';
+
+  const task = pendingEditTask;
+  const hasExistingAttachment = Boolean(task?.attachment_data && task?.attachment_name);
+  const hasNewAttachment = Boolean(preparedEditAttachment);
+  if (!hasExistingAttachment && !hasNewAttachment && !removeEditAttachment) {
+    editCurrentAttachment.classList.add('hidden');
+    return;
+  }
+
+  editCurrentAttachment.classList.remove('hidden');
+
+  const label = document.createElement('span');
+  label.className = 'edit-current-attachment-label';
+  label.textContent = hasNewAttachment ? t('newAttachment') : t('currentAttachment');
+
+  const showsExistingAttachment = hasExistingAttachment && !removeEditAttachment;
+  const fileName = document.createElement(showsExistingAttachment ? 'a' : 'span');
+  fileName.className = showsExistingAttachment ? 'task-attachment' : 'edit-current-attachment-name';
+
+  if (hasNewAttachment) {
+    fileName.textContent = preparedEditAttachment.name;
+  } else if (showsExistingAttachment) {
+    fileName.href = task.attachment_data;
+    fileName.download = task.attachment_name;
+    fileName.textContent = task.attachment_name;
+  } else {
+    fileName.textContent = t('noAttachment');
+  }
+
+  editCurrentAttachment.append(label, fileName);
+
+  if ((hasExistingAttachment && !removeEditAttachment) || hasNewAttachment) {
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'secondary edit-remove-attachment';
+    removeButton.textContent = t('removeAttachment');
+    removeButton.addEventListener('click', () => {
+      removeEditAttachment = true;
+      preparedEditAttachment = null;
+      editTaskAttachmentInput.value = '';
+      renderEditAttachmentState();
+    });
+    editCurrentAttachment.append(removeButton);
+  }
+};
+
 const showEditTaskModal = (task) => {
   pendingEditTask = task;
   preparedEditAttachment = null;
+  removeEditAttachment = false;
   clearEditTaskErrors();
   editTaskTitleInput.value = task.title;
   editTaskPriorityInput.value = task.priority || 'medium';
@@ -2141,6 +2205,7 @@ const showEditTaskModal = (task) => {
   editTaskCommentInput.value = task.comment || '';
   editTaskReminderInput.value = formatDateTimeLocalValue(task.reminder_at);
   editTaskAttachmentInput.value = '';
+  renderEditAttachmentState();
 
   editTaskModal.classList.remove('hidden');
   editTaskTitleInput.focus();
@@ -2150,9 +2215,12 @@ const showEditTaskModal = (task) => {
 const hideEditTaskModal = () => {
   pendingEditTask = null;
   preparedEditAttachment = null;
+  removeEditAttachment = false;
   editTaskForm.reset();
   editTaskDescriptionInput.innerHTML = '';
   editTaskCommentInput.value = '';
+  editCurrentAttachment.innerHTML = '';
+  editCurrentAttachment.classList.add('hidden');
   clearEditTaskErrors();
   editTaskModal.classList.add('hidden');
 };
@@ -2215,6 +2283,8 @@ const handleEditTaskSubmit = async (event) => {
 
   if (preparedEditAttachment) {
     updates.attachment = preparedEditAttachment;
+  } else if (removeEditAttachment) {
+    updates.attachment = null;
   }
 
   hideEditTaskModal();
