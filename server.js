@@ -827,6 +827,29 @@ app.post('/api/tasks/send-email', authRequired, async (req, res) => {
   }
 });
 
+app.post('/api/tasks/:id/send-email', authRequired, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const task = await getAsync('SELECT * FROM tasks WHERE id = ? AND user_id = ?', [id, req.session.userId]);
+    if (!task) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    const user = await getUserById(req.session.userId);
+    const emailSent = await sendTaskAlertEmail(task, user, req.body.language);
+
+    if (!emailSent) {
+      return res.status(500).json({ error: 'Email settings are not configured' });
+    }
+
+    res.json({ success: true, emailSent });
+  } catch (error) {
+    console.error('Failed to send task email:', error);
+    res.status(500).json({ error: 'Failed to send email' });
+  }
+});
+
 app.post('/api/tasks', authRequired, async (req, res) => {
   const { title, tag, description, comment, priority, status, time_spent_minutes, reminder_at, attachment, language } = req.body;
   if (!title) {

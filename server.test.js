@@ -388,6 +388,45 @@ describe('Task API', () => {
     process.env.SMTP_PASS = originalEnv.SMTP_PASS;
   });
 
+  test('sends an email for one task from task preview', async () => {
+    const originalEnv = {
+      SMTP_HOST: process.env.SMTP_HOST,
+      SMTP_USER: process.env.SMTP_USER,
+      SMTP_PASS: process.env.SMTP_PASS,
+    };
+    const agent = await createAgent(testUsername('preview-email-owner'));
+
+    const createResponse = await agent
+      .post('/api/tasks')
+      .send({
+        title: 'PreviewEmail',
+        description: 'Only this task',
+        comment: 'Preview comment',
+      });
+
+    process.env.SMTP_HOST = 'smtp.test.local';
+    process.env.SMTP_USER = 'sender@test.local';
+    process.env.SMTP_PASS = 'secret';
+    mockSendMail.mockClear();
+
+    const response = await agent
+      .post(`/api/tasks/${createResponse.body.task.id}/send-email`)
+      .send({ language: 'en' });
+
+    expect(response.statusCode).toBe(200);
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+    const mailOptions = mockSendMail.mock.calls[0][0];
+    expect(mailOptions.subject).toBe('New task added: PreviewEmail');
+    expect(mailOptions.text).toContain('Title: PreviewEmail');
+    expect(mailOptions.text).toContain('Only this task');
+    expect(mailOptions.text).toContain('Comment: Preview comment');
+    expect(mailOptions.text).not.toContain('Task Summary');
+
+    process.env.SMTP_HOST = originalEnv.SMTP_HOST;
+    process.env.SMTP_USER = originalEnv.SMTP_USER;
+    process.env.SMTP_PASS = originalEnv.SMTP_PASS;
+  });
+
   test('replaces an attachment when editing a task', async () => {
     const agent = await createAgent(testUsername('replace-attachment-owner'));
 

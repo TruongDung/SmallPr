@@ -66,6 +66,7 @@ const previewTaskTitle = document.getElementById('preview-task-title');
 const previewTaskDescription = document.getElementById('preview-task-description');
 const previewTaskCommentInput = document.getElementById('preview-task-comment-input');
 const editPreviewTask = document.getElementById('edit-preview-task');
+const sendPreviewTaskEmail = document.getElementById('send-preview-task-email');
 const savePreviewComment = document.getElementById('save-preview-comment');
 const closePreviewTask = document.getElementById('close-preview-task');
 const statusToast = document.getElementById('status-toast');
@@ -490,6 +491,7 @@ const applyTranslations = () => {
   previewTaskTitle.textContent = t('previewTaskTitle');
   setText('label[for="preview-task-comment-input"]', t('comment'));
   previewTaskCommentInput.placeholder = t('commentPlaceholder');
+  sendPreviewTaskEmail.textContent = t('sendEmail');
   editPreviewTask.textContent = t('edit');
   savePreviewComment.textContent = t('save');
   closePreviewTask.textContent = t('close');
@@ -2181,6 +2183,30 @@ savePreviewComment.addEventListener('click', async () => {
   const result = await updateTask(task.id, { comment });
   if (!result?.error) {
     showStatusToast(t('taskSaved'));
+  }
+});
+
+sendPreviewTaskEmail.addEventListener('click', async () => {
+  if (!pendingPreviewTask) return;
+  const originalText = sendPreviewTaskEmail.textContent;
+  sendPreviewTaskEmail.disabled = true;
+  sendPreviewTaskEmail.textContent = t('sending');
+
+  try {
+    const result = await request(`/api/tasks/${pendingPreviewTask.id}/send-email`, {
+      method: 'POST',
+      body: JSON.stringify({ language: currentLanguage }),
+    });
+
+    if (result.error) {
+      showStatusToast(result.error, 'error');
+      return;
+    }
+
+    showStatusToast(t('emailSent'));
+  } finally {
+    sendPreviewTaskEmail.disabled = false;
+    sendPreviewTaskEmail.textContent = originalText;
   }
 });
 
