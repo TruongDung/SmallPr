@@ -555,9 +555,9 @@ const formatLocalDateTime = (dateString) => {
   });
 };
 
-const richTextAllowedTags = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'UL', 'OL', 'LI', 'P', 'DIV', 'BR']);
+const richTextAllowedTags = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL', 'UL', 'OL', 'LI', 'P', 'DIV', 'BR']);
 
-const hasRichTextMarkup = (value = '') => /<\/?(b|strong|i|em|u|ul|ol|li|p|div|br)\b/i.test(value);
+const hasRichTextMarkup = (value = '') => /<\/?(b|strong|i|em|u|s|strike|del|ul|ol|li|p|div|br)\b/i.test(value);
 
 const sanitizeRichText = (html = '') => {
   const template = document.createElement('template');
@@ -596,19 +596,54 @@ const getRichEditorValue = (editor) => {
 
 const getRichEditorLength = (editor) => getRichTextPlainText(editor.innerHTML).length;
 
+const richEditorSelections = new WeakMap();
+
+const saveRichEditorSelection = (editor) => {
+  const selection = window.getSelection();
+  if (!selection || selection.rangeCount === 0) return;
+
+  const range = selection.getRangeAt(0);
+  if (editor.contains(range.commonAncestorContainer)) {
+    richEditorSelections.set(editor, range.cloneRange());
+  }
+};
+
+const restoreRichEditorSelection = (editor) => {
+  const range = richEditorSelections.get(editor);
+  if (!range) return false;
+
+  const selection = window.getSelection();
+  if (!selection) return false;
+
+  selection.removeAllRanges();
+  selection.addRange(range);
+  return true;
+};
+
 const setupRichTextEditors = () => {
   document.querySelectorAll('.rich-editor-toolbar button').forEach((button) => {
+    button.addEventListener('mousedown', (event) => {
+      event.preventDefault();
+    });
+
     button.addEventListener('click', () => {
       const editor = document.getElementById(button.dataset.editor);
       if (!editor) return;
 
       editor.focus();
+      restoreRichEditorSelection(editor);
       document.execCommand(button.dataset.command, false, null);
+      saveRichEditorSelection(editor);
     });
   });
 
   document.querySelectorAll('.rich-editor-surface').forEach((editor) => {
+    editor.addEventListener('keyup', () => saveRichEditorSelection(editor));
+    editor.addEventListener('mouseup', () => saveRichEditorSelection(editor));
+    editor.addEventListener('input', () => saveRichEditorSelection(editor));
+
     editor.addEventListener('blur', () => {
+      saveRichEditorSelection(editor);
       editor.innerHTML = sanitizeRichText(editor.innerHTML);
     });
 
@@ -1787,9 +1822,7 @@ const createTaskCard = (task) => {
 
     const reminder = document.createElement('p');
     reminder.className = 'task-reminder';
-    reminder.textContent = task.reminder_at
-      ? `${t('alert')}: ${formatLocalDateTime(task.reminder_at)}`
-      : t('alertNotSet');
+    reminder.textContent = `${t('alert')}: ${formatLocalDateTime(task.reminder_at)}`;
 
     const attachment = document.createElement('a');
     if (task.attachment_data && task.attachment_name) {
@@ -1844,7 +1877,9 @@ const createTaskCard = (task) => {
     if (task.comment) {
       card.append(comment);
     }
-    card.append(reminder);
+    if (task.reminder_at) {
+      card.append(reminder);
+    }
     if (attachment.href) {
       card.append(attachment);
     }

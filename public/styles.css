@@ -270,6 +270,40 @@ h2 {
   margin-bottom: 16px;
 }
 
+.task-form,
+#edit-task-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 14px;
+  row-gap: 16px;
+}
+
+.task-form .field,
+#edit-task-form .field {
+  margin-bottom: 0;
+}
+
+.task-form .field:nth-of-type(n + 5),
+.task-form .field-error,
+.task-form .modal-actions,
+#edit-task-form .field:nth-of-type(n + 5),
+#edit-task-form .field-error,
+#edit-task-form .modal-actions {
+  grid-column: 1 / -1;
+}
+
+.task-form #task-title,
+.task-form #task-priority,
+.task-form #task-status,
+.task-form #task-tag,
+#edit-task-form #edit-task-title-input,
+#edit-task-form #edit-task-priority-input,
+#edit-task-form #edit-task-status-input,
+#edit-task-form #edit-task-tag-input {
+  width: 100%;
+  min-height: 44px;
+}
+
 label {
   display: block;
   margin-bottom: 6px;
@@ -1630,6 +1664,11 @@ body.theme-dark .status-in_progress {
   }
 
   .admin-user-form {
+    grid-template-columns: 1fr;
+  }
+
+  .task-form,
+  #edit-task-form {
     grid-template-columns: 1fr;
   }
 
