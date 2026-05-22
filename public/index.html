@@ -306,6 +306,28 @@
     </div>
   </div>
 
+  <div id="reminder-alert-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="reminder-alert-title" aria-describedby="reminder-alert-message">
+    <div class="modal reminder-alert-modal">
+      <div class="reminder-alert-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false">
+          <path d="M12 7v5l3 2" />
+          <path d="M7.7 3.9 4.9 6.1" />
+          <path d="m16.3 3.9 2.8 2.2" />
+          <circle cx="12" cy="13" r="7" />
+        </svg>
+      </div>
+      <div class="reminder-alert-copy">
+        <p class="reminder-alert-kicker">Date Time Alert</p>
+        <h3 id="reminder-alert-title">Reminder</h3>
+        <p id="reminder-alert-message">Your task is happening now.</p>
+        <p id="reminder-alert-time" class="reminder-alert-time"></p>
+      </div>
+      <div class="modal-actions">
+        <button id="reminder-alert-ok" type="button">OK</button>
+      </div>
+    </div>
+  </div>
+
   <div id="status-toast" class="status-toast hidden" role="status" aria-live="polite"></div>
 
   <div id="upload-progress-overlay" class="upload-progress-overlay hidden" role="alert" aria-live="assertive">

@@ -69,6 +69,11 @@ const editPreviewTask = document.getElementById('edit-preview-task');
 const sendPreviewTaskEmail = document.getElementById('send-preview-task-email');
 const savePreviewComment = document.getElementById('save-preview-comment');
 const closePreviewTask = document.getElementById('close-preview-task');
+const reminderAlertModal = document.getElementById('reminder-alert-modal');
+const reminderAlertTitle = document.getElementById('reminder-alert-title');
+const reminderAlertMessage = document.getElementById('reminder-alert-message');
+const reminderAlertTime = document.getElementById('reminder-alert-time');
+const reminderAlertOk = document.getElementById('reminder-alert-ok');
 const statusToast = document.getElementById('status-toast');
 const uploadProgressOverlay = document.getElementById('upload-progress-overlay');
 const uploadProgressTitle = document.getElementById('upload-progress-title');
@@ -94,6 +99,7 @@ let pendingEditTag = null;
 let pendingEditTask = null;
 let pendingPreviewTask = null;
 let statusToastTimer = null;
+let reminderAlertPreviousFocus = null;
 let preparedAttachment = null;
 let preparedEditAttachment = null;
 let currentWeatherCardHtml = '';
@@ -203,6 +209,7 @@ const translations = {
     edit: 'Edit',
     editTaskTitle: 'Edit task',
     save: 'Save',
+    ok: 'OK',
     cancel: 'Cancel',
     deleteTaskTitle: 'Delete task?',
     deleteTaskMessage: 'This task will be permanently removed.',
@@ -222,6 +229,7 @@ const translations = {
     excelExported: 'Excel exported.',
     pdfExported: 'PDF exported.',
     wordExported: 'Word exported.',
+    reminderTitle: 'Reminder',
     taskReminderNow: 'Date time alert: {title} is happening now.',
     weatherUnavailable: 'Location weather is unavailable in this browser.',
     weatherUnable: 'Unable to load current city weather.',
@@ -495,6 +503,8 @@ const applyTranslations = () => {
   editPreviewTask.textContent = t('edit');
   savePreviewComment.textContent = t('save');
   closePreviewTask.textContent = t('close');
+  reminderAlertOk.textContent = t('ok');
+  setText('.reminder-alert-kicker', t('dateTimeAlert'));
   setText('label[for="edit-task-title-input"]', `${t('title')} ${t('max20')}`);
   setText('label[for="edit-task-priority-input"]', t('priority'));
   updatePriorityOptions(editTaskPriorityInput);
@@ -553,6 +563,27 @@ const formatLocalDateTime = (dateString) => {
     dateStyle: 'medium',
     timeStyle: 'short'
   });
+};
+
+const isTodayDateTimeValue = (value) => {
+  if (!value) return false;
+  const [datePart] = value.split('T');
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return datePart === `${year}-${month}-${day}`;
+};
+
+const closePickerAfterTodaySelection = (input) => {
+  const dismissIfToday = () => {
+    if (isTodayDateTimeValue(input.value)) {
+      setTimeout(() => input.blur(), 0);
+    }
+  };
+
+  input.addEventListener('input', dismissIfToday);
+  input.addEventListener('change', dismissIfToday);
 };
 
 const richTextAllowedTags = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL', 'UL', 'OL', 'LI', 'P', 'DIV', 'BR']);
@@ -741,9 +772,23 @@ const clearReminderTimers = () => {
   reminderTimers.clear();
 };
 
+const hideReminderAlert = () => {
+  reminderAlertModal.classList.add('hidden');
+  if (reminderAlertPreviousFocus && document.contains(reminderAlertPreviousFocus)) {
+    reminderAlertPreviousFocus.focus();
+  }
+  reminderAlertPreviousFocus = null;
+};
+
 const showTaskReminder = (task) => {
   localStorage.setItem(getReminderStorageKey(task), 'true');
-  alert(t('taskReminderNow', { title: task.title }));
+  reminderAlertPreviousFocus = document.activeElement;
+  reminderAlertTitle.textContent = task.title || t('reminderTitle');
+  reminderAlertMessage.textContent = t('taskReminderNow', { title: task.title });
+  reminderAlertTime.textContent = task.reminder_at ? formatLocalDateTime(task.reminder_at) : '';
+  reminderAlertTime.classList.toggle('hidden', !task.reminder_at);
+  reminderAlertModal.classList.remove('hidden');
+  reminderAlertOk.focus();
 };
 
 const scheduleTaskReminders = (loadedTasks) => {
@@ -2063,6 +2108,10 @@ document.addEventListener('keydown', (event) => {
     hidePreviewTaskModal();
   }
 
+  if (event.key === 'Escape' && !reminderAlertModal.classList.contains('hidden')) {
+    hideReminderAlert();
+  }
+
   if (event.key === 'Escape' && !statusToast.classList.contains('hidden')) {
     hideStatusToast();
   }
@@ -2250,6 +2299,14 @@ closePreviewTask.addEventListener('click', hidePreviewTaskModal);
 previewTaskModal.addEventListener('click', (event) => {
   if (event.target === previewTaskModal) {
     hidePreviewTaskModal();
+  }
+});
+
+reminderAlertOk.addEventListener('click', hideReminderAlert);
+
+reminderAlertModal.addEventListener('click', (event) => {
+  if (event.target === reminderAlertModal) {
+    hideReminderAlert();
   }
 });
 
@@ -2541,6 +2598,8 @@ themeToggle.addEventListener('click', toggleTheme);
 togglePasswordButton.addEventListener('click', togglePasswordVisibility);
 taskAttachmentInput.addEventListener('change', handleTaskAttachmentChange);
 editTaskAttachmentInput.addEventListener('change', handleEditTaskAttachmentChange);
+closePickerAfterTodaySelection(taskReminderInput);
+closePickerAfterTodaySelection(editTaskReminderInput);
 setupTagSuggestions(taskTagInput, taskTagSuggestions);
 setupTagSuggestions(editTaskTagInput, editTaskTagSuggestions);
 authForm.addEventListener('submit', handleAuthSubmit);
