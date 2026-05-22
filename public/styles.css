@@ -1335,6 +1335,8 @@ body.theme-dark .status-in_progress {
   max-height: calc(100dvh - 40px);
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-color: var(--border) transparent;
+  scrollbar-width: thin;
 }
 
 .modal.add-task-modal {
@@ -1342,6 +1344,30 @@ body.theme-dark .status-in_progress {
   max-height: calc(100dvh - 40px);
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-color: var(--border) transparent;
+  scrollbar-width: thin;
+}
+
+.modal.edit-task-modal::-webkit-scrollbar,
+.modal.add-task-modal::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal.edit-task-modal::-webkit-scrollbar-track,
+.modal.add-task-modal::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal.edit-task-modal::-webkit-scrollbar-thumb,
+.modal.add-task-modal::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+  border: 2px solid var(--surface);
+}
+
+.modal.edit-task-modal::-webkit-scrollbar-thumb:hover,
+.modal.add-task-modal::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
 }
 
 #edit-task-description-input {

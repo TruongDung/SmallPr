@@ -28,7 +28,7 @@ const exportWordButton = document.getElementById('export-word');
 const taskPriorityInput = document.getElementById('task-priority');
 const taskStatusInput = document.getElementById('task-status');
 const taskTagInput = document.getElementById('task-tag');
-const taskTagOptions = document.getElementById('task-tag-options');
+const taskTagSuggestions = document.getElementById('task-tag-suggestions');
 const taskReminderInput = document.getElementById('task-reminder');
 const taskAttachmentInput = document.getElementById('task-attachment');
 const passwordInput = document.getElementById('password');
@@ -51,6 +51,7 @@ const editTaskTitleInput = document.getElementById('edit-task-title-input');
 const editTaskPriorityInput = document.getElementById('edit-task-priority-input');
 const editTaskStatusInput = document.getElementById('edit-task-status-input');
 const editTaskTagInput = document.getElementById('edit-task-tag-input');
+const editTaskTagSuggestions = document.getElementById('edit-task-tag-suggestions');
 const editTaskDescriptionInput = document.getElementById('edit-task-description-input');
 const editTaskCommentInput = document.getElementById('edit-task-comment-input');
 const editTaskReminderInput = document.getElementById('edit-task-reminder-input');
@@ -487,7 +488,7 @@ const applyTranslations = () => {
   setText('#task-form button[type="submit"]', t('addTask'));
   editTaskTitle.textContent = t('editTaskTitle');
   previewTaskTitle.textContent = t('previewTaskTitle');
-  setText('label[for="preview-task-comment-input"]', t('addComment'));
+  setText('label[for="preview-task-comment-input"]', t('comment'));
   previewTaskCommentInput.placeholder = t('commentPlaceholder');
   editPreviewTask.textContent = t('edit');
   savePreviewComment.textContent = t('save');
@@ -1091,6 +1092,17 @@ const renderUserArea = () => {
     showSection();
   });
 
+  const tagButton = document.createElement('button');
+  tagButton.type = 'button';
+  tagButton.className = 'secondary';
+  tagButton.textContent = t('tag');
+  tagButton.addEventListener('click', () => {
+    currentView = 'tasks';
+    showSection();
+    tagManager.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('tag-name').focus();
+  });
+
   const addTaskButton = document.createElement('button');
   addTaskButton.type = 'button';
   addTaskButton.className = 'secondary add-task-shortcut';
@@ -1103,7 +1115,7 @@ const renderUserArea = () => {
     showAddTaskModal();
   });
 
-  userArea.append(addTaskButton, tasksButton, archivedButton);
+  userArea.append(addTaskButton, tasksButton, archivedButton, tagButton);
 
   if (currentUser.username === 'admin') {
     const adminButton = document.createElement('button');
@@ -1202,15 +1214,58 @@ const loadTags = async () => {
   renderTags(tags);
 };
 
-const renderTags = (tags) => {
-  taskTagOptions.innerHTML = '';
-  tagList.innerHTML = '';
+const hideTagSuggestions = (panel) => {
+  panel.classList.add('hidden');
+  panel.innerHTML = '';
+};
 
-  tags.forEach((tag) => {
-    const option = document.createElement('option');
-    option.value = tag.name;
-    taskTagOptions.append(option);
+const showTagSuggestions = (input, panel) => {
+  const query = input.value.trim().toLowerCase();
+  const matches = tags
+    .filter((tag) => !query || tag.name.toLowerCase().includes(query))
+    .slice(0, 6);
+
+  panel.innerHTML = '';
+  if (!matches.length) {
+    hideTagSuggestions(panel);
+    return;
+  }
+
+  matches.forEach((tag) => {
+    const option = document.createElement('button');
+    option.type = 'button';
+    option.className = 'tag-suggestion-option';
+    option.setAttribute('role', 'option');
+    option.textContent = tag.name;
+    option.addEventListener('mousedown', (event) => event.preventDefault());
+    option.addEventListener('click', () => {
+      input.value = tag.name;
+      hideTagSuggestions(panel);
+      input.focus();
+    });
+    panel.append(option);
   });
+
+  panel.classList.remove('hidden');
+};
+
+const setupTagSuggestions = (input, panel) => {
+  input.addEventListener('input', () => showTagSuggestions(input, panel));
+  input.addEventListener('focus', () => showTagSuggestions(input, panel));
+  input.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      hideTagSuggestions(panel);
+    }
+  });
+  input.addEventListener('blur', () => {
+    setTimeout(() => hideTagSuggestions(panel), 120);
+  });
+};
+
+const renderTags = (tags) => {
+  tagList.innerHTML = '';
+  hideTagSuggestions(taskTagSuggestions);
+  hideTagSuggestions(editTaskTagSuggestions);
 
   if (!tags.length) {
     const empty = document.createElement('p');
@@ -1728,10 +1783,6 @@ const createTaskCard = (task) => {
     const commentText = `${t('comment')}: ${task.comment}`;
     comment.textContent = commentText;
 
-    const datetime = document.createElement('p');
-    datetime.className = 'task-datetime';
-    datetime.textContent = `📅 ${t('created')}: ${formatDateEST(task.created_at)}`;
-
     const reminder = document.createElement('p');
     reminder.className = 'task-reminder';
     reminder.textContent = task.reminder_at
@@ -1791,7 +1842,7 @@ const createTaskCard = (task) => {
     if (task.comment) {
       card.append(comment);
     }
-    card.append(datetime, reminder);
+    card.append(reminder);
     if (attachment.href) {
       card.append(attachment);
     }
@@ -2429,6 +2480,8 @@ themeToggle.addEventListener('click', toggleTheme);
 togglePasswordButton.addEventListener('click', togglePasswordVisibility);
 taskAttachmentInput.addEventListener('change', handleTaskAttachmentChange);
 editTaskAttachmentInput.addEventListener('change', handleEditTaskAttachmentChange);
+setupTagSuggestions(taskTagInput, taskTagSuggestions);
+setupTagSuggestions(editTaskTagInput, editTaskTagSuggestions);
 authForm.addEventListener('submit', handleAuthSubmit);
 taskForm.addEventListener('submit', handleTaskSubmit);
 tagForm.addEventListener('submit', handleTagSubmit);

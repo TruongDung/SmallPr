@@ -103,10 +103,10 @@
               <option value="done">Done</option>
             </select>
           </div>
-          <div class="field">
+          <div class="field tag-suggest-field">
             <label for="task-tag">Tag</label>
-            <input id="task-tag" type="text" maxlength="40" placeholder="Work, personal, urgent..." list="task-tag-options" />
-            <datalist id="task-tag-options"></datalist>
+            <input id="task-tag" type="text" maxlength="40" placeholder="Work, personal, urgent..." autocomplete="off" />
+            <div id="task-tag-suggestions" class="tag-suggestions hidden" role="listbox"></div>
           </div>
           <div class="field">
             <label for="task-description">Description <span class="field-max">(max 5000 characters)</span></label>
@@ -246,9 +246,10 @@
             <option value="done">Done</option>
           </select>
         </div>
-        <div class="field">
+        <div class="field tag-suggest-field">
           <label for="edit-task-tag-input">Tag</label>
-          <input id="edit-task-tag-input" type="text" maxlength="40" placeholder="Work, personal, urgent..." list="task-tag-options" />
+          <input id="edit-task-tag-input" type="text" maxlength="40" placeholder="Work, personal, urgent..." autocomplete="off" />
+          <div id="edit-task-tag-suggestions" class="tag-suggestions hidden" role="listbox"></div>
         </div>
         <div class="field">
           <label for="edit-task-description-input">Description <span class="field-max">(max 5000 characters)</span></label>
