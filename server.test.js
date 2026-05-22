@@ -54,6 +54,30 @@ afterAll(async () => {
 });
 
 describe('Auth API', () => {
+  test('returns the current user and clears it after logout', async () => {
+    const username = testUsername('session-user');
+    const agent = await createAgent(username);
+
+    const meResponse = await agent.get('/api/me');
+    expect(meResponse.statusCode).toBe(200);
+    expect(meResponse.body.user).toMatchObject({ username });
+
+    const logoutResponse = await agent.post('/api/logout');
+    expect(logoutResponse.statusCode).toBe(200);
+    expect(logoutResponse.body).toHaveProperty('success', true);
+
+    const loggedOutMeResponse = await agent.get('/api/me');
+    expect(loggedOutMeResponse.statusCode).toBe(200);
+    expect(loggedOutMeResponse.body).toEqual({ user: null });
+  });
+
+  test('returns null current user when not logged in', async () => {
+    const response = await request(app).get('/api/me');
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toEqual({ user: null });
+  });
+
   test('signs up a new user and logs in successfully', async () => {
     const username = testUsername('testuser');
     const signupResponse = await request(app)
@@ -261,6 +285,28 @@ describe('Task API', () => {
     expect(response.body).toHaveProperty('error', 'Task tag must be 40 characters or less');
   });
 
+  test('rejects task descriptions over 5000 plain-text characters on create and update', async () => {
+    const agent = await createAgent(testUsername('long-description-owner'));
+
+    const createResponse = await agent
+      .post('/api/tasks')
+      .send({ title: 'Long desc', description: `<p>${'x'.repeat(5001)}</p>` });
+
+    expect(createResponse.statusCode).toBe(400);
+    expect(createResponse.body).toHaveProperty('error', 'Task description must be 5000 characters or less');
+
+    const validCreateResponse = await agent
+      .post('/api/tasks')
+      .send({ title: 'Valid desc' });
+
+    const updateResponse = await agent
+      .put(`/api/tasks/${validCreateResponse.body.task.id}`)
+      .send({ description: 'x'.repeat(5001) });
+
+    expect(updateResponse.statusCode).toBe(400);
+    expect(updateResponse.body).toHaveProperty('error', 'Task description must be 5000 characters or less');
+  });
+
   test('rejects invalid attachment payloads', async () => {
     const agent = await createAgent(testUsername('bad-attachment-owner'));
 
@@ -429,6 +475,40 @@ describe('Task API', () => {
     process.env.SMTP_PASS = originalEnv.SMTP_PASS;
   });
 
+  test('returns an error when email settings are not configured', async () => {
+    const originalEnv = {
+      SMTP_HOST: process.env.SMTP_HOST,
+      SMTP_USER: process.env.SMTP_USER,
+      SMTP_PASS: process.env.SMTP_PASS,
+    };
+    const agent = await createAgent(testUsername('email-config-owner'));
+    const createResponse = await agent
+      .post('/api/tasks')
+      .send({ title: 'No email' });
+
+    process.env.SMTP_HOST = '';
+    process.env.SMTP_USER = '';
+    process.env.SMTP_PASS = '';
+    mockSendMail.mockClear();
+
+    const summaryResponse = await agent
+      .post('/api/tasks/send-email')
+      .send({ language: 'en' });
+    expect(summaryResponse.statusCode).toBe(500);
+    expect(summaryResponse.body).toHaveProperty('error', 'Email settings are not configured');
+
+    const taskResponse = await agent
+      .post(`/api/tasks/${createResponse.body.task.id}/send-email`)
+      .send({ language: 'en' });
+    expect(taskResponse.statusCode).toBe(500);
+    expect(taskResponse.body).toHaveProperty('error', 'Email settings are not configured');
+    expect(mockSendMail).not.toHaveBeenCalled();
+
+    process.env.SMTP_HOST = originalEnv.SMTP_HOST;
+    process.env.SMTP_USER = originalEnv.SMTP_USER;
+    process.env.SMTP_PASS = originalEnv.SMTP_PASS;
+  });
+
   test('replaces an attachment when editing a task', async () => {
     const agent = await createAgent(testUsername('replace-attachment-owner'));
 
@@ -456,6 +536,57 @@ describe('Task API', () => {
       attachment_size: newAttachment.size,
     });
     expect(updateResponse.body.task.attachment_data).toBe(newAttachment.data);
+  });
+
+  test('clears an attachment and maps completed updates to status', async () => {
+    const agent = await createAgent(testUsername('clear-attachment-owner'));
+
+    const createResponse = await agent
+      .post('/api/tasks')
+      .send({
+        title: 'Clear file',
+        attachment: attachment('keep.txt', 'temporary'),
+      });
+
+    const updateResponse = await agent
+      .put(`/api/tasks/${createResponse.body.task.id}`)
+      .send({
+        completed: true,
+        attachment: null,
+      });
+
+    expect(updateResponse.statusCode).toBe(200);
+    expect(updateResponse.body.task).toMatchObject({
+      status: 'done',
+      completed: 1,
+      attachment_name: null,
+      attachment_type: null,
+      attachment_data: null,
+      attachment_size: 0,
+    });
+  });
+
+  test('rejects task updates and single-task emails for another user', async () => {
+    const owner = await createAgent(testUsername('private-owner'));
+    const otherUser = await createAgent(testUsername('private-other'));
+
+    const createResponse = await owner
+      .post('/api/tasks')
+      .send({ title: 'Private' });
+
+    const taskId = createResponse.body.task.id;
+
+    const updateResponse = await otherUser
+      .put(`/api/tasks/${taskId}`)
+      .send({ title: 'Stolen' });
+    expect(updateResponse.statusCode).toBe(404);
+    expect(updateResponse.body).toHaveProperty('error', 'Task not found');
+
+    const emailResponse = await otherUser
+      .post(`/api/tasks/${taskId}/send-email`)
+      .send({ language: 'en' });
+    expect(emailResponse.statusCode).toBe(404);
+    expect(emailResponse.body).toHaveProperty('error', 'Task not found');
   });
 
   test('archives and restores a task', async () => {
@@ -560,6 +691,37 @@ describe('Task API', () => {
     expect(clearedTasksResponse.body.tasks[0]).toMatchObject({ title: 'Tagged', tag: '' });
   });
 
+  test('validates tag requests and protects tags owned by other users', async () => {
+    const owner = await createAgent(testUsername('tag-owner'));
+    const otherUser = await createAgent(testUsername('tag-other'));
+
+    const missingNameResponse = await owner
+      .post('/api/tags')
+      .send({ name: '   ' });
+    expect(missingNameResponse.statusCode).toBe(400);
+    expect(missingNameResponse.body).toHaveProperty('error', 'Tag name is required');
+
+    const longNameResponse = await owner
+      .post('/api/tags')
+      .send({ name: 'x'.repeat(41) });
+    expect(longNameResponse.statusCode).toBe(400);
+    expect(longNameResponse.body).toHaveProperty('error', 'Tag name must be 40 characters or less');
+
+    const createResponse = await owner
+      .post('/api/tags')
+      .send({ name: 'PrivateTag' });
+
+    const renameOtherResponse = await otherUser
+      .put(`/api/tags/${createResponse.body.tag.id}`)
+      .send({ name: 'OtherName' });
+    expect(renameOtherResponse.statusCode).toBe(404);
+    expect(renameOtherResponse.body).toHaveProperty('error', 'Tag not found');
+
+    const deleteOtherResponse = await otherUser.delete(`/api/tags/${createResponse.body.tag.id}`);
+    expect(deleteOtherResponse.statusCode).toBe(404);
+    expect(deleteOtherResponse.body).toHaveProperty('error', 'Tag not found');
+  });
+
   test('sends task summary email with an HTML table', async () => {
     const originalEnv = {
       SMTP_HOST: process.env.SMTP_HOST,
@@ -662,5 +824,124 @@ describe('Task API', () => {
     process.env.SMTP_HOST = originalEnv.SMTP_HOST;
     process.env.SMTP_USER = originalEnv.SMTP_USER;
     process.env.SMTP_PASS = originalEnv.SMTP_PASS;
+  });
+});
+
+describe('Admin API', () => {
+  const loginAdmin = async () => {
+    const agent = request.agent(app);
+    const response = await agent
+      .post('/api/login')
+      .send({ username: 'admin', password: 'admin123456' });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.user).toMatchObject({ username: 'admin' });
+
+    return agent;
+  };
+
+  test('requires authentication and admin access', async () => {
+    const unauthenticatedResponse = await request(app).get('/api/admin/users');
+    expect(unauthenticatedResponse.statusCode).toBe(401);
+    expect(unauthenticatedResponse.body).toHaveProperty('error', 'Authentication required');
+
+    const regularAgent = await createAgent(testUsername('not-admin'));
+    const forbiddenResponse = await regularAgent.get('/api/admin/users');
+    expect(forbiddenResponse.statusCode).toBe(403);
+    expect(forbiddenResponse.body).toHaveProperty('error', 'Admin access required');
+  });
+
+  test('creates users, resets passwords, lists task counts, and deletes users with their tasks', async () => {
+    const admin = await loginAdmin();
+    const managedUsername = testUsername('managed-user');
+    const createUserResponse = await admin
+      .post('/api/admin/users')
+      .send({ username: managedUsername, password: 'Initial123!' });
+
+    expect(createUserResponse.statusCode).toBe(200);
+    expect(createUserResponse.body.user).toMatchObject({
+      username: managedUsername,
+      task_count: 0,
+    });
+
+    const duplicateResponse = await admin
+      .post('/api/admin/users')
+      .send({ username: managedUsername, password: 'Initial123!' });
+    expect(duplicateResponse.statusCode).toBe(409);
+    expect(duplicateResponse.body).toHaveProperty('error', 'Username already exists');
+
+    const managedAgent = request.agent(app);
+    const managedLoginResponse = await managedAgent
+      .post('/api/login')
+      .send({ username: managedUsername, password: 'Initial123!' });
+    expect(managedLoginResponse.statusCode).toBe(200);
+
+    await managedAgent
+      .post('/api/tasks')
+      .send({ title: 'Owned task' });
+
+    const listResponse = await admin.get('/api/admin/users');
+    expect(listResponse.statusCode).toBe(200);
+    const listedUser = listResponse.body.users.find((user) => user.username === managedUsername);
+    expect(listedUser).toMatchObject({
+      username: managedUsername,
+      task_count: 1,
+    });
+
+    const resetResponse = await admin
+      .put(`/api/admin/users/${createUserResponse.body.user.id}/password`)
+      .send({ password: 'Changed123!' });
+    expect(resetResponse.statusCode).toBe(200);
+    expect(resetResponse.body).toHaveProperty('success', true);
+
+    const oldPasswordResponse = await request(app)
+      .post('/api/login')
+      .send({ username: managedUsername, password: 'Initial123!' });
+    expect(oldPasswordResponse.statusCode).toBe(401);
+
+    const newPasswordResponse = await request(app)
+      .post('/api/login')
+      .send({ username: managedUsername, password: 'Changed123!' });
+    expect(newPasswordResponse.statusCode).toBe(200);
+
+    const deleteResponse = await admin.delete(`/api/admin/users/${createUserResponse.body.user.id}`);
+    expect(deleteResponse.statusCode).toBe(200);
+    expect(deleteResponse.body).toHaveProperty('success', true);
+
+    const deletedLoginResponse = await request(app)
+      .post('/api/login')
+      .send({ username: managedUsername, password: 'Changed123!' });
+    expect(deletedLoginResponse.statusCode).toBe(401);
+  });
+
+  test('validates admin user management edge cases', async () => {
+    const admin = await loginAdmin();
+
+    const missingCreateResponse = await admin
+      .post('/api/admin/users')
+      .send({ username: '' });
+    expect(missingCreateResponse.statusCode).toBe(400);
+    expect(missingCreateResponse.body).toHaveProperty('error', 'Username and password are required');
+
+    const missingPasswordResponse = await admin
+      .put('/api/admin/users/999999/password')
+      .send({ password: '' });
+    expect(missingPasswordResponse.statusCode).toBe(400);
+    expect(missingPasswordResponse.body).toHaveProperty('error', 'Password is required');
+
+    const notFoundPasswordResponse = await admin
+      .put('/api/admin/users/999999/password')
+      .send({ password: 'NewPass123!' });
+    expect(notFoundPasswordResponse.statusCode).toBe(404);
+    expect(notFoundPasswordResponse.body).toHaveProperty('error', 'User not found');
+
+    const meResponse = await admin.get('/api/me');
+    const deleteSelfResponse = await admin.delete(`/api/admin/users/${meResponse.body.user.id}`);
+    expect(deleteSelfResponse.statusCode).toBe(400);
+    expect(deleteSelfResponse.body).toHaveProperty('error', 'You cannot delete your own account');
+
+    const deleteMissingResponse = await admin.delete('/api/admin/users/999999');
+    expect(deleteMissingResponse.statusCode).toBe(404);
+    expect(deleteMissingResponse.body).toHaveProperty('error', 'User not found');
   });
 });
