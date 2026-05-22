@@ -310,6 +310,12 @@ const formatMultilineHtml = (value = '') => normalizeLineBreaks(value)
   .map((line) => escapeHtml(line))
   .join('<br>');
 
+const formatLinkedMultilineHtml = (value = '') => formatMultilineHtml(value)
+  .replace(
+    /(https?:\/\/[^\s<]+)/g,
+    '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+  );
+
 const sanitizeFileName = (name = '') => path.basename(String(name)).replace(/[<>:"/\\|?*\u0000-\u001F]/g, '_').slice(0, 180);
 
 const parseAttachment = (attachment) => {
@@ -349,6 +355,10 @@ const sendTaskAlertEmail = async (task, user, language = 'en') => {
 
   const taskAlertMarker = tEmail(language, 'taskManager');
   const description = formatPlainTextValue(task.description) || tEmail(language, 'noDescription');
+  const comment = task.comment || tEmail(language, 'noComment');
+  const attachment = task.attachment_name || tEmail(language, 'noAttachment');
+  const status = formatTaskStatus(task.status || (task.completed ? 'done' : 'todo'), language);
+  const priority = formatTaskPriority(task.priority || 'medium', language);
 
   await transporter.sendMail({
     from,
@@ -364,14 +374,31 @@ const sendTaskAlertEmail = async (task, user, language = 'en') => {
       '',
       `${tEmail(language, 'title')}: ${task.title}`,
       `${tEmail(language, 'tag')}: ${task.tag || tEmail(language, 'noTag')}`,
-      `${tEmail(language, 'priority')}: ${formatTaskPriority(task.priority || 'medium', language)}`,
-      `${tEmail(language, 'status')}: ${formatTaskStatus(task.status || (task.completed ? 'done' : 'todo'), language)}`,
+      `${tEmail(language, 'priority')}: ${priority}`,
+      `${tEmail(language, 'status')}: ${status}`,
       `${tEmail(language, 'description')}:`,
       description,
-      `${tEmail(language, 'comment')}: ${task.comment || tEmail(language, 'noComment')}`,
-      `${tEmail(language, 'attachment')}: ${task.attachment_name || tEmail(language, 'noAttachment')}`,
+      `${tEmail(language, 'comment')}: ${comment}`,
+      `${tEmail(language, 'attachment')}: ${attachment}`,
       `${tEmail(language, 'dateTimeAlert')}: ${reminder}`,
     ].join('\n'),
+    html: `
+      <div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#111827;">
+        <p style="margin:0 0 12px;font-weight:700;">${escapeHtml(taskAlertMarker)}</p>
+        <p style="margin:0 0 16px;">${escapeHtml(tEmail(language, 'newTaskMessage', { username: user.username }))}</p>
+        <p style="margin:0 0 8px;"><strong>${escapeHtml(tEmail(language, 'title'))}:</strong> ${escapeHtml(task.title)}</p>
+        <p style="margin:0 0 8px;"><strong>${escapeHtml(tEmail(language, 'tag'))}:</strong> ${escapeHtml(task.tag || tEmail(language, 'noTag'))}</p>
+        <p style="margin:0 0 8px;"><strong>${escapeHtml(tEmail(language, 'priority'))}:</strong> ${escapeHtml(priority)}</p>
+        <p style="margin:0 0 8px;"><strong>${escapeHtml(tEmail(language, 'status'))}:</strong> ${escapeHtml(status)}</p>
+        <div style="margin:0 0 8px;">
+          <strong>${escapeHtml(tEmail(language, 'description'))}:</strong>
+          <div style="margin-top:4px;white-space:normal;">${formatLinkedMultilineHtml(description)}</div>
+        </div>
+        <p style="margin:0 0 8px;"><strong>${escapeHtml(tEmail(language, 'comment'))}:</strong> ${formatLinkedMultilineHtml(comment)}</p>
+        <p style="margin:0 0 8px;"><strong>${escapeHtml(tEmail(language, 'attachment'))}:</strong> ${escapeHtml(attachment)}</p>
+        <p style="margin:0;"><strong>${escapeHtml(tEmail(language, 'dateTimeAlert'))}:</strong> ${escapeHtml(reminder)}</p>
+      </div>
+    `,
   });
 
   return true;

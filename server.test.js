@@ -382,6 +382,8 @@ describe('Task API', () => {
       'https://www.youtube.com/watch?v=rNzXtp11rg0',
       'Comment:',
     ].join('\n'));
+    expect(mailOptions.html).toContain('link:<br><a href="https://www.youtube.com/watch?v=g-ZtK5u-iiw"');
+    expect(mailOptions.html).toContain('</a><br><a href="https://www.youtube.com/watch?v=rNzXtp11rg0"');
 
     process.env.SMTP_HOST = originalEnv.SMTP_HOST;
     process.env.SMTP_USER = originalEnv.SMTP_USER;

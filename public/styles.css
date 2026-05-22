@@ -1401,16 +1401,28 @@ body.theme-dark .status-in_progress {
   scrollbar-width: thin;
 }
 
+.modal.preview-task-modal {
+  width: min(100%, 620px);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--border) transparent;
+  scrollbar-width: thin;
+}
+
+.modal.preview-task-modal::-webkit-scrollbar,
 .modal.edit-task-modal::-webkit-scrollbar,
 .modal.add-task-modal::-webkit-scrollbar {
   width: 8px;
 }
 
+.modal.preview-task-modal::-webkit-scrollbar-track,
 .modal.edit-task-modal::-webkit-scrollbar-track,
 .modal.add-task-modal::-webkit-scrollbar-track {
   background: transparent;
 }
 
+.modal.preview-task-modal::-webkit-scrollbar-thumb,
 .modal.edit-task-modal::-webkit-scrollbar-thumb,
 .modal.add-task-modal::-webkit-scrollbar-thumb {
   background: var(--border);
@@ -1418,6 +1430,7 @@ body.theme-dark .status-in_progress {
   border: 2px solid var(--surface);
 }
 
+.modal.preview-task-modal::-webkit-scrollbar-thumb:hover,
 .modal.edit-task-modal::-webkit-scrollbar-thumb:hover,
 .modal.add-task-modal::-webkit-scrollbar-thumb:hover {
   background: var(--muted);
@@ -1426,10 +1439,6 @@ body.theme-dark .status-in_progress {
 #edit-task-description-input {
   max-height: min(34dvh, 260px);
   overflow-y: auto;
-}
-
-.modal.preview-task-modal {
-  width: min(100%, 620px);
 }
 
 .modal h3 {
@@ -1452,12 +1461,36 @@ body.theme-dark .status-in_progress {
 .preview-task-description {
   max-height: min(60vh, 520px);
   overflow: auto;
+  scrollbar-color: var(--border) transparent;
+  scrollbar-width: thin;
   padding: 14px;
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
   line-height: 1.55;
   overflow-wrap: anywhere;
+}
+
+.preview-task-description::-webkit-scrollbar,
+#preview-task-comment-input::-webkit-scrollbar {
+  width: 8px;
+}
+
+.preview-task-description::-webkit-scrollbar-track,
+#preview-task-comment-input::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.preview-task-description::-webkit-scrollbar-thumb,
+#preview-task-comment-input::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+  border: 2px solid var(--surface);
+}
+
+.preview-task-description::-webkit-scrollbar-thumb:hover,
+#preview-task-comment-input::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
 }
 
 .preview-task-description p,
