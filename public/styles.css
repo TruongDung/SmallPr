@@ -312,6 +312,10 @@ label {
   overflow-y: auto;
 }
 
+#preview-task-comment-input[readonly] {
+  cursor: default;
+}
+
 input,
 select,
 textarea,
@@ -1007,7 +1011,6 @@ body.theme-dark .status-in_progress {
 }
 
 .task-comment {
-  position: relative;
   min-width: 0;
   max-width: 100%;
   padding: 10px 12px;
@@ -1016,53 +1019,9 @@ body.theme-dark .status-in_progress {
   background: var(--surface-soft);
   color: var(--text);
   line-height: 1.45;
-  cursor: help;
-}
-
-.task-comment:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--primary) 45%, transparent);
-  outline-offset: 3px;
-}
-
-.task-comment-text {
-  display: block;
-  min-width: 0;
-  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.task-comment-tooltip {
-  position: absolute;
-  left: 0;
-  top: calc(100% + 8px);
-  z-index: 7;
-  width: min(360px, calc(100vw - 56px));
-  max-width: calc(100vw - 56px);
-  max-height: 260px;
-  overflow: auto;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
-  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.28);
-  font-size: 0.92rem;
-  line-height: 1.5;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(-4px);
-  transition: opacity 0.16s ease, transform 0.16s ease;
-}
-
-.task-comment:hover .task-comment-tooltip,
-.task-comment:focus-visible .task-comment-tooltip,
-.task-comment:focus-within .task-comment-tooltip {
-  opacity: 1;
-  transform: translateY(0);
 }
 
 .task-attachment {

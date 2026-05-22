@@ -1097,7 +1097,6 @@ const renderUserArea = () => {
   addTaskButton.textContent = '+';
   addTaskButton.setAttribute('aria-label', t('addTaskShortcut'));
   addTaskButton.title = t('addTaskShortcut');
-  addTaskButton.hidden = currentView !== 'tasks';
   addTaskButton.addEventListener('click', () => {
     currentView = 'tasks';
     showSection();
@@ -1726,17 +1725,8 @@ const createTaskCard = (task) => {
 
     const comment = document.createElement('p');
     comment.className = 'task-comment';
-    comment.tabIndex = 0;
     const commentText = `${t('comment')}: ${task.comment}`;
-    comment.setAttribute('aria-label', commentText);
-    const commentPreview = document.createElement('span');
-    commentPreview.className = 'task-comment-text';
-    commentPreview.textContent = commentText;
-    const commentTooltip = document.createElement('span');
-    commentTooltip.className = 'task-comment-tooltip';
-    commentTooltip.setAttribute('aria-hidden', 'true');
-    commentTooltip.textContent = commentText;
-    comment.append(commentPreview, commentTooltip);
+    comment.textContent = commentText;
 
     const datetime = document.createElement('p');
     datetime.className = 'task-datetime';
@@ -1793,7 +1783,7 @@ const createTaskCard = (task) => {
     if (!isArchived) {
       actions.append(toggleButton);
     }
-    if (task.description && getRichTextPlainText(task.description).length > 180) {
+    if ((task.description && getRichTextPlainText(task.description).length > 180) || task.comment) {
       actions.append(previewButton);
     }
     actions.append(editButton, archiveButton, deleteButton);
@@ -2111,8 +2101,9 @@ const showPreviewTaskModal = (task) => {
     ? sanitizeRichText(task.description)
     : t('noDescription');
   previewTaskCommentInput.value = task.comment || '';
+  previewTaskCommentInput.readOnly = true;
+  savePreviewComment.classList.add('hidden');
   previewTaskModal.classList.remove('hidden');
-  previewTaskCommentInput.focus();
 };
 
 const hidePreviewTaskModal = () => {
@@ -2120,6 +2111,8 @@ const hidePreviewTaskModal = () => {
   previewTaskModal.classList.add('hidden');
   previewTaskDescription.textContent = '';
   previewTaskCommentInput.value = '';
+  previewTaskCommentInput.readOnly = false;
+  savePreviewComment.classList.remove('hidden');
 };
 
 editPreviewTask.addEventListener('click', () => {
