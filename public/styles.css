@@ -961,8 +961,17 @@ body.theme-dark .tag-manager-name.active {
   opacity: 0.92;
 }
 
+.task-item.priority-high-task {
+  background: var(--error-bg);
+  border-color: var(--error-border);
+}
+
 .task-item.completed {
   background: var(--completed-bg);
+}
+
+.task-item.priority-high-task.completed {
+  background: color-mix(in srgb, var(--error-bg) 74%, var(--completed-bg));
 }
 
 .task-meta {

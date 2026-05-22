@@ -1836,8 +1836,14 @@ const renderTasks = (tasks) => {
 const createTaskCard = (task) => {
     const currentStatus = taskStatus(task);
     const isArchived = Boolean(task.archived);
+    const isHighPriority = task.priority === 'high';
     const card = document.createElement('div');
-    card.className = `task-item ${currentStatus === 'done' ? 'completed' : ''} ${isArchived ? 'archived' : ''}`;
+    card.className = [
+      'task-item',
+      isHighPriority ? 'priority-high-task' : '',
+      currentStatus === 'done' ? 'completed' : '',
+      isArchived ? 'archived' : '',
+    ].filter(Boolean).join(' ');
     card.draggable = !isArchived;
     card.dataset.taskId = task.id;
     card.dataset.status = currentStatus;
