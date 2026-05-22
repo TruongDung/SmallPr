@@ -6,7 +6,9 @@ const userArea = document.getElementById('user-area');
 const languageSelect = document.getElementById('language-select');
 const themeToggle = document.getElementById('theme-toggle');
 const authForm = document.getElementById('auth-form');
+const addTaskModal = document.getElementById('add-task-modal');
 const taskForm = document.getElementById('task-form');
+const cancelAddTask = document.getElementById('cancel-add-task');
 const tagForm = document.getElementById('tag-form');
 const tagManager = document.querySelector('.tag-manager');
 const adminUserForm = document.getElementById('admin-user-form');
@@ -160,6 +162,7 @@ const translations = {
     archive: 'Archive',
     archived: 'Archived',
     restore: 'Restore',
+    addTaskShortcut: 'Add task',
     noArchivedTasks: 'No archived tasks.',
     actions: 'Actions',
     welcome: 'Welcome, {username}',
@@ -296,6 +299,7 @@ const translations = {
     archive: 'Luu tru',
     archived: 'Da luu tru',
     restore: 'Khoi phuc',
+    addTaskShortcut: 'Them cong viec',
     noArchivedTasks: 'Khong co cong viec da luu tru.',
     actions: 'Thao tác',
     welcome: 'Xin chào, {username}',
@@ -478,6 +482,8 @@ const applyTranslations = () => {
   document.getElementById('task-description').setAttribute('data-placeholder', t('descriptionPlaceholder'));
   setText('label[for="task-reminder"]', t('dateTimeAlert'));
   setText('label[for="task-attachment"]', t('uploadFile'));
+  setText('#add-task-title', t('addTask'));
+  cancelAddTask.textContent = t('cancel');
   setText('#task-form button[type="submit"]', t('addTask'));
   editTaskTitle.textContent = t('editTaskTitle');
   previewTaskTitle.textContent = t('previewTaskTitle');
@@ -1051,6 +1057,15 @@ const showSection = () => {
   fetchWeather(); // Load weather when showing task section
 };
 
+const showAddTaskModal = () => {
+  addTaskModal.classList.remove('hidden');
+  document.getElementById('task-title').focus();
+};
+
+const hideAddTaskModal = () => {
+  addTaskModal.classList.add('hidden');
+};
+
 const renderUserArea = () => {
   userArea.innerHTML = '';
   const welcome = document.createElement('span');
@@ -1076,7 +1091,20 @@ const renderUserArea = () => {
     showSection();
   });
 
-  userArea.append(tasksButton, archivedButton);
+  const addTaskButton = document.createElement('button');
+  addTaskButton.type = 'button';
+  addTaskButton.className = 'secondary add-task-shortcut';
+  addTaskButton.textContent = '+';
+  addTaskButton.setAttribute('aria-label', t('addTaskShortcut'));
+  addTaskButton.title = t('addTaskShortcut');
+  addTaskButton.hidden = currentView !== 'tasks';
+  addTaskButton.addEventListener('click', () => {
+    currentView = 'tasks';
+    showSection();
+    showAddTaskModal();
+  });
+
+  userArea.append(addTaskButton, tasksButton, archivedButton);
 
   if (currentUser.username === 'admin') {
     const adminButton = document.createElement('button');
@@ -1527,6 +1555,7 @@ const handleTaskSubmit = async (event) => {
       descriptionError.classList.add('hidden');
       attachmentError.classList.add('hidden');
       formError.classList.add('hidden');
+      hideAddTaskModal();
       loadTags();
       loadTasks();
     }
@@ -1697,8 +1726,17 @@ const createTaskCard = (task) => {
 
     const comment = document.createElement('p');
     comment.className = 'task-comment';
-    comment.textContent = `${t('comment')}: ${task.comment}`;
-    comment.title = `${t('comment')}: ${task.comment}`;
+    comment.tabIndex = 0;
+    const commentText = `${t('comment')}: ${task.comment}`;
+    comment.setAttribute('aria-label', commentText);
+    const commentPreview = document.createElement('span');
+    commentPreview.className = 'task-comment-text';
+    commentPreview.textContent = commentText;
+    const commentTooltip = document.createElement('span');
+    commentTooltip.className = 'task-comment-tooltip';
+    commentTooltip.setAttribute('aria-hidden', 'true');
+    commentTooltip.textContent = commentText;
+    comment.append(commentPreview, commentTooltip);
 
     const datetime = document.createElement('p');
     datetime.className = 'task-datetime';
@@ -1912,6 +1950,14 @@ editTagForm.addEventListener('submit', async (event) => {
 
 cancelEditTag.addEventListener('click', hideEditTagModal);
 
+cancelAddTask.addEventListener('click', hideAddTaskModal);
+
+addTaskModal.addEventListener('click', (event) => {
+  if (event.target === addTaskModal) {
+    hideAddTaskModal();
+  }
+});
+
 editTagModal.addEventListener('click', (event) => {
   if (event.target === editTagModal) {
     hideEditTagModal();
@@ -1925,6 +1971,10 @@ document.addEventListener('keydown', (event) => {
 
   if (event.key === 'Escape' && !editTagModal.classList.contains('hidden')) {
     hideEditTagModal();
+  }
+
+  if (event.key === 'Escape' && !addTaskModal.classList.contains('hidden')) {
+    hideAddTaskModal();
   }
 
   if (event.key === 'Escape' && !editTaskModal.classList.contains('hidden')) {

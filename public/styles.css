@@ -589,6 +589,24 @@ button.danger {
   padding: 8px 12px;
 }
 
+#user-area .add-task-shortcut {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-grid;
+  place-items: center;
+  background: var(--primary);
+  border-color: transparent;
+  color: white;
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+#user-area .add-task-shortcut:hover {
+  background: var(--primary-strong);
+}
+
 .task-header {
   display: flex;
   justify-content: space-between;
@@ -603,6 +621,7 @@ button.danger {
 
 .task-list {
   margin-top: 24px;
+  min-width: 0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
@@ -769,6 +788,7 @@ body.theme-dark .tag-manager-name.active {
 }
 
 .task-column-body {
+  min-width: 0;
   min-height: 120px;
   display: grid;
   gap: 14px;
@@ -792,6 +812,7 @@ body.theme-dark .tag-manager-name.active {
 
 .task-item {
   position: relative;
+  min-width: 0;
   min-height: 330px;
   padding: 18px;
   border: 1px solid var(--border);
@@ -986,15 +1007,62 @@ body.theme-dark .status-in_progress {
 }
 
 .task-comment {
+  position: relative;
+  min-width: 0;
+  max-width: 100%;
   padding: 10px 12px;
   border-left: 3px solid var(--primary);
   border-radius: 8px;
   background: var(--surface-soft);
   color: var(--text);
   line-height: 1.45;
+  cursor: help;
+}
+
+.task-comment:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--primary) 45%, transparent);
+  outline-offset: 3px;
+}
+
+.task-comment-text {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.task-comment-tooltip {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  z-index: 7;
+  width: min(360px, calc(100vw - 56px));
+  max-width: calc(100vw - 56px);
+  max-height: 260px;
+  overflow: auto;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.28);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.task-comment:hover .task-comment-tooltip,
+.task-comment:focus-visible .task-comment-tooltip,
+.task-comment:focus-within .task-comment-tooltip {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .task-attachment {
@@ -1304,6 +1372,13 @@ body.theme-dark .status-in_progress {
 }
 
 .modal.edit-task-modal {
+  width: min(100%, 520px);
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.modal.add-task-modal {
   width: min(100%, 520px);
   max-height: calc(100dvh - 40px);
   overflow-y: auto;

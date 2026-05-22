@@ -78,7 +78,10 @@
           <button id="logout-button" class="secondary">Logout</button>
         </div>
 
-        <form id="task-form" class="task-form">
+        <div id="add-task-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="add-task-title">
+          <div class="modal add-task-modal">
+            <h3 id="add-task-title">Add Task</h3>
+            <form id="task-form" class="task-form">
           <div class="field title-field">
             <label for="task-title">Title <span class="field-max">(max 20 characters)</span></label>
             <input id="task-title" type="text" required maxlength="20" size="20" />
@@ -128,9 +131,14 @@
             <input id="task-attachment" type="file" />
             <p id="attachment-error" class="field-error hidden"></p>
           </div>
-          <p id="form-error" class="field-error hidden"></p>
-          <button type="submit">Add Task</button>
-        </form>
+              <p id="form-error" class="field-error hidden"></p>
+              <div class="modal-actions">
+                <button id="cancel-add-task" type="button" class="secondary">Cancel</button>
+                <button type="submit">Add Task</button>
+              </div>
+            </form>
+          </div>
+        </div>
 
         <section class="tag-manager" aria-labelledby="tag-manager-title">
           <div class="tag-manager-header">
