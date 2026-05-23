@@ -938,11 +938,12 @@ describe('Admin API', () => {
     const managedUsername = testUsername('managed-user');
     const createUserResponse = await admin
       .post('/api/admin/users')
-      .send({ username: managedUsername, password: 'Initial123!' });
+      .send({ username: managedUsername, email: `${managedUsername}@example.com`, password: 'Initial123!' });
 
     expect(createUserResponse.statusCode).toBe(200);
     expect(createUserResponse.body.user).toMatchObject({
       username: managedUsername,
+      email: `${managedUsername}@example.com`,
       task_count: 0,
     });
 
@@ -967,6 +968,7 @@ describe('Admin API', () => {
     const listedUser = listResponse.body.users.find((user) => user.username === managedUsername);
     expect(listedUser).toMatchObject({
       username: managedUsername,
+      email: `${managedUsername}@example.com`,
       task_count: 1,
     });
 

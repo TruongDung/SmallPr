@@ -126,6 +126,7 @@ const translations = {
     login: 'Login',
     signup: 'Sign Up',
     username: 'Username',
+    email: 'Email',
     password: 'Password',
     showPassword: 'Show password',
     hidePassword: 'Hide password',
@@ -170,7 +171,7 @@ const translations = {
     dateTimeAlert: 'Date Time Alert',
     uploadFile: 'Upload File',
     addTask: 'Add Task',
-    manageUsers: 'Manage Users',
+    manageUsers: 'User',
     addUser: 'Add User',
     id: 'ID',
     tasks: 'Tasks',
@@ -292,6 +293,7 @@ const translations = {
     login: 'Đăng nhập',
     signup: 'Đăng ký',
     username: 'Tên đăng nhập',
+    email: 'Email',
     password: 'Mật khẩu',
     showPassword: 'Hiện mật khẩu',
     hidePassword: 'Ẩn mật khẩu',
@@ -313,7 +315,7 @@ const translations = {
     dateTimeAlert: 'Ngày giờ nhắc',
     uploadFile: 'Tải tệp lên',
     addTask: 'Thêm công việc',
-    manageUsers: 'Quản lý người dùng',
+    manageUsers: 'Người dùng',
     addUser: 'Thêm người dùng',
     id: 'ID',
     tasks: 'Công việc',
@@ -534,12 +536,14 @@ const applyTranslations = () => {
   setText('#save-edit-task', t('save'));
   setText('#admin-section h2', t('manageUsers'));
   setText('label[for="admin-username"]', t('username'));
+  setText('label[for="admin-email"]', t('email'));
   setText('label[for="admin-password"]', t('password'));
   setText('#admin-user-form button[type="submit"]', t('addUser'));
   setText('.user-table th:nth-child(1)', t('id'));
   setText('.user-table th:nth-child(2)', t('username'));
-  setText('.user-table th:nth-child(3)', t('tasks'));
-  setText('.user-table th:nth-child(4)', t('actions'));
+  setText('.user-table th:nth-child(3)', t('email'));
+  setText('.user-table th:nth-child(4)', t('tasks'));
+  setText('.user-table th:nth-child(5)', t('actions'));
   confirmDeleteNo.textContent = t('no');
   confirmDeleteYes.textContent = t('yes');
   if (currentUser) renderUserArea();
@@ -1571,6 +1575,9 @@ const renderUsers = (users) => {
     const usernameCell = document.createElement('td');
     usernameCell.textContent = user.username;
 
+    const emailCell = document.createElement('td');
+    emailCell.textContent = user.email || '';
+
     const taskCountCell = document.createElement('td');
     taskCountCell.textContent = user.task_count;
 
@@ -1596,7 +1603,7 @@ const renderUsers = (users) => {
     }
 
     actionsCell.append(actions);
-    row.append(idCell, usernameCell, taskCountCell, actionsCell);
+    row.append(idCell, usernameCell, emailCell, taskCountCell, actionsCell);
     userList.append(row);
   });
 };
@@ -1606,11 +1613,12 @@ const handleAdminUserSubmit = async (event) => {
   adminMessage.textContent = '';
 
   const username = document.getElementById('admin-username').value.trim();
+  const email = document.getElementById('admin-email').value.trim();
   const password = document.getElementById('admin-password').value.trim();
 
   const result = await request('/api/admin/users', {
     method: 'POST',
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify({ username, email, password }),
   });
 
   if (result.error) {

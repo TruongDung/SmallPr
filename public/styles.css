@@ -1206,7 +1206,7 @@ body.theme-dark .status-in_progress {
 
 .admin-user-form {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) auto;
   gap: 14px;
   align-items: end;
   margin-bottom: 24px;

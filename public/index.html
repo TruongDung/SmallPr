@@ -167,7 +167,7 @@
 
       <section id="admin-section" class="card hidden">
         <div class="admin-header">
-          <h2>Manage Users</h2>
+          <h2>User</h2>
           <p id="admin-message" class="message"></p>
         </div>
 
@@ -175,6 +175,10 @@
           <div class="field">
             <label for="admin-username">Username</label>
             <input id="admin-username" type="text" required />
+          </div>
+          <div class="field">
+            <label for="admin-email">Email</label>
+            <input id="admin-email" type="email" autocomplete="email" />
           </div>
           <div class="field">
             <label for="admin-password">Password</label>
@@ -189,6 +193,7 @@
               <tr>
                 <th>ID</th>
                 <th>Username</th>
+                <th>Email</th>
                 <th>Tasks</th>
                 <th>Actions</th>
               </tr>

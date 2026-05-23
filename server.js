@@ -66,6 +66,7 @@ const initializeDatabase = async () => {
   await pool.query(`CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
+    email TEXT,
     password TEXT NOT NULL
   )`);
 
@@ -102,6 +103,7 @@ const initializeDatabase = async () => {
   )`);
 
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminder_at TEXT');
+  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS tag TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS comment TEXT');
   await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS priority TEXT NOT NULL DEFAULT 'medium'");
@@ -213,6 +215,12 @@ const EMAIL_TRANSLATIONS = {
 };
 
 const normalizeLanguage = (language) => (language === 'vi' ? 'vi' : 'en');
+
+const normalizeEmail = (email) => {
+  if (email === undefined || email === null) return null;
+  const normalized = String(email).trim();
+  return normalized || null;
+};
 
 const tEmail = (language, key, values = {}) => {
   const dictionary = EMAIL_TRANSLATIONS[normalizeLanguage(language)];
@@ -816,10 +824,10 @@ app.delete('/api/tags/:id', authRequired, async (req, res) => {
 app.get('/api/admin/users', adminRequired, async (req, res) => {
   try {
     const users = await allAsync(
-      `SELECT users.id, users.username, COUNT(tasks.id)::int AS task_count
+      `SELECT users.id, users.username, users.email, COUNT(tasks.id)::int AS task_count
        FROM users
        LEFT JOIN tasks ON tasks.user_id = users.id
-       GROUP BY users.id, users.username
+       GROUP BY users.id, users.username, users.email
        ORDER BY users.id ASC`
     );
     res.json({ users });
@@ -831,6 +839,7 @@ app.get('/api/admin/users', adminRequired, async (req, res) => {
 
 app.post('/api/admin/users', adminRequired, async (req, res) => {
   const { username, password } = req.body;
+  const email = normalizeEmail(req.body.email);
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required' });
   }
@@ -842,13 +851,16 @@ app.post('/api/admin/users', adminRequired, async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const result = await runAsync('INSERT INTO users (username, password) VALUES (?, ?) RETURNING id', [username, hashedPassword]);
+    const result = await runAsync(
+      'INSERT INTO users (username, email, password) VALUES (?, ?, ?) RETURNING id',
+      [username, email, hashedPassword]
+    );
     const user = await getAsync(
-      `SELECT users.id, users.username, COUNT(tasks.id)::int AS task_count
+      `SELECT users.id, users.username, users.email, COUNT(tasks.id)::int AS task_count
        FROM users
        LEFT JOIN tasks ON tasks.user_id = users.id
        WHERE users.id = ?
-       GROUP BY users.id, users.username`,
+       GROUP BY users.id, users.username, users.email`,
       [result.lastID]
     );
     res.json({ user });
