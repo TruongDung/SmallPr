@@ -602,6 +602,14 @@ const sanitizeRichText = (html = '') => {
   template.innerHTML = html;
 
   template.content.querySelectorAll('*').forEach((element) => {
+    const style = element.getAttribute('style') || '';
+    if (element.tagName === 'SPAN' && /text-decoration[^;:]*:\s*[^;]*line-through|text-decoration-line[^;:]*:\s*[^;]*line-through/i.test(style)) {
+      const strike = document.createElement('s');
+      strike.append(...element.childNodes);
+      element.replaceWith(strike);
+      return;
+    }
+
     [...element.attributes].forEach((attribute) => element.removeAttribute(attribute.name));
 
     if (!richTextAllowedTags.has(element.tagName)) {

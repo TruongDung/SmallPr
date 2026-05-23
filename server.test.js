@@ -475,6 +475,88 @@ describe('Task API', () => {
     process.env.SMTP_PASS = originalEnv.SMTP_PASS;
   });
 
+  test('preserves strikethrough formatting in task email HTML', async () => {
+    const originalEnv = {
+      SMTP_HOST: process.env.SMTP_HOST,
+      SMTP_USER: process.env.SMTP_USER,
+      SMTP_PASS: process.env.SMTP_PASS,
+    };
+    const agent = await createAgent(testUsername('strike-email-owner'));
+
+    const createResponse = await agent
+      .post('/api/tasks')
+      .send({
+        title: 'Strike',
+        description: '<p>Keep <s>crossed out</s> text</p>',
+      });
+
+    process.env.SMTP_HOST = 'smtp.test.local';
+    process.env.SMTP_USER = 'sender@test.local';
+    process.env.SMTP_PASS = 'secret';
+    mockSendMail.mockClear();
+
+    const singleResponse = await agent
+      .post(`/api/tasks/${createResponse.body.task.id}/send-email`)
+      .send({ language: 'en' });
+
+    expect(singleResponse.statusCode).toBe(200);
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+    expect(mockSendMail.mock.calls[0][0].html).toContain(
+      'Keep <s style="text-decoration:line-through;">crossed out</s> text'
+    );
+    expect(mockSendMail.mock.calls[0][0].text).toContain('Keep crossed out text');
+
+    mockSendMail.mockClear();
+    const summaryResponse = await agent
+      .post('/api/tasks/send-email')
+      .send({ language: 'en' });
+
+    expect(summaryResponse.statusCode).toBe(200);
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+    expect(mockSendMail.mock.calls[0][0].html).toContain(
+      'Keep <s style="text-decoration:line-through;">crossed out</s> text'
+    );
+
+    process.env.SMTP_HOST = originalEnv.SMTP_HOST;
+    process.env.SMTP_USER = originalEnv.SMTP_USER;
+    process.env.SMTP_PASS = originalEnv.SMTP_PASS;
+  });
+
+  test('preserves browser-generated span strikethrough in task email HTML', async () => {
+    const originalEnv = {
+      SMTP_HOST: process.env.SMTP_HOST,
+      SMTP_USER: process.env.SMTP_USER,
+      SMTP_PASS: process.env.SMTP_PASS,
+    };
+    const agent = await createAgent(testUsername('span-strike-email-owner'));
+
+    const createResponse = await agent
+      .post('/api/tasks')
+      .send({
+        title: 'SpanStrike',
+        description: '<p>Keep <span style="text-decoration-line: line-through;">crossed out</span> text</p>',
+      });
+
+    process.env.SMTP_HOST = 'smtp.test.local';
+    process.env.SMTP_USER = 'sender@test.local';
+    process.env.SMTP_PASS = 'secret';
+    mockSendMail.mockClear();
+
+    const response = await agent
+      .post(`/api/tasks/${createResponse.body.task.id}/send-email`)
+      .send({ language: 'en' });
+
+    expect(response.statusCode).toBe(200);
+    expect(mockSendMail).toHaveBeenCalledTimes(1);
+    expect(mockSendMail.mock.calls[0][0].html).toContain(
+      'Keep <s style="text-decoration:line-through;">crossed out</s> text'
+    );
+
+    process.env.SMTP_HOST = originalEnv.SMTP_HOST;
+    process.env.SMTP_USER = originalEnv.SMTP_USER;
+    process.env.SMTP_PASS = originalEnv.SMTP_PASS;
+  });
+
   test('returns an error when email settings are not configured', async () => {
     const originalEnv = {
       SMTP_HOST: process.env.SMTP_HOST,

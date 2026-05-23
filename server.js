@@ -316,6 +316,76 @@ const formatLinkedMultilineHtml = (value = '') => formatMultilineHtml(value)
     '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
   );
 
+const decodeBasicHtmlEntities = (value = '') => String(value)
+  .replace(/&nbsp;/g, ' ')
+  .replace(/&amp;/g, '&')
+  .replace(/&lt;/g, '<')
+  .replace(/&gt;/g, '>')
+  .replace(/&quot;/g, '"')
+  .replace(/&#39;/g, "'");
+
+const linkifyEscapedHtml = (value = '') => String(value).replace(
+  /(https?:\/\/[^\s<]+)/g,
+  '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
+);
+
+const formatEmailTextNodeHtml = (value = '') => linkifyEscapedHtml(
+  normalizeLineBreaks(decodeBasicHtmlEntities(value))
+    .split('\n')
+    .map((line) => escapeHtml(line))
+    .join('<br>')
+);
+
+const formatRichTextEmailHtml = (value = '', fallback = '') => {
+  const input = String(value || '');
+  if (!formatPlainTextValue(input)) {
+    return formatLinkedMultilineHtml(fallback);
+  }
+
+  let strikethroughSpanDepth = 0;
+
+  return input
+    .split(/(<[^>]+>)/g)
+    .map((part) => {
+      const tagMatch = part.match(/^<\s*(\/?)\s*([a-z0-9]+)([^>]*)\s*\/?\s*>$/i);
+      if (!tagMatch) {
+        return formatEmailTextNodeHtml(part);
+      }
+
+      const isClosing = tagMatch[1] === '/';
+      const tag = tagMatch[2].toLowerCase();
+      const attributes = tagMatch[3] || '';
+      const isSelfClosing = /\/\s*>$/.test(part);
+      const isStrikethroughSpan = tag === 'span' && /text-decoration[^>]*line-through/i.test(attributes);
+
+      if (tag === 'br') return '<br>';
+      if (tag === 'p' || tag === 'div') return isClosing ? '<br>' : '';
+      if (tag === 'strong' || tag === 'b') return isClosing ? '</strong>' : '<strong>';
+      if (tag === 'em' || tag === 'i') return isClosing ? '</em>' : '<em>';
+      if (tag === 'u') return isClosing ? '</u>' : '<u>';
+      if (tag === 'span' && isClosing) {
+        if (strikethroughSpanDepth > 0) {
+          strikethroughSpanDepth -= 1;
+          return '</s>';
+        }
+        return '';
+      }
+      if (tag === 's' || tag === 'strike' || tag === 'del' || isStrikethroughSpan) {
+        if (isStrikethroughSpan && !isClosing && !isSelfClosing) {
+          strikethroughSpanDepth += 1;
+        }
+        return isClosing || isSelfClosing ? '</s>' : '<s style="text-decoration:line-through;">';
+      }
+      if (tag === 'ul') return isClosing ? '</ul>' : '<ul style="margin:4px 0 4px 18px;padding:0;">';
+      if (tag === 'ol') return isClosing ? '</ol>' : '<ol style="margin:4px 0 4px 18px;padding:0;">';
+      if (tag === 'li') return isClosing ? '</li>' : '<li>';
+
+      return '';
+    })
+    .join('')
+    .replace(/(<br>)+$/g, '');
+};
+
 const sanitizeFileName = (name = '') => path.basename(String(name)).replace(/[<>:"/\\|?*\u0000-\u001F]/g, '_').slice(0, 180);
 
 const parseAttachment = (attachment) => {
@@ -355,6 +425,7 @@ const sendTaskAlertEmail = async (task, user, language = 'en') => {
 
   const taskAlertMarker = tEmail(language, 'taskManager');
   const description = formatPlainTextValue(task.description) || tEmail(language, 'noDescription');
+  const descriptionHtml = formatRichTextEmailHtml(task.description, tEmail(language, 'noDescription'));
   const comment = task.comment || tEmail(language, 'noComment');
   const attachment = task.attachment_name || tEmail(language, 'noAttachment');
   const status = formatTaskStatus(task.status || (task.completed ? 'done' : 'todo'), language);
@@ -392,7 +463,7 @@ const sendTaskAlertEmail = async (task, user, language = 'en') => {
         <p style="margin:0 0 8px;"><strong>${escapeHtml(tEmail(language, 'status'))}:</strong> ${escapeHtml(status)}</p>
         <div style="margin:0 0 8px;">
           <strong>${escapeHtml(tEmail(language, 'description'))}:</strong>
-          <div style="margin-top:4px;white-space:normal;">${formatLinkedMultilineHtml(description)}</div>
+          <div style="margin-top:4px;white-space:normal;">${descriptionHtml}</div>
         </div>
         <p style="margin:0 0 8px;"><strong>${escapeHtml(tEmail(language, 'comment'))}:</strong> ${formatLinkedMultilineHtml(comment)}</p>
         <p style="margin:0 0 8px;"><strong>${escapeHtml(tEmail(language, 'attachment'))}:</strong> ${escapeHtml(attachment)}</p>
@@ -436,6 +507,7 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
     priority: formatTaskPriority(task.priority || 'medium', language),
     status: getTaskStatus(task),
     description: formatPlainTextValue(task.description) || tEmail(language, 'noDescription'),
+    descriptionHtml: formatRichTextEmailHtml(task.description, tEmail(language, 'noDescription')),
     comment: task.comment || tEmail(language, 'noComment'),
     attachment: task.attachment_name || tEmail(language, 'noAttachment'),
     reminder: formatReminder(task),
@@ -473,7 +545,7 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.tag)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.priority)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.status)}</td>
-              <td style="border:1px solid #d1d5db;padding:8px;white-space:pre-line;">${formatMultilineHtml(task.description)}</td>
+              <td style="border:1px solid #d1d5db;padding:8px;white-space:pre-line;">${task.descriptionHtml}</td>
               <td style="border:1px solid #d1d5db;padding:8px;white-space:pre-line;">${formatMultilineHtml(task.comment)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.attachment)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.reminder)}</td>
