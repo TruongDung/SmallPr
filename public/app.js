@@ -70,6 +70,11 @@ const editPreviewTask = document.getElementById('edit-preview-task');
 const sendPreviewTaskEmail = document.getElementById('send-preview-task-email');
 const savePreviewComment = document.getElementById('save-preview-comment');
 const closePreviewTask = document.getElementById('close-preview-task');
+const attachmentPreviewModal = document.getElementById('attachment-preview-modal');
+const attachmentPreviewTitle = document.getElementById('attachment-preview-title');
+const attachmentPreviewFrame = document.getElementById('attachment-preview-frame');
+const openAttachmentPreview = document.getElementById('open-attachment-preview');
+const closeAttachmentPreview = document.getElementById('close-attachment-preview');
 const reminderAlertModal = document.getElementById('reminder-alert-modal');
 const reminderAlertTitle = document.getElementById('reminder-alert-title');
 const reminderAlertMessage = document.getElementById('reminder-alert-message');
@@ -641,6 +646,22 @@ const getRichEditorValue = (editor) => {
 };
 
 const getRichEditorLength = (editor) => getRichTextPlainText(editor.innerHTML).length;
+
+const isPdfAttachment = (task) => {
+  const type = String(task?.attachment_type || '').toLowerCase();
+  const name = String(task?.attachment_name || '').toLowerCase();
+  return type === 'application/pdf' || name.endsWith('.pdf');
+};
+
+const attachAttachmentPreviewHandler = (link, task) => {
+  if (!isPdfAttachment(task)) return;
+
+  link.removeAttribute('download');
+  link.addEventListener('click', (event) => {
+    event.preventDefault();
+    showAttachmentPreview(task);
+  });
+};
 
 const richEditorSelections = new WeakMap();
 
@@ -1902,6 +1923,7 @@ const createTaskCard = (task) => {
       attachment.href = task.attachment_data;
       attachment.download = task.attachment_name;
       attachment.textContent = `${t('attachment')}: ${task.attachment_name}`;
+      attachAttachmentPreviewHandler(attachment, task);
     }
 
     const actions = document.createElement('div');
@@ -2135,6 +2157,10 @@ document.addEventListener('keydown', (event) => {
     hidePreviewTaskModal();
   }
 
+  if (event.key === 'Escape' && !attachmentPreviewModal.classList.contains('hidden')) {
+    hideAttachmentPreview();
+  }
+
   if (event.key === 'Escape' && !reminderAlertModal.classList.contains('hidden')) {
     hideReminderAlert();
   }
@@ -2185,6 +2211,7 @@ const renderEditAttachmentState = () => {
     fileName.href = task.attachment_data;
     fileName.download = task.attachment_name;
     fileName.textContent = task.attachment_name;
+    attachAttachmentPreviewHandler(fileName, task);
   } else {
     fileName.textContent = t('noAttachment');
   }
@@ -2336,6 +2363,23 @@ const hidePreviewTaskModal = () => {
   savePreviewComment.classList.remove('hidden');
 };
 
+const showAttachmentPreview = (task) => {
+  if (!task?.attachment_data) return;
+
+  attachmentPreviewTitle.textContent = task.attachment_name || t('attachment');
+  attachmentPreviewFrame.src = task.attachment_data;
+  openAttachmentPreview.href = task.attachment_data;
+  openAttachmentPreview.download = task.attachment_name || '';
+  attachmentPreviewModal.classList.remove('hidden');
+};
+
+const hideAttachmentPreview = () => {
+  attachmentPreviewModal.classList.add('hidden');
+  attachmentPreviewFrame.removeAttribute('src');
+  openAttachmentPreview.removeAttribute('download');
+  openAttachmentPreview.href = '#';
+};
+
 editPreviewTask.addEventListener('click', () => {
   if (!pendingPreviewTask) return;
   const task = pendingPreviewTask;
@@ -2383,6 +2427,14 @@ closePreviewTask.addEventListener('click', hidePreviewTaskModal);
 previewTaskModal.addEventListener('click', (event) => {
   if (event.target === previewTaskModal) {
     hidePreviewTaskModal();
+  }
+});
+
+closeAttachmentPreview.addEventListener('click', hideAttachmentPreview);
+
+attachmentPreviewModal.addEventListener('click', (event) => {
+  if (event.target === attachmentPreviewModal) {
+    hideAttachmentPreview();
   }
 });
 
