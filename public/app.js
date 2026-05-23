@@ -2411,6 +2411,18 @@ const setUploadProgress = (percent, message = t('uploadPleaseWait')) => {
   uploadProgressPercent.textContent = `${safePercent}%`;
 };
 
+const registerServiceWorker = () => {
+  if (!('serviceWorker' in navigator) || !window.isSecureContext) {
+    return;
+  }
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch((error) => {
+      console.warn('Service worker registration failed:', error);
+    });
+  });
+};
+
 const showUploadProgress = () => {
   uploadProgressTitle.textContent = t('uploadingFile');
   setUploadProgress(0);
@@ -2693,4 +2705,5 @@ setMode('login');
 setupRichTextEditors();
 languageSelect.value = currentLanguage;
 applyTranslations();
+registerServiceWorker();
 init();
