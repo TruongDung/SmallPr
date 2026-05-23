@@ -56,6 +56,12 @@ The app adds `Task Manager` to every Add Task email body and header so the filte
 
 7. Test link: https://small-pr.vercel.app/
 
+## iOS App
+
+An iOS wrapper project is available at `ios/TaskManager/TaskManager.xcodeproj`.
+
+Open it in Xcode on a Mac, set your Apple signing team, connect your iPhone, and press Run. The app loads the deployed Task Manager URL from `ios/TaskManager/TaskManager/AppConfig.swift`.
+
 ## Default Credentials
 
 - Username: `admin`
