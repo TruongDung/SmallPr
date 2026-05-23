@@ -1814,6 +1814,17 @@ body.theme-dark .status-in_progress {
     justify-content: flex-start;
   }
 
+  #user-area .add-task-shortcut {
+    position: fixed;
+    top: calc(10px + env(safe-area-inset-top));
+    right: calc(12px + env(safe-area-inset-right));
+    z-index: 80;
+    width: 46px;
+    height: 46px;
+    border: 2px solid color-mix(in srgb, white 70%, var(--primary));
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.22);
+  }
+
   .modal.reminder-alert-modal {
     grid-template-columns: 1fr;
     row-gap: 14px;
