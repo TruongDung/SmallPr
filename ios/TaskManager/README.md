@@ -11,9 +11,20 @@ This is a native iOS wrapper for the existing Task Manager web app.
 5. Choose your iPhone as the run destination.
 6. Press **Run**.
 
-The app loads `https://small-pr.vercel.app/` by default. To point it at a different deployed server, edit `TaskManager/AppConfig.swift`.
+The app currently loads the local development server at `http://192.168.1.165:3000/`. Keep `npm start` running on the Mac and keep the iPhone on the same Wi-Fi network.
 
-For a physical iPhone, use an HTTPS URL that the phone can reach. `localhost` means the phone itself, not this Windows computer.
+To point it at a deployed server, edit `TaskManager/AppConfig.swift` and use an HTTPS URL such as `https://small-pr.vercel.app/`.
+
+For a physical iPhone, never use `localhost` for the web URL. `localhost` means the phone itself, not your Mac.
+
+## Command Line Build
+
+After installing full Xcode, run:
+
+```bash
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+xcodebuild -project ios/TaskManager/TaskManager.xcodeproj -scheme TaskManager -configuration Debug -destination 'generic/platform=iOS' build
+```
 
 ## Notes
 
