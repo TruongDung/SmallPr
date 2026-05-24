@@ -760,13 +760,63 @@ button.danger {
 }
 
 .task-search {
+  position: relative;
   flex: 1 1 240px;
   min-width: min(100%, 220px);
 }
 
 .task-search input {
   width: 100%;
-  min-height: 40px;
+  min-height: 42px;
+  padding-left: 40px;
+  padding-right: 38px;
+  border-radius: 10px;
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+}
+
+.task-search input:focus {
+  border-color: var(--primary);
+  outline: 3px solid color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+.task-search-icon,
+.task-search-clear {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.task-search-icon {
+  left: 14px;
+  color: var(--muted);
+  font-size: 1rem;
+  pointer-events: none;
+}
+
+.task-search-clear {
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.task-search-clear:hover {
+  background: var(--surface-tint);
+  color: var(--primary);
+}
+
+.task-search-clear.hidden {
+  display: none;
 }
 
 .task-list {

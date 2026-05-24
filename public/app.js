@@ -37,6 +37,7 @@ const exportExcelButton = document.getElementById('export-excel');
 const exportPdfButton = document.getElementById('export-pdf');
 const exportWordButton = document.getElementById('export-word');
 const taskSearchInput = document.getElementById('task-search-input');
+const clearTaskSearch = document.getElementById('clear-task-search');
 const taskPriorityInput = document.getElementById('task-priority');
 const taskStatusInput = document.getElementById('task-status');
 const taskTagInput = document.getElementById('task-tag');
@@ -154,6 +155,7 @@ const translations = {
     logout: 'Logout',
     searchTasks: 'Search tasks',
     searchTasksPlaceholder: 'Search title, description, comment',
+    clearSearch: 'Clear search',
     noSearchTasks: 'No tasks match your search.',
     title: 'Title',
     max20: '(max 20 characters)',
@@ -326,6 +328,7 @@ const translations = {
     logout: 'Đăng xuất',
     searchTasks: 'Tìm công việc',
     searchTasksPlaceholder: 'Tìm tiêu đề, mô tả, bình luận',
+    clearSearch: 'Xóa tìm kiếm',
     noSearchTasks: 'Không có công việc phù hợp.',
     title: 'Tiêu đề',
     max20: '(tối đa 20 ký tự)',
@@ -516,7 +519,6 @@ const applyTranslations = () => {
     passwordInput.type === 'password' ? t('showPassword') : t('hidePassword')
   );
   setText('#auth-form button[type="submit"]', t('submit'));
-  setText('#task-section h2', t('yourTasks'));
   setIconButtonLabel(sendSummaryEmailButton, t('sendEmail'));
   setIconButtonLabel(exportExcelButton, t('exportExcel'));
   setIconButtonLabel(exportPdfButton, t('exportPdf'));
@@ -524,6 +526,8 @@ const applyTranslations = () => {
   logoutButton.textContent = t('logout');
   setText('label[for="task-search-input"]', t('searchTasks'));
   taskSearchInput.placeholder = t('searchTasksPlaceholder');
+  clearTaskSearch.setAttribute('aria-label', t('clearSearch'));
+  clearTaskSearch.title = t('clearSearch');
   setText('label[for="task-title"]', `${t('title')} ${t('max20')}`);
   setText('label[for="task-priority"]', t('priority'));
   updatePriorityOptions(taskPriorityInput);
@@ -708,6 +712,10 @@ const taskMatchesSearch = (task, query) => {
   return haystack.includes(query);
 };
 
+const updateTaskSearchState = () => {
+  clearTaskSearch.classList.toggle('hidden', !taskSearchInput.value.trim());
+};
+
 const setRichEditorValue = (editor, value = '') => {
   if (hasRichTextMarkup(value)) {
     editor.innerHTML = sanitizeRichText(value);
@@ -840,6 +848,18 @@ const readAttachmentFile = (file, onProgress = () => {}) => new Promise((resolve
   reader.onerror = () => reject(new Error('Unable to read attachment'));
   reader.readAsDataURL(file);
 });
+
+const fileFromClipboard = (clipboardData) => {
+  if (!clipboardData?.items) return null;
+  const item = [...clipboardData.items].find((entry) => entry.kind === 'file');
+  const file = item?.getAsFile();
+  if (!file) return null;
+
+  if (file.name) return file;
+
+  const extension = (file.type.split('/')[1] || 'bin').replace('jpeg', 'jpg');
+  return new File([file], `pasted-attachment.${extension}`, { type: file.type || 'application/octet-stream' });
+};
 
 const handleTaskAttachmentChange = async () => {
   const attachmentError = document.getElementById('attachment-error');
@@ -1913,7 +1933,6 @@ const loadTasks = async () => {
 const renderTasks = (tasks) => {
   taskList.innerHTML = '';
   const showingArchived = currentView === 'archived';
-  setText('#task-section h2', showingArchived ? t('archived') : t('yourTasks'));
   const activeTagFilter = !showingArchived && currentTagFilter;
   const searchQuery = taskSearchInput.value.trim().toLowerCase();
   const filteredByTag = activeTagFilter
@@ -2207,6 +2226,35 @@ const updateTask = async (id, updates) => {
   return result;
 };
 
+const savePastedAttachmentToOpenTask = async (event) => {
+  if (!pendingPreviewTask || previewTaskModal.classList.contains('hidden')) return;
+
+  const file = fileFromClipboard(event.clipboardData);
+  if (!file) return;
+  event.preventDefault();
+
+  if (file.size > MAX_ATTACHMENT_BYTES) {
+    showStatusToast(t('attachmentTooLarge'), 'error');
+    return;
+  }
+
+  try {
+    showUploadProgress();
+    const attachment = await readAttachmentFile(file, setUploadProgress);
+    setUploadProgress(95);
+    const result = await updateTask(pendingPreviewTask.id, { attachment });
+    if (result?.task) {
+      pendingPreviewTask = result.task;
+      showStatusToast(t('taskSaved'));
+    }
+    setUploadProgress(100);
+  } catch (error) {
+    showStatusToast(error.message, 'error');
+  } finally {
+    setTimeout(hideUploadProgress, 250);
+  }
+};
+
 const deleteTask = async (id) => {
   await request(`/api/tasks/${id}`, {
     method: 'DELETE',
@@ -2342,6 +2390,8 @@ document.addEventListener('keydown', (event) => {
     hideStatusToast();
   }
 });
+
+document.addEventListener('paste', savePastedAttachmentToOpenTask);
 
 const formatDateTimeLocalValue = (dateString) => {
   if (!dateString) return '';
@@ -2933,7 +2983,16 @@ languageSelect.addEventListener('change', (event) => setLanguage(event.target.va
 themeToggle.addEventListener('click', toggleTheme);
 togglePasswordButton.addEventListener('click', togglePasswordVisibility);
 floatingAddTask.addEventListener('click', openAddTaskFlow);
-taskSearchInput.addEventListener('input', () => renderTasks(tasks));
+taskSearchInput.addEventListener('input', () => {
+  updateTaskSearchState();
+  renderTasks(tasks);
+});
+clearTaskSearch.addEventListener('click', () => {
+  taskSearchInput.value = '';
+  updateTaskSearchState();
+  renderTasks(tasks);
+  taskSearchInput.focus();
+});
 taskAttachmentInput.addEventListener('change', handleTaskAttachmentChange);
 editTaskAttachmentInput.addEventListener('change', handleEditTaskAttachmentChange);
 closePickerAfterTodaySelection(taskReminderInput);

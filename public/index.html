@@ -74,10 +74,11 @@
         <div id="weather-widget" class="weather-widget hidden"></div>
         
         <div class="task-header">
-          <h2>Your Tasks</h2>
           <div class="task-search">
             <label for="task-search-input" class="sr-only">Search tasks</label>
+            <span class="task-search-icon" aria-hidden="true">⌕</span>
             <input id="task-search-input" type="search" placeholder="Search title, description, comment" autocomplete="off" />
+            <button id="clear-task-search" class="task-search-clear hidden" type="button" aria-label="Clear search" title="Clear search">×</button>
           </div>
           <div class="export-buttons">
             <button id="send-summary-email" class="secondary icon-button" type="button" aria-label="Send Email" title="Send Email">
