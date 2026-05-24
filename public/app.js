@@ -85,6 +85,7 @@ const savePreviewComment = document.getElementById('save-preview-comment');
 const closePreviewTask = document.getElementById('close-preview-task');
 const attachmentPreviewModal = document.getElementById('attachment-preview-modal');
 const attachmentPreviewTitle = document.getElementById('attachment-preview-title');
+const attachmentPreviewImage = document.getElementById('attachment-preview-image');
 const attachmentPreviewFrame = document.getElementById('attachment-preview-frame');
 const openAttachmentPreview = document.getElementById('open-attachment-preview');
 const closeAttachmentPreview = document.getElementById('close-attachment-preview');
@@ -729,8 +730,14 @@ const isPdfAttachment = (task) => {
   return type === 'application/pdf' || name.endsWith('.pdf');
 };
 
+const isImageAttachment = (task) => {
+  const type = String(task?.attachment_type || '').toLowerCase();
+  const name = String(task?.attachment_name || '').toLowerCase();
+  return type.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
+};
+
 const attachAttachmentPreviewHandler = (link, task) => {
-  if (!isPdfAttachment(task)) return;
+  if (!isPdfAttachment(task) && !isImageAttachment(task)) return;
 
   link.removeAttribute('download');
   link.addEventListener('click', (event) => {
@@ -2541,7 +2548,12 @@ const showAttachmentPreview = (task) => {
   if (!task?.attachment_data) return;
 
   attachmentPreviewTitle.textContent = task.attachment_name || t('attachment');
-  attachmentPreviewFrame.src = task.attachment_data;
+  const isImage = isImageAttachment(task);
+  attachmentPreviewImage.classList.toggle('hidden', !isImage);
+  attachmentPreviewFrame.classList.toggle('hidden', isImage);
+  attachmentPreviewImage.src = isImage ? task.attachment_data : '';
+  attachmentPreviewImage.alt = task.attachment_name || t('attachment');
+  attachmentPreviewFrame.src = isImage ? '' : task.attachment_data;
   openAttachmentPreview.href = task.attachment_data;
   openAttachmentPreview.download = task.attachment_name || '';
   attachmentPreviewModal.classList.remove('hidden');
@@ -2549,7 +2561,10 @@ const showAttachmentPreview = (task) => {
 
 const hideAttachmentPreview = () => {
   attachmentPreviewModal.classList.add('hidden');
+  attachmentPreviewImage.removeAttribute('src');
+  attachmentPreviewImage.classList.add('hidden');
   attachmentPreviewFrame.removeAttribute('src');
+  attachmentPreviewFrame.classList.remove('hidden');
   openAttachmentPreview.removeAttribute('download');
   openAttachmentPreview.href = '#';
 };

@@ -1626,13 +1626,19 @@ body.theme-dark .status-in_progress {
   font-weight: 700;
 }
 
-.attachment-preview-frame {
+.attachment-preview-frame,
+.attachment-preview-image {
   flex: 1;
   min-height: 420px;
   width: 100%;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface-soft);
+}
+
+.attachment-preview-image {
+  object-fit: contain;
+  padding: 8px;
 }
 
 .modal.reminder-alert-modal {
@@ -2196,6 +2202,10 @@ body.theme-dark .status-in_progress {
   }
 
   .attachment-preview-frame {
+    min-height: 0;
+  }
+
+  .attachment-preview-image {
     min-height: 0;
   }
 
