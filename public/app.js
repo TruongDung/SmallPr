@@ -435,6 +435,11 @@ const setText = (selector, value) => {
   if (element) element.textContent = value;
 };
 
+const setIconButtonLabel = (button, label) => {
+  button.setAttribute('aria-label', label);
+  button.title = label;
+};
+
 const applyTheme = () => {
   const isDark = currentTheme === 'dark';
   document.body.classList.toggle('theme-dark', isDark);
@@ -503,10 +508,10 @@ const applyTranslations = () => {
   );
   setText('#auth-form button[type="submit"]', t('submit'));
   setText('#task-section h2', t('yourTasks'));
-  sendSummaryEmailButton.textContent = t('sendEmail');
-  exportExcelButton.textContent = t('exportExcel');
-  exportPdfButton.textContent = t('exportPdf');
-  exportWordButton.textContent = t('exportWord');
+  setIconButtonLabel(sendSummaryEmailButton, t('sendEmail'));
+  setIconButtonLabel(exportExcelButton, t('exportExcel'));
+  setIconButtonLabel(exportPdfButton, t('exportPdf'));
+  setIconButtonLabel(exportWordButton, t('exportWord'));
   logoutButton.textContent = t('logout');
   setText('label[for="task-search-input"]', t('searchTasks'));
   taskSearchInput.placeholder = t('searchTasksPlaceholder');

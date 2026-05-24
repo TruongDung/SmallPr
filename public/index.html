@@ -80,10 +80,18 @@
             <input id="task-search-input" type="search" placeholder="Search title, description, comment" autocomplete="off" />
           </div>
           <div class="export-buttons">
-            <button id="send-summary-email" class="secondary">Send Email</button>
-            <button id="export-excel" class="secondary">Export to Excel</button>
-            <button id="export-pdf" class="secondary">Export to PDF</button>
-            <button id="export-word" class="secondary">Export to Word</button>
+            <button id="send-summary-email" class="secondary icon-button" type="button" aria-label="Send Email" title="Send Email">
+              <span aria-hidden="true">✉</span>
+            </button>
+            <button id="export-excel" class="secondary icon-button icon-button-excel" type="button" aria-label="Export to Excel" title="Export to Excel">
+              <span aria-hidden="true">XLS</span>
+            </button>
+            <button id="export-pdf" class="secondary icon-button icon-button-pdf" type="button" aria-label="Export to PDF" title="Export to PDF">
+              <span aria-hidden="true">PDF</span>
+            </button>
+            <button id="export-word" class="secondary icon-button icon-button-word" type="button" aria-label="Export to Word" title="Export to Word">
+              <span aria-hidden="true">DOC</span>
+            </button>
           </div>
           <button id="logout-button" class="secondary">Logout</button>
         </div>

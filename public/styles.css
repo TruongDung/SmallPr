@@ -715,7 +715,48 @@ button.danger {
 
 .export-buttons {
   display: flex;
-  gap: 10px;
+  gap: 6px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.icon-button {
+  width: 40px;
+  height: 40px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border-color: transparent;
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+}
+
+.icon-button span {
+  display: block;
+}
+
+.icon-button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.icon-button-excel {
+  color: #15803d;
+}
+
+.icon-button-pdf {
+  color: #dc2626;
+}
+
+.icon-button-word {
+  color: #2563eb;
 }
 
 .task-search {
@@ -1934,7 +1975,6 @@ body.theme-dark .status-in_progress {
 
   .export-buttons button {
     flex: 0 0 auto;
-    white-space: nowrap;
   }
 
   .admin-user-form {
