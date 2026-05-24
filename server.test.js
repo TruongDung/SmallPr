@@ -25,6 +25,7 @@ const createAgent = async (username = testUsername(`user-${Math.random()}`)) => 
 
   expect(response.statusCode).toBe(200);
   expect(response.body.user).toMatchObject({ username });
+  await db.query('UPDATE users SET email = $1 WHERE id = $2', [`${username}@example.com`, response.body.user.id]);
 
   return agent;
 };
@@ -421,15 +422,23 @@ describe('Task API', () => {
     expect(response.statusCode).toBe(200);
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     const mailOptions = mockSendMail.mock.calls[0][0];
+    expect(mailOptions.to).toBe(`${testUsername('alert-email-owner')}@example.com`);
     expect(mailOptions.text).toContain([
       'Description:',
       'link:',
       'https://www.youtube.com/watch?v=g-ZtK5u-iiw',
       'https://www.youtube.com/watch?v=rNzXtp11rg0',
-      'Comment:',
     ].join('\n'));
+    expect(mailOptions.text).not.toContain('Tag:');
+    expect(mailOptions.text).not.toContain('Comment:');
+    expect(mailOptions.text).not.toContain('Attachment:');
+    expect(mailOptions.text).not.toContain('Date time alert:');
     expect(mailOptions.html).toContain('link:<br><a href="https://www.youtube.com/watch?v=g-ZtK5u-iiw"');
     expect(mailOptions.html).toContain('</a><br><a href="https://www.youtube.com/watch?v=rNzXtp11rg0"');
+    expect(mailOptions.html).not.toContain('<strong>Tag</strong>');
+    expect(mailOptions.html).not.toContain('<strong>Comment</strong>');
+    expect(mailOptions.html).not.toContain('<strong>Attachment</strong>');
+    expect(mailOptions.html).not.toContain('<strong>Date time alert</strong>');
 
     process.env.SMTP_HOST = originalEnv.SMTP_HOST;
     process.env.SMTP_USER = originalEnv.SMTP_USER;
@@ -464,6 +473,7 @@ describe('Task API', () => {
     expect(response.statusCode).toBe(200);
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     const mailOptions = mockSendMail.mock.calls[0][0];
+    expect(mailOptions.to).toBe(`${testUsername('preview-email-owner')}@example.com`);
     expect(mailOptions.subject).toBe('New task added: PreviewEmail');
     expect(mailOptions.text).toContain('Title: PreviewEmail');
     expect(mailOptions.text).toContain('Only this task');
@@ -864,6 +874,7 @@ describe('Task API', () => {
     expect(response.statusCode).toBe(200);
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     const mailOptions = mockSendMail.mock.calls[0][0];
+    expect(mailOptions.to).toBe(`${testUsername('summary-email-owner')}@example.com`);
     expect(mailOptions.html).toContain('<table');
     expect(mailOptions.subject).toBe('Tóm tắt công việc');
     expect(mailOptions.html).toContain('<th style="border:1px solid #d1d5db;padding:8px;background:#f3f4f6;text-align:left;">Tiêu đề</th>');
