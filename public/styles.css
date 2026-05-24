@@ -198,6 +198,10 @@ h2 {
   display: none;
 }
 
+.floating-add-task {
+  display: none;
+}
+
 .tabs {
   display: flex;
   gap: 12px;
@@ -712,6 +716,16 @@ button.danger {
 .export-buttons {
   display: flex;
   gap: 10px;
+}
+
+.task-search {
+  flex: 1 1 240px;
+  min-width: min(100%, 220px);
+}
+
+.task-search input {
+  width: 100%;
+  min-height: 40px;
 }
 
 .task-list {
@@ -1828,8 +1842,13 @@ body.theme-dark .status-in_progress {
 }
 
 @media (max-width: 640px) {
+  body {
+    -webkit-text-size-adjust: 100%;
+  }
+
   .container {
-    padding: calc(16px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+    max-width: 100%;
+    padding: calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
   }
 
   .app-header,
@@ -1841,11 +1860,81 @@ body.theme-dark .status-in_progress {
   }
 
   .app-header {
-    padding: 14px;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding: 12px;
+    border-radius: 12px;
+  }
+
+  .app-brand-mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+  }
+
+  .app-brand-copy h1 {
+    font-size: 1.25rem;
+  }
+
+  .app-subtitle {
+    font-size: 0.8rem;
   }
 
   .header-actions {
     justify-content: flex-start;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .theme-toggle,
+  .language-control select,
+  #user-area button {
+    min-height: 40px;
+  }
+
+  #user-area {
+    justify-content: flex-start;
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #user-area span {
+    flex: 0 0 auto;
+  }
+
+  .card {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .task-header {
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .task-header h2,
+  .admin-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .export-buttons {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .task-search {
+    width: 100%;
+    flex-basis: auto;
+  }
+
+  .export-buttons button {
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
 
   .admin-user-form {
@@ -1857,19 +1946,142 @@ body.theme-dark .status-in_progress {
     grid-template-columns: 1fr;
   }
 
-  #user-area {
-    justify-content: flex-start;
+  .tag-form,
+  .tag-manager-header,
+  .task-filter-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tag-form .field,
+  .tag-form button,
+  .task-filter-bar button {
+    width: 100%;
+  }
+
+  .tag-manager-item {
+    max-width: 100%;
+  }
+
+  .tag-manager-name {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .task-list {
+    margin-top: 16px;
+    gap: 16px;
+  }
+
+  .task-column {
+    gap: 10px;
+  }
+
+  .task-column-header {
+    position: sticky;
+    top: calc(4px + env(safe-area-inset-top));
+    z-index: 2;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--surface) 92%, var(--surface-tint));
+  }
+
+  .task-column-body {
+    min-height: 72px;
+    gap: 10px;
+    padding: 0;
+  }
+
+  .task-item {
+    min-height: 0;
+    padding: 14px;
+    border-radius: 12px;
+    grid-template-rows: auto auto auto auto auto;
+  }
+
+  .task-description {
+    max-height: none;
+  }
+
+  .task-comment {
+    white-space: normal;
+  }
+
+  .task-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .task-actions button {
+    min-height: 38px;
+    padding: 8px;
+  }
+
+  .task-hover-popover {
+    display: none;
+  }
+
+  .user-table {
+    min-width: 640px;
+  }
+
+  .user-actions {
+    flex-wrap: nowrap;
+  }
+
+  .modal-backdrop {
+    align-items: end;
+    padding: calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+  }
+
+  .modal {
+    width: 100%;
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    overflow-y: auto;
+    border-radius: 12px;
+    padding: 18px;
+  }
+
+  .modal-actions {
+    gap: 8px;
+  }
+
+  .modal-actions button {
+    flex: 1 1 0;
+    min-height: 42px;
   }
 
   #user-area .add-task-shortcut {
+    display: none;
+  }
+
+  .floating-add-task {
     position: fixed;
     top: calc(10px + env(safe-area-inset-top));
     right: calc(12px + env(safe-area-inset-right));
-    z-index: 80;
+    z-index: 120;
     width: 46px;
     height: 46px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border-radius: 50%;
+    background: var(--primary);
+    color: white;
+    font-size: 1.35rem;
+    line-height: 1;
     border: 2px solid color-mix(in srgb, white 70%, var(--primary));
     box-shadow: 0 10px 24px rgba(15, 23, 42, 0.22);
+  }
+
+  .floating-add-task.hidden {
+    display: none;
+  }
+
+  .admin-header > button {
+    width: 100%;
   }
 
   .modal.attachment-preview-modal {

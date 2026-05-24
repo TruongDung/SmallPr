@@ -75,6 +75,10 @@
         
         <div class="task-header">
           <h2>Your Tasks</h2>
+          <div class="task-search">
+            <label for="task-search-input" class="sr-only">Search tasks</label>
+            <input id="task-search-input" type="search" placeholder="Search title, description, comment" autocomplete="off" />
+          </div>
           <div class="export-buttons">
             <button id="send-summary-email" class="secondary">Send Email</button>
             <button id="export-excel" class="secondary">Export to Excel</button>
@@ -191,6 +195,8 @@
       </section>
     </main>
   </div>
+
+  <button id="floating-add-task" class="floating-add-task hidden" type="button" aria-label="Add task" title="Add task">+</button>
 
   <div id="admin-user-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="admin-user-modal-title">
     <div class="modal">

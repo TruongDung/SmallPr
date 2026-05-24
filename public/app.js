@@ -3,6 +3,7 @@ const taskSection = document.getElementById('task-section');
 const adminSection = document.getElementById('admin-section');
 const appContainer = document.querySelector('.container');
 const userArea = document.getElementById('user-area');
+const floatingAddTask = document.getElementById('floating-add-task');
 const languageSelect = document.getElementById('language-select');
 const themeToggle = document.getElementById('theme-toggle');
 const authForm = document.getElementById('auth-form');
@@ -35,6 +36,7 @@ const sendSummaryEmailButton = document.getElementById('send-summary-email');
 const exportExcelButton = document.getElementById('export-excel');
 const exportPdfButton = document.getElementById('export-pdf');
 const exportWordButton = document.getElementById('export-word');
+const taskSearchInput = document.getElementById('task-search-input');
 const taskPriorityInput = document.getElementById('task-priority');
 const taskStatusInput = document.getElementById('task-status');
 const taskTagInput = document.getElementById('task-tag');
@@ -148,6 +150,9 @@ const translations = {
     exportPdf: 'Export to PDF',
     exportWord: 'Export to Word',
     logout: 'Logout',
+    searchTasks: 'Search tasks',
+    searchTasksPlaceholder: 'Search title, description, comment',
+    noSearchTasks: 'No tasks match your search.',
     title: 'Title',
     max20: '(max 20 characters)',
     priority: 'Priority',
@@ -317,6 +322,9 @@ const translations = {
     exportPdf: 'Xuất PDF',
     exportWord: 'Xuất Word',
     logout: 'Đăng xuất',
+    searchTasks: 'Tìm công việc',
+    searchTasksPlaceholder: 'Tìm tiêu đề, mô tả, bình luận',
+    noSearchTasks: 'Không có công việc phù hợp.',
     title: 'Tiêu đề',
     max20: '(tối đa 20 ký tự)',
     description: 'Mô tả',
@@ -500,6 +508,8 @@ const applyTranslations = () => {
   exportPdfButton.textContent = t('exportPdf');
   exportWordButton.textContent = t('exportWord');
   logoutButton.textContent = t('logout');
+  setText('label[for="task-search-input"]', t('searchTasks'));
+  taskSearchInput.placeholder = t('searchTasksPlaceholder');
   setText('label[for="task-title"]', `${t('title')} ${t('max20')}`);
   setText('label[for="task-priority"]', t('priority'));
   updatePriorityOptions(taskPriorityInput);
@@ -651,6 +661,16 @@ const getRichTextPlainText = (html = '') => {
   const container = document.createElement('div');
   container.innerHTML = sanitizeRichText(html);
   return container.textContent.trim();
+};
+
+const taskMatchesSearch = (task, query) => {
+  if (!query) return true;
+  const haystack = [
+    task.title,
+    getRichTextPlainText(task.description || ''),
+    task.comment,
+  ].join(' ').toLowerCase();
+  return haystack.includes(query);
 };
 
 const setRichEditorValue = (editor, value = '') => {
@@ -1179,6 +1199,7 @@ const showSection = () => {
     authSection.classList.remove('hidden');
     taskSection.classList.add('hidden');
     adminSection.classList.add('hidden');
+    floatingAddTask.classList.add('hidden');
     userArea.textContent = '';
     return;
   }
@@ -1189,6 +1210,7 @@ const showSection = () => {
   const showAdmin = currentView === 'admin' && currentUser.username === 'admin';
   taskSection.classList.toggle('hidden', showAdmin);
   adminSection.classList.toggle('hidden', !showAdmin);
+  floatingAddTask.classList.toggle('hidden', showAdmin);
 
   if (showAdmin) {
     loadUsers();
@@ -1207,6 +1229,12 @@ const showSection = () => {
 const showAddTaskModal = () => {
   addTaskModal.classList.remove('hidden');
   document.getElementById('task-title').focus();
+};
+
+const openAddTaskFlow = () => {
+  currentView = 'tasks';
+  showSection();
+  showAddTaskModal();
 };
 
 const hideAddTaskModal = () => {
@@ -1255,11 +1283,7 @@ const renderUserArea = () => {
   addTaskButton.textContent = '+';
   addTaskButton.setAttribute('aria-label', t('addTaskShortcut'));
   addTaskButton.title = t('addTaskShortcut');
-  addTaskButton.addEventListener('click', () => {
-    currentView = 'tasks';
-    showSection();
-    showAddTaskModal();
-  });
+  addTaskButton.addEventListener('click', openAddTaskFlow);
 
   userArea.append(addTaskButton, tasksButton, archivedButton, tagButton);
 
@@ -1838,9 +1862,11 @@ const renderTasks = (tasks) => {
   const showingArchived = currentView === 'archived';
   setText('#task-section h2', showingArchived ? t('archived') : t('yourTasks'));
   const activeTagFilter = !showingArchived && currentTagFilter;
-  const visibleTasks = activeTagFilter
+  const searchQuery = taskSearchInput.value.trim().toLowerCase();
+  const filteredByTag = activeTagFilter
     ? tasks.filter((task) => (task.tag || '').toLowerCase() === currentTagFilter.toLowerCase())
     : tasks;
+  const visibleTasks = filteredByTag.filter((task) => taskMatchesSearch(task, searchQuery));
 
   if (activeTagFilter) {
     const filterBar = document.createElement('div');
@@ -1862,7 +1888,9 @@ const renderTasks = (tasks) => {
 
   if (visibleTasks.length === 0) {
     const empty = document.createElement('p');
-    empty.textContent = activeTagFilter
+    empty.textContent = searchQuery
+      ? t('noSearchTasks')
+      : activeTagFilter
       ? t('noTaggedTasks')
       : showingArchived
         ? t('noArchivedTasks')
@@ -2829,6 +2857,8 @@ showSignup.addEventListener('click', () => setMode('signup'));
 languageSelect.addEventListener('change', (event) => setLanguage(event.target.value));
 themeToggle.addEventListener('click', toggleTheme);
 togglePasswordButton.addEventListener('click', togglePasswordVisibility);
+floatingAddTask.addEventListener('click', openAddTaskFlow);
+taskSearchInput.addEventListener('input', () => renderTasks(tasks));
 taskAttachmentInput.addEventListener('change', handleTaskAttachmentChange);
 editTaskAttachmentInput.addEventListener('change', handleEditTaskAttachmentChange);
 closePickerAfterTodaySelection(taskReminderInput);
