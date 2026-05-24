@@ -440,6 +440,13 @@ const setIconButtonLabel = (button, label) => {
   button.title = label;
 };
 
+const setActionIconButton = (button, label, icon) => {
+  button.classList.add('task-action-icon');
+  button.textContent = icon;
+  button.setAttribute('aria-label', label);
+  button.title = label;
+};
+
 const applyTheme = () => {
   const isDark = currentTheme === 'dark';
   document.body.classList.toggle('theme-dark', isDark);
@@ -2053,24 +2060,24 @@ const createTaskCard = (task) => {
     hoverMessage.textContent = getRichTextPlainText(task.description) || t('noDescription');
 
     const toggleButton = document.createElement('button');
-    toggleButton.textContent = currentStatus === 'done' ? t('markOpen') : t('markDone');
+    setActionIconButton(toggleButton, currentStatus === 'done' ? t('markOpen') : t('markDone'), currentStatus === 'done' ? '↻' : '✓');
     toggleButton.addEventListener('click', () => updateTask(task.id, { status: currentStatus === 'done' ? 'todo' : 'done' }));
 
     const archiveButton = document.createElement('button');
-    archiveButton.textContent = isArchived ? t('restore') : t('archive');
+    setActionIconButton(archiveButton, isArchived ? t('restore') : t('archive'), isArchived ? '↥' : '▣');
     archiveButton.addEventListener('click', () => updateTask(task.id, { archived: !isArchived }));
 
     const previewButton = document.createElement('button');
-    previewButton.textContent = t('preview');
+    setActionIconButton(previewButton, t('preview'), '👁');
     previewButton.addEventListener('click', () => showPreviewTaskModal(task));
 
     const editButton = document.createElement('button');
-    editButton.textContent = t('edit');
+    setActionIconButton(editButton, t('edit'), '✎');
     editButton.addEventListener('click', () => showEditTaskModal(task));
 
     const deleteButton = document.createElement('button');
-    deleteButton.textContent = t('delete');
-    deleteButton.className = 'danger';
+    setActionIconButton(deleteButton, t('delete'), '×');
+    deleteButton.classList.add('danger');
     deleteButton.addEventListener('click', () => showDeleteConfirm(task.id));
 
     if (!isArchived) {
