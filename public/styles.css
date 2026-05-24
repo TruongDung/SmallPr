@@ -1216,6 +1216,11 @@ body.theme-dark .status-in_progress {
   margin-bottom: 0;
 }
 
+.modal-user-form {
+  grid-template-columns: 1fr;
+  margin-bottom: 0;
+}
+
 .user-table-wrap {
   overflow-x: auto;
 }

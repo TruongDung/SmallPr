@@ -972,6 +972,17 @@ describe('Admin API', () => {
       task_count: 1,
     });
 
+    const updatedEmail = `updated-${managedUsername}@example.com`;
+    const updateUserResponse = await admin
+      .put(`/api/admin/users/${createUserResponse.body.user.id}`)
+      .send({ username: managedUsername, email: updatedEmail });
+    expect(updateUserResponse.statusCode).toBe(200);
+    expect(updateUserResponse.body.user).toMatchObject({
+      username: managedUsername,
+      email: updatedEmail,
+      task_count: 1,
+    });
+
     const resetResponse = await admin
       .put(`/api/admin/users/${createUserResponse.body.user.id}/password`)
       .send({ password: 'Changed123!' });
@@ -1006,6 +1017,12 @@ describe('Admin API', () => {
       .send({ username: '' });
     expect(missingCreateResponse.statusCode).toBe(400);
     expect(missingCreateResponse.body).toHaveProperty('error', 'Username and password are required');
+
+    const missingUpdateResponse = await admin
+      .put('/api/admin/users/999999')
+      .send({ username: '' });
+    expect(missingUpdateResponse.statusCode).toBe(400);
+    expect(missingUpdateResponse.body).toHaveProperty('error', 'Username is required');
 
     const missingPasswordResponse = await admin
       .put('/api/admin/users/999999/password')

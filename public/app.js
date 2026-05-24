@@ -11,7 +11,17 @@ const taskForm = document.getElementById('task-form');
 const cancelAddTask = document.getElementById('cancel-add-task');
 const tagForm = document.getElementById('tag-form');
 const tagManager = document.querySelector('.tag-manager');
+const openAddUserModalButton = document.getElementById('open-add-user-modal');
+const adminUserModal = document.getElementById('admin-user-modal');
+const adminUserModalTitle = document.getElementById('admin-user-modal-title');
 const adminUserForm = document.getElementById('admin-user-form');
+const adminUsernameInput = document.getElementById('admin-username');
+const adminEmailInput = document.getElementById('admin-email');
+const adminPasswordField = document.getElementById('admin-password-field');
+const adminPasswordInput = document.getElementById('admin-password');
+const adminUserFormError = document.getElementById('admin-user-form-error');
+const cancelAdminUser = document.getElementById('cancel-admin-user');
+const saveAdminUser = document.getElementById('save-admin-user');
 const taskList = document.getElementById('task-list');
 const tagList = document.getElementById('tag-list');
 const userList = document.getElementById('user-list');
@@ -96,6 +106,7 @@ let currentTagFilter = '';
 let tasks = [];
 let tags = [];
 let users = [];
+let pendingAdminUser = null;
 const reminderTimers = new Map();
 let weatherClockTimer = null;
 let pendingDeleteTaskId = null;
@@ -173,6 +184,8 @@ const translations = {
     addTask: 'Add Task',
     manageUsers: 'User',
     addUser: 'Add User',
+    editUser: 'Edit User',
+    userUpdated: 'User updated.',
     id: 'ID',
     tasks: 'Tasks',
     archive: 'Archive',
@@ -317,6 +330,8 @@ const translations = {
     addTask: 'Thêm công việc',
     manageUsers: 'Người dùng',
     addUser: 'Thêm người dùng',
+    editUser: 'Sửa người dùng',
+    userUpdated: 'Đã cập nhật người dùng.',
     id: 'ID',
     tasks: 'Công việc',
     archive: 'Luu tru',
@@ -535,10 +550,13 @@ const applyTranslations = () => {
   cancelEditTask.textContent = t('cancel');
   setText('#save-edit-task', t('save'));
   setText('#admin-section h2', t('manageUsers'));
+  setText('#open-add-user-modal', t('addUser'));
+  adminUserModalTitle.textContent = pendingAdminUser ? t('editUser') : t('addUser');
   setText('label[for="admin-username"]', t('username'));
   setText('label[for="admin-email"]', t('email'));
   setText('label[for="admin-password"]', t('password'));
-  setText('#admin-user-form button[type="submit"]', t('addUser'));
+  cancelAdminUser.textContent = t('cancel');
+  saveAdminUser.textContent = pendingAdminUser ? t('save') : t('addUser');
   setText('.user-table th:nth-child(1)', t('id'));
   setText('.user-table th:nth-child(2)', t('username'));
   setText('.user-table th:nth-child(3)', t('email'));
@@ -1585,13 +1603,19 @@ const renderUsers = (users) => {
     const actions = document.createElement('div');
     actions.className = 'user-actions';
 
+    const editButton = document.createElement('button');
+    editButton.type = 'button';
+    editButton.className = 'secondary';
+    editButton.textContent = t('edit');
+    editButton.addEventListener('click', () => showAdminUserModal(user));
+
     const resetButton = document.createElement('button');
     resetButton.type = 'button';
     resetButton.className = 'secondary';
     resetButton.textContent = t('resetPassword');
     resetButton.addEventListener('click', () => resetUserPassword(user));
 
-    actions.append(resetButton);
+    actions.append(editButton, resetButton);
 
     if (user.username !== 'admin' && user.id !== currentUser.id) {
       const deleteButton = document.createElement('button');
@@ -1608,26 +1632,69 @@ const renderUsers = (users) => {
   });
 };
 
+const clearAdminUserFormError = () => {
+  adminUserFormError.textContent = '';
+  adminUserFormError.classList.add('hidden');
+};
+
+const showAdminUserModal = (user = null) => {
+  pendingAdminUser = user;
+  clearAdminUserFormError();
+  adminUserForm.reset();
+
+  adminUserModalTitle.textContent = user ? t('editUser') : t('addUser');
+  saveAdminUser.textContent = user ? t('save') : t('addUser');
+  adminPasswordField.classList.toggle('hidden', Boolean(user));
+  adminPasswordInput.required = !user;
+
+  if (user) {
+    adminUsernameInput.value = user.username || '';
+    adminEmailInput.value = user.email || '';
+  }
+
+  adminUserModal.classList.remove('hidden');
+  adminUsernameInput.focus();
+  adminUsernameInput.select();
+};
+
+const hideAdminUserModal = () => {
+  pendingAdminUser = null;
+  adminUserForm.reset();
+  adminPasswordField.classList.remove('hidden');
+  adminPasswordInput.required = true;
+  clearAdminUserFormError();
+  adminUserModal.classList.add('hidden');
+};
+
 const handleAdminUserSubmit = async (event) => {
   event.preventDefault();
   adminMessage.textContent = '';
+  clearAdminUserFormError();
 
-  const username = document.getElementById('admin-username').value.trim();
-  const email = document.getElementById('admin-email').value.trim();
-  const password = document.getElementById('admin-password').value.trim();
+  const username = adminUsernameInput.value.trim();
+  const email = adminEmailInput.value.trim();
+  const password = adminPasswordInput.value.trim();
+  const isEditing = Boolean(pendingAdminUser);
 
-  const result = await request('/api/admin/users', {
-    method: 'POST',
-    body: JSON.stringify({ username, email, password }),
-  });
-
-  if (result.error) {
-    adminMessage.textContent = result.error;
+  if (!username || (!isEditing && !password)) {
+    adminUserFormError.textContent = t('authRequired');
+    adminUserFormError.classList.remove('hidden');
     return;
   }
 
-  adminUserForm.reset();
-  showStatusToast(t('userAdded'));
+  const result = await request(isEditing ? `/api/admin/users/${pendingAdminUser.id}` : '/api/admin/users', {
+    method: isEditing ? 'PUT' : 'POST',
+    body: JSON.stringify(isEditing ? { username, email } : { username, email, password }),
+  });
+
+  if (result.error) {
+    adminUserFormError.textContent = result.error;
+    adminUserFormError.classList.remove('hidden');
+    return;
+  }
+
+  hideAdminUserModal();
+  showStatusToast(isEditing ? t('userUpdated') : t('userAdded'));
   loadUsers();
 };
 
@@ -2144,6 +2211,12 @@ editTagModal.addEventListener('click', (event) => {
   }
 });
 
+adminUserModal.addEventListener('click', (event) => {
+  if (event.target === adminUserModal) {
+    hideAdminUserModal();
+  }
+});
+
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !deleteConfirmModal.classList.contains('hidden')) {
     hideDeleteConfirm();
@@ -2155,6 +2228,10 @@ document.addEventListener('keydown', (event) => {
 
   if (event.key === 'Escape' && !addTaskModal.classList.contains('hidden')) {
     hideAddTaskModal();
+  }
+
+  if (event.key === 'Escape' && !adminUserModal.classList.contains('hidden')) {
+    hideAdminUserModal();
   }
 
   if (event.key === 'Escape' && !editTaskModal.classList.contains('hidden')) {
@@ -2763,6 +2840,8 @@ taskForm.addEventListener('submit', handleTaskSubmit);
 tagForm.addEventListener('submit', handleTagSubmit);
 editTaskForm.addEventListener('submit', handleEditTaskSubmit);
 adminUserForm.addEventListener('submit', handleAdminUserSubmit);
+openAddUserModalButton.addEventListener('click', () => showAdminUserModal());
+cancelAdminUser.addEventListener('click', hideAdminUserModal);
 logoutButton.addEventListener('click', handleLogout);
 sendSummaryEmailButton.addEventListener('click', sendSummaryEmail);
 exportExcelButton.addEventListener('click', exportToExcel);

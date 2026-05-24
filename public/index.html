@@ -167,25 +167,12 @@
 
       <section id="admin-section" class="card hidden">
         <div class="admin-header">
-          <h2>User</h2>
-          <p id="admin-message" class="message"></p>
+          <div>
+            <h2>User</h2>
+            <p id="admin-message" class="message"></p>
+          </div>
+          <button id="open-add-user-modal" type="button">Add User</button>
         </div>
-
-        <form id="admin-user-form" class="admin-user-form">
-          <div class="field">
-            <label for="admin-username">Username</label>
-            <input id="admin-username" type="text" required />
-          </div>
-          <div class="field">
-            <label for="admin-email">Email</label>
-            <input id="admin-email" type="email" autocomplete="email" />
-          </div>
-          <div class="field">
-            <label for="admin-password">Password</label>
-            <input id="admin-password" type="password" required />
-          </div>
-          <button type="submit">Add User</button>
-        </form>
 
         <div class="user-table-wrap">
           <table class="user-table">
@@ -203,6 +190,31 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <div id="admin-user-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="admin-user-modal-title">
+    <div class="modal">
+      <h3 id="admin-user-modal-title">Add User</h3>
+      <form id="admin-user-form" class="admin-user-form modal-user-form" novalidate>
+        <div class="field">
+          <label for="admin-username">Username</label>
+          <input id="admin-username" type="text" required />
+        </div>
+        <div class="field">
+          <label for="admin-email">Email</label>
+          <input id="admin-email" type="text" inputmode="email" autocomplete="email" />
+        </div>
+        <div id="admin-password-field" class="field">
+          <label for="admin-password">Password</label>
+          <input id="admin-password" type="password" required />
+        </div>
+        <p id="admin-user-form-error" class="field-error hidden"></p>
+        <div class="modal-actions">
+          <button id="cancel-admin-user" type="button" class="secondary">Cancel</button>
+          <button id="save-admin-user" type="submit">Add User</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <div id="delete-confirm-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="delete-confirm-title">

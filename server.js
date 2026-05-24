@@ -870,6 +870,41 @@ app.post('/api/admin/users', adminRequired, async (req, res) => {
   }
 });
 
+app.put('/api/admin/users/:id', adminRequired, async (req, res) => {
+  const { id } = req.params;
+  const username = String(req.body.username || '').trim();
+  const email = normalizeEmail(req.body.email);
+  if (!username) {
+    return res.status(400).json({ error: 'Username is required' });
+  }
+
+  try {
+    const user = await getAsync('SELECT id, username FROM users WHERE id = ?', [id]);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const existingUser = await getAsync('SELECT id FROM users WHERE username = ? AND id <> ?', [username, id]);
+    if (existingUser) {
+      return res.status(409).json({ error: 'Username already exists' });
+    }
+
+    await runAsync('UPDATE users SET username = ?, email = ? WHERE id = ?', [username, email, id]);
+    const updatedUser = await getAsync(
+      `SELECT users.id, users.username, users.email, COUNT(tasks.id)::int AS task_count
+       FROM users
+       LEFT JOIN tasks ON tasks.user_id = users.id
+       WHERE users.id = ?
+       GROUP BY users.id, users.username, users.email`,
+      [id]
+    );
+    res.json({ user: updatedUser });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+});
+
 app.put('/api/admin/users/:id/password', adminRequired, async (req, res) => {
   const { id } = req.params;
   const { password } = req.body;
