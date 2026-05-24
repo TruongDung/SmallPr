@@ -1159,6 +1159,14 @@ body.theme-dark .status-in_progress {
   background: var(--error-bg);
 }
 
+.modal-actions .task-action-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  padding: 0;
+  font-size: 1rem;
+}
+
 .task-item p {
   margin: 0;
   color: var(--muted);
@@ -2123,7 +2131,6 @@ body.theme-dark .status-in_progress {
   }
 
   .modal-actions button {
-    flex: 1 1 0;
     min-height: 42px;
   }
 

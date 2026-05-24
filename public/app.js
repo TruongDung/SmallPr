@@ -549,10 +549,10 @@ const applyTranslations = () => {
   previewTaskTitle.textContent = t('previewTaskTitle');
   setText('label[for="preview-task-comment-input"]', t('comment'));
   previewTaskCommentInput.placeholder = t('commentPlaceholder');
-  sendPreviewTaskEmail.textContent = t('sendEmail');
-  editPreviewTask.textContent = t('edit');
-  savePreviewComment.textContent = t('save');
-  closePreviewTask.textContent = t('close');
+  setActionIconButton(sendPreviewTaskEmail, t('sendEmail'), '✉');
+  setActionIconButton(editPreviewTask, t('edit'), '✎');
+  setActionIconButton(savePreviewComment, t('save'), '✓');
+  setActionIconButton(closePreviewTask, t('close'), '×');
   reminderAlertOk.textContent = t('ok');
   setText('.reminder-alert-kicker', t('dateTimeAlert'));
   setText('label[for="edit-task-title-input"]', `${t('title')} ${t('max20')}`);
@@ -2530,9 +2530,8 @@ savePreviewComment.addEventListener('click', async () => {
 
 sendPreviewTaskEmail.addEventListener('click', async () => {
   if (!pendingPreviewTask) return;
-  const originalText = sendPreviewTaskEmail.textContent;
   sendPreviewTaskEmail.disabled = true;
-  sendPreviewTaskEmail.textContent = t('sending');
+  setActionIconButton(sendPreviewTaskEmail, t('sending'), '…');
 
   try {
     const result = await request(`/api/tasks/${pendingPreviewTask.id}/send-email`, {
@@ -2548,7 +2547,7 @@ sendPreviewTaskEmail.addEventListener('click', async () => {
     showStatusToast(t('emailSent'));
   } finally {
     sendPreviewTaskEmail.disabled = false;
-    sendPreviewTaskEmail.textContent = originalText;
+    setActionIconButton(sendPreviewTaskEmail, t('sendEmail'), '✉');
   }
 });
 
