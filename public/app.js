@@ -1985,6 +1985,11 @@ const createTaskCard = (task) => {
     card.dataset.taskId = task.id;
     card.dataset.status = currentStatus;
     card.tabIndex = 0;
+    card.addEventListener('click', (event) => {
+      if (window.matchMedia('(max-width: 640px)').matches && !event.target.closest('button, a')) {
+        showPreviewTaskModal(task);
+      }
+    });
     if (!isArchived) {
       card.addEventListener('dragstart', handleTaskDragStart);
       card.addEventListener('dragend', handleTaskDragEnd);

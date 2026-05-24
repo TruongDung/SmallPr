@@ -2035,28 +2035,45 @@ body.theme-dark .status-in_progress {
 
   .task-item {
     min-height: 0;
-    padding: 14px;
-    border-radius: 12px;
-    grid-template-rows: auto auto auto auto auto;
+    padding: 12px;
+    border-radius: 10px;
+    grid-template-rows: auto auto;
+    gap: 6px;
+    cursor: pointer;
+  }
+
+  .task-meta {
+    gap: 4px;
+  }
+
+  .task-meta strong {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .task-badges,
+  .task-comment,
+  .task-reminder,
+  .task-attachment,
+  .task-actions {
+    display: none;
   }
 
   .task-description {
-    max-height: none;
+    max-height: 1.45em;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    color: var(--muted);
+    font-size: 0.9rem;
   }
 
-  .task-comment {
-    white-space: normal;
-  }
-
-  .task-actions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .task-actions button {
-    min-height: 38px;
-    padding: 8px;
+  .task-description p,
+  .task-description ul,
+  .task-description ol {
+    margin: 0;
   }
 
   .task-hover-popover {
