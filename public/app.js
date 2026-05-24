@@ -77,6 +77,7 @@ const cancelEditTask = document.getElementById('cancel-edit-task');
 const previewTaskModal = document.getElementById('preview-task-modal');
 const previewTaskTitle = document.getElementById('preview-task-title');
 const previewTaskDescription = document.getElementById('preview-task-description');
+const previewTaskCommentDisplay = document.getElementById('preview-task-comment-display');
 const previewTaskCommentInput = document.getElementById('preview-task-comment-input');
 const editPreviewTask = document.getElementById('edit-preview-task');
 const sendPreviewTaskEmail = document.getElementById('send-preview-task-email');
@@ -642,13 +643,22 @@ const closePickerAfterTodaySelection = (input) => {
   input.addEventListener('change', dismissIfToday);
 };
 
-const richTextAllowedTags = new Set(['B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL', 'UL', 'OL', 'LI', 'P', 'DIV', 'BR']);
+const richTextAllowedTags = new Set(['A', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL', 'UL', 'OL', 'LI', 'P', 'DIV', 'BR']);
 
-const hasRichTextMarkup = (value = '') => /<\/?(b|strong|i|em|u|s|strike|del|ul|ol|li|p|div|br)\b/i.test(value);
+const hasRichTextMarkup = (value = '') => /<\/?(a|b|strong|i|em|u|s|strike|del|ul|ol|li|p|div|br)\b/i.test(value);
+
+const isSafeLinkHref = (href = '') => /^(https?:|mailto:)/i.test(href);
+
+const autolinkPlainUrls = (html = '') => html.replace(
+  /(^|[\s>])((https?:\/\/)[^\s<]+)/gi,
+  (match, prefix, url) => `${prefix}<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
+);
+
+const linkifyPlainText = (value = '') => autolinkPlainUrls(escapeHtml(value)).replace(/\n/g, '<br>');
 
 const sanitizeRichText = (html = '') => {
   const template = document.createElement('template');
-  template.innerHTML = html;
+  template.innerHTML = autolinkPlainUrls(html);
 
   template.content.querySelectorAll('*').forEach((element) => {
     const style = element.getAttribute('style') || '';
@@ -659,10 +669,22 @@ const sanitizeRichText = (html = '') => {
       return;
     }
 
+    const href = element.tagName === 'A' ? element.getAttribute('href') || '' : '';
     [...element.attributes].forEach((attribute) => element.removeAttribute(attribute.name));
 
     if (!richTextAllowedTags.has(element.tagName)) {
       element.replaceWith(...element.childNodes);
+      return;
+    }
+
+    if (element.tagName === 'A') {
+      if (!isSafeLinkHref(href)) {
+        element.replaceWith(...element.childNodes);
+        return;
+      }
+      element.href = href;
+      element.target = '_blank';
+      element.rel = 'noopener noreferrer';
     }
   });
 
@@ -714,6 +736,18 @@ const attachAttachmentPreviewHandler = (link, task) => {
   link.addEventListener('click', (event) => {
     event.preventDefault();
     showAttachmentPreview(task);
+  });
+};
+
+const openRichTextLinksWithModifier = (container) => {
+  container.addEventListener('click', (event) => {
+    const link = event.target.closest('a[href]');
+    if (!link || !container.contains(link)) return;
+
+    if (event.ctrlKey || event.metaKey) {
+      event.preventDefault();
+      window.open(link.href, '_blank', 'noopener,noreferrer');
+    }
   });
 };
 
@@ -2024,6 +2058,7 @@ const createTaskCard = (task) => {
     description.className = 'task-description';
     if (task.description) {
       description.innerHTML = sanitizeRichText(task.description);
+      openRichTextLinksWithModifier(description);
     } else {
       description.textContent = t('noDescription');
     }
@@ -2031,7 +2066,8 @@ const createTaskCard = (task) => {
     const comment = document.createElement('p');
     comment.className = 'task-comment';
     const commentText = `${t('comment')}: ${task.comment}`;
-    comment.textContent = commentText;
+    comment.innerHTML = linkifyPlainText(commentText);
+    openRichTextLinksWithModifier(comment);
 
     const reminder = document.createElement('p');
     reminder.className = 'task-reminder';
@@ -2478,8 +2514,13 @@ const showPreviewTaskModal = (task) => {
   previewTaskDescription.innerHTML = task.description
     ? sanitizeRichText(task.description)
     : t('noDescription');
+  openRichTextLinksWithModifier(previewTaskDescription);
   previewTaskCommentInput.value = task.comment || '';
   previewTaskCommentInput.readOnly = true;
+  previewTaskCommentDisplay.innerHTML = task.comment ? linkifyPlainText(task.comment) : t('noComment');
+  previewTaskCommentDisplay.classList.remove('hidden');
+  previewTaskCommentInput.classList.add('hidden');
+  openRichTextLinksWithModifier(previewTaskCommentDisplay);
   savePreviewComment.classList.add('hidden');
   previewTaskModal.classList.remove('hidden');
 };
@@ -2488,6 +2529,9 @@ const hidePreviewTaskModal = () => {
   pendingPreviewTask = null;
   previewTaskModal.classList.add('hidden');
   previewTaskDescription.textContent = '';
+  previewTaskCommentDisplay.textContent = '';
+  previewTaskCommentDisplay.classList.add('hidden');
+  previewTaskCommentInput.classList.remove('hidden');
   previewTaskCommentInput.value = '';
   previewTaskCommentInput.readOnly = false;
   savePreviewComment.classList.remove('hidden');

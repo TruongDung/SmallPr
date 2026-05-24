@@ -1190,6 +1190,17 @@ body.theme-dark .status-in_progress {
   margin-bottom: 0;
 }
 
+.task-description a,
+.preview-task-description a,
+.task-comment a,
+.preview-task-comment-display a,
+.rich-editor-surface a {
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .task-comment {
   min-width: 0;
   max-width: 100%;
@@ -1804,6 +1815,19 @@ body.theme-dark .status-in_progress {
 
 .preview-task-comment-field {
   margin-top: 14px;
+}
+
+.preview-task-comment-display {
+  min-height: 92px;
+  max-height: 220px;
+  overflow: auto;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .modal-actions {
