@@ -1,0 +1,5471 @@
+{
+  "version": "1.0.0",
+  "kind": "codebase",
+  "project": {
+    "name": "task-manager-app",
+    "languages": [
+      "css",
+      "db",
+      "html",
+      "javascript",
+      "json",
+      "markdown",
+      "pbxproj",
+      "swift",
+      "webmanifest",
+      "xcuserstate",
+      "xcworkspacedata",
+      "xml",
+      "yaml"
+    ],
+    "frameworks": [],
+    "description": "Understand Anything analyzes projects and renders interactive knowledge graphs for exploring code, documentation, and dependencies.",
+    "analyzedAt": "2026-05-25T01:37:57.482Z",
+    "gitCommitHash": "b888f5b165a2386a2b3656e4ef1f0e4b4d2df975"
+  },
+  "nodes": [
+    {
+      "id": "pipeline:.github/workflows/node.js.yml",
+      "type": "pipeline",
+      "name": "node.js.yml",
+      "filePath": ".github/workflows/node.js.yml",
+      "lineRange": [
+        1,
+        31
+      ],
+      "summary": ".github/workflows/node.js.yml is a yaml infra in this codebase. Contains 3 sections.",
+      "tags": [
+        "yaml",
+        "infra",
+        ".github"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:ios/TaskManager/README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "ios/TaskManager/README.md",
+      "lineRange": [
+        1,
+        32
+      ],
+      "summary": "ios/TaskManager/README.md is a markdown docs in this codebase. Contains 4 sections.",
+      "tags": [
+        "markdown",
+        "docs",
+        "ios"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:ios/TaskManager/TaskManager.xcodeproj/project.pbxproj",
+      "type": "file",
+      "name": "project.pbxproj",
+      "filePath": "ios/TaskManager/TaskManager.xcodeproj/project.pbxproj",
+      "lineRange": [
+        1,
+        343
+      ],
+      "summary": "ios/TaskManager/TaskManager.xcodeproj/project.pbxproj is a pbxproj code in this codebase.",
+      "tags": [
+        "pbxproj",
+        "code",
+        "ios"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:ios/TaskManager/TaskManager.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+      "type": "file",
+      "name": "contents.xcworkspacedata",
+      "filePath": "ios/TaskManager/TaskManager.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+      "lineRange": [
+        1,
+        7
+      ],
+      "summary": "ios/TaskManager/TaskManager.xcodeproj/project.xcworkspace/contents.xcworkspacedata is a xcworkspacedata code in this codebase.",
+      "tags": [
+        "xcworkspacedata",
+        "code",
+        "ios"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:ios/TaskManager/TaskManager.xcodeproj/project.xcworkspace/xcuserdata/cas.xcuserdatad/UserInterfaceState.xcuserstate",
+      "type": "file",
+      "name": "UserInterfaceState.xcuserstate",
+      "filePath": "ios/TaskManager/TaskManager.xcodeproj/project.xcworkspace/xcuserdata/cas.xcuserdatad/UserInterfaceState.xcuserstate",
+      "lineRange": [
+        1,
+        49
+      ],
+      "summary": "ios/TaskManager/TaskManager.xcodeproj/project.xcworkspace/xcuserdata/cas.xcuserdatad/UserInterfaceState.xcuserstate is a xcuserstate code in this codebase.",
+      "tags": [
+        "xcuserstate",
+        "code",
+        "ios"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:ios/TaskManager/TaskManager.xcodeproj/xcuserdata/cas.xcuserdatad/xcschemes/xcschememanagement.plist",
+      "type": "config",
+      "name": "xcschememanagement.plist",
+      "filePath": "ios/TaskManager/TaskManager.xcodeproj/xcuserdata/cas.xcuserdatad/xcschemes/xcschememanagement.plist",
+      "lineRange": [
+        1,
+        14
+      ],
+      "summary": "ios/TaskManager/TaskManager.xcodeproj/xcuserdata/cas.xcuserdatad/xcschemes/xcschememanagement.plist is a xml config in this codebase.",
+      "tags": [
+        "xml",
+        "config",
+        "ios"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:ios/TaskManager/TaskManager/AppConfig.swift",
+      "type": "file",
+      "name": "AppConfig.swift",
+      "filePath": "ios/TaskManager/TaskManager/AppConfig.swift",
+      "lineRange": [
+        1,
+        7
+      ],
+      "summary": "ios/TaskManager/TaskManager/AppConfig.swift is a swift code in this codebase.",
+      "tags": [
+        "swift",
+        "code",
+        "ios"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:ios/TaskManager/TaskManager/Assets.xcassets/AppIcon.appiconset/Contents.json",
+      "type": "config",
+      "name": "Contents.json",
+      "filePath": "ios/TaskManager/TaskManager/Assets.xcassets/AppIcon.appiconset/Contents.json",
+      "lineRange": [
+        1,
+        55
+      ],
+      "summary": "ios/TaskManager/TaskManager/Assets.xcassets/AppIcon.appiconset/Contents.json is a json config in this codebase. Contains 2 sections.",
+      "tags": [
+        "json",
+        "config",
+        "ios"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:ios/TaskManager/TaskManager/Assets.xcassets/Contents.json",
+      "type": "config",
+      "name": "Contents.json",
+      "filePath": "ios/TaskManager/TaskManager/Assets.xcassets/Contents.json",
+      "lineRange": [
+        1,
+        6
+      ],
+      "summary": "ios/TaskManager/TaskManager/Assets.xcassets/Contents.json is a json config in this codebase. Contains 1 sections.",
+      "tags": [
+        "json",
+        "config",
+        "ios"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:ios/TaskManager/TaskManager/ContentView.swift",
+      "type": "file",
+      "name": "ContentView.swift",
+      "filePath": "ios/TaskManager/TaskManager/ContentView.swift",
+      "lineRange": [
+        1,
+        38
+      ],
+      "summary": "ios/TaskManager/TaskManager/ContentView.swift is a swift code in this codebase.",
+      "tags": [
+        "swift",
+        "code",
+        "ios"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:ios/TaskManager/TaskManager/Info.plist",
+      "type": "config",
+      "name": "Info.plist",
+      "filePath": "ios/TaskManager/TaskManager/Info.plist",
+      "lineRange": [
+        1,
+        48
+      ],
+      "summary": "ios/TaskManager/TaskManager/Info.plist is a xml config in this codebase.",
+      "tags": [
+        "xml",
+        "config",
+        "ios"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:ios/TaskManager/TaskManager/TaskManagerApp.swift",
+      "type": "file",
+      "name": "TaskManagerApp.swift",
+      "filePath": "ios/TaskManager/TaskManager/TaskManagerApp.swift",
+      "lineRange": [
+        1,
+        10
+      ],
+      "summary": "ios/TaskManager/TaskManager/TaskManagerApp.swift is a swift code in this codebase.",
+      "tags": [
+        "swift",
+        "code",
+        "ios"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:ios/TaskManager/TaskManager/WebView.swift",
+      "type": "file",
+      "name": "WebView.swift",
+      "filePath": "ios/TaskManager/TaskManager/WebView.swift",
+      "lineRange": [
+        1,
+        57
+      ],
+      "summary": "ios/TaskManager/TaskManager/WebView.swift is a swift code in this codebase.",
+      "tags": [
+        "swift",
+        "code",
+        "ios"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:package.json",
+      "type": "config",
+      "name": "package.json",
+      "filePath": "package.json",
+      "lineRange": [
+        1,
+        29
+      ],
+      "summary": "package.json is a json config in this codebase. Contains 10 sections.",
+      "tags": [
+        "json",
+        "config",
+        "package.json"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:public/app.js",
+      "type": "file",
+      "name": "app.js",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1,
+        3020
+      ],
+      "summary": "public/app.js is a javascript code in this codebase. Contains 138 functions.",
+      "tags": [
+        "javascript",
+        "code",
+        "public"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:public/index.html",
+      "type": "document",
+      "name": "index.html",
+      "filePath": "public/index.html",
+      "lineRange": [
+        1,
+        403
+      ],
+      "summary": "public/index.html is a html markup in this codebase.",
+      "tags": [
+        "html",
+        "markup",
+        "public"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:public/manifest.webmanifest",
+      "type": "file",
+      "name": "manifest.webmanifest",
+      "filePath": "public/manifest.webmanifest",
+      "lineRange": [
+        1,
+        31
+      ],
+      "summary": "public/manifest.webmanifest is a webmanifest code in this codebase.",
+      "tags": [
+        "webmanifest",
+        "code",
+        "public"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:public/styles.css",
+      "type": "document",
+      "name": "styles.css",
+      "filePath": "public/styles.css",
+      "lineRange": [
+        1,
+        2293
+      ],
+      "summary": "public/styles.css is a css markup in this codebase.",
+      "tags": [
+        "css",
+        "markup",
+        "public"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:public/sw.js",
+      "type": "file",
+      "name": "sw.js",
+      "filePath": "public/sw.js",
+      "lineRange": [
+        1,
+        66
+      ],
+      "summary": "public/sw.js is a javascript code in this codebase.",
+      "tags": [
+        "javascript",
+        "code",
+        "public"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "README.md",
+      "lineRange": [
+        1,
+        70
+      ],
+      "summary": "README.md is a markdown docs in this codebase. Contains 5 sections.",
+      "tags": [
+        "markdown",
+        "docs",
+        "readme.md"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:server.js",
+      "type": "file",
+      "name": "server.js",
+      "filePath": "server.js",
+      "lineRange": [
+        1,
+        1234
+      ],
+      "summary": "server.js is a javascript code in this codebase. Contains 34 functions.",
+      "tags": [
+        "javascript",
+        "code",
+        "server.js"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "file:server.test.js",
+      "type": "file",
+      "name": "server.test.js",
+      "filePath": "server.test.js",
+      "lineRange": [
+        1,
+        1059
+      ],
+      "summary": "server.test.js is a javascript code in this codebase. Contains 3 functions.",
+      "tags": [
+        "javascript",
+        "code",
+        "server.test.js"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "document:spec.md",
+      "type": "document",
+      "name": "spec.md",
+      "filePath": "spec.md",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "spec.md is a markdown docs in this codebase.",
+      "tags": [
+        "markdown",
+        "docs",
+        "spec.md"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tmp/data.db",
+      "type": "file",
+      "name": "data.db",
+      "filePath": "tmp/data.db",
+      "lineRange": [
+        1,
+        23
+      ],
+      "summary": "tmp/data.db is a db code in this codebase.",
+      "tags": [
+        "db",
+        "code",
+        "tmp"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:.github/workflows/node.js.yml:name",
+      "type": "concept",
+      "name": "name",
+      "filePath": ".github/workflows/node.js.yml",
+      "lineRange": [
+        4,
+        4
+      ],
+      "summary": "name is a documented section in .github/workflows/node.js.yml.",
+      "tags": [
+        "yaml",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:.github/workflows/node.js.yml:on",
+      "type": "concept",
+      "name": "on",
+      "filePath": ".github/workflows/node.js.yml",
+      "lineRange": [
+        6,
+        6
+      ],
+      "summary": "on is a documented section in .github/workflows/node.js.yml.",
+      "tags": [
+        "yaml",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:.github/workflows/node.js.yml:jobs",
+      "type": "concept",
+      "name": "jobs",
+      "filePath": ".github/workflows/node.js.yml",
+      "lineRange": [
+        12,
+        12
+      ],
+      "summary": "jobs is a documented section in .github/workflows/node.js.yml.",
+      "tags": [
+        "yaml",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:ios/TaskManager/README.md:Task-Manager-iOS",
+      "type": "concept",
+      "name": "Task Manager iOS",
+      "filePath": "ios/TaskManager/README.md",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Task Manager iOS is a documented section in ios/TaskManager/README.md.",
+      "tags": [
+        "markdown",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:ios/TaskManager/README.md:Build-On-Mac",
+      "type": "concept",
+      "name": "Build On Mac",
+      "filePath": "ios/TaskManager/README.md",
+      "lineRange": [
+        5,
+        5
+      ],
+      "summary": "Build On Mac is a documented section in ios/TaskManager/README.md.",
+      "tags": [
+        "markdown",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:ios/TaskManager/README.md:Command-Line-Build",
+      "type": "concept",
+      "name": "Command Line Build",
+      "filePath": "ios/TaskManager/README.md",
+      "lineRange": [
+        20,
+        20
+      ],
+      "summary": "Command Line Build is a documented section in ios/TaskManager/README.md.",
+      "tags": [
+        "markdown",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:ios/TaskManager/README.md:Notes",
+      "type": "concept",
+      "name": "Notes",
+      "filePath": "ios/TaskManager/README.md",
+      "lineRange": [
+        29,
+        29
+      ],
+      "summary": "Notes is a documented section in ios/TaskManager/README.md.",
+      "tags": [
+        "markdown",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:ios/TaskManager/TaskManager/Assets.xcassets/AppIcon.appiconset/Contents.json:images",
+      "type": "concept",
+      "name": "images",
+      "filePath": "ios/TaskManager/TaskManager/Assets.xcassets/AppIcon.appiconset/Contents.json",
+      "lineRange": [
+        2,
+        2
+      ],
+      "summary": "images is a documented section in ios/TaskManager/TaskManager/Assets.xcassets/AppIcon.appiconset/Contents.json.",
+      "tags": [
+        "json",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:ios/TaskManager/TaskManager/Assets.xcassets/AppIcon.appiconset/Contents.json:info",
+      "type": "concept",
+      "name": "info",
+      "filePath": "ios/TaskManager/TaskManager/Assets.xcassets/AppIcon.appiconset/Contents.json",
+      "lineRange": [
+        51,
+        51
+      ],
+      "summary": "info is a documented section in ios/TaskManager/TaskManager/Assets.xcassets/AppIcon.appiconset/Contents.json.",
+      "tags": [
+        "json",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:ios/TaskManager/TaskManager/Assets.xcassets/Contents.json:info",
+      "type": "concept",
+      "name": "info",
+      "filePath": "ios/TaskManager/TaskManager/Assets.xcassets/Contents.json",
+      "lineRange": [
+        2,
+        2
+      ],
+      "summary": "info is a documented section in ios/TaskManager/TaskManager/Assets.xcassets/Contents.json.",
+      "tags": [
+        "json",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:package.json:name",
+      "type": "concept",
+      "name": "name",
+      "filePath": "package.json",
+      "lineRange": [
+        2,
+        2
+      ],
+      "summary": "name is a documented section in package.json.",
+      "tags": [
+        "json",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:package.json:version",
+      "type": "concept",
+      "name": "version",
+      "filePath": "package.json",
+      "lineRange": [
+        3,
+        3
+      ],
+      "summary": "version is a documented section in package.json.",
+      "tags": [
+        "json",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:package.json:description",
+      "type": "concept",
+      "name": "description",
+      "filePath": "package.json",
+      "lineRange": [
+        4,
+        4
+      ],
+      "summary": "description is a documented section in package.json.",
+      "tags": [
+        "json",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:package.json:main",
+      "type": "concept",
+      "name": "main",
+      "filePath": "package.json",
+      "lineRange": [
+        5,
+        5
+      ],
+      "summary": "main is a documented section in package.json.",
+      "tags": [
+        "json",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:package.json:scripts",
+      "type": "concept",
+      "name": "scripts",
+      "filePath": "package.json",
+      "lineRange": [
+        6,
+        6
+      ],
+      "summary": "scripts is a documented section in package.json.",
+      "tags": [
+        "json",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:package.json:dependencies",
+      "type": "concept",
+      "name": "dependencies",
+      "filePath": "package.json",
+      "lineRange": [
+        11,
+        11
+      ],
+      "summary": "dependencies is a documented section in package.json.",
+      "tags": [
+        "json",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:package.json:devDependencies",
+      "type": "concept",
+      "name": "devDependencies",
+      "filePath": "package.json",
+      "lineRange": [
+        19,
+        19
+      ],
+      "summary": "devDependencies is a documented section in package.json.",
+      "tags": [
+        "json",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:package.json:jest",
+      "type": "concept",
+      "name": "jest",
+      "filePath": "package.json",
+      "lineRange": [
+        9,
+        9
+      ],
+      "summary": "jest is a documented section in package.json.",
+      "tags": [
+        "json",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:t",
+      "type": "function",
+      "name": "t",
+      "filePath": "public/app.js",
+      "lineRange": [
+        430,
+        436
+      ],
+      "summary": "t is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:setText",
+      "type": "function",
+      "name": "setText",
+      "filePath": "public/app.js",
+      "lineRange": [
+        438,
+        441
+      ],
+      "summary": "setText is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:setIconButtonLabel",
+      "type": "function",
+      "name": "setIconButtonLabel",
+      "filePath": "public/app.js",
+      "lineRange": [
+        443,
+        446
+      ],
+      "summary": "setIconButtonLabel is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:setActionIconButton",
+      "type": "function",
+      "name": "setActionIconButton",
+      "filePath": "public/app.js",
+      "lineRange": [
+        448,
+        453
+      ],
+      "summary": "setActionIconButton is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:applyTheme",
+      "type": "function",
+      "name": "applyTheme",
+      "filePath": "public/app.js",
+      "lineRange": [
+        455,
+        461
+      ],
+      "summary": "applyTheme is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:toggleTheme",
+      "type": "function",
+      "name": "toggleTheme",
+      "filePath": "public/app.js",
+      "lineRange": [
+        463,
+        467
+      ],
+      "summary": "toggleTheme is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:priorityLabel",
+      "type": "function",
+      "name": "priorityLabel",
+      "filePath": "public/app.js",
+      "lineRange": [
+        469,
+        469
+      ],
+      "summary": "priorityLabel is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:priorityRank",
+      "type": "function",
+      "name": "priorityRank",
+      "filePath": "public/app.js",
+      "lineRange": [
+        471,
+        475
+      ],
+      "summary": "priorityRank is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:sortTasksByPriority",
+      "type": "function",
+      "name": "sortTasksByPriority",
+      "filePath": "public/app.js",
+      "lineRange": [
+        477,
+        479
+      ],
+      "summary": "sortTasksByPriority is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:taskStatus",
+      "type": "function",
+      "name": "taskStatus",
+      "filePath": "public/app.js",
+      "lineRange": [
+        481,
+        481
+      ],
+      "summary": "taskStatus is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:statusLabel",
+      "type": "function",
+      "name": "statusLabel",
+      "filePath": "public/app.js",
+      "lineRange": [
+        483,
+        483
+      ],
+      "summary": "statusLabel is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:updatePriorityOptions",
+      "type": "function",
+      "name": "updatePriorityOptions",
+      "filePath": "public/app.js",
+      "lineRange": [
+        485,
+        490
+      ],
+      "summary": "updatePriorityOptions is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:updateStatusOptions",
+      "type": "function",
+      "name": "updateStatusOptions",
+      "filePath": "public/app.js",
+      "lineRange": [
+        492,
+        497
+      ],
+      "summary": "updateStatusOptions is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:escapeHtml",
+      "type": "function",
+      "name": "escapeHtml",
+      "filePath": "public/app.js",
+      "lineRange": [
+        499,
+        504
+      ],
+      "summary": "escapeHtml is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:applyTranslations",
+      "type": "function",
+      "name": "applyTranslations",
+      "filePath": "public/app.js",
+      "lineRange": [
+        506,
+        599
+      ],
+      "summary": "applyTranslations is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:public/app.js:formatDateEST",
+      "type": "function",
+      "name": "formatDateEST",
+      "filePath": "public/app.js",
+      "lineRange": [
+        602,
+        620
+      ],
+      "summary": "formatDateEST is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:formatLocalDateTime",
+      "type": "function",
+      "name": "formatLocalDateTime",
+      "filePath": "public/app.js",
+      "lineRange": [
+        622,
+        628
+      ],
+      "summary": "formatLocalDateTime is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:isTodayDateTimeValue",
+      "type": "function",
+      "name": "isTodayDateTimeValue",
+      "filePath": "public/app.js",
+      "lineRange": [
+        630,
+        638
+      ],
+      "summary": "isTodayDateTimeValue is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:closePickerAfterTodaySelection",
+      "type": "function",
+      "name": "closePickerAfterTodaySelection",
+      "filePath": "public/app.js",
+      "lineRange": [
+        640,
+        649
+      ],
+      "summary": "closePickerAfterTodaySelection is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:hasRichTextMarkup",
+      "type": "function",
+      "name": "hasRichTextMarkup",
+      "filePath": "public/app.js",
+      "lineRange": [
+        653,
+        653
+      ],
+      "summary": "hasRichTextMarkup is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:isSafeLinkHref",
+      "type": "function",
+      "name": "isSafeLinkHref",
+      "filePath": "public/app.js",
+      "lineRange": [
+        655,
+        655
+      ],
+      "summary": "isSafeLinkHref is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:autolinkPlainUrls",
+      "type": "function",
+      "name": "autolinkPlainUrls",
+      "filePath": "public/app.js",
+      "lineRange": [
+        657,
+        660
+      ],
+      "summary": "autolinkPlainUrls is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:linkifyPlainText",
+      "type": "function",
+      "name": "linkifyPlainText",
+      "filePath": "public/app.js",
+      "lineRange": [
+        662,
+        662
+      ],
+      "summary": "linkifyPlainText is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:sanitizeRichText",
+      "type": "function",
+      "name": "sanitizeRichText",
+      "filePath": "public/app.js",
+      "lineRange": [
+        664,
+        697
+      ],
+      "summary": "sanitizeRichText is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:getRichTextPlainText",
+      "type": "function",
+      "name": "getRichTextPlainText",
+      "filePath": "public/app.js",
+      "lineRange": [
+        699,
+        703
+      ],
+      "summary": "getRichTextPlainText is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:taskMatchesSearch",
+      "type": "function",
+      "name": "taskMatchesSearch",
+      "filePath": "public/app.js",
+      "lineRange": [
+        705,
+        713
+      ],
+      "summary": "taskMatchesSearch is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:updateTaskSearchState",
+      "type": "function",
+      "name": "updateTaskSearchState",
+      "filePath": "public/app.js",
+      "lineRange": [
+        715,
+        717
+      ],
+      "summary": "updateTaskSearchState is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:setRichEditorValue",
+      "type": "function",
+      "name": "setRichEditorValue",
+      "filePath": "public/app.js",
+      "lineRange": [
+        719,
+        726
+      ],
+      "summary": "setRichEditorValue is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:getRichEditorValue",
+      "type": "function",
+      "name": "getRichEditorValue",
+      "filePath": "public/app.js",
+      "lineRange": [
+        728,
+        731
+      ],
+      "summary": "getRichEditorValue is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:getRichEditorLength",
+      "type": "function",
+      "name": "getRichEditorLength",
+      "filePath": "public/app.js",
+      "lineRange": [
+        733,
+        733
+      ],
+      "summary": "getRichEditorLength is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:isPdfAttachment",
+      "type": "function",
+      "name": "isPdfAttachment",
+      "filePath": "public/app.js",
+      "lineRange": [
+        735,
+        739
+      ],
+      "summary": "isPdfAttachment is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:isImageAttachment",
+      "type": "function",
+      "name": "isImageAttachment",
+      "filePath": "public/app.js",
+      "lineRange": [
+        741,
+        745
+      ],
+      "summary": "isImageAttachment is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:attachAttachmentPreviewHandler",
+      "type": "function",
+      "name": "attachAttachmentPreviewHandler",
+      "filePath": "public/app.js",
+      "lineRange": [
+        747,
+        755
+      ],
+      "summary": "attachAttachmentPreviewHandler is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:openRichTextLinksWithModifier",
+      "type": "function",
+      "name": "openRichTextLinksWithModifier",
+      "filePath": "public/app.js",
+      "lineRange": [
+        757,
+        767
+      ],
+      "summary": "openRichTextLinksWithModifier is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:saveRichEditorSelection",
+      "type": "function",
+      "name": "saveRichEditorSelection",
+      "filePath": "public/app.js",
+      "lineRange": [
+        771,
+        779
+      ],
+      "summary": "saveRichEditorSelection is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:restoreRichEditorSelection",
+      "type": "function",
+      "name": "restoreRichEditorSelection",
+      "filePath": "public/app.js",
+      "lineRange": [
+        781,
+        791
+      ],
+      "summary": "restoreRichEditorSelection is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:setupRichTextEditors",
+      "type": "function",
+      "name": "setupRichTextEditors",
+      "filePath": "public/app.js",
+      "lineRange": [
+        793,
+        826
+      ],
+      "summary": "setupRichTextEditors is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:readAttachmentFile",
+      "type": "function",
+      "name": "readAttachmentFile",
+      "filePath": "public/app.js",
+      "lineRange": [
+        828,
+        850
+      ],
+      "summary": "readAttachmentFile is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:fileFromClipboard",
+      "type": "function",
+      "name": "fileFromClipboard",
+      "filePath": "public/app.js",
+      "lineRange": [
+        852,
+        862
+      ],
+      "summary": "fileFromClipboard is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:handleTaskAttachmentChange",
+      "type": "function",
+      "name": "handleTaskAttachmentChange",
+      "filePath": "public/app.js",
+      "lineRange": [
+        864,
+        890
+      ],
+      "summary": "handleTaskAttachmentChange is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:handleEditTaskAttachmentChange",
+      "type": "function",
+      "name": "handleEditTaskAttachmentChange",
+      "filePath": "public/app.js",
+      "lineRange": [
+        892,
+        923
+      ],
+      "summary": "handleEditTaskAttachmentChange is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:getReminderStorageKey",
+      "type": "function",
+      "name": "getReminderStorageKey",
+      "filePath": "public/app.js",
+      "lineRange": [
+        925,
+        925
+      ],
+      "summary": "getReminderStorageKey is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:clearReminderTimers",
+      "type": "function",
+      "name": "clearReminderTimers",
+      "filePath": "public/app.js",
+      "lineRange": [
+        927,
+        930
+      ],
+      "summary": "clearReminderTimers is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:hideReminderAlert",
+      "type": "function",
+      "name": "hideReminderAlert",
+      "filePath": "public/app.js",
+      "lineRange": [
+        932,
+        938
+      ],
+      "summary": "hideReminderAlert is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:showTaskReminder",
+      "type": "function",
+      "name": "showTaskReminder",
+      "filePath": "public/app.js",
+      "lineRange": [
+        940,
+        949
+      ],
+      "summary": "showTaskReminder is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:scheduleTaskReminders",
+      "type": "function",
+      "name": "scheduleTaskReminders",
+      "filePath": "public/app.js",
+      "lineRange": [
+        951,
+        974
+      ],
+      "summary": "scheduleTaskReminders is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:getWeatherIcon",
+      "type": "function",
+      "name": "getWeatherIcon",
+      "filePath": "public/app.js",
+      "lineRange": [
+        977,
+        987
+      ],
+      "summary": "getWeatherIcon is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:fetchWeather",
+      "type": "function",
+      "name": "fetchWeather",
+      "filePath": "public/app.js",
+      "lineRange": [
+        990,
+        1016
+      ],
+      "summary": "fetchWeather is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:fetchWeatherForLocation",
+      "type": "function",
+      "name": "fetchWeatherForLocation",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1019,
+        1029
+      ],
+      "summary": "fetchWeatherForLocation is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:fetchWeatherData",
+      "type": "function",
+      "name": "fetchWeatherData",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1031,
+        1037
+      ],
+      "summary": "fetchWeatherData is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:getSavedWeatherCitiesKey",
+      "type": "function",
+      "name": "getSavedWeatherCitiesKey",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1039,
+        1039
+      ],
+      "summary": "getSavedWeatherCitiesKey is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:loadSavedWeatherCities",
+      "type": "function",
+      "name": "loadSavedWeatherCities",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1041,
+        1047
+      ],
+      "summary": "loadSavedWeatherCities is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:saveSavedWeatherCities",
+      "type": "function",
+      "name": "saveSavedWeatherCities",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1049,
+        1051
+      ],
+      "summary": "saveSavedWeatherCities is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:getWeatherSearchMarkup",
+      "type": "function",
+      "name": "getWeatherSearchMarkup",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1053,
+        1058
+      ],
+      "summary": "getWeatherSearchMarkup is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:bindWeatherSearchForm",
+      "type": "function",
+      "name": "bindWeatherSearchForm",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1060,
+        1069
+      ],
+      "summary": "bindWeatherSearchForm is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:fetchWeatherForCity",
+      "type": "function",
+      "name": "fetchWeatherForCity",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1071,
+        1112
+      ],
+      "summary": "fetchWeatherForCity is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:handleWeatherCitySubmit",
+      "type": "function",
+      "name": "handleWeatherCitySubmit",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1114,
+        1125
+      ],
+      "summary": "handleWeatherCitySubmit is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:removeSavedWeatherCity",
+      "type": "function",
+      "name": "removeSavedWeatherCity",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1127,
+        1132
+      ],
+      "summary": "removeSavedWeatherCity is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:loadSavedWeatherCity",
+      "type": "function",
+      "name": "loadSavedWeatherCity",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1134,
+        1152
+      ],
+      "summary": "loadSavedWeatherCity is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:loadSavedWeatherCityCards",
+      "type": "function",
+      "name": "loadSavedWeatherCityCards",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1154,
+        1159
+      ],
+      "summary": "loadSavedWeatherCityCards is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:getCurrentTimeForTimezone",
+      "type": "function",
+      "name": "getCurrentTimeForTimezone",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1162,
+        1166
+      ],
+      "summary": "getCurrentTimeForTimezone is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:showWeatherMessage",
+      "type": "function",
+      "name": "showWeatherMessage",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1168,
+        1171
+      ],
+      "summary": "showWeatherMessage is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:renderWeatherWidget",
+      "type": "function",
+      "name": "renderWeatherWidget",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1173,
+        1188
+      ],
+      "summary": "renderWeatherWidget is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:getWeatherMessageCard",
+      "type": "function",
+      "name": "getWeatherMessageCard",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1190,
+        1199
+      ],
+      "summary": "getWeatherMessageCard is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:getWeatherRemoveButton",
+      "type": "function",
+      "name": "getWeatherRemoveButton",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1201,
+        1203
+      ],
+      "summary": "getWeatherRemoveButton is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:getWeatherCard",
+      "type": "function",
+      "name": "getWeatherCard",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1205,
+        1230
+      ],
+      "summary": "getWeatherCard is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:getCurrentCityName",
+      "type": "function",
+      "name": "getCurrentCityName",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1232,
+        1250
+      ],
+      "summary": "getCurrentCityName is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:displayWeather",
+      "type": "function",
+      "name": "displayWeather",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1252,
+        1268
+      ],
+      "summary": "displayWeather is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:showSection",
+      "type": "function",
+      "name": "showSection",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1270,
+        1300
+      ],
+      "summary": "showSection is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:showAddTaskModal",
+      "type": "function",
+      "name": "showAddTaskModal",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1302,
+        1305
+      ],
+      "summary": "showAddTaskModal is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:openAddTaskFlow",
+      "type": "function",
+      "name": "openAddTaskFlow",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1307,
+        1311
+      ],
+      "summary": "openAddTaskFlow is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:hideAddTaskModal",
+      "type": "function",
+      "name": "hideAddTaskModal",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1313,
+        1315
+      ],
+      "summary": "hideAddTaskModal is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:renderUserArea",
+      "type": "function",
+      "name": "renderUserArea",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1317,
+        1377
+      ],
+      "summary": "renderUserArea is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:setMode",
+      "type": "function",
+      "name": "setMode",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1379,
+        1384
+      ],
+      "summary": "setMode is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:setLanguage",
+      "type": "function",
+      "name": "setLanguage",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1386,
+        1391
+      ],
+      "summary": "setLanguage is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:togglePasswordVisibility",
+      "type": "function",
+      "name": "togglePasswordVisibility",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1393,
+        1398
+      ],
+      "summary": "togglePasswordVisibility is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:request",
+      "type": "function",
+      "name": "request",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1400,
+        1409
+      ],
+      "summary": "request is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:init",
+      "type": "function",
+      "name": "init",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1411,
+        1415
+      ],
+      "summary": "init is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:handleAuthSubmit",
+      "type": "function",
+      "name": "handleAuthSubmit",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1417,
+        1444
+      ],
+      "summary": "handleAuthSubmit is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:loadTags",
+      "type": "function",
+      "name": "loadTags",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1446,
+        1458
+      ],
+      "summary": "loadTags is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:hideTagSuggestions",
+      "type": "function",
+      "name": "hideTagSuggestions",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1460,
+        1463
+      ],
+      "summary": "hideTagSuggestions is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:showTagSuggestions",
+      "type": "function",
+      "name": "showTagSuggestions",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1465,
+        1493
+      ],
+      "summary": "showTagSuggestions is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:setupTagSuggestions",
+      "type": "function",
+      "name": "setupTagSuggestions",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1495,
+        1506
+      ],
+      "summary": "setupTagSuggestions is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:renderTags",
+      "type": "function",
+      "name": "renderTags",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1508,
+        1566
+      ],
+      "summary": "renderTags is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:handleTagSubmit",
+      "type": "function",
+      "name": "handleTagSubmit",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1568,
+        1596
+      ],
+      "summary": "handleTagSubmit is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:clearEditTagError",
+      "type": "function",
+      "name": "clearEditTagError",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1598,
+        1601
+      ],
+      "summary": "clearEditTagError is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:showEditTagModal",
+      "type": "function",
+      "name": "showEditTagModal",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1603,
+        1610
+      ],
+      "summary": "showEditTagModal is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:hideEditTagModal",
+      "type": "function",
+      "name": "hideEditTagModal",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1612,
+        1617
+      ],
+      "summary": "hideEditTagModal is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:renameTag",
+      "type": "function",
+      "name": "renameTag",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1619,
+        1650
+      ],
+      "summary": "renameTag is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:deleteTag",
+      "type": "function",
+      "name": "deleteTag",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1652,
+        1668
+      ],
+      "summary": "deleteTag is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:loadUsers",
+      "type": "function",
+      "name": "loadUsers",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1670,
+        1679
+      ],
+      "summary": "loadUsers is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:renderUsers",
+      "type": "function",
+      "name": "renderUsers",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1681,
+        1730
+      ],
+      "summary": "renderUsers is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:clearAdminUserFormError",
+      "type": "function",
+      "name": "clearAdminUserFormError",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1732,
+        1735
+      ],
+      "summary": "clearAdminUserFormError is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:showAdminUserModal",
+      "type": "function",
+      "name": "showAdminUserModal",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1737,
+        1755
+      ],
+      "summary": "showAdminUserModal is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:hideAdminUserModal",
+      "type": "function",
+      "name": "hideAdminUserModal",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1757,
+        1764
+      ],
+      "summary": "hideAdminUserModal is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:handleAdminUserSubmit",
+      "type": "function",
+      "name": "handleAdminUserSubmit",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1766,
+        1796
+      ],
+      "summary": "handleAdminUserSubmit is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:resetUserPassword",
+      "type": "function",
+      "name": "resetUserPassword",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1798,
+        1817
+      ],
+      "summary": "resetUserPassword is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:deleteUser",
+      "type": "function",
+      "name": "deleteUser",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1819,
+        1830
+      ],
+      "summary": "deleteUser is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:handleTaskSubmit",
+      "type": "function",
+      "name": "handleTaskSubmit",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1832,
+        1916
+      ],
+      "summary": "handleTaskSubmit is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:loadTasks",
+      "type": "function",
+      "name": "loadTasks",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1918,
+        1931
+      ],
+      "summary": "loadTasks is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:renderTasks",
+      "type": "function",
+      "name": "renderTasks",
+      "filePath": "public/app.js",
+      "lineRange": [
+        1933,
+        2038
+      ],
+      "summary": "renderTasks is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:public/app.js:createTaskCard",
+      "type": "function",
+      "name": "createTaskCard",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2040,
+        2164
+      ],
+      "summary": "createTaskCard is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:public/app.js:handleTaskDragStart",
+      "type": "function",
+      "name": "handleTaskDragStart",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2166,
+        2172
+      ],
+      "summary": "handleTaskDragStart is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:handleTaskDragEnd",
+      "type": "function",
+      "name": "handleTaskDragEnd",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2174,
+        2179
+      ],
+      "summary": "handleTaskDragEnd is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:handleTaskDragOver",
+      "type": "function",
+      "name": "handleTaskDragOver",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2181,
+        2184
+      ],
+      "summary": "handleTaskDragOver is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:handleTaskDragEnter",
+      "type": "function",
+      "name": "handleTaskDragEnter",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2186,
+        2189
+      ],
+      "summary": "handleTaskDragEnter is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:handleTaskDragLeave",
+      "type": "function",
+      "name": "handleTaskDragLeave",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2191,
+        2195
+      ],
+      "summary": "handleTaskDragLeave is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:handleTaskDrop",
+      "type": "function",
+      "name": "handleTaskDrop",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2197,
+        2211
+      ],
+      "summary": "handleTaskDrop is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:updateTask",
+      "type": "function",
+      "name": "updateTask",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2213,
+        2227
+      ],
+      "summary": "updateTask is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:savePastedAttachmentToOpenTask",
+      "type": "function",
+      "name": "savePastedAttachmentToOpenTask",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2229,
+        2256
+      ],
+      "summary": "savePastedAttachmentToOpenTask is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:deleteTask",
+      "type": "function",
+      "name": "deleteTask",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2258,
+        2263
+      ],
+      "summary": "deleteTask is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:showDeleteConfirm",
+      "type": "function",
+      "name": "showDeleteConfirm",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2265,
+        2273
+      ],
+      "summary": "showDeleteConfirm is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:showUserDeleteConfirm",
+      "type": "function",
+      "name": "showUserDeleteConfirm",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2275,
+        2283
+      ],
+      "summary": "showUserDeleteConfirm is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:showTagDeleteConfirm",
+      "type": "function",
+      "name": "showTagDeleteConfirm",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2285,
+        2293
+      ],
+      "summary": "showTagDeleteConfirm is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:hideDeleteConfirm",
+      "type": "function",
+      "name": "hideDeleteConfirm",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2295,
+        2300
+      ],
+      "summary": "hideDeleteConfirm is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:formatDateTimeLocalValue",
+      "type": "function",
+      "name": "formatDateTimeLocalValue",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2396,
+        2399
+      ],
+      "summary": "formatDateTimeLocalValue is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:clearEditTaskErrors",
+      "type": "function",
+      "name": "clearEditTaskErrors",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2401,
+        2406
+      ],
+      "summary": "clearEditTaskErrors is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:renderEditAttachmentState",
+      "type": "function",
+      "name": "renderEditAttachmentState",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2408,
+        2457
+      ],
+      "summary": "renderEditAttachmentState is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:showEditTaskModal",
+      "type": "function",
+      "name": "showEditTaskModal",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2459,
+        2477
+      ],
+      "summary": "showEditTaskModal is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:hideEditTaskModal",
+      "type": "function",
+      "name": "hideEditTaskModal",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2479,
+        2490
+      ],
+      "summary": "hideEditTaskModal is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:handleEditTaskSubmit",
+      "type": "function",
+      "name": "handleEditTaskSubmit",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2492,
+        2559
+      ],
+      "summary": "handleEditTaskSubmit is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:showPreviewTaskModal",
+      "type": "function",
+      "name": "showPreviewTaskModal",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2569,
+        2583
+      ],
+      "summary": "showPreviewTaskModal is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:hidePreviewTaskModal",
+      "type": "function",
+      "name": "hidePreviewTaskModal",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2585,
+        2595
+      ],
+      "summary": "hidePreviewTaskModal is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:showAttachmentPreview",
+      "type": "function",
+      "name": "showAttachmentPreview",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2597,
+        2610
+      ],
+      "summary": "showAttachmentPreview is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:hideAttachmentPreview",
+      "type": "function",
+      "name": "hideAttachmentPreview",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2612,
+        2620
+      ],
+      "summary": "hideAttachmentPreview is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:hideStatusToast",
+      "type": "function",
+      "name": "hideStatusToast",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2687,
+        2689
+      ],
+      "summary": "hideStatusToast is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:showStatusToast",
+      "type": "function",
+      "name": "showStatusToast",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2691,
+        2703
+      ],
+      "summary": "showStatusToast is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:setUploadProgress",
+      "type": "function",
+      "name": "setUploadProgress",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2705,
+        2710
+      ],
+      "summary": "setUploadProgress is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:registerServiceWorker",
+      "type": "function",
+      "name": "registerServiceWorker",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2712,
+        2722
+      ],
+      "summary": "registerServiceWorker is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:showUploadProgress",
+      "type": "function",
+      "name": "showUploadProgress",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2724,
+        2731
+      ],
+      "summary": "showUploadProgress is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:hideUploadProgress",
+      "type": "function",
+      "name": "hideUploadProgress",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2733,
+        2739
+      ],
+      "summary": "hideUploadProgress is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:handleLogout",
+      "type": "function",
+      "name": "handleLogout",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2741,
+        2746
+      ],
+      "summary": "handleLogout is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:sendSummaryEmail",
+      "type": "function",
+      "name": "sendSummaryEmail",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2748,
+        2769
+      ],
+      "summary": "sendSummaryEmail is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:exportToExcel",
+      "type": "function",
+      "name": "exportToExcel",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2771,
+        2795
+      ],
+      "summary": "exportToExcel is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:arrayBufferToBase64",
+      "type": "function",
+      "name": "arrayBufferToBase64",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2797,
+        2805
+      ],
+      "summary": "arrayBufferToBase64 is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:loadPdfUnicodeFont",
+      "type": "function",
+      "name": "loadPdfUnicodeFont",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2807,
+        2820
+      ],
+      "summary": "loadPdfUnicodeFont is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:exportToPdf",
+      "type": "function",
+      "name": "exportToPdf",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2822,
+        2876
+      ],
+      "summary": "exportToPdf is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:public/app.js:exportToWord",
+      "type": "function",
+      "name": "exportToWord",
+      "filePath": "public/app.js",
+      "lineRange": [
+        2878,
+        2978
+      ],
+      "summary": "exportToWord is a function declared in public/app.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "concept:README.md:Task-Management-App",
+      "type": "concept",
+      "name": "Task Management App",
+      "filePath": "README.md",
+      "lineRange": [
+        1,
+        1
+      ],
+      "summary": "Task Management App is a documented section in README.md.",
+      "tags": [
+        "markdown",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:README.md:Features",
+      "type": "concept",
+      "name": "Features",
+      "filePath": "README.md",
+      "lineRange": [
+        5,
+        5
+      ],
+      "summary": "Features is a documented section in README.md.",
+      "tags": [
+        "markdown",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:README.md:Setup",
+      "type": "concept",
+      "name": "Setup",
+      "filePath": "README.md",
+      "lineRange": [
+        12,
+        12
+      ],
+      "summary": "Setup is a documented section in README.md.",
+      "tags": [
+        "markdown",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:README.md:iOS-App",
+      "type": "concept",
+      "name": "iOS App",
+      "filePath": "README.md",
+      "lineRange": [
+        59,
+        59
+      ],
+      "summary": "iOS App is a documented section in README.md.",
+      "tags": [
+        "markdown",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "concept:README.md:Default-Credentials",
+      "type": "concept",
+      "name": "Default Credentials",
+      "filePath": "README.md",
+      "lineRange": [
+        65,
+        65
+      ],
+      "summary": "Default Credentials is a documented section in README.md.",
+      "tags": [
+        "markdown",
+        "section"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:toPostgresSql",
+      "type": "function",
+      "name": "toPostgresSql",
+      "filePath": "server.js",
+      "lineRange": [
+        38,
+        41
+      ],
+      "summary": "toPostgresSql is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:queryAsync",
+      "type": "function",
+      "name": "queryAsync",
+      "filePath": "server.js",
+      "lineRange": [
+        43,
+        45
+      ],
+      "summary": "queryAsync is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:runAsync",
+      "type": "function",
+      "name": "runAsync",
+      "filePath": "server.js",
+      "lineRange": [
+        47,
+        53
+      ],
+      "summary": "runAsync is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:getAsync",
+      "type": "function",
+      "name": "getAsync",
+      "filePath": "server.js",
+      "lineRange": [
+        55,
+        58
+      ],
+      "summary": "getAsync is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:allAsync",
+      "type": "function",
+      "name": "allAsync",
+      "filePath": "server.js",
+      "lineRange": [
+        60,
+        63
+      ],
+      "summary": "allAsync is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:initializeDatabase",
+      "type": "function",
+      "name": "initializeDatabase",
+      "filePath": "server.js",
+      "lineRange": [
+        65,
+        134
+      ],
+      "summary": "initializeDatabase is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:normalizePriority",
+      "type": "function",
+      "name": "normalizePriority",
+      "filePath": "server.js",
+      "lineRange": [
+        138,
+        145
+      ],
+      "summary": "normalizePriority is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:normalizeStatus",
+      "type": "function",
+      "name": "normalizeStatus",
+      "filePath": "server.js",
+      "lineRange": [
+        147,
+        154
+      ],
+      "summary": "normalizeStatus is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:normalizeLanguage",
+      "type": "function",
+      "name": "normalizeLanguage",
+      "filePath": "server.js",
+      "lineRange": [
+        217,
+        217
+      ],
+      "summary": "normalizeLanguage is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:normalizeEmail",
+      "type": "function",
+      "name": "normalizeEmail",
+      "filePath": "server.js",
+      "lineRange": [
+        219,
+        223
+      ],
+      "summary": "normalizeEmail is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:tEmail",
+      "type": "function",
+      "name": "tEmail",
+      "filePath": "server.js",
+      "lineRange": [
+        225,
+        232
+      ],
+      "summary": "tEmail is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:formatTaskStatus",
+      "type": "function",
+      "name": "formatTaskStatus",
+      "filePath": "server.js",
+      "lineRange": [
+        234,
+        234
+      ],
+      "summary": "formatTaskStatus is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:formatTaskPriority",
+      "type": "function",
+      "name": "formatTaskPriority",
+      "filePath": "server.js",
+      "lineRange": [
+        236,
+        236
+      ],
+      "summary": "formatTaskPriority is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:normalizeTag",
+      "type": "function",
+      "name": "normalizeTag",
+      "filePath": "server.js",
+      "lineRange": [
+        238,
+        244
+      ],
+      "summary": "normalizeTag is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:ensureTaskTag",
+      "type": "function",
+      "name": "ensureTaskTag",
+      "filePath": "server.js",
+      "lineRange": [
+        246,
+        264
+      ],
+      "summary": "ensureTaskTag is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:createMailTransporter",
+      "type": "function",
+      "name": "createMailTransporter",
+      "filePath": "server.js",
+      "lineRange": [
+        266,
+        288
+      ],
+      "summary": "createMailTransporter is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:getUserEmailRecipient",
+      "type": "function",
+      "name": "getUserEmailRecipient",
+      "filePath": "server.js",
+      "lineRange": [
+        290,
+        290
+      ],
+      "summary": "getUserEmailRecipient is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:stripHtml",
+      "type": "function",
+      "name": "stripHtml",
+      "filePath": "server.js",
+      "lineRange": [
+        292,
+        303
+      ],
+      "summary": "stripHtml is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:escapeHtml",
+      "type": "function",
+      "name": "escapeHtml",
+      "filePath": "server.js",
+      "lineRange": [
+        305,
+        310
+      ],
+      "summary": "escapeHtml is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:normalizeLineBreaks",
+      "type": "function",
+      "name": "normalizeLineBreaks",
+      "filePath": "server.js",
+      "lineRange": [
+        312,
+        314
+      ],
+      "summary": "normalizeLineBreaks is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:formatPlainTextValue",
+      "type": "function",
+      "name": "formatPlainTextValue",
+      "filePath": "server.js",
+      "lineRange": [
+        316,
+        316
+      ],
+      "summary": "formatPlainTextValue is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:formatMultilineHtml",
+      "type": "function",
+      "name": "formatMultilineHtml",
+      "filePath": "server.js",
+      "lineRange": [
+        318,
+        321
+      ],
+      "summary": "formatMultilineHtml is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:formatLinkedMultilineHtml",
+      "type": "function",
+      "name": "formatLinkedMultilineHtml",
+      "filePath": "server.js",
+      "lineRange": [
+        323,
+        327
+      ],
+      "summary": "formatLinkedMultilineHtml is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:decodeBasicHtmlEntities",
+      "type": "function",
+      "name": "decodeBasicHtmlEntities",
+      "filePath": "server.js",
+      "lineRange": [
+        329,
+        335
+      ],
+      "summary": "decodeBasicHtmlEntities is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:linkifyEscapedHtml",
+      "type": "function",
+      "name": "linkifyEscapedHtml",
+      "filePath": "server.js",
+      "lineRange": [
+        337,
+        340
+      ],
+      "summary": "linkifyEscapedHtml is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:formatEmailTextNodeHtml",
+      "type": "function",
+      "name": "formatEmailTextNodeHtml",
+      "filePath": "server.js",
+      "lineRange": [
+        342,
+        347
+      ],
+      "summary": "formatEmailTextNodeHtml is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:formatRichTextEmailHtml",
+      "type": "function",
+      "name": "formatRichTextEmailHtml",
+      "filePath": "server.js",
+      "lineRange": [
+        349,
+        397
+      ],
+      "summary": "formatRichTextEmailHtml is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:sanitizeFileName",
+      "type": "function",
+      "name": "sanitizeFileName",
+      "filePath": "server.js",
+      "lineRange": [
+        399,
+        399
+      ],
+      "summary": "sanitizeFileName is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:parseAttachment",
+      "type": "function",
+      "name": "parseAttachment",
+      "filePath": "server.js",
+      "lineRange": [
+        401,
+        418
+      ],
+      "summary": "parseAttachment is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:sendTaskAlertEmail",
+      "type": "function",
+      "name": "sendTaskAlertEmail",
+      "filePath": "server.js",
+      "lineRange": [
+        420,
+        501
+      ],
+      "summary": "sendTaskAlertEmail is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:sendTaskSummaryEmail",
+      "type": "function",
+      "name": "sendTaskSummaryEmail",
+      "filePath": "server.js",
+      "lineRange": [
+        503,
+        613
+      ],
+      "summary": "sendTaskSummaryEmail is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:server.js:authRequired",
+      "type": "function",
+      "name": "authRequired",
+      "filePath": "server.js",
+      "lineRange": [
+        640,
+        645
+      ],
+      "summary": "authRequired is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:getUserById",
+      "type": "function",
+      "name": "getUserById",
+      "filePath": "server.js",
+      "lineRange": [
+        647,
+        649
+      ],
+      "summary": "getUserById is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.js:adminRequired",
+      "type": "function",
+      "name": "adminRequired",
+      "filePath": "server.js",
+      "lineRange": [
+        651,
+        667
+      ],
+      "summary": "adminRequired is a function declared in server.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.test.js:testUsername",
+      "type": "function",
+      "name": "testUsername",
+      "filePath": "server.test.js",
+      "lineRange": [
+        14,
+        14
+      ],
+      "summary": "testUsername is a function declared in server.test.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.test.js:createAgent",
+      "type": "function",
+      "name": "createAgent",
+      "filePath": "server.test.js",
+      "lineRange": [
+        20,
+        31
+      ],
+      "summary": "createAgent is a function declared in server.test.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:server.test.js:attachment",
+      "type": "function",
+      "name": "attachment",
+      "filePath": "server.test.js",
+      "lineRange": [
+        33,
+        38
+      ],
+      "summary": "attachment is a function declared in server.test.js.",
+      "tags": [
+        "javascript",
+        "function"
+      ],
+      "complexity": "simple"
+    }
+  ],
+  "edges": [
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "pipeline:.github/workflows/node.js.yml",
+      "target": "concept:.github/workflows/node.js.yml:name",
+      "type": "contains",
+      "description": "node.js.yml documents name."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "pipeline:.github/workflows/node.js.yml",
+      "target": "concept:.github/workflows/node.js.yml:on",
+      "type": "contains",
+      "description": "node.js.yml documents on."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "pipeline:.github/workflows/node.js.yml",
+      "target": "concept:.github/workflows/node.js.yml:jobs",
+      "type": "contains",
+      "description": "node.js.yml documents jobs."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "document:ios/TaskManager/README.md",
+      "target": "concept:ios/TaskManager/README.md:Task-Manager-iOS",
+      "type": "contains",
+      "description": "README.md documents Task Manager iOS."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "document:ios/TaskManager/README.md",
+      "target": "concept:ios/TaskManager/README.md:Build-On-Mac",
+      "type": "contains",
+      "description": "README.md documents Build On Mac."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "document:ios/TaskManager/README.md",
+      "target": "concept:ios/TaskManager/README.md:Command-Line-Build",
+      "type": "contains",
+      "description": "README.md documents Command Line Build."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "document:ios/TaskManager/README.md",
+      "target": "concept:ios/TaskManager/README.md:Notes",
+      "type": "contains",
+      "description": "README.md documents Notes."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "config:ios/TaskManager/TaskManager/Assets.xcassets/AppIcon.appiconset/Contents.json",
+      "target": "concept:ios/TaskManager/TaskManager/Assets.xcassets/AppIcon.appiconset/Contents.json:images",
+      "type": "contains",
+      "description": "Contents.json documents images."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "config:ios/TaskManager/TaskManager/Assets.xcassets/AppIcon.appiconset/Contents.json",
+      "target": "concept:ios/TaskManager/TaskManager/Assets.xcassets/AppIcon.appiconset/Contents.json:info",
+      "type": "contains",
+      "description": "Contents.json documents info."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "config:ios/TaskManager/TaskManager/Assets.xcassets/Contents.json",
+      "target": "concept:ios/TaskManager/TaskManager/Assets.xcassets/Contents.json:info",
+      "type": "contains",
+      "description": "Contents.json documents info."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "config:package.json",
+      "target": "concept:package.json:name",
+      "type": "contains",
+      "description": "package.json documents name."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "config:package.json",
+      "target": "concept:package.json:version",
+      "type": "contains",
+      "description": "package.json documents version."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "config:package.json",
+      "target": "concept:package.json:description",
+      "type": "contains",
+      "description": "package.json documents description."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "config:package.json",
+      "target": "concept:package.json:main",
+      "type": "contains",
+      "description": "package.json documents main."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "config:package.json",
+      "target": "concept:package.json:scripts",
+      "type": "contains",
+      "description": "package.json documents scripts."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "config:package.json",
+      "target": "concept:package.json:dependencies",
+      "type": "contains",
+      "description": "package.json documents dependencies."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "config:package.json",
+      "target": "concept:package.json:devDependencies",
+      "type": "contains",
+      "description": "package.json documents devDependencies."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "config:package.json",
+      "target": "concept:package.json:jest",
+      "type": "contains",
+      "description": "package.json documents jest."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:t",
+      "type": "contains",
+      "description": "app.js contains function t."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:setText",
+      "type": "contains",
+      "description": "app.js contains function setText."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:setIconButtonLabel",
+      "type": "contains",
+      "description": "app.js contains function setIconButtonLabel."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:setActionIconButton",
+      "type": "contains",
+      "description": "app.js contains function setActionIconButton."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:applyTheme",
+      "type": "contains",
+      "description": "app.js contains function applyTheme."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:toggleTheme",
+      "type": "contains",
+      "description": "app.js contains function toggleTheme."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:priorityLabel",
+      "type": "contains",
+      "description": "app.js contains function priorityLabel."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:priorityRank",
+      "type": "contains",
+      "description": "app.js contains function priorityRank."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:sortTasksByPriority",
+      "type": "contains",
+      "description": "app.js contains function sortTasksByPriority."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:taskStatus",
+      "type": "contains",
+      "description": "app.js contains function taskStatus."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:statusLabel",
+      "type": "contains",
+      "description": "app.js contains function statusLabel."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:updatePriorityOptions",
+      "type": "contains",
+      "description": "app.js contains function updatePriorityOptions."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:updateStatusOptions",
+      "type": "contains",
+      "description": "app.js contains function updateStatusOptions."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:escapeHtml",
+      "type": "contains",
+      "description": "app.js contains function escapeHtml."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:applyTranslations",
+      "type": "contains",
+      "description": "app.js contains function applyTranslations."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:formatDateEST",
+      "type": "contains",
+      "description": "app.js contains function formatDateEST."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:formatLocalDateTime",
+      "type": "contains",
+      "description": "app.js contains function formatLocalDateTime."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:isTodayDateTimeValue",
+      "type": "contains",
+      "description": "app.js contains function isTodayDateTimeValue."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:closePickerAfterTodaySelection",
+      "type": "contains",
+      "description": "app.js contains function closePickerAfterTodaySelection."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:hasRichTextMarkup",
+      "type": "contains",
+      "description": "app.js contains function hasRichTextMarkup."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:isSafeLinkHref",
+      "type": "contains",
+      "description": "app.js contains function isSafeLinkHref."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:autolinkPlainUrls",
+      "type": "contains",
+      "description": "app.js contains function autolinkPlainUrls."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:linkifyPlainText",
+      "type": "contains",
+      "description": "app.js contains function linkifyPlainText."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:sanitizeRichText",
+      "type": "contains",
+      "description": "app.js contains function sanitizeRichText."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:getRichTextPlainText",
+      "type": "contains",
+      "description": "app.js contains function getRichTextPlainText."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:taskMatchesSearch",
+      "type": "contains",
+      "description": "app.js contains function taskMatchesSearch."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:updateTaskSearchState",
+      "type": "contains",
+      "description": "app.js contains function updateTaskSearchState."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:setRichEditorValue",
+      "type": "contains",
+      "description": "app.js contains function setRichEditorValue."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:getRichEditorValue",
+      "type": "contains",
+      "description": "app.js contains function getRichEditorValue."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:getRichEditorLength",
+      "type": "contains",
+      "description": "app.js contains function getRichEditorLength."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:isPdfAttachment",
+      "type": "contains",
+      "description": "app.js contains function isPdfAttachment."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:isImageAttachment",
+      "type": "contains",
+      "description": "app.js contains function isImageAttachment."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:attachAttachmentPreviewHandler",
+      "type": "contains",
+      "description": "app.js contains function attachAttachmentPreviewHandler."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:openRichTextLinksWithModifier",
+      "type": "contains",
+      "description": "app.js contains function openRichTextLinksWithModifier."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:saveRichEditorSelection",
+      "type": "contains",
+      "description": "app.js contains function saveRichEditorSelection."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:restoreRichEditorSelection",
+      "type": "contains",
+      "description": "app.js contains function restoreRichEditorSelection."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:setupRichTextEditors",
+      "type": "contains",
+      "description": "app.js contains function setupRichTextEditors."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:readAttachmentFile",
+      "type": "contains",
+      "description": "app.js contains function readAttachmentFile."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:fileFromClipboard",
+      "type": "contains",
+      "description": "app.js contains function fileFromClipboard."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:handleTaskAttachmentChange",
+      "type": "contains",
+      "description": "app.js contains function handleTaskAttachmentChange."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:handleEditTaskAttachmentChange",
+      "type": "contains",
+      "description": "app.js contains function handleEditTaskAttachmentChange."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:getReminderStorageKey",
+      "type": "contains",
+      "description": "app.js contains function getReminderStorageKey."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:clearReminderTimers",
+      "type": "contains",
+      "description": "app.js contains function clearReminderTimers."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:hideReminderAlert",
+      "type": "contains",
+      "description": "app.js contains function hideReminderAlert."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:showTaskReminder",
+      "type": "contains",
+      "description": "app.js contains function showTaskReminder."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:scheduleTaskReminders",
+      "type": "contains",
+      "description": "app.js contains function scheduleTaskReminders."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:getWeatherIcon",
+      "type": "contains",
+      "description": "app.js contains function getWeatherIcon."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:fetchWeather",
+      "type": "contains",
+      "description": "app.js contains function fetchWeather."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:fetchWeatherForLocation",
+      "type": "contains",
+      "description": "app.js contains function fetchWeatherForLocation."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:fetchWeatherData",
+      "type": "contains",
+      "description": "app.js contains function fetchWeatherData."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:getSavedWeatherCitiesKey",
+      "type": "contains",
+      "description": "app.js contains function getSavedWeatherCitiesKey."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:loadSavedWeatherCities",
+      "type": "contains",
+      "description": "app.js contains function loadSavedWeatherCities."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:saveSavedWeatherCities",
+      "type": "contains",
+      "description": "app.js contains function saveSavedWeatherCities."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:getWeatherSearchMarkup",
+      "type": "contains",
+      "description": "app.js contains function getWeatherSearchMarkup."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:bindWeatherSearchForm",
+      "type": "contains",
+      "description": "app.js contains function bindWeatherSearchForm."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:fetchWeatherForCity",
+      "type": "contains",
+      "description": "app.js contains function fetchWeatherForCity."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:handleWeatherCitySubmit",
+      "type": "contains",
+      "description": "app.js contains function handleWeatherCitySubmit."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:removeSavedWeatherCity",
+      "type": "contains",
+      "description": "app.js contains function removeSavedWeatherCity."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:loadSavedWeatherCity",
+      "type": "contains",
+      "description": "app.js contains function loadSavedWeatherCity."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:loadSavedWeatherCityCards",
+      "type": "contains",
+      "description": "app.js contains function loadSavedWeatherCityCards."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:getCurrentTimeForTimezone",
+      "type": "contains",
+      "description": "app.js contains function getCurrentTimeForTimezone."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:showWeatherMessage",
+      "type": "contains",
+      "description": "app.js contains function showWeatherMessage."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:renderWeatherWidget",
+      "type": "contains",
+      "description": "app.js contains function renderWeatherWidget."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:getWeatherMessageCard",
+      "type": "contains",
+      "description": "app.js contains function getWeatherMessageCard."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:getWeatherRemoveButton",
+      "type": "contains",
+      "description": "app.js contains function getWeatherRemoveButton."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:getWeatherCard",
+      "type": "contains",
+      "description": "app.js contains function getWeatherCard."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:getCurrentCityName",
+      "type": "contains",
+      "description": "app.js contains function getCurrentCityName."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:displayWeather",
+      "type": "contains",
+      "description": "app.js contains function displayWeather."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:showSection",
+      "type": "contains",
+      "description": "app.js contains function showSection."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:showAddTaskModal",
+      "type": "contains",
+      "description": "app.js contains function showAddTaskModal."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:openAddTaskFlow",
+      "type": "contains",
+      "description": "app.js contains function openAddTaskFlow."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:hideAddTaskModal",
+      "type": "contains",
+      "description": "app.js contains function hideAddTaskModal."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:renderUserArea",
+      "type": "contains",
+      "description": "app.js contains function renderUserArea."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:setMode",
+      "type": "contains",
+      "description": "app.js contains function setMode."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:setLanguage",
+      "type": "contains",
+      "description": "app.js contains function setLanguage."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:togglePasswordVisibility",
+      "type": "contains",
+      "description": "app.js contains function togglePasswordVisibility."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:request",
+      "type": "contains",
+      "description": "app.js contains function request."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:init",
+      "type": "contains",
+      "description": "app.js contains function init."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:handleAuthSubmit",
+      "type": "contains",
+      "description": "app.js contains function handleAuthSubmit."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:loadTags",
+      "type": "contains",
+      "description": "app.js contains function loadTags."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:hideTagSuggestions",
+      "type": "contains",
+      "description": "app.js contains function hideTagSuggestions."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:showTagSuggestions",
+      "type": "contains",
+      "description": "app.js contains function showTagSuggestions."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:setupTagSuggestions",
+      "type": "contains",
+      "description": "app.js contains function setupTagSuggestions."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:renderTags",
+      "type": "contains",
+      "description": "app.js contains function renderTags."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:handleTagSubmit",
+      "type": "contains",
+      "description": "app.js contains function handleTagSubmit."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:clearEditTagError",
+      "type": "contains",
+      "description": "app.js contains function clearEditTagError."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:showEditTagModal",
+      "type": "contains",
+      "description": "app.js contains function showEditTagModal."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:hideEditTagModal",
+      "type": "contains",
+      "description": "app.js contains function hideEditTagModal."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:renameTag",
+      "type": "contains",
+      "description": "app.js contains function renameTag."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:deleteTag",
+      "type": "contains",
+      "description": "app.js contains function deleteTag."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:loadUsers",
+      "type": "contains",
+      "description": "app.js contains function loadUsers."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:renderUsers",
+      "type": "contains",
+      "description": "app.js contains function renderUsers."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:clearAdminUserFormError",
+      "type": "contains",
+      "description": "app.js contains function clearAdminUserFormError."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:showAdminUserModal",
+      "type": "contains",
+      "description": "app.js contains function showAdminUserModal."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:hideAdminUserModal",
+      "type": "contains",
+      "description": "app.js contains function hideAdminUserModal."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:handleAdminUserSubmit",
+      "type": "contains",
+      "description": "app.js contains function handleAdminUserSubmit."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:resetUserPassword",
+      "type": "contains",
+      "description": "app.js contains function resetUserPassword."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:deleteUser",
+      "type": "contains",
+      "description": "app.js contains function deleteUser."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:handleTaskSubmit",
+      "type": "contains",
+      "description": "app.js contains function handleTaskSubmit."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:loadTasks",
+      "type": "contains",
+      "description": "app.js contains function loadTasks."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:renderTasks",
+      "type": "contains",
+      "description": "app.js contains function renderTasks."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:createTaskCard",
+      "type": "contains",
+      "description": "app.js contains function createTaskCard."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:handleTaskDragStart",
+      "type": "contains",
+      "description": "app.js contains function handleTaskDragStart."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:handleTaskDragEnd",
+      "type": "contains",
+      "description": "app.js contains function handleTaskDragEnd."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:handleTaskDragOver",
+      "type": "contains",
+      "description": "app.js contains function handleTaskDragOver."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:handleTaskDragEnter",
+      "type": "contains",
+      "description": "app.js contains function handleTaskDragEnter."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:handleTaskDragLeave",
+      "type": "contains",
+      "description": "app.js contains function handleTaskDragLeave."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:handleTaskDrop",
+      "type": "contains",
+      "description": "app.js contains function handleTaskDrop."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:updateTask",
+      "type": "contains",
+      "description": "app.js contains function updateTask."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:savePastedAttachmentToOpenTask",
+      "type": "contains",
+      "description": "app.js contains function savePastedAttachmentToOpenTask."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:deleteTask",
+      "type": "contains",
+      "description": "app.js contains function deleteTask."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:showDeleteConfirm",
+      "type": "contains",
+      "description": "app.js contains function showDeleteConfirm."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:showUserDeleteConfirm",
+      "type": "contains",
+      "description": "app.js contains function showUserDeleteConfirm."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:showTagDeleteConfirm",
+      "type": "contains",
+      "description": "app.js contains function showTagDeleteConfirm."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:hideDeleteConfirm",
+      "type": "contains",
+      "description": "app.js contains function hideDeleteConfirm."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:formatDateTimeLocalValue",
+      "type": "contains",
+      "description": "app.js contains function formatDateTimeLocalValue."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:clearEditTaskErrors",
+      "type": "contains",
+      "description": "app.js contains function clearEditTaskErrors."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:renderEditAttachmentState",
+      "type": "contains",
+      "description": "app.js contains function renderEditAttachmentState."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:showEditTaskModal",
+      "type": "contains",
+      "description": "app.js contains function showEditTaskModal."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:hideEditTaskModal",
+      "type": "contains",
+      "description": "app.js contains function hideEditTaskModal."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:handleEditTaskSubmit",
+      "type": "contains",
+      "description": "app.js contains function handleEditTaskSubmit."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:showPreviewTaskModal",
+      "type": "contains",
+      "description": "app.js contains function showPreviewTaskModal."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:hidePreviewTaskModal",
+      "type": "contains",
+      "description": "app.js contains function hidePreviewTaskModal."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:showAttachmentPreview",
+      "type": "contains",
+      "description": "app.js contains function showAttachmentPreview."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:hideAttachmentPreview",
+      "type": "contains",
+      "description": "app.js contains function hideAttachmentPreview."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:hideStatusToast",
+      "type": "contains",
+      "description": "app.js contains function hideStatusToast."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:showStatusToast",
+      "type": "contains",
+      "description": "app.js contains function showStatusToast."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:setUploadProgress",
+      "type": "contains",
+      "description": "app.js contains function setUploadProgress."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:registerServiceWorker",
+      "type": "contains",
+      "description": "app.js contains function registerServiceWorker."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:showUploadProgress",
+      "type": "contains",
+      "description": "app.js contains function showUploadProgress."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:hideUploadProgress",
+      "type": "contains",
+      "description": "app.js contains function hideUploadProgress."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:handleLogout",
+      "type": "contains",
+      "description": "app.js contains function handleLogout."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:sendSummaryEmail",
+      "type": "contains",
+      "description": "app.js contains function sendSummaryEmail."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:exportToExcel",
+      "type": "contains",
+      "description": "app.js contains function exportToExcel."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:arrayBufferToBase64",
+      "type": "contains",
+      "description": "app.js contains function arrayBufferToBase64."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:loadPdfUnicodeFont",
+      "type": "contains",
+      "description": "app.js contains function loadPdfUnicodeFont."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:exportToPdf",
+      "type": "contains",
+      "description": "app.js contains function exportToPdf."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:public/app.js",
+      "target": "function:public/app.js:exportToWord",
+      "type": "contains",
+      "description": "app.js contains function exportToWord."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "document:README.md",
+      "target": "concept:README.md:Task-Management-App",
+      "type": "contains",
+      "description": "README.md documents Task Management App."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "document:README.md",
+      "target": "concept:README.md:Features",
+      "type": "contains",
+      "description": "README.md documents Features."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "document:README.md",
+      "target": "concept:README.md:Setup",
+      "type": "contains",
+      "description": "README.md documents Setup."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "document:README.md",
+      "target": "concept:README.md:iOS-App",
+      "type": "contains",
+      "description": "README.md documents iOS App."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.65,
+      "source": "document:README.md",
+      "target": "concept:README.md:Default-Credentials",
+      "type": "contains",
+      "description": "README.md documents Default Credentials."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:toPostgresSql",
+      "type": "contains",
+      "description": "server.js contains function toPostgresSql."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:queryAsync",
+      "type": "contains",
+      "description": "server.js contains function queryAsync."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:runAsync",
+      "type": "contains",
+      "description": "server.js contains function runAsync."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:getAsync",
+      "type": "contains",
+      "description": "server.js contains function getAsync."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:allAsync",
+      "type": "contains",
+      "description": "server.js contains function allAsync."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:initializeDatabase",
+      "type": "contains",
+      "description": "server.js contains function initializeDatabase."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:normalizePriority",
+      "type": "contains",
+      "description": "server.js contains function normalizePriority."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:normalizeStatus",
+      "type": "contains",
+      "description": "server.js contains function normalizeStatus."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:normalizeLanguage",
+      "type": "contains",
+      "description": "server.js contains function normalizeLanguage."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:normalizeEmail",
+      "type": "contains",
+      "description": "server.js contains function normalizeEmail."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:tEmail",
+      "type": "contains",
+      "description": "server.js contains function tEmail."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:formatTaskStatus",
+      "type": "contains",
+      "description": "server.js contains function formatTaskStatus."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:formatTaskPriority",
+      "type": "contains",
+      "description": "server.js contains function formatTaskPriority."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:normalizeTag",
+      "type": "contains",
+      "description": "server.js contains function normalizeTag."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:ensureTaskTag",
+      "type": "contains",
+      "description": "server.js contains function ensureTaskTag."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:createMailTransporter",
+      "type": "contains",
+      "description": "server.js contains function createMailTransporter."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:getUserEmailRecipient",
+      "type": "contains",
+      "description": "server.js contains function getUserEmailRecipient."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:stripHtml",
+      "type": "contains",
+      "description": "server.js contains function stripHtml."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:escapeHtml",
+      "type": "contains",
+      "description": "server.js contains function escapeHtml."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:normalizeLineBreaks",
+      "type": "contains",
+      "description": "server.js contains function normalizeLineBreaks."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:formatPlainTextValue",
+      "type": "contains",
+      "description": "server.js contains function formatPlainTextValue."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:formatMultilineHtml",
+      "type": "contains",
+      "description": "server.js contains function formatMultilineHtml."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:formatLinkedMultilineHtml",
+      "type": "contains",
+      "description": "server.js contains function formatLinkedMultilineHtml."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:decodeBasicHtmlEntities",
+      "type": "contains",
+      "description": "server.js contains function decodeBasicHtmlEntities."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:linkifyEscapedHtml",
+      "type": "contains",
+      "description": "server.js contains function linkifyEscapedHtml."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:formatEmailTextNodeHtml",
+      "type": "contains",
+      "description": "server.js contains function formatEmailTextNodeHtml."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:formatRichTextEmailHtml",
+      "type": "contains",
+      "description": "server.js contains function formatRichTextEmailHtml."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:sanitizeFileName",
+      "type": "contains",
+      "description": "server.js contains function sanitizeFileName."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:parseAttachment",
+      "type": "contains",
+      "description": "server.js contains function parseAttachment."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:sendTaskAlertEmail",
+      "type": "contains",
+      "description": "server.js contains function sendTaskAlertEmail."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:sendTaskSummaryEmail",
+      "type": "contains",
+      "description": "server.js contains function sendTaskSummaryEmail."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:authRequired",
+      "type": "contains",
+      "description": "server.js contains function authRequired."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:getUserById",
+      "type": "contains",
+      "description": "server.js contains function getUserById."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.js",
+      "target": "function:server.js:adminRequired",
+      "type": "contains",
+      "description": "server.js contains function adminRequired."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.test.js",
+      "target": "function:server.test.js:testUsername",
+      "type": "contains",
+      "description": "server.test.js contains function testUsername."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.test.js",
+      "target": "function:server.test.js:createAgent",
+      "type": "contains",
+      "description": "server.test.js contains function createAgent."
+    },
+    {
+      "direction": "forward",
+      "weight": 0.9,
+      "source": "file:server.test.js",
+      "target": "function:server.test.js:attachment",
+      "type": "contains",
+      "description": "server.test.js contains function attachment."
+    }
+  ],
+  "layers": [
+    {
+      "id": "layer:root",
+      "name": "Project Root",
+      "description": "Top-level repository configuration and documentation.",
+      "nodeIds": [
+        "config:package.json",
+        "document:README.md",
+        "file:server.js",
+        "file:server.test.js",
+        "document:spec.md",
+        "concept:package.json:name",
+        "concept:package.json:version",
+        "concept:package.json:description",
+        "concept:package.json:main",
+        "concept:package.json:scripts",
+        "concept:package.json:dependencies",
+        "concept:package.json:devDependencies",
+        "concept:package.json:jest",
+        "concept:README.md:Task-Management-App",
+        "concept:README.md:Features",
+        "concept:README.md:Setup",
+        "concept:README.md:iOS-App",
+        "concept:README.md:Default-Credentials",
+        "function:server.js:toPostgresSql",
+        "function:server.js:queryAsync",
+        "function:server.js:runAsync",
+        "function:server.js:getAsync",
+        "function:server.js:allAsync",
+        "function:server.js:initializeDatabase",
+        "function:server.js:normalizePriority",
+        "function:server.js:normalizeStatus",
+        "function:server.js:normalizeLanguage",
+        "function:server.js:normalizeEmail",
+        "function:server.js:tEmail",
+        "function:server.js:formatTaskStatus",
+        "function:server.js:formatTaskPriority",
+        "function:server.js:normalizeTag",
+        "function:server.js:ensureTaskTag",
+        "function:server.js:createMailTransporter",
+        "function:server.js:getUserEmailRecipient",
+        "function:server.js:stripHtml",
+        "function:server.js:escapeHtml",
+        "function:server.js:normalizeLineBreaks",
+        "function:server.js:formatPlainTextValue",
+        "function:server.js:formatMultilineHtml",
+        "function:server.js:formatLinkedMultilineHtml",
+        "function:server.js:decodeBasicHtmlEntities",
+        "function:server.js:linkifyEscapedHtml",
+        "function:server.js:formatEmailTextNodeHtml",
+        "function:server.js:formatRichTextEmailHtml",
+        "function:server.js:sanitizeFileName",
+        "function:server.js:parseAttachment",
+        "function:server.js:sendTaskAlertEmail",
+        "function:server.js:sendTaskSummaryEmail",
+        "function:server.js:authRequired",
+        "function:server.js:getUserById",
+        "function:server.js:adminRequired",
+        "function:server.test.js:testUsername",
+        "function:server.test.js:createAgent",
+        "function:server.test.js:attachment"
+      ]
+    },
+    {
+      "id": "layer:docs",
+      "name": "Documentation",
+      "description": "Project documentation, plans, and localized READMEs.",
+      "nodeIds": [
+        "document:ios/TaskManager/README.md",
+        "document:README.md",
+        "document:spec.md",
+        "concept:ios/TaskManager/README.md:Task-Manager-iOS",
+        "concept:ios/TaskManager/README.md:Build-On-Mac",
+        "concept:ios/TaskManager/README.md:Command-Line-Build",
+        "concept:ios/TaskManager/README.md:Notes",
+        "concept:README.md:Task-Management-App",
+        "concept:README.md:Features",
+        "concept:README.md:Setup",
+        "concept:README.md:iOS-App",
+        "concept:README.md:Default-Credentials"
+      ]
+    },
+    {
+      "id": "layer:automation",
+      "name": "Automation",
+      "description": "Scripts, installers, CI, and workflow automation.",
+      "nodeIds": [
+        "pipeline:.github/workflows/node.js.yml",
+        "concept:.github/workflows/node.js.yml:name",
+        "concept:.github/workflows/node.js.yml:on",
+        "concept:.github/workflows/node.js.yml:jobs"
+      ]
+    },
+    {
+      "id": "layer:tests",
+      "name": "Tests",
+      "description": "Test suites and fixtures.",
+      "nodeIds": [
+        "file:server.test.js",
+        "function:server.test.js:testUsername",
+        "function:server.test.js:createAgent",
+        "function:server.test.js:attachment"
+      ]
+    },
+    {
+      "id": "layer:other",
+      "name": "Other",
+      "description": "Files and symbols that do not fit a primary repository area.",
+      "nodeIds": [
+        "file:ios/TaskManager/TaskManager.xcodeproj/project.pbxproj",
+        "file:ios/TaskManager/TaskManager.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+        "file:ios/TaskManager/TaskManager.xcodeproj/project.xcworkspace/xcuserdata/cas.xcuserdatad/UserInterfaceState.xcuserstate",
+        "config:ios/TaskManager/TaskManager.xcodeproj/xcuserdata/cas.xcuserdatad/xcschemes/xcschememanagement.plist",
+        "file:ios/TaskManager/TaskManager/AppConfig.swift",
+        "config:ios/TaskManager/TaskManager/Assets.xcassets/AppIcon.appiconset/Contents.json",
+        "config:ios/TaskManager/TaskManager/Assets.xcassets/Contents.json",
+        "file:ios/TaskManager/TaskManager/ContentView.swift",
+        "config:ios/TaskManager/TaskManager/Info.plist",
+        "file:ios/TaskManager/TaskManager/TaskManagerApp.swift",
+        "file:ios/TaskManager/TaskManager/WebView.swift",
+        "file:public/app.js",
+        "document:public/index.html",
+        "file:public/manifest.webmanifest",
+        "document:public/styles.css",
+        "file:public/sw.js",
+        "file:tmp/data.db",
+        "concept:ios/TaskManager/TaskManager/Assets.xcassets/AppIcon.appiconset/Contents.json:images",
+        "concept:ios/TaskManager/TaskManager/Assets.xcassets/AppIcon.appiconset/Contents.json:info",
+        "concept:ios/TaskManager/TaskManager/Assets.xcassets/Contents.json:info",
+        "function:public/app.js:t",
+        "function:public/app.js:setText",
+        "function:public/app.js:setIconButtonLabel",
+        "function:public/app.js:setActionIconButton",
+        "function:public/app.js:applyTheme",
+        "function:public/app.js:toggleTheme",
+        "function:public/app.js:priorityLabel",
+        "function:public/app.js:priorityRank",
+        "function:public/app.js:sortTasksByPriority",
+        "function:public/app.js:taskStatus",
+        "function:public/app.js:statusLabel",
+        "function:public/app.js:updatePriorityOptions",
+        "function:public/app.js:updateStatusOptions",
+        "function:public/app.js:escapeHtml",
+        "function:public/app.js:applyTranslations",
+        "function:public/app.js:formatDateEST",
+        "function:public/app.js:formatLocalDateTime",
+        "function:public/app.js:isTodayDateTimeValue",
+        "function:public/app.js:closePickerAfterTodaySelection",
+        "function:public/app.js:hasRichTextMarkup",
+        "function:public/app.js:isSafeLinkHref",
+        "function:public/app.js:autolinkPlainUrls",
+        "function:public/app.js:linkifyPlainText",
+        "function:public/app.js:sanitizeRichText",
+        "function:public/app.js:getRichTextPlainText",
+        "function:public/app.js:taskMatchesSearch",
+        "function:public/app.js:updateTaskSearchState",
+        "function:public/app.js:setRichEditorValue",
+        "function:public/app.js:getRichEditorValue",
+        "function:public/app.js:getRichEditorLength",
+        "function:public/app.js:isPdfAttachment",
+        "function:public/app.js:isImageAttachment",
+        "function:public/app.js:attachAttachmentPreviewHandler",
+        "function:public/app.js:openRichTextLinksWithModifier",
+        "function:public/app.js:saveRichEditorSelection",
+        "function:public/app.js:restoreRichEditorSelection",
+        "function:public/app.js:setupRichTextEditors",
+        "function:public/app.js:readAttachmentFile",
+        "function:public/app.js:fileFromClipboard",
+        "function:public/app.js:handleTaskAttachmentChange",
+        "function:public/app.js:handleEditTaskAttachmentChange",
+        "function:public/app.js:getReminderStorageKey",
+        "function:public/app.js:clearReminderTimers",
+        "function:public/app.js:hideReminderAlert",
+        "function:public/app.js:showTaskReminder",
+        "function:public/app.js:scheduleTaskReminders",
+        "function:public/app.js:getWeatherIcon",
+        "function:public/app.js:fetchWeather",
+        "function:public/app.js:fetchWeatherForLocation",
+        "function:public/app.js:fetchWeatherData",
+        "function:public/app.js:getSavedWeatherCitiesKey",
+        "function:public/app.js:loadSavedWeatherCities",
+        "function:public/app.js:saveSavedWeatherCities",
+        "function:public/app.js:getWeatherSearchMarkup",
+        "function:public/app.js:bindWeatherSearchForm",
+        "function:public/app.js:fetchWeatherForCity",
+        "function:public/app.js:handleWeatherCitySubmit",
+        "function:public/app.js:removeSavedWeatherCity",
+        "function:public/app.js:loadSavedWeatherCity",
+        "function:public/app.js:loadSavedWeatherCityCards",
+        "function:public/app.js:getCurrentTimeForTimezone",
+        "function:public/app.js:showWeatherMessage",
+        "function:public/app.js:renderWeatherWidget",
+        "function:public/app.js:getWeatherMessageCard",
+        "function:public/app.js:getWeatherRemoveButton",
+        "function:public/app.js:getWeatherCard",
+        "function:public/app.js:getCurrentCityName",
+        "function:public/app.js:displayWeather",
+        "function:public/app.js:showSection",
+        "function:public/app.js:showAddTaskModal",
+        "function:public/app.js:openAddTaskFlow",
+        "function:public/app.js:hideAddTaskModal",
+        "function:public/app.js:renderUserArea",
+        "function:public/app.js:setMode",
+        "function:public/app.js:setLanguage",
+        "function:public/app.js:togglePasswordVisibility",
+        "function:public/app.js:request",
+        "function:public/app.js:init",
+        "function:public/app.js:handleAuthSubmit",
+        "function:public/app.js:loadTags",
+        "function:public/app.js:hideTagSuggestions",
+        "function:public/app.js:showTagSuggestions",
+        "function:public/app.js:setupTagSuggestions",
+        "function:public/app.js:renderTags",
+        "function:public/app.js:handleTagSubmit",
+        "function:public/app.js:clearEditTagError",
+        "function:public/app.js:showEditTagModal",
+        "function:public/app.js:hideEditTagModal",
+        "function:public/app.js:renameTag",
+        "function:public/app.js:deleteTag",
+        "function:public/app.js:loadUsers",
+        "function:public/app.js:renderUsers",
+        "function:public/app.js:clearAdminUserFormError",
+        "function:public/app.js:showAdminUserModal",
+        "function:public/app.js:hideAdminUserModal",
+        "function:public/app.js:handleAdminUserSubmit",
+        "function:public/app.js:resetUserPassword",
+        "function:public/app.js:deleteUser",
+        "function:public/app.js:handleTaskSubmit",
+        "function:public/app.js:loadTasks",
+        "function:public/app.js:renderTasks",
+        "function:public/app.js:createTaskCard",
+        "function:public/app.js:handleTaskDragStart",
+        "function:public/app.js:handleTaskDragEnd",
+        "function:public/app.js:handleTaskDragOver",
+        "function:public/app.js:handleTaskDragEnter",
+        "function:public/app.js:handleTaskDragLeave",
+        "function:public/app.js:handleTaskDrop",
+        "function:public/app.js:updateTask",
+        "function:public/app.js:savePastedAttachmentToOpenTask",
+        "function:public/app.js:deleteTask",
+        "function:public/app.js:showDeleteConfirm",
+        "function:public/app.js:showUserDeleteConfirm",
+        "function:public/app.js:showTagDeleteConfirm",
+        "function:public/app.js:hideDeleteConfirm",
+        "function:public/app.js:formatDateTimeLocalValue",
+        "function:public/app.js:clearEditTaskErrors",
+        "function:public/app.js:renderEditAttachmentState",
+        "function:public/app.js:showEditTaskModal",
+        "function:public/app.js:hideEditTaskModal",
+        "function:public/app.js:handleEditTaskSubmit",
+        "function:public/app.js:showPreviewTaskModal",
+        "function:public/app.js:hidePreviewTaskModal",
+        "function:public/app.js:showAttachmentPreview",
+        "function:public/app.js:hideAttachmentPreview",
+        "function:public/app.js:hideStatusToast",
+        "function:public/app.js:showStatusToast",
+        "function:public/app.js:setUploadProgress",
+        "function:public/app.js:registerServiceWorker",
+        "function:public/app.js:showUploadProgress",
+        "function:public/app.js:hideUploadProgress",
+        "function:public/app.js:handleLogout",
+        "function:public/app.js:sendSummaryEmail",
+        "function:public/app.js:exportToExcel",
+        "function:public/app.js:arrayBufferToBase64",
+        "function:public/app.js:loadPdfUnicodeFont",
+        "function:public/app.js:exportToPdf",
+        "function:public/app.js:exportToWord"
+      ]
+    }
+  ],
+  "tour": [
+    {
+      "order": 1,
+      "title": "Start With The README",
+      "description": "Begin with the project README to understand the product goal and the supported command workflow.",
+      "nodeIds": [
+        "document:README.md",
+        "config:package.json"
+      ]
+    }
+  ]
+}

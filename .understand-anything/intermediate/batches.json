@@ -1,0 +1,215 @@
+{
+  "schemaVersion": 1,
+  "algorithm": "louvain",
+  "totalFiles": 24,
+  "totalBatches": 3,
+  "exportsByPath": {
+    "ios/TaskManager/TaskManager.xcodeproj/project.pbxproj": [],
+    "ios/TaskManager/TaskManager.xcodeproj/project.xcworkspace/contents.xcworkspacedata": [],
+    "ios/TaskManager/TaskManager.xcodeproj/project.xcworkspace/xcuserdata/cas.xcuserdatad/UserInterfaceState.xcuserstate": [],
+    "ios/TaskManager/TaskManager/AppConfig.swift": [],
+    "ios/TaskManager/TaskManager/ContentView.swift": [],
+    "ios/TaskManager/TaskManager/TaskManagerApp.swift": [],
+    "ios/TaskManager/TaskManager/WebView.swift": [],
+    "public/app.js": [],
+    "public/manifest.webmanifest": [],
+    "public/sw.js": [],
+    "server.js": [],
+    "server.test.js": [],
+    "tmp/data.db": []
+  },
+  "batches": [
+    {
+      "batchIndex": 1,
+      "files": [
+        {
+          "path": ".github/workflows/node.js.yml",
+          "language": "yaml",
+          "sizeLines": 31,
+          "fileCategory": "infra"
+        }
+      ],
+      "batchImportData": {
+        ".github/workflows/node.js.yml": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 2,
+      "files": [
+        {
+          "path": "README.md",
+          "language": "markdown",
+          "sizeLines": 70,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "package.json",
+          "language": "json",
+          "sizeLines": 29,
+          "fileCategory": "config"
+        },
+        {
+          "path": "spec.md",
+          "language": "markdown",
+          "sizeLines": 0,
+          "fileCategory": "docs"
+        }
+      ],
+      "batchImportData": {
+        "README.md": [],
+        "package.json": [],
+        "spec.md": []
+      },
+      "neighborMap": {}
+    },
+    {
+      "batchIndex": 3,
+      "files": [
+        {
+          "path": "ios/TaskManager/README.md",
+          "language": "markdown",
+          "sizeLines": 32,
+          "fileCategory": "docs"
+        },
+        {
+          "path": "ios/TaskManager/TaskManager.xcodeproj/project.pbxproj",
+          "language": "pbxproj",
+          "sizeLines": 343,
+          "fileCategory": "code"
+        },
+        {
+          "path": "ios/TaskManager/TaskManager.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+          "language": "xcworkspacedata",
+          "sizeLines": 7,
+          "fileCategory": "code"
+        },
+        {
+          "path": "ios/TaskManager/TaskManager.xcodeproj/project.xcworkspace/xcuserdata/cas.xcuserdatad/UserInterfaceState.xcuserstate",
+          "language": "xcuserstate",
+          "sizeLines": 48,
+          "fileCategory": "code"
+        },
+        {
+          "path": "ios/TaskManager/TaskManager.xcodeproj/xcuserdata/cas.xcuserdatad/xcschemes/xcschememanagement.plist",
+          "language": "xml",
+          "sizeLines": 14,
+          "fileCategory": "config"
+        },
+        {
+          "path": "ios/TaskManager/TaskManager/AppConfig.swift",
+          "language": "swift",
+          "sizeLines": 7,
+          "fileCategory": "code"
+        },
+        {
+          "path": "ios/TaskManager/TaskManager/Assets.xcassets/AppIcon.appiconset/Contents.json",
+          "language": "json",
+          "sizeLines": 55,
+          "fileCategory": "config"
+        },
+        {
+          "path": "ios/TaskManager/TaskManager/Assets.xcassets/Contents.json",
+          "language": "json",
+          "sizeLines": 6,
+          "fileCategory": "config"
+        },
+        {
+          "path": "ios/TaskManager/TaskManager/ContentView.swift",
+          "language": "swift",
+          "sizeLines": 38,
+          "fileCategory": "code"
+        },
+        {
+          "path": "ios/TaskManager/TaskManager/Info.plist",
+          "language": "xml",
+          "sizeLines": 48,
+          "fileCategory": "config"
+        },
+        {
+          "path": "ios/TaskManager/TaskManager/TaskManagerApp.swift",
+          "language": "swift",
+          "sizeLines": 10,
+          "fileCategory": "code"
+        },
+        {
+          "path": "ios/TaskManager/TaskManager/WebView.swift",
+          "language": "swift",
+          "sizeLines": 57,
+          "fileCategory": "code"
+        },
+        {
+          "path": "public/app.js",
+          "language": "javascript",
+          "sizeLines": 3020,
+          "fileCategory": "code"
+        },
+        {
+          "path": "public/index.html",
+          "language": "html",
+          "sizeLines": 403,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "public/manifest.webmanifest",
+          "language": "webmanifest",
+          "sizeLines": 31,
+          "fileCategory": "code"
+        },
+        {
+          "path": "public/styles.css",
+          "language": "css",
+          "sizeLines": 2293,
+          "fileCategory": "markup"
+        },
+        {
+          "path": "public/sw.js",
+          "language": "javascript",
+          "sizeLines": 66,
+          "fileCategory": "code"
+        },
+        {
+          "path": "server.js",
+          "language": "javascript",
+          "sizeLines": 1234,
+          "fileCategory": "code"
+        },
+        {
+          "path": "server.test.js",
+          "language": "javascript",
+          "sizeLines": 1059,
+          "fileCategory": "code"
+        },
+        {
+          "path": "tmp/data.db",
+          "language": "db",
+          "sizeLines": 22,
+          "fileCategory": "code"
+        }
+      ],
+      "batchImportData": {
+        "ios/TaskManager/README.md": [],
+        "ios/TaskManager/TaskManager.xcodeproj/project.pbxproj": [],
+        "ios/TaskManager/TaskManager.xcodeproj/project.xcworkspace/contents.xcworkspacedata": [],
+        "ios/TaskManager/TaskManager.xcodeproj/project.xcworkspace/xcuserdata/cas.xcuserdatad/UserInterfaceState.xcuserstate": [],
+        "ios/TaskManager/TaskManager.xcodeproj/xcuserdata/cas.xcuserdatad/xcschemes/xcschememanagement.plist": [],
+        "ios/TaskManager/TaskManager/AppConfig.swift": [],
+        "ios/TaskManager/TaskManager/Assets.xcassets/AppIcon.appiconset/Contents.json": [],
+        "ios/TaskManager/TaskManager/Assets.xcassets/Contents.json": [],
+        "ios/TaskManager/TaskManager/ContentView.swift": [],
+        "ios/TaskManager/TaskManager/Info.plist": [],
+        "ios/TaskManager/TaskManager/TaskManagerApp.swift": [],
+        "ios/TaskManager/TaskManager/WebView.swift": [],
+        "public/app.js": [],
+        "public/index.html": [],
+        "public/manifest.webmanifest": [],
+        "public/styles.css": [],
+        "public/sw.js": [],
+        "server.js": [],
+        "server.test.js": [],
+        "tmp/data.db": []
+      },
+      "neighborMap": {}
+    }
+  ]
+}
