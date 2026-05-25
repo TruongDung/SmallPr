@@ -445,6 +445,38 @@ describe('Task API', () => {
     process.env.SMTP_PASS = originalEnv.SMTP_PASS;
   });
 
+  test('does not send task alert email when creating a low priority task', async () => {
+    const originalEnv = {
+      SMTP_HOST: process.env.SMTP_HOST,
+      SMTP_USER: process.env.SMTP_USER,
+      SMTP_PASS: process.env.SMTP_PASS,
+    };
+    const agent = await createAgent(testUsername('low-priority-email-owner'));
+    process.env.SMTP_HOST = 'smtp.test.local';
+    process.env.SMTP_USER = 'sender@test.local';
+    process.env.SMTP_PASS = 'secret';
+    mockSendMail.mockClear();
+
+    const response = await agent
+      .post('/api/tasks')
+      .send({
+        title: 'Quiet',
+        priority: 'low',
+      });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.task).toMatchObject({
+      title: 'Quiet',
+      priority: 'low',
+    });
+    expect(response.body.emailSent).toBe(false);
+    expect(mockSendMail).not.toHaveBeenCalled();
+
+    process.env.SMTP_HOST = originalEnv.SMTP_HOST;
+    process.env.SMTP_USER = originalEnv.SMTP_USER;
+    process.env.SMTP_PASS = originalEnv.SMTP_PASS;
+  });
+
   test('sends an email for one task from task preview', async () => {
     const originalEnv = {
       SMTP_HOST: process.env.SMTP_HOST,

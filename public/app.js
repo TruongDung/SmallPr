@@ -129,6 +129,7 @@ let currentWeatherCardHtml = '';
 let savedWeatherCities = [];
 const savedWeatherCards = new Map();
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+const DEFAULT_TASK_PRIORITY = 'low';
 
 const translations = {
   en: {
@@ -1300,6 +1301,7 @@ const showSection = () => {
 };
 
 const showAddTaskModal = () => {
+  taskPriorityInput.value = DEFAULT_TASK_PRIORITY;
   addTaskModal.classList.remove('hidden');
   document.getElementById('task-title').focus();
 };
@@ -1897,7 +1899,7 @@ const handleTaskSubmit = async (event) => {
     if (result.task) {
       authForm.reset();
       taskForm.reset();
-      taskPriorityInput.value = 'medium';
+      taskPriorityInput.value = DEFAULT_TASK_PRIORITY;
       taskStatusInput.value = 'todo';
       descriptionEditor.innerHTML = '';
       preparedAttachment = null;

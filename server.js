@@ -1083,10 +1083,12 @@ app.post('/api/tasks', authRequired, async (req, res) => {
     const user = await getUserById(req.session.userId);
     let emailSent = false;
 
-    try {
-      emailSent = await sendTaskAlertEmail(task, user, language);
-    } catch (emailError) {
-      console.error('Failed to send task alert email:', emailError);
+    if (normalizedPriority !== 'low') {
+      try {
+        emailSent = await sendTaskAlertEmail(task, user, language);
+      } catch (emailError) {
+        console.error('Failed to send task alert email:', emailError);
+      }
     }
 
     res.json({ task, emailSent });
