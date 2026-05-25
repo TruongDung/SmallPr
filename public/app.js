@@ -552,7 +552,7 @@ const applyTranslations = () => {
   setText('label[for="task-attachment"]', t('uploadFile'));
   setText('#add-task-title', t('addTask'));
   setActionIconButton(cancelAddTask, t('cancel'), '×');
-  setActionIconButton(saveAddTask, t('save'), '✓');
+  setActionIconButton(saveAddTask, t('addTask'), '✓');
   editTaskTitle.textContent = t('editTaskTitle');
   previewTaskTitle.textContent = t('previewTaskTitle');
   setText('label[for="preview-task-comment-input"]', t('comment'));
