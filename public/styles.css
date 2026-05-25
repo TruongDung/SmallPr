@@ -1626,12 +1626,25 @@ body.theme-dark .status-in_progress {
 }
 
 .modal.add-task-modal {
-  width: min(100%, 520px);
+  width: min(100%, 560px);
+  padding: 0;
   max-height: calc(100dvh - 40px);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-color: var(--border) transparent;
   scrollbar-width: thin;
+}
+
+.modal.add-task-modal h3 {
+  margin: 0;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+
+.modal.add-task-modal .task-form {
+  margin-top: 0;
+  padding: 18px 20px 20px;
 }
 
 .modal.preview-task-modal {
@@ -1891,6 +1904,46 @@ body.theme-dark .status-in_progress {
   justify-content: flex-end;
   gap: 10px;
   margin-top: 22px;
+}
+
+.add-task-modal .modal-actions {
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.modal-icon-action {
+  width: 44px;
+  height: 44px;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.modal-icon-action.secondary {
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.modal-icon-action.secondary:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: var(--error-bg);
+}
+
+.modal-icon-action-primary {
+  border: 1px solid transparent;
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--primary) 22%, transparent);
+}
+
+.modal-icon-action-primary:hover {
+  background: var(--primary-strong);
 }
 
 .status-toast {

@@ -10,6 +10,7 @@ const authForm = document.getElementById('auth-form');
 const addTaskModal = document.getElementById('add-task-modal');
 const taskForm = document.getElementById('task-form');
 const cancelAddTask = document.getElementById('cancel-add-task');
+const saveAddTask = document.querySelector('#task-form button[type="submit"]');
 const tagForm = document.getElementById('tag-form');
 const tagManager = document.querySelector('.tag-manager');
 const openAddUserModalButton = document.getElementById('open-add-user-modal');
@@ -550,8 +551,8 @@ const applyTranslations = () => {
   setText('label[for="task-reminder"]', t('dateTimeAlert'));
   setText('label[for="task-attachment"]', t('uploadFile'));
   setText('#add-task-title', t('addTask'));
-  cancelAddTask.textContent = t('cancel');
-  setText('#task-form button[type="submit"]', t('addTask'));
+  setActionIconButton(cancelAddTask, t('cancel'), '×');
+  setActionIconButton(saveAddTask, t('save'), '✓');
   editTaskTitle.textContent = t('editTaskTitle');
   previewTaskTitle.textContent = t('previewTaskTitle');
   setText('label[for="preview-task-comment-input"]', t('comment'));
