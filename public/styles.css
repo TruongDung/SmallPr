@@ -1631,6 +1631,93 @@ body.theme-dark .status-in_progress {
   overflow-x: auto;
 }
 
+.credit-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.credit-card-header h2 {
+  font-size: 1.2rem;
+}
+
+.credit-card-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.2fr) minmax(140px, 0.8fr) minmax(150px, 0.8fr) auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 18px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.credit-card-form .field {
+  margin-bottom: 0;
+}
+
+.credit-card-form input {
+  min-height: 42px;
+  border-radius: 8px;
+}
+
+.credit-card-form button,
+.credit-card-table button {
+  min-height: 38px;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.credit-card-table-wrap {
+  overflow-x: auto;
+}
+
+.credit-card-table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+}
+
+.credit-card-table th,
+.credit-card-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.credit-card-table th {
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+}
+
+.credit-card-table td strong {
+  color: var(--text);
+}
+
+.credit-card-date-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.credit-card-date-control input {
+  width: 160px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+
+.credit-card-date-control span,
+.credit-card-empty {
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .user-table {
   width: 100%;
   border-collapse: collapse;
@@ -2290,6 +2377,14 @@ body.theme-dark .status-in_progress {
 
   .admin-user-form {
     grid-template-columns: 1fr;
+  }
+
+  .credit-card-form {
+    grid-template-columns: 1fr;
+  }
+
+  .credit-card-form button {
+    width: 100%;
   }
 
   .task-form,

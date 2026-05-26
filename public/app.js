@@ -1,6 +1,7 @@
 const authSection = document.getElementById('auth-section');
 const taskSection = document.getElementById('task-section');
 const adminSection = document.getElementById('admin-section');
+const creditCardSection = document.getElementById('credit-card-section');
 const appContainer = document.querySelector('.container');
 const userArea = document.getElementById('user-area');
 const floatingAddTask = document.getElementById('floating-add-task');
@@ -216,6 +217,19 @@ const translations = {
     addTaskShortcut: 'Add task',
     noArchivedTasks: 'No archived tasks.',
     weather: 'Weather',
+    creditCards: 'Cards',
+    creditCardAccounts: 'Credit Cards',
+    cardName: 'Card name',
+    cardNamePlaceholder: 'Visa, Amex, Chase...',
+    totalBalance: 'Total Balance',
+    closingDate: 'Closing Date',
+    addCard: 'Add Card',
+    noCreditCards: 'No credit cards yet.',
+    creditCardAdded: 'Credit card added.',
+    closingDateSaved: 'Closing date saved.',
+    creditCardNameRequired: 'Card name is required',
+    invalidCreditCardBalance: 'Total balance must be a valid amount',
+    invalidClosingDate: 'Closing date must be a valid date',
     addCity: 'Add City',
     cityPlaceholder: 'Search city',
     cityNotFound: 'City was not found.',
@@ -368,6 +382,19 @@ const translations = {
     addTaskShortcut: 'Them cong viec',
     noArchivedTasks: 'Khong co cong viec da luu tru.',
     weather: 'Thoi tiet',
+    creditCards: 'The',
+    creditCardAccounts: 'The tin dung',
+    cardName: 'Ten the',
+    cardNamePlaceholder: 'Visa, Amex, Chase...',
+    totalBalance: 'Tong so du',
+    closingDate: 'Ngay chot sao ke',
+    addCard: 'Them the',
+    noCreditCards: 'Chua co the tin dung.',
+    creditCardAdded: 'Da them the tin dung.',
+    closingDateSaved: 'Da luu ngay chot sao ke.',
+    creditCardNameRequired: 'Vui long nhap ten the',
+    invalidCreditCardBalance: 'Tong so du khong hop le',
+    invalidClosingDate: 'Ngay chot sao ke khong hop le',
     addCity: 'Them thanh pho',
     cityPlaceholder: 'Tim thanh pho',
     cityNotFound: 'Khong tim thay thanh pho.',
@@ -544,6 +571,7 @@ const applyTranslations = () => {
   setText('#weather-title', t('weather'));
   weatherCityInput.placeholder = t('cityPlaceholder');
   setText('#weather-form button[type="submit"]', t('addCity'));
+  creditCardModule.applyTranslations();
   setText('label[for="task-search-input"]', t('searchTasks'));
   taskSearchInput.placeholder = t('searchTasksPlaceholder');
   clearTaskSearch.setAttribute('aria-label', t('clearSearch'));
@@ -616,6 +644,7 @@ const applyTranslations = () => {
   if (currentUser) renderTags(tags);
   if (currentUser && (currentView === 'tasks' || currentView === 'archived')) renderTasks(tasks);
   if (currentUser && currentView === 'weather') renderWeatherView();
+  if (currentUser && currentView === 'credit-cards') creditCardModule.render();
   if (currentUser && currentView === 'admin') renderUsers(users);
 };
 
@@ -1294,6 +1323,7 @@ const showSection = () => {
     authSection.classList.remove('hidden');
     taskSection.classList.add('hidden');
     adminSection.classList.add('hidden');
+    creditCardSection.classList.add('hidden');
     floatingAddTask.classList.add('hidden');
     userArea.textContent = '';
     return;
@@ -1303,12 +1333,19 @@ const showSection = () => {
   renderUserArea();
 
   const showAdmin = currentView === 'admin' && currentUser.username === 'admin';
-  taskSection.classList.toggle('hidden', showAdmin);
+  const showCreditCards = currentView === 'credit-cards';
+  taskSection.classList.toggle('hidden', showAdmin || showCreditCards);
   adminSection.classList.toggle('hidden', !showAdmin);
-  floatingAddTask.classList.toggle('hidden', showAdmin || currentView === 'weather');
+  creditCardSection.classList.toggle('hidden', !showCreditCards);
+  floatingAddTask.classList.toggle('hidden', showAdmin || showCreditCards || currentView === 'weather');
 
   if (showAdmin) {
     loadUsers();
+    return;
+  }
+
+  if (showCreditCards) {
+    creditCardModule.load();
     return;
   }
 
@@ -1380,6 +1417,15 @@ const renderUserArea = () => {
     showSection();
   });
 
+  const creditCardsButton = document.createElement('button');
+  creditCardsButton.type = 'button';
+  creditCardsButton.className = `secondary ${currentView === 'credit-cards' ? 'active-nav' : ''}`;
+  creditCardsButton.textContent = t('creditCards');
+  creditCardsButton.addEventListener('click', () => {
+    currentView = 'credit-cards';
+    showSection();
+  });
+
   const tagButton = document.createElement('button');
   tagButton.type = 'button';
   tagButton.className = 'secondary';
@@ -1399,7 +1445,7 @@ const renderUserArea = () => {
   addTaskButton.title = t('addTaskShortcut');
   addTaskButton.addEventListener('click', openAddTaskFlow);
 
-  userArea.append(addTaskButton, tasksButton, archivedButton, weatherButton, tagButton);
+  userArea.append(addTaskButton, tasksButton, archivedButton, weatherButton, creditCardsButton, tagButton);
 
   if (currentUser.username === 'admin') {
     const adminButton = document.createElement('button');
@@ -3028,6 +3074,13 @@ const exportToWord = async () => {
   showStatusToast(t('wordExported'));
 };
 
+const creditCardModule = window.CreditCardModule.create({
+  request,
+  t,
+  showStatusToast,
+  getLanguage: () => currentLanguage,
+});
+
 showLogin.addEventListener('click', () => setMode('login'));
 showSignup.addEventListener('click', () => setMode('signup'));
 languageSelect.addEventListener('change', (event) => setLanguage(event.target.value));
@@ -3055,6 +3108,7 @@ taskForm.addEventListener('submit', handleTaskSubmit);
 tagForm.addEventListener('submit', handleTagSubmit);
 weatherForm.addEventListener('submit', handleWeatherSubmit);
 weatherList.addEventListener('click', handleWeatherListClick);
+creditCardModule.bind();
 editTaskForm.addEventListener('submit', handleEditTaskSubmit);
 adminUserForm.addEventListener('submit', handleAdminUserSubmit);
 openAddUserModalButton.addEventListener('click', () => showAdminUserModal());

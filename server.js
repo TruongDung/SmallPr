@@ -14,6 +14,7 @@ const TASK_ALERT_TO = process.env.TASK_ALERT_TO;
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const MAX_TAG_LENGTH = 40;
 const MAX_TASK_TEXT_LENGTH = 10000;
+const MAX_CREDIT_CARD_NAME_LENGTH = 80;
 const MAX_WEATHER_CITY_LENGTH = 120;
 const VALID_PRIORITIES = new Set(['low', 'medium', 'high']);
 const VALID_STATUSES = new Set(['todo', 'in_progress', 'done']);
@@ -121,6 +122,17 @@ const initializeDatabase = async () => {
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   )`);
 
+  await pool.query(`CREATE TABLE IF NOT EXISTS credit_cards (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    total_balance NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    closing_date TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`);
+
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminder_at TEXT');
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS tag TEXT');
@@ -133,6 +145,8 @@ const initializeDatabase = async () => {
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_type TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_data TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_size INTEGER DEFAULT 0');
+  await pool.query('ALTER TABLE credit_cards ADD COLUMN IF NOT EXISTS total_balance NUMERIC(12, 2) NOT NULL DEFAULT 0');
+  await pool.query('ALTER TABLE credit_cards ADD COLUMN IF NOT EXISTS closing_date TEXT');
   await pool.query(`
     INSERT INTO task_tags (user_id, name, normalized_name)
     SELECT DISTINCT user_id, tag, LOWER(tag)
@@ -170,6 +184,37 @@ const normalizeStatus = (status, fallback = 'todo') => {
 
   const normalized = String(status).toLowerCase();
   return VALID_STATUSES.has(normalized) ? normalized : null;
+};
+
+const normalizeCreditCardBalance = (balance) => {
+  if (balance === undefined || balance === null || balance === '') {
+    return 0;
+  }
+
+  const normalized = Number(balance);
+  if (!Number.isFinite(normalized) || normalized < 0 || normalized > 9999999999.99) {
+    return null;
+  }
+
+  return Math.round(normalized * 100) / 100;
+};
+
+const normalizeClosingDate = (closingDate) => {
+  if (closingDate === undefined || closingDate === null || closingDate === '') {
+    return '';
+  }
+
+  const normalized = String(closingDate);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    return null;
+  }
+
+  const date = new Date(`${normalized}T00:00:00Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== normalized) {
+    return null;
+  }
+
+  return normalized;
 };
 
 const EMAIL_TRANSLATIONS = {
@@ -1013,6 +1058,89 @@ app.delete('/api/weather-cities/:id', authRequired, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to delete weather city' });
+  }
+});
+
+app.get('/api/credit-cards', authRequired, async (req, res) => {
+  try {
+    const cards = await allAsync(
+      `SELECT id, name, total_balance, closing_date, created_at, updated_at
+       FROM credit_cards
+       WHERE user_id = ?
+       ORDER BY LOWER(name), name`,
+      [req.session.userId]
+    );
+    res.json({ cards });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to load credit cards' });
+  }
+});
+
+app.post('/api/credit-cards', authRequired, async (req, res) => {
+  const { name, total_balance, closing_date } = req.body;
+  const normalizedName = String(name || '').trim();
+
+  if (!normalizedName) {
+    return res.status(400).json({ error: 'Credit card name is required' });
+  }
+
+  if (normalizedName.length > MAX_CREDIT_CARD_NAME_LENGTH) {
+    return res.status(400).json({ error: `Credit card name must be ${MAX_CREDIT_CARD_NAME_LENGTH} characters or less` });
+  }
+
+  const normalizedBalance = normalizeCreditCardBalance(total_balance);
+  if (normalizedBalance === null) {
+    return res.status(400).json({ error: 'Total balance must be a valid amount' });
+  }
+
+  const normalizedClosingDate = normalizeClosingDate(closing_date);
+  if (normalizedClosingDate === null) {
+    return res.status(400).json({ error: 'Closing date must be a valid date' });
+  }
+
+  try {
+    const result = await runAsync(
+      `INSERT INTO credit_cards (user_id, name, total_balance, closing_date)
+       VALUES (?, ?, ?, ?)
+       RETURNING id`,
+      [req.session.userId, normalizedName, normalizedBalance, normalizedClosingDate || null]
+    );
+    const card = await getAsync('SELECT id, name, total_balance, closing_date, created_at, updated_at FROM credit_cards WHERE id = ?', [result.lastID]);
+    res.json({ card });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to create credit card' });
+  }
+});
+
+app.put('/api/credit-cards/:id', authRequired, async (req, res) => {
+  const { id } = req.params;
+  const { closing_date } = req.body;
+  const normalizedClosingDate = normalizeClosingDate(closing_date);
+
+  if (normalizedClosingDate === null) {
+    return res.status(400).json({ error: 'Closing date must be a valid date' });
+  }
+
+  try {
+    const card = await getAsync('SELECT * FROM credit_cards WHERE id = ? AND user_id = ?', [id, req.session.userId]);
+    if (!card) {
+      return res.status(404).json({ error: 'Credit card not found' });
+    }
+
+    await runAsync(
+      'UPDATE credit_cards SET closing_date = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?',
+      [normalizedClosingDate || null, id, req.session.userId]
+    );
+    const updatedCard = await getAsync(
+      'SELECT id, name, total_balance, closing_date, created_at, updated_at FROM credit_cards WHERE id = ?',
+      [id]
+    );
+    res.json({ card: updatedCard });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update credit card' });
   }
 });
 
