@@ -1192,6 +1192,10 @@ body.theme-dark .tag-manager-name.active {
   grid-column: 1 / -1;
 }
 
+.task-column-wide .task-column-body {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
 .task-column-header {
   display: flex;
   justify-content: space-between;
@@ -1708,6 +1712,10 @@ body.theme-dark .status-in_progress {
 
 @media (max-width: 760px) {
   .task-list {
+    grid-template-columns: 1fr;
+  }
+
+  .task-column-wide .task-column-body {
     grid-template-columns: 1fr;
   }
 
