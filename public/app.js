@@ -114,7 +114,6 @@ let tags = [];
 let users = [];
 let pendingAdminUser = null;
 const reminderTimers = new Map();
-let weatherClockTimer = null;
 let pendingDeleteTaskId = null;
 let pendingDeleteUser = null;
 let pendingDeleteTag = null;
@@ -126,11 +125,9 @@ let reminderAlertPreviousFocus = null;
 let preparedAttachment = null;
 let preparedEditAttachment = null;
 let removeEditAttachment = false;
-let currentWeatherCardHtml = '';
-let savedWeatherCities = [];
-const savedWeatherCards = new Map();
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const DEFAULT_TASK_PRIORITY = 'low';
+const DAILY_QUOTE = 'Make it simple enough to begin.';
 
 const translations = {
   en: {
@@ -267,18 +264,7 @@ const translations = {
     wordExported: 'Word exported.',
     reminderTitle: 'Reminder',
     taskReminderNow: 'Date time alert: {title} is happening now.',
-    weatherUnavailable: 'Location weather is unavailable in this browser.',
-    weatherUnable: 'Unable to load current city weather.',
-    weatherPermission: 'Allow location access to show current city weather.',
-    addCity: 'Add city',
-    cityPlaceholder: 'Search city',
-    cityNotFound: 'City was not found.',
-    citySaved: 'City weather added.',
-    loadingWeather: 'Loading weather...',
-    removeCity: 'Remove city',
-    currentCity: 'Current City',
-    humidity: 'Humidity',
-    localTime: 'Local Time',
+    dailyQuote: 'Daily Quote',
     exportDate: 'Export Date',
     myTasks: 'My Tasks',
     notAvailable: 'N/A',
@@ -411,18 +397,7 @@ const translations = {
     pdfExported: 'Đã xuất PDF.',
     wordExported: 'Đã xuất Word.',
     taskReminderNow: 'Nhắc ngày giờ: {title} đang diễn ra.',
-    weatherUnavailable: 'Trình duyệt này không hỗ trợ thời tiết theo vị trí.',
-    weatherUnable: 'Không thể tải thời tiết thành phố hiện tại.',
-    weatherPermission: 'Cho phép truy cập vị trí để hiển thị thời tiết thành phố hiện tại.',
-    addCity: 'Thêm thành phố',
-    cityPlaceholder: 'Tìm thành phố',
-    cityNotFound: 'Không tìm thấy thành phố.',
-    citySaved: 'Đã thêm thời tiết thành phố.',
-    loadingWeather: 'Đang tải thời tiết...',
-    removeCity: 'Xóa thành phố',
-    currentCity: 'Thành phố hiện tại',
-    humidity: 'Độ ẩm',
-    localTime: 'Giờ địa phương',
+    dailyQuote: 'Cau noi hom nay',
     exportDate: 'Ngày xuất',
     myTasks: 'Công việc của tôi',
     notAvailable: 'Không có',
@@ -975,299 +950,18 @@ const scheduleTaskReminders = (loadedTasks) => {
   });
 };
 
-// Helper function to get weather icon
-const getWeatherIcon = (weatherCode) => {
-  if (weatherCode === 0 || weatherCode === 1) return '☀️'; // Clear/Mostly clear
-  if (weatherCode === 2 || weatherCode === 3) return '⛅'; // Partly cloudy/Overcast
-  if (weatherCode === 45 || weatherCode === 48) return '🌫️'; // Foggy
-  if (weatherCode >= 51 && weatherCode <= 67) return '🌧️'; // Drizzle/Rain
-  if (weatherCode >= 71 && weatherCode <= 77) return '❄️'; // Snow
-  if (weatherCode === 80 || weatherCode === 81 || weatherCode === 82) return '🌧️'; // Showers
-  if (weatherCode >= 85 && weatherCode <= 86) return '🌨️'; // Showers/Snow
-  if (weatherCode === 95 || weatherCode === 96 || weatherCode === 99) return '⛈️'; // Thunderstorm
-  return '🌤️';
+const renderQuoteWidget = () => {
+  const quoteWidget = document.getElementById('quote-widget');
+  quoteWidget.innerHTML = getDailyQuoteCard();
+  quoteWidget.classList.remove('hidden');
 };
 
-// Fetch weather data
-const fetchWeather = async () => {
-  if (!navigator.geolocation) {
-    showWeatherMessage(t('weatherUnavailable'));
-    return;
-  }
-
-  return new Promise((resolve) => {
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      try {
-        const { latitude, longitude } = position.coords;
-        await fetchWeatherForLocation(latitude, longitude); 
-      } catch (error) {
-        console.error('Error fetching weather:', error);
-        showWeatherMessage(t('weatherUnable'));
-      } finally {
-        resolve();
-      }
-    }, () => {
-      showWeatherMessage(t('weatherPermission'));
-      resolve();
-    }, {
-      enableHighAccuracy: false,
-      timeout: 10000,
-      maximumAge: 600000
-    });
-  });
-};
-
-// Fetch weather for a specific location
-const fetchWeatherForLocation = async (lat, lng, locationName) => {
-  try {
-    const data = await fetchWeatherData(lat, lng);
-    if (data.current) {
-      displayWeather(data.current, lat, lng, locationName, data.timezone);
-    }
-  } catch (error) {
-    console.error('Error fetching weather:', error);
-    showWeatherMessage(t('weatherUnable'));
-  }
-};
-
-const fetchWeatherData = async (lat, lng) => {
-  const response = await fetch(
-    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weather_code,relative_humidity_2m,is_day&temperature_unit=fahrenheit&timezone=auto`
-  );
-
-  return response.json();
-};
-
-const getSavedWeatherCitiesKey = () => `task-manager-weather-cities-${currentUser?.id || 'guest'}`;
-
-const loadSavedWeatherCities = () => {
-  try {
-    savedWeatherCities = JSON.parse(localStorage.getItem(getSavedWeatherCitiesKey())) || [];
-  } catch {
-    savedWeatherCities = [];
-  }
-};
-
-const saveSavedWeatherCities = () => {
-  localStorage.setItem(getSavedWeatherCitiesKey(), JSON.stringify(savedWeatherCities));
-};
-
-const getWeatherSearchMarkup = () => `
-  <form class="weather-search-form">
-    <input class="weather-city-input" type="text" placeholder="${escapeHtml(t('cityPlaceholder'))}" aria-label="${escapeHtml(t('cityPlaceholder'))}" />
-    <button type="submit">${escapeHtml(t('addCity'))}</button>
-  </form>
+const getDailyQuoteCard = () => `
+  <section class="daily-quote" aria-label="${escapeHtml(t('dailyQuote'))}">
+    <div class="daily-quote-label">${escapeHtml(t('dailyQuote'))}</div>
+    <p>${escapeHtml(DAILY_QUOTE)}</p>
+  </section>
 `;
-
-const bindWeatherSearchForm = (weatherWidget) => {
-  const form = weatherWidget.querySelector('.weather-search-form');
-  if (!form) return;
-
-  form.addEventListener('submit', handleWeatherCitySubmit);
-
-  weatherWidget.querySelectorAll('[data-remove-weather-city]').forEach((button) => {
-    button.addEventListener('click', () => removeSavedWeatherCity(button.dataset.removeWeatherCity));
-  });
-};
-
-const fetchWeatherForCity = async (city) => {
-  showStatusToast(t('loadingWeather'));
-
-  try {
-    const response = await fetch(
-      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`
-    );
-    const data = await response.json();
-    const match = data.results?.[0];
-
-    if (!match) {
-      showStatusToast(t('cityNotFound'), 'error');
-      return;
-    }
-
-    const locationName = [match.name, match.admin1, match.country].filter(Boolean).join(', ');
-    const cityRecord = {
-      id: `${Number(match.latitude).toFixed(3)},${Number(match.longitude).toFixed(3)}`,
-      name: locationName,
-      latitude: match.latitude,
-      longitude: match.longitude,
-    };
-    const existingIndex = savedWeatherCities.findIndex((savedCity) => savedCity.id === cityRecord.id);
-
-    if (existingIndex >= 0) {
-      savedWeatherCities[existingIndex] = cityRecord;
-    } else {
-      savedWeatherCities.push(cityRecord);
-    }
-
-    saveSavedWeatherCities();
-    await loadSavedWeatherCity(cityRecord);
-    showStatusToast(t('citySaved'));
-  } catch (error) {
-    console.error('Error fetching city weather:', error);
-    showStatusToast(t('weatherUnable'), 'error');
-  } finally {
-    const weatherWidget = document.getElementById('weather-widget');
-    const input = weatherWidget.querySelector('.weather-city-input');
-    if (input) input.value = '';
-  }
-};
-
-const handleWeatherCitySubmit = (event) => {
-  event.preventDefault();
-  const input = event.currentTarget.querySelector('.weather-city-input');
-  const city = input?.value.trim();
-
-  if (!city) {
-    input?.focus();
-    return;
-  }
-
-  fetchWeatherForCity(city);
-};
-
-const removeSavedWeatherCity = (cityId) => {
-  savedWeatherCities = savedWeatherCities.filter((city) => city.id !== cityId);
-  savedWeatherCards.delete(cityId);
-  saveSavedWeatherCities();
-  renderWeatherWidget();
-};
-
-const loadSavedWeatherCity = async (city) => {
-  savedWeatherCards.set(city.id, getWeatherMessageCard(t('loadingWeather'), true, city.id));
-  renderWeatherWidget();
-
-  try {
-    const data = await fetchWeatherData(city.latitude, city.longitude);
-    if (data.current) {
-      savedWeatherCards.set(
-        city.id,
-        getWeatherCard(data.current, city.name, data.timezone, true, city.id)
-      );
-      renderWeatherWidget();
-    }
-  } catch (error) {
-    console.error('Error fetching saved city weather:', error);
-    savedWeatherCards.set(city.id, getWeatherMessageCard(t('weatherUnable'), true, city.id));
-    renderWeatherWidget();
-  }
-};
-
-const loadSavedWeatherCityCards = () => {
-  savedWeatherCards.clear();
-  savedWeatherCities.forEach((city) => {
-    loadSavedWeatherCity(city);
-  });
-};
-
-// Display weather on the widget
-const getCurrentTimeForTimezone = (timezone) => {
-  return new Date().toLocaleString('en-US', {
-    timeZone: timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
-  });
-};
-
-const showWeatherMessage = (message) => {
-  currentWeatherCardHtml = getWeatherMessageCard(message);
-  renderWeatherWidget();
-};
-
-const renderWeatherWidget = () => {
-  const weatherWidget = document.getElementById('weather-widget');
-  const cityCards = savedWeatherCities
-    .map((city) => savedWeatherCards.get(city.id) || getWeatherMessageCard(t('loadingWeather'), true, city.id))
-    .join('');
-
-  weatherWidget.innerHTML = `
-    ${getWeatherSearchMarkup()}
-    <div class="weather-cards">
-      ${currentWeatherCardHtml}
-      ${cityCards}
-    </div>
-  `;
-  bindWeatherSearchForm(weatherWidget);
-  weatherWidget.classList.remove('hidden');
-};
-
-const getWeatherMessageCard = (message, isSaved = false, cityId = '') => `
-  <div class="weather-card ${isSaved ? 'weather-city-card' : 'weather-current-card'}">
-    ${getWeatherRemoveButton(isSaved, cityId)}
-    <div class="weather-content">
-      <div class="weather-info">
-        <div class="weather-location">${escapeHtml(message)}</div>
-      </div>
-    </div>
-  </div>
-`;
-
-const getWeatherRemoveButton = (isSaved, cityId) => isSaved
-  ? `<button class="weather-remove" type="button" data-remove-weather-city="${escapeHtml(cityId)}" aria-label="${escapeHtml(t('removeCity'))}">×</button>`
-  : '';
-
-const getWeatherCard = (weather, cityName, timezone = '', isSaved = false, cityId = '') => {
-  const icon = getWeatherIcon(weather.weather_code);
-  const tempF = Math.round(weather.temperature_2m);
-  const tempC = Math.round((tempF - 32) * 5 / 9);
-  const humidity = weather.relative_humidity_2m;
-  const currentTime = getCurrentTimeForTimezone(timezone);
-  const dayNightClass = Number(weather.is_day) === 0 ? 'weather-night-card' : 'weather-day-card';
-
-  return `
-    <div class="weather-card ${isSaved ? 'weather-city-card' : 'weather-current-card'} ${dayNightClass}">
-      ${getWeatherRemoveButton(isSaved, cityId)}
-      <div class="weather-content">
-        <div class="weather-icon">${icon}</div>
-        <div class="weather-info">
-          <div class="weather-location">${escapeHtml(cityName)}</div>
-          <div class="weather-temp">${tempF}°F <span>/ ${tempC}°C</span></div>
-          <div class="weather-humidity">${t('humidity')}: ${humidity}%</div>
-        </div>
-        <div class="weather-time">
-          <div class="time-label">${t('localTime')}</div>
-          <div class="time-display" data-weather-timezone="${escapeHtml(timezone)}">${currentTime}</div>
-        </div>
-      </div>
-    </div>
-  `;
-};
-
-const getCurrentCityName = async (lat, lng) => {
-  try {
-    const geoResponse = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=10&addressdetails=1`
-    );
-    const geoData = await geoResponse.json();
-    const address = geoData.address || {};
-
-    return address.city
-      || address.town
-      || address.village
-      || address.hamlet
-      || address.municipality
-      || address.county
-      || t('currentCity');
-  } catch {
-    return t('currentCity');
-  }
-};
-
-const displayWeather = async (weather, lat, lng, locationName = '', timezone = '') => {
-  // Get location name from coordinates if not provided
-  const cityName = locationName || await getCurrentCityName(lat, lng);
-  currentWeatherCardHtml = getWeatherCard(weather, cityName, timezone);
-  renderWeatherWidget();
-  
-  // Update time every second
-  if (weatherClockTimer) {
-    clearInterval(weatherClockTimer);
-  }
-
-  weatherClockTimer = setInterval(() => {
-    document.querySelectorAll('[data-weather-timezone]').forEach((timeDisplay) => {
-      timeDisplay.textContent = getCurrentTimeForTimezone(timeDisplay.dataset.weatherTimezone);
-    });
-  }, 1000);
-};
 
 const showSection = () => {
   if (!currentUser) {
@@ -1296,9 +990,7 @@ const showSection = () => {
   tagManager.classList.toggle('hidden', currentView === 'archived');
   loadTags();
   loadTasks();
-  loadSavedWeatherCities();
-  loadSavedWeatherCityCards();
-  fetchWeather(); // Load weather when showing task section
+  renderQuoteWidget();
 };
 
 const showAddTaskModal = () => {
