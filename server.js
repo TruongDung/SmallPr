@@ -25,6 +25,10 @@ const TASK_PRIORITY_ORDER_SQL = `
   END,
   created_at DESC
 `;
+const DEFAULT_DAILY_QUOTE = {
+  text: 'Make it simple enough to begin.',
+  author: 'Unknown',
+};
 
 if (!DATABASE_URL || DATABASE_URL.includes('[YOUR-PASSWORD]')) {
   throw new Error('DATABASE_URL must be set to your Supabase Postgres connection string.');
@@ -453,6 +457,65 @@ const parseAttachment = (attachment) => {
   return { name, type, data, size };
 };
 
+const fetchJsonWithTimeout = async (url, timeoutMs = 7000) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'TaskManager/1.0',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Quote request failed with ${response.status}`);
+    }
+
+    return response.json();
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+const fetchDailyQuote = async () => {
+  const providers = [
+    async () => {
+      const data = await fetchJsonWithTimeout('https://zenquotes.io/api/random');
+      const quote = Array.isArray(data) ? data[0] : data;
+      return {
+        text: quote?.q,
+        author: quote?.a,
+      };
+    },
+    async () => {
+      const data = await fetchJsonWithTimeout('https://api.quotable.io/random');
+      return {
+        text: data?.content,
+        author: data?.author,
+      };
+    },
+  ];
+
+  for (const provider of providers) {
+    try {
+      const quote = await provider();
+      if (quote?.text) {
+        return {
+          text: String(quote.text).trim(),
+          author: String(quote.author || DEFAULT_DAILY_QUOTE.author).trim(),
+        };
+      }
+    } catch (error) {
+      console.warn('Daily quote provider failed:', error.message);
+    }
+  }
+
+  return DEFAULT_DAILY_QUOTE;
+};
+
 const sendTaskAlertEmail = async (task, user, language = 'en') => {
   const transporter = createMailTransporter();
   if (!transporter) {
@@ -771,6 +834,16 @@ app.get('/api/me', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to retrieve user' });
+  }
+});
+
+app.get('/api/daily-quote', async (req, res) => {
+  try {
+    const quote = await fetchDailyQuote();
+    res.json({ quote });
+  } catch (error) {
+    console.error(error);
+    res.json({ quote: DEFAULT_DAILY_QUOTE });
   }
 });
 

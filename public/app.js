@@ -134,7 +134,7 @@ let preparedEditAttachment = null;
 let removeEditAttachment = false;
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const DEFAULT_TASK_PRIORITY = 'low';
-const DAILY_QUOTE_API_URL = 'https://zenquotes.io/api/random';
+const DAILY_QUOTE_API_URL = '/api/daily-quote';
 const DAILY_QUOTE_CACHE_KEY = 'task-manager-daily-quote';
 const WEATHER_CACHE_PREFIX = 'task-manager-weather-cities';
 const DEFAULT_DAILY_QUOTE = {
@@ -1026,7 +1026,7 @@ const fetchDailyQuote = async () => {
   }
 
   const data = await response.json();
-  const quote = Array.isArray(data) ? data[0] : data;
+  const quote = data.quote || (Array.isArray(data) ? data[0] : data);
   return {
     text: quote?.q || quote?.quote || quote?.text || DEFAULT_DAILY_QUOTE.text,
     author: quote?.a || quote?.author || '',
