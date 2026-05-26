@@ -128,6 +128,7 @@ let removeEditAttachment = false;
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const DEFAULT_TASK_PRIORITY = 'low';
 const DAILY_QUOTE = 'Make it simple enough to begin.';
+const DAILY_QUOTE_AUTHOR = 'Unknown';
 
 const translations = {
   en: {
@@ -265,6 +266,7 @@ const translations = {
     reminderTitle: 'Reminder',
     taskReminderNow: 'Date time alert: {title} is happening now.',
     dailyQuote: 'Daily Quote',
+    quoteAuthor: 'Quote author',
     exportDate: 'Export Date',
     myTasks: 'My Tasks',
     notAvailable: 'N/A',
@@ -398,6 +400,7 @@ const translations = {
     wordExported: 'Đã xuất Word.',
     taskReminderNow: 'Nhắc ngày giờ: {title} đang diễn ra.',
     dailyQuote: 'Cau noi hom nay',
+    quoteAuthor: 'Tac gia cau noi',
     exportDate: 'Ngày xuất',
     myTasks: 'Công việc của tôi',
     notAvailable: 'Không có',
@@ -960,6 +963,7 @@ const getDailyQuoteCard = () => `
   <section class="daily-quote" aria-label="${escapeHtml(t('dailyQuote'))}">
     <div class="daily-quote-label">${escapeHtml(t('dailyQuote'))}</div>
     <p>${escapeHtml(DAILY_QUOTE)}</p>
+    <div class="daily-quote-author">${escapeHtml(t('quoteAuthor'))}: ${escapeHtml(DAILY_QUOTE_AUTHOR)}</div>
   </section>
 `;
 
