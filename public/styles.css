@@ -1241,14 +1241,16 @@ body.theme-dark .tag-manager-name.active {
 .task-item {
   position: relative;
   min-width: 0;
-  min-height: 330px;
-  padding: 18px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  display: grid;
-  grid-template-rows: auto minmax(96px, 1fr) auto auto auto;
-  gap: 12px;
-  align-content: start;
+  height: 276px;
+  padding: 14px 14px 12px;
+  border: 1px solid color-mix(in srgb, var(--border) 82%, var(--surface));
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--card-shadow) 76%, transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  overflow: hidden;
   cursor: grab;
 }
 
@@ -1299,7 +1301,7 @@ body.theme-dark .tag-manager-name.active {
 }
 
 .task-item.priority-high-task {
-  background: var(--priority-high-task-bg);
+  background: color-mix(in srgb, var(--priority-high-task-bg) 88%, var(--surface));
   border-color: var(--priority-high-task-border);
 }
 
@@ -1314,15 +1316,29 @@ body.theme-dark .tag-manager-name.active {
 .task-meta {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 12px;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.task-meta strong {
+  min-width: 0;
+  color: var(--text);
+  font-size: 0.96rem;
+  line-height: 1.24;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .task-badges {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  flex: 0 0 auto;
+  max-width: 48%;
 }
 
 .priority-badge {
@@ -1403,14 +1419,17 @@ body.theme-dark .status-in_progress {
 
 .task-actions {
   display: flex;
-  gap: 10px;
+  gap: 7px;
   flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 9px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 58%, transparent);
   align-self: end;
 }
 
 .task-actions button {
-  width: 38px;
-  height: 38px;
+  width: 33px;
+  height: 33px;
   display: inline-grid;
   place-items: center;
   background: transparent;
@@ -1452,9 +1471,10 @@ body.theme-dark .status-in_progress {
 
 .task-description {
   color: var(--muted);
-  line-height: 1.5;
+  font-size: 0.95rem;
+  line-height: 1.42;
   overflow-wrap: anywhere;
-  max-height: 7.5em;
+  max-height: 4.26em;
   overflow: hidden;
 }
 
@@ -1477,20 +1497,33 @@ body.theme-dark .status-in_progress {
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 2px;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .task-comment {
   min-width: 0;
   max-width: 100%;
-  padding: 10px 12px;
+  min-height: 50px;
+  max-height: 50px;
+  margin-top: 2px;
+  padding: 7px 10px 8px;
   border-left: 3px solid var(--primary);
   border-radius: 8px;
-  background: var(--surface-soft);
-  color: var(--text);
-  line-height: 1.45;
-  white-space: nowrap;
+  background: color-mix(in srgb, var(--surface-soft) 76%, var(--surface-tint));
+  color: color-mix(in srgb, var(--text) 82%, var(--muted));
+  font-size: 0.9rem;
+  line-height: 1.35;
+  white-space: normal;
   overflow: hidden;
-  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.task-comment::first-line {
+  color: color-mix(in srgb, var(--text) 90%, var(--primary));
+  font-weight: 600;
 }
 
 .task-attachment {
@@ -2304,6 +2337,7 @@ body.theme-dark .status-in_progress {
   }
 
   .task-item {
+    height: auto;
     min-height: 0;
     padding: 12px;
     border-radius: 10px;

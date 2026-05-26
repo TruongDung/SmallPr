@@ -133,6 +133,7 @@ let preparedAttachment = null;
 let preparedEditAttachment = null;
 let removeEditAttachment = false;
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+const MAX_TASK_TEXT_LENGTH = 10000;
 const DEFAULT_TASK_PRIORITY = 'low';
 const DAILY_QUOTE_API_URL = '/api/daily-quote';
 const DAILY_QUOTE_CACHE_KEY = 'task-manager-daily-quote';
@@ -199,7 +200,7 @@ const translations = {
     addComment: 'Add comment',
     comment: 'Comment',
     commentPlaceholder: 'Add a comment about this task...',
-    max500: '(max 5000 characters)',
+    max500: '(max 10000 characters)',
     dateTimeAlert: 'Date Time Alert',
     uploadFile: 'Upload File',
     addTask: 'Add Task',
@@ -235,7 +236,8 @@ const translations = {
     passwordUpdated: 'Password updated.',
     titleRequired: 'Title is required',
     titleTooLong: 'Title must be 20 characters or less',
-    descriptionTooLong: 'Description must be 5000 characters or less',
+    descriptionTooLong: 'Description must be 10000 characters or less',
+    commentTooLong: 'Comment must be 10000 characters or less',
     attachmentTooLarge: 'File must be 5 MB or less',
     attachmentNotReady: 'Please wait for the file upload to finish',
     attachment: 'Attachment',
@@ -279,7 +281,7 @@ const translations = {
     userAdded: 'User added.',
     taskTitlePrompt: 'Task title (max 20 characters)',
     titleEmpty: 'Title cannot be empty',
-    taskDescriptionPrompt: 'Task description (max 5000 characters)',
+    taskDescriptionPrompt: 'Task description (max 10000 characters)',
     reminderPrompt: 'Date time alert (YYYY-MM-DDTHH:mm, leave empty for no alert)',
     sending: 'Sending...',
     emailSent: 'Email sent.',
@@ -350,7 +352,7 @@ const translations = {
     addComment: 'Thêm bình luận',
     comment: 'Bình luận',
     commentPlaceholder: 'Thêm bình luận về công việc này...',
-    max500: '(tối đa 5000 ký tự)',
+    max500: '(tối đa 10000 ký tự)',
     dateTimeAlert: 'Ngày giờ nhắc',
     uploadFile: 'Tải tệp lên',
     addTask: 'Thêm công việc',
@@ -386,7 +388,8 @@ const translations = {
     passwordUpdated: 'Đã cập nhật mật khẩu.',
     titleRequired: 'Vui lòng nhập tiêu đề',
     titleTooLong: 'Tiêu đề phải từ 20 ký tự trở xuống',
-    descriptionTooLong: 'Mô tả phải từ 5000 ký tự trở xuống',
+    descriptionTooLong: 'Mô tả phải từ 10000 ký tự trở xuống',
+    commentTooLong: 'Bình luận phải từ 10000 ký tự trở xuống',
     attachmentTooLarge: 'Tệp phải từ 5 MB trở xuống',
     attachmentNotReady: 'Vui lòng chờ tệp tải lên hoàn tất',
     attachment: 'Tệp đính kèm',
@@ -425,7 +428,7 @@ const translations = {
     userAdded: 'Đã thêm người dùng.',
     taskTitlePrompt: 'Tiêu đề công việc (tối đa 20 ký tự)',
     titleEmpty: 'Tiêu đề không được để trống',
-    taskDescriptionPrompt: 'Mô tả công việc (tối đa 5000 ký tự)',
+    taskDescriptionPrompt: 'Mô tả công việc (tối đa 10000 ký tự)',
     reminderPrompt: 'Ngày giờ nhắc (YYYY-MM-DDTHH:mm, để trống nếu không nhắc)',
     sending: 'Đang gửi...',
     emailSent: 'Đã gửi email.',
@@ -1902,7 +1905,7 @@ const handleTaskSubmit = async (event) => {
     return;
   }
   
-  if (getRichEditorLength(descriptionEditor) > 5000) {
+  if (getRichEditorLength(descriptionEditor) > MAX_TASK_TEXT_LENGTH) {
     descriptionError.textContent = t('descriptionTooLong');
     descriptionError.classList.remove('hidden');
     return;
@@ -2554,9 +2557,15 @@ const handleEditTaskSubmit = async (event) => {
     return;
   }
   
-  if (getRichEditorLength(editTaskDescriptionInput) > 5000) {
+  if (getRichEditorLength(editTaskDescriptionInput) > MAX_TASK_TEXT_LENGTH) {
     editDescriptionError.textContent = t('descriptionTooLong');
     editDescriptionError.classList.remove('hidden');
+    return;
+  }
+
+  if (comment.length > MAX_TASK_TEXT_LENGTH) {
+    editFormError.textContent = t('commentTooLong');
+    editFormError.classList.remove('hidden');
     return;
   }
 
@@ -2668,6 +2677,10 @@ savePreviewComment.addEventListener('click', async () => {
   if (!pendingPreviewTask) return;
   const task = pendingPreviewTask;
   const comment = previewTaskCommentInput.value.trim();
+  if (comment.length > MAX_TASK_TEXT_LENGTH) {
+    showStatusToast(t('commentTooLong'), 'error');
+    return;
+  }
   hidePreviewTaskModal();
   const result = await updateTask(task.id, { comment });
   if (!result?.error) {

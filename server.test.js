@@ -286,15 +286,15 @@ describe('Task API', () => {
     expect(response.body).toHaveProperty('error', 'Task tag must be 40 characters or less');
   });
 
-  test('rejects task descriptions over 5000 plain-text characters on create and update', async () => {
+  test('rejects task descriptions over 10000 plain-text characters on create and update', async () => {
     const agent = await createAgent(testUsername('long-description-owner'));
 
     const createResponse = await agent
       .post('/api/tasks')
-      .send({ title: 'Long desc', description: `<p>${'x'.repeat(5001)}</p>` });
+      .send({ title: 'Long desc', description: `<p>${'x'.repeat(10001)}</p>` });
 
     expect(createResponse.statusCode).toBe(400);
-    expect(createResponse.body).toHaveProperty('error', 'Task description must be 5000 characters or less');
+    expect(createResponse.body).toHaveProperty('error', 'Task description must be 10000 characters or less');
 
     const validCreateResponse = await agent
       .post('/api/tasks')
@@ -302,10 +302,32 @@ describe('Task API', () => {
 
     const updateResponse = await agent
       .put(`/api/tasks/${validCreateResponse.body.task.id}`)
-      .send({ description: 'x'.repeat(5001) });
+      .send({ description: 'x'.repeat(10001) });
 
     expect(updateResponse.statusCode).toBe(400);
-    expect(updateResponse.body).toHaveProperty('error', 'Task description must be 5000 characters or less');
+    expect(updateResponse.body).toHaveProperty('error', 'Task description must be 10000 characters or less');
+  });
+
+  test('rejects task comments over 10000 characters on create and update', async () => {
+    const agent = await createAgent(testUsername('long-comment-owner'));
+
+    const createResponse = await agent
+      .post('/api/tasks')
+      .send({ title: 'Long comment', comment: 'x'.repeat(10001) });
+
+    expect(createResponse.statusCode).toBe(400);
+    expect(createResponse.body).toHaveProperty('error', 'Task comment must be 10000 characters or less');
+
+    const validCreateResponse = await agent
+      .post('/api/tasks')
+      .send({ title: 'Valid comment' });
+
+    const updateResponse = await agent
+      .put(`/api/tasks/${validCreateResponse.body.task.id}`)
+      .send({ comment: 'x'.repeat(10001) });
+
+    expect(updateResponse.statusCode).toBe(400);
+    expect(updateResponse.body).toHaveProperty('error', 'Task comment must be 10000 characters or less');
   });
 
   test('rejects invalid attachment payloads', async () => {

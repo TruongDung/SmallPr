@@ -13,6 +13,7 @@ const DATABASE_URL = process.env.DATABASE_URL;
 const TASK_ALERT_TO = process.env.TASK_ALERT_TO;
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const MAX_TAG_LENGTH = 40;
+const MAX_TASK_TEXT_LENGTH = 10000;
 const MAX_WEATHER_CITY_LENGTH = 120;
 const VALID_PRIORITIES = new Set(['low', 'medium', 'high']);
 const VALID_STATUSES = new Set(['todo', 'in_progress', 'done']);
@@ -1215,8 +1216,12 @@ app.post('/api/tasks', authRequired, async (req, res) => {
     return res.status(400).json({ error: 'Task title must be 20 characters or less' });
   }
   
-  if (description && stripHtml(description).length > 5000) {
-    return res.status(400).json({ error: 'Task description must be 5000 characters or less' });
+  if (description && stripHtml(description).length > MAX_TASK_TEXT_LENGTH) {
+    return res.status(400).json({ error: `Task description must be ${MAX_TASK_TEXT_LENGTH} characters or less` });
+  }
+
+  if (comment && String(comment).length > MAX_TASK_TEXT_LENGTH) {
+    return res.status(400).json({ error: `Task comment must be ${MAX_TASK_TEXT_LENGTH} characters or less` });
   }
 
   let parsedAttachment = null;
@@ -1292,8 +1297,12 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
       return res.status(400).json({ error: `Task tag must be ${MAX_TAG_LENGTH} characters or less` });
     }
     
-    if (description && stripHtml(description).length > 5000) {
-      return res.status(400).json({ error: 'Task description must be 5000 characters or less' });
+    if (description && stripHtml(description).length > MAX_TASK_TEXT_LENGTH) {
+      return res.status(400).json({ error: `Task description must be ${MAX_TASK_TEXT_LENGTH} characters or less` });
+    }
+
+    if (comment && String(comment).length > MAX_TASK_TEXT_LENGTH) {
+      return res.status(400).json({ error: `Task comment must be ${MAX_TASK_TEXT_LENGTH} characters or less` });
     }
 
     const normalizedPriority = normalizePriority(priority, task.priority || 'medium');
