@@ -20,6 +20,7 @@
     const cancelEditButton = document.getElementById('cancel-edit-credit-card');
     const saveEditButton = document.getElementById('save-edit-credit-card');
     let cards = [];
+    let cardUsers = [];
     let pendingEditCard = null;
 
     const setText = (selector, text) => {
@@ -70,6 +71,44 @@
     const formatIssuer = (issuer) => issuerLabels[issuer] || t('notAvailable');
 
     const userGroupKey = (card) => (card.card_user || '').trim() || t('notAvailable');
+
+    const mergeCardUsers = (savedUsers = [], cardsToMerge = cards) => {
+      const names = [
+        ...savedUsers,
+        ...cardsToMerge.map((card) => card.card_user),
+      ]
+        .map((name) => String(name || '').trim())
+        .filter(Boolean);
+
+      return [...new Set(names)].sort((first, second) => (
+        first.localeCompare(second, getLanguage(), { sensitivity: 'base' })
+      ));
+    };
+
+    const setUserOptions = (select, selectedValue = '') => {
+      if (!select) return;
+
+      const normalizedSelectedValue = String(selectedValue || '').trim();
+      const optionValues = normalizedSelectedValue && !cardUsers.includes(normalizedSelectedValue)
+        ? [normalizedSelectedValue, ...cardUsers]
+        : cardUsers;
+
+      select.innerHTML = '';
+
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = t('creditCardUserPlaceholder');
+      select.append(placeholder);
+
+      optionValues.forEach((user) => {
+        const option = document.createElement('option');
+        option.value = user;
+        option.textContent = user;
+        select.append(option);
+      });
+
+      select.value = normalizedSelectedValue;
+    };
 
     const groupCardsByUser = (cardsToGroup) => cardsToGroup.reduce((groups, card) => {
       const user = userGroupKey(card);
@@ -128,7 +167,7 @@
       clearEditError();
       editForm.reset();
       editNameInput.value = card.name || '';
-      editUserInput.value = card.card_user || '';
+      setUserOptions(editUserInput, card.card_user || '');
       editIssuerInput.value = card.issuer || '';
       editBalanceInput.value = formatBalanceInput(card.total_balance);
       editClosingDateInput.value = card.closing_date || '';
@@ -160,7 +199,7 @@
         method: 'PUT',
         body: JSON.stringify({
           name,
-          card_user: editUserInput.value.trim(),
+          card_user: editUserInput.value,
           issuer: editIssuerInput.value,
           total_balance: editBalanceInput.value,
           closing_date: editClosingDateInput.value,
@@ -240,13 +279,25 @@
     };
 
     const load = async () => {
-      const result = await request('/api/credit-cards');
-      if (result.error) {
-        message.textContent = result.error;
+      const [cardsResult, usersResult] = await Promise.all([
+        request('/api/credit-cards'),
+        request('/api/credit-cards/users'),
+      ]);
+
+      if (cardsResult.error) {
+        message.textContent = cardsResult.error;
         return;
       }
 
-      cards = result.cards || [];
+      if (usersResult.error) {
+        message.textContent = usersResult.error;
+        return;
+      }
+
+      cards = cardsResult.cards || [];
+      cardUsers = mergeCardUsers(usersResult.users || [], cards);
+      setUserOptions(userInput, userInput.value);
+      setUserOptions(editUserInput, editUserInput.value);
       message.textContent = '';
       render(cards);
     };
@@ -266,7 +317,7 @@
         method: 'POST',
         body: JSON.stringify({
           name,
-          card_user: userInput.value.trim(),
+          card_user: userInput.value,
           issuer: issuerInput.value,
           total_balance: balanceInput.value,
           closing_date: closingDateInput.value,
@@ -279,6 +330,7 @@
       }
 
       form.reset();
+      setUserOptions(userInput);
       showStatusToast(t('creditCardAdded'));
       load();
     };
@@ -288,7 +340,7 @@
       setText('label[for="credit-card-name"]', t('cardName'));
       nameInput.placeholder = t('cardNamePlaceholder');
       setText('label[for="credit-card-user"]', t('creditCardUser'));
-      userInput.placeholder = t('creditCardUserPlaceholder');
+      setUserOptions(userInput, userInput.value);
       setText('label[for="credit-card-issuer"]', t('creditCardIssuer'));
       setText('label[for="credit-card-balance"]', t('totalBalance'));
       setText('label[for="credit-card-closing-date"]', t('closingDate'));
@@ -303,7 +355,7 @@
       setText('label[for="edit-credit-card-name"]', t('cardName'));
       editNameInput.placeholder = t('cardNamePlaceholder');
       setText('label[for="edit-credit-card-user"]', t('creditCardUser'));
-      editUserInput.placeholder = t('creditCardUserPlaceholder');
+      setUserOptions(editUserInput, editUserInput.value);
       setText('label[for="edit-credit-card-issuer"]', t('creditCardIssuer'));
       setText('label[for="edit-credit-card-balance"]', t('totalBalance'));
       setText('label[for="edit-credit-card-closing-date"]', t('closingDate'));

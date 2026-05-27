@@ -1014,6 +1014,10 @@ describe('Credit Card API', () => {
       closing_date: '2026-06-15',
     });
 
+    const userOptionsResponse = await agent.get('/api/credit-cards/users');
+    expect(userOptionsResponse.statusCode).toBe(200);
+    expect(userOptionsResponse.body.users).toEqual(expect.arrayContaining(['Casey']));
+
     const updateResponse = await agent
       .put(`/api/credit-cards/${createResponse.body.card.id}`)
       .send({

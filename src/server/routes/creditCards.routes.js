@@ -69,6 +69,25 @@ const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync })
 
   router.use(authRequired);
 
+  router.get('/users', async (req, res) => {
+    try {
+      const [accountUser, savedUsers] = await Promise.all([
+        creditCards.getAccountUser(req.session.userId),
+        creditCards.listCardUsersForUser(req.session.userId),
+      ]);
+      const users = [
+        ...new Set([
+          accountUser && accountUser.username,
+          ...savedUsers.map((user) => user.name),
+        ].filter(Boolean)),
+      ];
+      res.json({ users });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to load credit card users' });
+    }
+  });
+
   router.get('/', async (req, res) => {
     try {
       const cards = await creditCards.listForUser(req.session.userId);

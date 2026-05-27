@@ -19,6 +19,22 @@ const createCreditCardsService = ({ allAsync, getAsync, runAsync }) => {
     [id]
   );
 
+  const getAccountUser = (userId) => getAsync(
+    'SELECT username FROM users WHERE id = ?',
+    [userId]
+  );
+
+  const listCardUsersForUser = (userId) => allAsync(
+    `SELECT name
+     FROM (
+       SELECT DISTINCT TRIM(card_user) AS name
+       FROM credit_cards
+       WHERE user_id = ? AND card_user IS NOT NULL AND TRIM(card_user) <> ''
+     ) card_users
+     ORDER BY LOWER(name), name`,
+    [userId]
+  );
+
   const create = async ({ userId, name, cardUser, issuer, totalBalance, closingDate }) => {
     const result = await runAsync(
       `INSERT INTO credit_cards (user_id, name, card_user, issuer, total_balance, closing_date)
@@ -42,6 +58,8 @@ const createCreditCardsService = ({ allAsync, getAsync, runAsync }) => {
   return {
     create,
     findForUser,
+    getAccountUser,
+    listCardUsersForUser,
     listForUser,
     update,
   };
