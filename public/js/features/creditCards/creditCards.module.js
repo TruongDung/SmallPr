@@ -98,13 +98,20 @@
 
     const userGroupKey = (card) => (card.card_user || '').trim() || t('notAvailable');
 
+    const excludedCardUserNames = new Set(['admin', 'card holder']);
+
+    const isAllowedCardUser = (name) => {
+      const normalizedName = String(name || '').trim().toLowerCase();
+      return normalizedName && !excludedCardUserNames.has(normalizedName);
+    };
+
     const mergeCardUsers = (savedUsers = [], cardsToMerge = cards) => {
       const names = [
         ...savedUsers,
         ...cardsToMerge.map((card) => card.card_user),
       ]
         .map((name) => String(name || '').trim())
-        .filter(Boolean);
+        .filter(isAllowedCardUser);
 
       return [...new Set(names)].sort((first, second) => (
         first.localeCompare(second, getLanguage(), { sensitivity: 'base' })
@@ -115,7 +122,7 @@
       if (!select) return;
 
       const normalizedSelectedValue = String(selectedValue || '').trim();
-      const optionValues = normalizedSelectedValue && !cardUsers.includes(normalizedSelectedValue)
+      const optionValues = isAllowedCardUser(normalizedSelectedValue) && !cardUsers.includes(normalizedSelectedValue)
         ? [normalizedSelectedValue, ...cardUsers]
         : cardUsers;
 
@@ -133,7 +140,7 @@
         select.append(option);
       });
 
-      select.value = normalizedSelectedValue;
+      select.value = isAllowedCardUser(normalizedSelectedValue) ? normalizedSelectedValue : '';
     };
 
     const groupCardsByUser = (cardsToGroup) => cardsToGroup.reduce((groups, card) => {
