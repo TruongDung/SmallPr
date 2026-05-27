@@ -755,6 +755,39 @@ button.danger {
   display: none;
 }
 
+.task-subtabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.task-subtabs.hidden {
+  display: none;
+}
+
+.task-subtab {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.task-subtab.active,
+.task-subtab[aria-selected="true"] {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--primary-strong);
+  box-shadow: 0 4px 12px var(--card-shadow);
+}
+
 .export-buttons {
   display: flex;
   gap: 6px;
@@ -1643,6 +1676,82 @@ body.theme-dark .status-in_progress {
   font-size: 1.2rem;
 }
 
+.financial-tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.financial-tab {
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.financial-tab.active,
+.financial-tab[aria-selected="true"] {
+  border-color: var(--border);
+  background: var(--surface);
+  color: var(--primary-strong);
+  box-shadow: 0 4px 12px var(--card-shadow);
+}
+
+.financial-panel {
+  min-width: 0;
+}
+
+.credit-card-quick-links {
+  margin-bottom: 18px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.credit-card-quick-links h3 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+}
+
+.credit-card-link-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(92px, 1fr));
+  gap: 10px;
+}
+
+.credit-card-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--primary-strong);
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-align: center;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.credit-card-link:hover,
+.credit-card-link:focus-visible {
+  border-color: var(--primary);
+  background: var(--surface-tint);
+  color: var(--primary-strong);
+}
+
 .credit-card-form {
   display: grid;
   grid-template-columns: minmax(150px, 1fr) minmax(130px, 0.8fr) minmax(130px, 0.8fr) minmax(120px, 0.7fr) minmax(140px, 0.8fr) auto;
@@ -2386,6 +2495,12 @@ body.theme-dark .status-in_progress {
     margin-bottom: 16px;
   }
 
+  .task-subtabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    width: 100%;
+  }
+
   .task-header h2,
   .admin-header h2 {
     font-size: 1.2rem;
@@ -2413,6 +2528,16 @@ body.theme-dark .status-in_progress {
 
   .credit-card-form {
     grid-template-columns: 1fr;
+  }
+
+  .financial-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .credit-card-link-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .credit-card-form button {
@@ -2651,6 +2776,22 @@ body.theme-dark .status-in_progress {
     grid-template-columns: 1fr;
     gap: 10px;
     padding: 12px;
+  }
+
+  .financial-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .task-subtabs {
+    grid-template-columns: 1fr;
+  }
+
+  .credit-card-quick-links {
+    margin-bottom: 14px;
+  }
+
+  .credit-card-link-grid {
+    grid-template-columns: 1fr;
   }
 
   .credit-card-form button {

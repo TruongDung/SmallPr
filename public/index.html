@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=credit-cards-4" />
+  <link rel="stylesheet" href="styles.css?v=task-tabs-1" />
 </head>
 <body>
   <div class="container">
@@ -83,6 +83,12 @@
           </form>
           <div id="weather-list" class="weather-list"></div>
         </section>
+
+        <div id="task-subtab-nav" class="task-subtabs" role="tablist" aria-label="Tasks">
+          <button id="tasks-subtab" class="task-subtab active" type="button" role="tab" aria-selected="true" data-task-tab="tasks">Tasks</button>
+          <button id="archived-subtab" class="task-subtab" type="button" role="tab" aria-selected="false" data-task-tab="archived">Archive</button>
+          <button id="tag-subtab" class="task-subtab" type="button" role="tab" aria-selected="false" data-task-tab="tags">Tag</button>
+        </div>
 
         <div id="quote-widget" class="quote-widget">
           <section class="daily-quote" aria-label="Daily Quote">
@@ -183,7 +189,7 @@
           </div>
         </div>
 
-        <section class="tag-manager" aria-labelledby="tag-manager-title">
+        <section class="tag-manager" aria-labelledby="tag-manager-title" role="tabpanel">
           <div class="tag-manager-header">
             <h3 id="tag-manager-title">Manage Tags</h3>
             <p id="tag-message" class="message"></p>
@@ -229,62 +235,82 @@
       <section id="credit-card-section" class="card hidden">
         <div class="credit-card-header">
           <div>
-            <h2 id="credit-card-title">Credit Cards</h2>
+            <h2 id="credit-card-title">Financial</h2>
             <p id="credit-card-message" class="message"></p>
           </div>
         </div>
 
-        <form id="credit-card-form" class="credit-card-form">
-          <div class="field">
-            <label for="credit-card-name">Card No</label>
-            <input id="credit-card-name" type="text" maxlength="80" placeholder="Card number or nickname" required />
-          </div>
-          <div class="field">
-            <label for="credit-card-user">User</label>
-            <select id="credit-card-user">
-              <option value="">Select user</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="credit-card-issuer">Type</label>
-            <select id="credit-card-issuer">
-              <option value="">Select type</option>
-              <option value="citi">Citi</option>
-              <option value="amex">Amex</option>
-              <option value="discover">Discover</option>
-              <option value="boa">BOA</option>
-              <option value="chase">Chase</option>
-              <option value="capital_one">Capital One</option>
-              <option value="wells_fargo">Wells Fargo</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="credit-card-balance">Balance</label>
-            <input id="credit-card-balance" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
-          </div>
-          <div class="field">
-            <label for="credit-card-closing-date">Closing date</label>
-            <input id="credit-card-closing-date" type="date" />
-          </div>
-          <button id="add-credit-card" type="submit" class="secondary">Add Card</button>
-        </form>
-
-        <div class="credit-card-table-wrap">
-          <table class="credit-card-table">
-            <thead>
-              <tr>
-                <th>Card No</th>
-                <th>User</th>
-                <th>Type</th>
-                <th>Balance</th>
-                <th>Closing Date</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="credit-card-list"></tbody>
-          </table>
+        <div class="financial-tabs" role="tablist" aria-label="Financial">
+          <button id="credit-card-tab" class="financial-tab active" type="button" role="tab" aria-selected="true" aria-controls="credit-card-panel" data-financial-tab="cards">Credit card</button>
+          <button id="credit-card-info-tab" class="financial-tab" type="button" role="tab" aria-selected="false" aria-controls="credit-card-info-panel" data-financial-tab="info">Fast Access Link</button>
         </div>
+
+        <section id="credit-card-panel" class="financial-panel" role="tabpanel" aria-labelledby="credit-card-tab">
+          <form id="credit-card-form" class="credit-card-form">
+            <div class="field">
+              <label for="credit-card-name">Card No</label>
+              <input id="credit-card-name" type="text" maxlength="80" placeholder="Card number or nickname" required />
+            </div>
+            <div class="field">
+              <label for="credit-card-user">User</label>
+              <select id="credit-card-user">
+                <option value="">Select user</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="credit-card-issuer">Type</label>
+              <select id="credit-card-issuer">
+                <option value="">Select type</option>
+                <option value="citi">Citi</option>
+                <option value="amex">Amex</option>
+                <option value="discover">Discover</option>
+                <option value="boa">BOA</option>
+                <option value="chase">Chase</option>
+                <option value="capital_one">Capital One</option>
+                <option value="wells_fargo">Wells Fargo</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="credit-card-balance">Balance</label>
+              <input id="credit-card-balance" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
+            </div>
+            <div class="field">
+              <label for="credit-card-closing-date">Closing date</label>
+              <input id="credit-card-closing-date" type="date" />
+            </div>
+            <button id="add-credit-card" type="submit" class="secondary">Add Card</button>
+          </form>
+
+          <div class="credit-card-table-wrap">
+            <table class="credit-card-table">
+              <thead>
+                <tr>
+                  <th>Card No</th>
+                  <th>User</th>
+                  <th>Type</th>
+                  <th>Balance</th>
+                  <th>Closing Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="credit-card-list"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="credit-card-info-panel" class="financial-panel hidden" role="tabpanel" aria-labelledby="credit-card-info-tab">
+          <section class="credit-card-quick-links" aria-labelledby="credit-card-quick-links-title">
+            <h3 id="credit-card-quick-links-title">Fast Access</h3>
+            <div class="credit-card-link-grid">
+              <a class="credit-card-link" data-i18n-key="mortgageLink" href="https://rocket.com/mortgage/" target="_blank" rel="noopener noreferrer">Mortgage</a>
+              <a class="credit-card-link" data-i18n-key="electricLink" href="https://wemc.smarthub.coop/Login.html" target="_blank" rel="noopener noreferrer">Electric</a>
+              <a class="credit-card-link" data-i18n-key="waterLink" href="https://ubwss.raleighnc.gov/wss/login" target="_blank" rel="noopener noreferrer">Water</a>
+              <a class="credit-card-link" data-i18n-key="gasLink" href="https://account.psncenergy.com/#account-summary" target="_blank" rel="noopener noreferrer">Gas</a>
+              <a class="credit-card-link" data-i18n-key="internetLink" href="https://www.spectrum.net/account-summary" target="_blank" rel="noopener noreferrer">Internet</a>
+            </div>
+          </section>
+        </section>
       </section>
     </main>
   </div>
@@ -527,7 +553,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.min.js"></script>
-  <script src="js/features/creditCards/creditCards.module.js?v=credit-cards-module-7"></script>
-  <script src="app.js?v=credit-cards-module-3"></script>
+  <script src="js/features/creditCards/creditCards.module.js?v=financial-tabs-1"></script>
+  <script src="app.js?v=task-tabs-1"></script>
 </body>
 </html>

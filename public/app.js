@@ -5,6 +5,8 @@ const creditCardSection = document.getElementById('credit-card-section');
 const appContainer = document.querySelector('.container');
 const userArea = document.getElementById('user-area');
 const floatingAddTask = document.getElementById('floating-add-task');
+const taskSubtabNav = document.getElementById('task-subtab-nav');
+const taskSubtabs = [...document.querySelectorAll('[data-task-tab]')];
 const languageSelect = document.getElementById('language-select');
 const themeToggle = document.getElementById('theme-toggle');
 const authForm = document.getElementById('auth-form');
@@ -217,8 +219,16 @@ const translations = {
     addTaskShortcut: 'Add task',
     noArchivedTasks: 'No archived tasks.',
     weather: 'Weather',
-    creditCards: 'Cards',
-    creditCardAccounts: 'Credit Cards',
+    creditCards: 'Financial',
+    creditCardAccounts: 'Financial',
+    creditCardSubTab: 'Credit card',
+    creditCardInfoSubTab: 'Fast Access Link',
+    fastAccessLinks: 'Fast Access',
+    mortgageLink: 'Mortgage',
+    electricLink: 'Electric',
+    waterLink: 'Water',
+    gasLink: 'Gas',
+    internetLink: 'Internet',
     cardName: 'Card No',
     cardNamePlaceholder: 'Card number or nickname',
     creditCardUser: 'User',
@@ -389,8 +399,16 @@ const translations = {
     addTaskShortcut: 'Them cong viec',
     noArchivedTasks: 'Khong co cong viec da luu tru.',
     weather: 'Thoi tiet',
-    creditCards: 'The',
-    creditCardAccounts: 'The tin dung',
+    creditCards: 'Tai chinh',
+    creditCardAccounts: 'Tai chinh',
+    creditCardSubTab: 'The tin dung',
+    creditCardInfoSubTab: 'Lien ket nhanh',
+    fastAccessLinks: 'Lien ket nhanh',
+    mortgageLink: 'Tien nha',
+    electricLink: 'Dien',
+    waterLink: 'Nuoc',
+    gasLink: 'Gas',
+    internetLink: 'Internet',
     cardName: 'So the',
     cardNamePlaceholder: 'So the hoac biet danh',
     creditCardUser: 'Nguoi dung',
@@ -598,6 +616,9 @@ const applyTranslations = () => {
   setText('label[for="task-tag"]', t('tag'));
   taskTagInput.placeholder = t('tagPlaceholder');
   setText('#tag-manager-title', t('manageTags'));
+  setText('#tasks-subtab', t('tasks'));
+  setText('#archived-subtab', t('archive'));
+  setText('#tag-subtab', t('tag'));
   setText('label[for="tag-name"]', t('tagName'));
   document.getElementById('tag-name').placeholder = t('tagPlaceholder');
   setText('#tag-form button[type="submit"]', t('addTag'));
@@ -655,6 +676,7 @@ const applyTranslations = () => {
   confirmDeleteNo.textContent = t('no');
   confirmDeleteYes.textContent = t('yes');
   if (currentUser) renderUserArea();
+  if (currentUser) setActiveTaskSubtab();
   if (currentUser) renderTags(tags);
   if (currentUser && (currentView === 'tasks' || currentView === 'archived')) renderTasks(tasks);
   if (currentUser && currentView === 'weather') renderWeatherView();
@@ -1332,6 +1354,16 @@ const handleWeatherListClick = async (event) => {
   }
 };
 
+const isTaskWorkspaceView = () => ['tasks', 'archived', 'tags'].includes(currentView);
+
+const setActiveTaskSubtab = () => {
+  taskSubtabs.forEach((tab) => {
+    const isActive = tab.dataset.taskTab === currentView;
+    tab.classList.toggle('active', isActive);
+    tab.setAttribute('aria-selected', String(isActive));
+  });
+};
+
 const showSection = () => {
   if (!currentUser) {
     authSection.classList.remove('hidden');
@@ -1348,10 +1380,11 @@ const showSection = () => {
 
   const showAdmin = currentView === 'admin' && currentUser.username === 'admin';
   const showCreditCards = currentView === 'credit-cards';
+  const showTaskWorkspace = isTaskWorkspaceView();
   taskSection.classList.toggle('hidden', showAdmin || showCreditCards);
   adminSection.classList.toggle('hidden', !showAdmin);
   creditCardSection.classList.toggle('hidden', !showCreditCards);
-  floatingAddTask.classList.toggle('hidden', showAdmin || showCreditCards || currentView === 'weather');
+  floatingAddTask.classList.toggle('hidden', showAdmin || showCreditCards || currentView === 'weather' || currentView === 'tags');
 
   if (showAdmin) {
     loadUsers();
@@ -1364,14 +1397,25 @@ const showSection = () => {
   }
 
   const showWeather = currentView === 'weather';
+  const showTags = currentView === 'tags';
+  taskSubtabNav.classList.toggle('hidden', !showTaskWorkspace);
+  setActiveTaskSubtab();
   quoteWidget.classList.toggle('hidden', showWeather);
-  taskHeader.classList.toggle('hidden', showWeather);
-  tagManager.classList.toggle('hidden', showWeather || currentView === 'archived');
-  taskList.classList.toggle('hidden', showWeather);
+  taskHeader.classList.toggle('hidden', showWeather || showTags);
+  tagManager.classList.toggle('hidden', !showTags);
+  taskList.classList.toggle('hidden', showWeather || showTags);
   weatherSection.classList.toggle('hidden', !showWeather);
 
   if (showWeather) {
     renderWeatherView();
+    return;
+  }
+
+  if (showTags) {
+    quoteWidget.classList.add('hidden');
+    taskForm.classList.add('hidden');
+    loadTags();
+    loadTasks();
     return;
   }
 
@@ -1406,19 +1450,12 @@ const renderUserArea = () => {
 
   const tasksButton = document.createElement('button');
   tasksButton.type = 'button';
-  tasksButton.className = `secondary ${currentView === 'tasks' ? 'active-nav' : ''}`;
+  tasksButton.className = `secondary ${isTaskWorkspaceView() ? 'active-nav' : ''}`;
   tasksButton.textContent = t('tasks');
   tasksButton.addEventListener('click', () => {
-    currentView = 'tasks';
-    showSection();
-  });
-
-  const archivedButton = document.createElement('button');
-  archivedButton.type = 'button';
-  archivedButton.className = `secondary ${currentView === 'archived' ? 'active-nav' : ''}`;
-  archivedButton.textContent = t('archived');
-  archivedButton.addEventListener('click', () => {
-    currentView = 'archived';
+    if (!isTaskWorkspaceView()) {
+      currentView = 'tasks';
+    }
     showSection();
   });
 
@@ -1440,17 +1477,6 @@ const renderUserArea = () => {
     showSection();
   });
 
-  const tagButton = document.createElement('button');
-  tagButton.type = 'button';
-  tagButton.className = 'secondary';
-  tagButton.textContent = t('tag');
-  tagButton.addEventListener('click', () => {
-    currentView = 'tasks';
-    showSection();
-    tagManager.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    document.getElementById('tag-name').focus();
-  });
-
   const addTaskButton = document.createElement('button');
   addTaskButton.type = 'button';
   addTaskButton.className = 'secondary add-task-shortcut';
@@ -1459,7 +1485,7 @@ const renderUserArea = () => {
   addTaskButton.title = t('addTaskShortcut');
   addTaskButton.addEventListener('click', openAddTaskFlow);
 
-  userArea.append(addTaskButton, tasksButton, archivedButton, weatherButton, creditCardsButton, tagButton);
+  userArea.append(addTaskButton, tasksButton, weatherButton, creditCardsButton);
 
   if (currentUser.username === 'admin') {
     const adminButton = document.createElement('button');
@@ -1639,11 +1665,7 @@ const renderTags = (tags) => {
     name.addEventListener('click', () => {
       currentTagFilter = tag.name;
       currentView = 'tasks';
-      renderUserArea();
-      taskForm.classList.remove('hidden');
-      tagManager.classList.remove('hidden');
-      renderTags(tags);
-      renderTasks(tasks);
+      showSection();
     });
 
     const editButton = document.createElement('button');
@@ -3122,6 +3144,12 @@ taskForm.addEventListener('submit', handleTaskSubmit);
 tagForm.addEventListener('submit', handleTagSubmit);
 weatherForm.addEventListener('submit', handleWeatherSubmit);
 weatherList.addEventListener('click', handleWeatherListClick);
+taskSubtabs.forEach((tab) => {
+  tab.addEventListener('click', () => {
+    currentView = tab.dataset.taskTab;
+    showSection();
+  });
+});
 creditCardModule.bind();
 editTaskForm.addEventListener('submit', handleEditTaskSubmit);
 adminUserForm.addEventListener('submit', handleAdminUserSubmit);

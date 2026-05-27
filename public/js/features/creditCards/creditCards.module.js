@@ -8,6 +8,11 @@
     const closingDateInput = document.getElementById('credit-card-closing-date');
     const list = document.getElementById('credit-card-list');
     const message = document.getElementById('credit-card-message');
+    const financialTabs = [...document.querySelectorAll('[data-financial-tab]')];
+    const financialPanels = {
+      cards: document.getElementById('credit-card-panel'),
+      info: document.getElementById('credit-card-info-panel'),
+    };
     const editModal = document.getElementById('edit-credit-card-modal');
     const editForm = document.getElementById('edit-credit-card-form');
     const editTitle = document.getElementById('edit-credit-card-title');
@@ -26,6 +31,27 @@
     const setText = (selector, text) => {
       const element = document.querySelector(selector);
       if (element) element.textContent = text;
+    };
+
+    const translateQuickLinks = () => {
+      document.querySelectorAll('.credit-card-link[data-i18n-key]').forEach((link) => {
+        link.textContent = t(link.dataset.i18nKey);
+      });
+    };
+
+    const setActiveFinancialTab = (tabName) => {
+      const normalizedTabName = financialPanels[tabName] ? tabName : 'cards';
+
+      financialTabs.forEach((tab) => {
+        const isActive = tab.dataset.financialTab === normalizedTabName;
+        tab.classList.toggle('active', isActive);
+        tab.setAttribute('aria-selected', String(isActive));
+      });
+
+      Object.entries(financialPanels).forEach(([name, panel]) => {
+        if (!panel) return;
+        panel.classList.toggle('hidden', name !== normalizedTabName);
+      });
     };
 
     const showEditError = (text) => {
@@ -337,6 +363,10 @@
 
     const applyTranslations = () => {
       setText('#credit-card-title', t('creditCardAccounts'));
+      setText('#credit-card-tab', t('creditCardSubTab'));
+      setText('#credit-card-info-tab', t('creditCardInfoSubTab'));
+      setText('#credit-card-quick-links-title', t('fastAccessLinks'));
+      translateQuickLinks();
       setText('label[for="credit-card-name"]', t('cardName'));
       nameInput.placeholder = t('cardNamePlaceholder');
       setText('label[for="credit-card-user"]', t('creditCardUser'));
@@ -365,6 +395,10 @@
     };
 
     const bind = () => {
+      financialTabs.forEach((tab) => {
+        tab.addEventListener('click', () => setActiveFinancialTab(tab.dataset.financialTab));
+      });
+      setActiveFinancialTab('cards');
       form.addEventListener('submit', handleSubmit);
       editForm.addEventListener('submit', async (event) => {
         event.preventDefault();
