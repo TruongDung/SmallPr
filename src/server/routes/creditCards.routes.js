@@ -1,8 +1,67 @@
 const express = require('express');
 
-const { MAX_CREDIT_CARD_NAME_LENGTH } = require('../constants/creditCards');
+const {
+  CREDIT_CARD_ISSUERS,
+  MAX_CREDIT_CARD_NAME_LENGTH,
+  MAX_CREDIT_CARD_USER_LENGTH,
+} = require('../constants/creditCards');
 const { createCreditCardsService } = require('../services/creditCards.service');
-const { normalizeClosingDate, normalizeCreditCardBalance } = require('../utils/creditCards');
+const {
+  normalizeClosingDate,
+  normalizeCreditCardBalance,
+  normalizeCreditCardIssuer,
+  normalizeCreditCardUser,
+} = require('../utils/creditCards');
+
+const validateCreditCardDetails = ({ name, card_user, issuer, total_balance, closing_date }, existingCard = {}) => {
+  const normalizedName = name === undefined ? existingCard.name : String(name || '').trim();
+  if (!normalizedName) {
+    return { error: 'Credit card No is required' };
+  }
+
+  if (normalizedName.length > MAX_CREDIT_CARD_NAME_LENGTH) {
+    return { error: `Credit card No must be ${MAX_CREDIT_CARD_NAME_LENGTH} characters or less` };
+  }
+
+  const normalizedCardUser = card_user === undefined
+    ? normalizeCreditCardUser(existingCard.card_user)
+    : normalizeCreditCardUser(card_user);
+  if (normalizedCardUser.length > MAX_CREDIT_CARD_USER_LENGTH) {
+    return { error: `User must be ${MAX_CREDIT_CARD_USER_LENGTH} characters or less` };
+  }
+
+  const normalizedIssuer = normalizeCreditCardIssuer(
+    issuer === undefined ? existingCard.issuer : issuer,
+    CREDIT_CARD_ISSUERS
+  );
+  if (normalizedIssuer === null) {
+    return { error: 'Card type must be one of the available options' };
+  }
+
+  const normalizedBalance = total_balance === undefined
+    ? Number(existingCard.total_balance || 0)
+    : normalizeCreditCardBalance(total_balance);
+  if (normalizedBalance === null) {
+    return { error: 'Total balance must be a valid amount' };
+  }
+
+  const normalizedClosingDate = normalizeClosingDate(
+    closing_date === undefined ? existingCard.closing_date : closing_date
+  );
+  if (normalizedClosingDate === null) {
+    return { error: 'Closing date must be a valid date' };
+  }
+
+  return {
+    values: {
+      name: normalizedName,
+      cardUser: normalizedCardUser,
+      issuer: normalizedIssuer,
+      totalBalance: normalizedBalance,
+      closingDate: normalizedClosingDate,
+    },
+  };
+};
 
 const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync }) => {
   const router = express.Router();
@@ -21,33 +80,15 @@ const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync })
   });
 
   router.post('/', async (req, res) => {
-    const { name, total_balance, closing_date } = req.body;
-    const normalizedName = String(name || '').trim();
-
-    if (!normalizedName) {
-      return res.status(400).json({ error: 'Credit card No is required' });
-    }
-
-    if (normalizedName.length > MAX_CREDIT_CARD_NAME_LENGTH) {
-      return res.status(400).json({ error: `Credit card No must be ${MAX_CREDIT_CARD_NAME_LENGTH} characters or less` });
-    }
-
-    const normalizedBalance = normalizeCreditCardBalance(total_balance);
-    if (normalizedBalance === null) {
-      return res.status(400).json({ error: 'Total balance must be a valid amount' });
-    }
-
-    const normalizedClosingDate = normalizeClosingDate(closing_date);
-    if (normalizedClosingDate === null) {
-      return res.status(400).json({ error: 'Closing date must be a valid date' });
+    const validation = validateCreditCardDetails(req.body);
+    if (validation.error) {
+      return res.status(400).json({ error: validation.error });
     }
 
     try {
       const card = await creditCards.create({
         userId: req.session.userId,
-        name: normalizedName,
-        totalBalance: normalizedBalance,
-        closingDate: normalizedClosingDate,
+        ...validation.values,
       });
       res.json({ card });
     } catch (error) {
@@ -58,7 +99,6 @@ const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync })
 
   router.put('/:id', async (req, res) => {
     const { id } = req.params;
-    const { name, total_balance, closing_date } = req.body;
 
     try {
       const card = await creditCards.findForUser(id, req.session.userId);
@@ -66,31 +106,15 @@ const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync })
         return res.status(404).json({ error: 'Credit card not found' });
       }
 
-      const normalizedName = name === undefined ? card.name : String(name || '').trim();
-      if (!normalizedName) {
-        return res.status(400).json({ error: 'Credit card No is required' });
-      }
-
-      if (normalizedName.length > MAX_CREDIT_CARD_NAME_LENGTH) {
-        return res.status(400).json({ error: `Credit card No must be ${MAX_CREDIT_CARD_NAME_LENGTH} characters or less` });
-      }
-
-      const normalizedBalance = total_balance === undefined ? Number(card.total_balance) : normalizeCreditCardBalance(total_balance);
-      if (normalizedBalance === null) {
-        return res.status(400).json({ error: 'Total balance must be a valid amount' });
-      }
-
-      const normalizedClosingDate = normalizeClosingDate(closing_date === undefined ? card.closing_date : closing_date);
-      if (normalizedClosingDate === null) {
-        return res.status(400).json({ error: 'Closing date must be a valid date' });
+      const validation = validateCreditCardDetails(req.body, card);
+      if (validation.error) {
+        return res.status(400).json({ error: validation.error });
       }
 
       const updatedCard = await creditCards.update({
         id,
         userId: req.session.userId,
-        name: normalizedName,
-        totalBalance: normalizedBalance,
-        closingDate: normalizedClosingDate,
+        ...validation.values,
       });
       res.json({ card: updatedCard });
     } catch (error) {

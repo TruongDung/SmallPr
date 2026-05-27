@@ -1,6 +1,8 @@
+const CREDIT_CARD_SELECT = 'id, name, card_user, issuer, total_balance, closing_date, created_at, updated_at';
+
 const createCreditCardsService = ({ allAsync, getAsync, runAsync }) => {
   const listForUser = (userId) => allAsync(
-    `SELECT id, name, total_balance, closing_date, created_at, updated_at
+    `SELECT ${CREDIT_CARD_SELECT}
      FROM credit_cards
      WHERE user_id = ?
      ORDER BY LOWER(name), name`,
@@ -13,25 +15,25 @@ const createCreditCardsService = ({ allAsync, getAsync, runAsync }) => {
   );
 
   const findById = (id) => getAsync(
-    'SELECT id, name, total_balance, closing_date, created_at, updated_at FROM credit_cards WHERE id = ?',
+    `SELECT ${CREDIT_CARD_SELECT} FROM credit_cards WHERE id = ?`,
     [id]
   );
 
-  const create = async ({ userId, name, totalBalance, closingDate }) => {
+  const create = async ({ userId, name, cardUser, issuer, totalBalance, closingDate }) => {
     const result = await runAsync(
-      `INSERT INTO credit_cards (user_id, name, total_balance, closing_date)
-       VALUES (?, ?, ?, ?)
+      `INSERT INTO credit_cards (user_id, name, card_user, issuer, total_balance, closing_date)
+       VALUES (?, ?, ?, ?, ?, ?)
        RETURNING id`,
-      [userId, name, totalBalance, closingDate || null]
+      [userId, name, cardUser || null, issuer || null, totalBalance, closingDate || null]
     );
 
     return findById(result.lastID);
   };
 
-  const update = async ({ id, userId, name, totalBalance, closingDate }) => {
+  const update = async ({ id, userId, name, cardUser, issuer, totalBalance, closingDate }) => {
     await runAsync(
-      'UPDATE credit_cards SET name = ?, total_balance = ?, closing_date = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?',
-      [name, totalBalance, closingDate || null, id, userId]
+      'UPDATE credit_cards SET name = ?, card_user = ?, issuer = ?, total_balance = ?, closing_date = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?',
+      [name, cardUser || null, issuer || null, totalBalance, closingDate || null, id, userId]
     );
 
     return findById(id);

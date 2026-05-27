@@ -989,6 +989,8 @@ describe('Credit Card API', () => {
       .post('/api/credit-cards')
       .send({
         name: 'Chase Sapphire',
+        card_user: 'Casey',
+        issuer: 'chase',
         total_balance: '1240.55',
         closing_date: '2026-06-15',
       });
@@ -996,6 +998,8 @@ describe('Credit Card API', () => {
     expect(createResponse.statusCode).toBe(200);
     expect(createResponse.body.card).toMatchObject({
       name: 'Chase Sapphire',
+      card_user: 'Casey',
+      issuer: 'chase',
       closing_date: '2026-06-15',
     });
     expect(Number(createResponse.body.card.total_balance)).toBeCloseTo(1240.55);
@@ -1005,6 +1009,8 @@ describe('Credit Card API', () => {
     expect(listResponse.body.cards).toHaveLength(1);
     expect(listResponse.body.cards[0]).toMatchObject({
       name: 'Chase Sapphire',
+      card_user: 'Casey',
+      issuer: 'chase',
       closing_date: '2026-06-15',
     });
 
@@ -1012,6 +1018,8 @@ describe('Credit Card API', () => {
       .put(`/api/credit-cards/${createResponse.body.card.id}`)
       .send({
         name: 'Chase Freedom',
+        card_user: 'Morgan',
+        issuer: 'citi',
         total_balance: '840.10',
         closing_date: '2026-07-20',
       });
@@ -1019,6 +1027,8 @@ describe('Credit Card API', () => {
     expect(updateResponse.statusCode).toBe(200);
     expect(updateResponse.body.card).toMatchObject({
       name: 'Chase Freedom',
+      card_user: 'Morgan',
+      issuer: 'citi',
       closing_date: '2026-07-20',
     });
     expect(Number(updateResponse.body.card.total_balance)).toBeCloseTo(840.10);
@@ -1047,6 +1057,13 @@ describe('Credit Card API', () => {
 
     expect(invalidDateResponse.statusCode).toBe(400);
     expect(invalidDateResponse.body).toHaveProperty('error', 'Closing date must be a valid date');
+
+    const invalidIssuerResponse = await agent
+      .post('/api/credit-cards')
+      .send({ name: 'Bad issuer', issuer: 'not-real', total_balance: '10.00', closing_date: '2026-06-15' });
+
+    expect(invalidIssuerResponse.statusCode).toBe(400);
+    expect(invalidIssuerResponse.body).toHaveProperty('error', 'Card type must be one of the available options');
   });
 
   test('protects credit cards owned by other users', async () => {

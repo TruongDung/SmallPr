@@ -29,7 +29,26 @@ const normalizeClosingDate = (closingDate) => {
   return normalized;
 };
 
+const normalizeCreditCardUser = (cardUser) => {
+  if (cardUser === undefined || cardUser === null) {
+    return '';
+  }
+
+  return String(cardUser).trim();
+};
+
+const normalizeCreditCardIssuer = (issuer, allowedIssuers) => {
+  if (issuer === undefined || issuer === null || issuer === '') {
+    return '';
+  }
+
+  const normalized = String(issuer).trim().toLowerCase();
+  return allowedIssuers.includes(normalized) ? normalized : null;
+};
+
 module.exports = {
   normalizeClosingDate,
   normalizeCreditCardBalance,
+  normalizeCreditCardIssuer,
+  normalizeCreditCardUser,
 };

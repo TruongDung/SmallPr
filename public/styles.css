@@ -1645,7 +1645,7 @@ body.theme-dark .status-in_progress {
 
 .credit-card-form {
   display: grid;
-  grid-template-columns: minmax(180px, 1.2fr) minmax(140px, 0.8fr) minmax(150px, 0.8fr) auto;
+  grid-template-columns: minmax(150px, 1fr) minmax(130px, 0.8fr) minmax(130px, 0.8fr) minmax(120px, 0.7fr) minmax(140px, 0.8fr) auto;
   gap: 12px;
   align-items: end;
   margin-bottom: 18px;
@@ -1661,7 +1661,9 @@ body.theme-dark .status-in_progress {
 }
 
 .credit-card-form input,
-.credit-card-edit-form input {
+.credit-card-form select,
+.credit-card-edit-form input,
+.credit-card-edit-form select {
   min-height: 42px;
   border-radius: 8px;
 }
@@ -1691,7 +1693,7 @@ body.theme-dark .status-in_progress {
 
 .credit-card-table {
   width: 100%;
-  min-width: 680px;
+  min-width: 880px;
   border-collapse: collapse;
 }
 

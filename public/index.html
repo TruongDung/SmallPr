@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=credit-cards-2" />
+  <link rel="stylesheet" href="styles.css?v=credit-cards-3" />
 </head>
 <body>
   <div class="container">
@@ -237,7 +237,25 @@
         <form id="credit-card-form" class="credit-card-form">
           <div class="field">
             <label for="credit-card-name">Card No</label>
-            <input id="credit-card-name" type="text" maxlength="80" placeholder="Visa, Amex, Chase..." required />
+            <input id="credit-card-name" type="text" maxlength="80" placeholder="Card number or nickname" required />
+          </div>
+          <div class="field">
+            <label for="credit-card-user">User</label>
+            <input id="credit-card-user" type="text" maxlength="80" placeholder="Card holder" />
+          </div>
+          <div class="field">
+            <label for="credit-card-issuer">Type</label>
+            <select id="credit-card-issuer">
+              <option value="">Select type</option>
+              <option value="citi">Citi</option>
+              <option value="amex">Amex</option>
+              <option value="discover">Discover</option>
+              <option value="boa">BOA</option>
+              <option value="chase">Chase</option>
+              <option value="capital_one">Capital One</option>
+              <option value="wells_fargo">Wells Fargo</option>
+              <option value="other">Other</option>
+            </select>
           </div>
           <div class="field">
             <label for="credit-card-balance">Total balance</label>
@@ -254,7 +272,9 @@
           <table class="credit-card-table">
             <thead>
               <tr>
-                <th>Card</th>
+                <th>Card No</th>
+                <th>User</th>
+                <th>Type</th>
                 <th>Total Balance</th>
                 <th>Closing Date</th>
                 <th>Actions</th>
@@ -328,7 +348,25 @@
       <form id="edit-credit-card-form" class="credit-card-edit-form" novalidate>
         <div class="field">
           <label for="edit-credit-card-name">Card No</label>
-          <input id="edit-credit-card-name" type="text" maxlength="80" placeholder="Visa, Amex, Chase..." required />
+          <input id="edit-credit-card-name" type="text" maxlength="80" placeholder="Card number or nickname" required />
+        </div>
+        <div class="field">
+          <label for="edit-credit-card-user">User</label>
+          <input id="edit-credit-card-user" type="text" maxlength="80" placeholder="Card holder" />
+        </div>
+        <div class="field">
+          <label for="edit-credit-card-issuer">Type</label>
+          <select id="edit-credit-card-issuer">
+            <option value="">Select type</option>
+            <option value="citi">Citi</option>
+            <option value="amex">Amex</option>
+            <option value="discover">Discover</option>
+            <option value="boa">BOA</option>
+            <option value="chase">Chase</option>
+            <option value="capital_one">Capital One</option>
+            <option value="wells_fargo">Wells Fargo</option>
+            <option value="other">Other</option>
+          </select>
         </div>
         <div class="field">
           <label for="edit-credit-card-balance">Total balance</label>
@@ -485,7 +523,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.min.js"></script>
-  <script src="js/features/creditCards/creditCards.module.js?v=credit-cards-module-4"></script>
+  <script src="js/features/creditCards/creditCards.module.js?v=credit-cards-module-5"></script>
   <script src="app.js?v=credit-cards-module-3"></script>
 </body>
 </html>

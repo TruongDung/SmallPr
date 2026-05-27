@@ -2,6 +2,8 @@
   const create = ({ request, t, showStatusToast, getLanguage }) => {
     const form = document.getElementById('credit-card-form');
     const nameInput = document.getElementById('credit-card-name');
+    const userInput = document.getElementById('credit-card-user');
+    const issuerInput = document.getElementById('credit-card-issuer');
     const balanceInput = document.getElementById('credit-card-balance');
     const closingDateInput = document.getElementById('credit-card-closing-date');
     const list = document.getElementById('credit-card-list');
@@ -10,6 +12,8 @@
     const editForm = document.getElementById('edit-credit-card-form');
     const editTitle = document.getElementById('edit-credit-card-title');
     const editNameInput = document.getElementById('edit-credit-card-name');
+    const editUserInput = document.getElementById('edit-credit-card-user');
+    const editIssuerInput = document.getElementById('edit-credit-card-issuer');
     const editBalanceInput = document.getElementById('edit-credit-card-balance');
     const editClosingDateInput = document.getElementById('edit-credit-card-closing-date');
     const editError = document.getElementById('edit-credit-card-error');
@@ -52,6 +56,19 @@
       });
     };
 
+    const issuerLabels = {
+      citi: 'Citi',
+      amex: 'Amex',
+      discover: 'Discover',
+      boa: 'BOA',
+      chase: 'Chase',
+      capital_one: 'Capital One',
+      wells_fargo: 'Wells Fargo',
+      other: 'Other',
+    };
+
+    const formatIssuer = (issuer) => issuerLabels[issuer] || t('notAvailable');
+
     const formatBalanceInput = (value) => {
       const amount = Number(value || 0);
       return Number.isFinite(amount) ? amount.toFixed(2) : '';
@@ -62,6 +79,8 @@
       clearEditError();
       editForm.reset();
       editNameInput.value = card.name || '';
+      editUserInput.value = card.card_user || '';
+      editIssuerInput.value = card.issuer || '';
       editBalanceInput.value = formatBalanceInput(card.total_balance);
       editClosingDateInput.value = card.closing_date || '';
       editModal.classList.remove('hidden');
@@ -92,6 +111,8 @@
         method: 'PUT',
         body: JSON.stringify({
           name,
+          card_user: editUserInput.value.trim(),
+          issuer: editIssuerInput.value,
           total_balance: editBalanceInput.value,
           closing_date: editClosingDateInput.value,
         }),
@@ -113,7 +134,7 @@
       if (!cardsToRender.length) {
         const row = document.createElement('tr');
         const cell = document.createElement('td');
-        cell.colSpan = 4;
+        cell.colSpan = 6;
         cell.className = 'credit-card-empty';
         cell.textContent = t('noCreditCards');
         row.append(cell);
@@ -128,6 +149,12 @@
         const name = document.createElement('strong');
         name.textContent = card.name;
         nameCell.append(name);
+
+        const userCell = document.createElement('td');
+        userCell.textContent = card.card_user || t('notAvailable');
+
+        const issuerCell = document.createElement('td');
+        issuerCell.textContent = formatIssuer(card.issuer);
 
         const balanceCell = document.createElement('td');
         balanceCell.textContent = formatCurrency(card.total_balance);
@@ -146,7 +173,7 @@
         actions.append(editButton);
         actionsCell.append(actions);
 
-        row.append(nameCell, balanceCell, closingDateCell, actionsCell);
+        row.append(nameCell, userCell, issuerCell, balanceCell, closingDateCell, actionsCell);
         list.append(row);
       });
     };
@@ -178,6 +205,8 @@
         method: 'POST',
         body: JSON.stringify({
           name,
+          card_user: userInput.value.trim(),
+          issuer: issuerInput.value,
           total_balance: balanceInput.value,
           closing_date: closingDateInput.value,
         }),
@@ -197,16 +226,24 @@
       setText('#credit-card-title', t('creditCardAccounts'));
       setText('label[for="credit-card-name"]', t('cardName'));
       nameInput.placeholder = t('cardNamePlaceholder');
+      setText('label[for="credit-card-user"]', t('creditCardUser'));
+      userInput.placeholder = t('creditCardUserPlaceholder');
+      setText('label[for="credit-card-issuer"]', t('creditCardIssuer'));
       setText('label[for="credit-card-balance"]', t('totalBalance'));
       setText('label[for="credit-card-closing-date"]', t('closingDate'));
       setText('#add-credit-card', t('addCard'));
       setText('.credit-card-table th:nth-child(1)', t('cardName'));
-      setText('.credit-card-table th:nth-child(2)', t('totalBalance'));
-      setText('.credit-card-table th:nth-child(3)', t('closingDate'));
-      setText('.credit-card-table th:nth-child(4)', t('actions'));
+      setText('.credit-card-table th:nth-child(2)', t('creditCardUser'));
+      setText('.credit-card-table th:nth-child(3)', t('creditCardIssuer'));
+      setText('.credit-card-table th:nth-child(4)', t('totalBalance'));
+      setText('.credit-card-table th:nth-child(5)', t('closingDate'));
+      setText('.credit-card-table th:nth-child(6)', t('actions'));
       if (editTitle) editTitle.textContent = t('editCreditCard');
       setText('label[for="edit-credit-card-name"]', t('cardName'));
       editNameInput.placeholder = t('cardNamePlaceholder');
+      setText('label[for="edit-credit-card-user"]', t('creditCardUser'));
+      editUserInput.placeholder = t('creditCardUserPlaceholder');
+      setText('label[for="edit-credit-card-issuer"]', t('creditCardIssuer'));
       setText('label[for="edit-credit-card-balance"]', t('totalBalance'));
       setText('label[for="edit-credit-card-closing-date"]', t('closingDate'));
       if (cancelEditButton) cancelEditButton.textContent = t('cancel');
