@@ -187,7 +187,10 @@ const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync })
 
   router.get('/', async (req, res) => {
     try {
-      const cards = await creditCards.listForUser(req.session.userId);
+      const accountUser = await creditCards.getAccountUser(req.session.userId);
+      const cards = accountUser?.username === 'admin'
+        ? await creditCards.listForAdmin()
+        : await creditCards.listForUser(req.session.userId);
       res.json({ cards });
     } catch (error) {
       console.error(error);

@@ -64,6 +64,13 @@ const createCreditCardsService = ({ allAsync, getAsync, runAsync }) => {
     [userId]
   );
 
+  const listForAdmin = () => allAsync(
+    `SELECT ${CREDIT_CARD_SELECT}
+     FROM credit_cards
+     WHERE user_id = (SELECT id FROM users WHERE username = 'admin' ORDER BY id LIMIT 1)
+     ORDER BY LOWER(COALESCE(card_user, '')), card_user, LOWER(name), name`
+  );
+
   const seedFastAccessBillsForUser = async (userId) => {
     const existing = await getAsync(
       'SELECT id FROM fast_access_bills WHERE user_id = ? LIMIT 1',
@@ -109,6 +116,7 @@ const createCreditCardsService = ({ allAsync, getAsync, runAsync }) => {
     getAccountUser,
     listFastAccessBillsForUser,
     listCardUsersForUser,
+    listForAdmin,
     seedFastAccessBillsForUser,
     listForUser,
     update,

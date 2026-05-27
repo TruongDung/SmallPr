@@ -1042,6 +1042,37 @@ describe('Credit Card API', () => {
     expect(Number(updateResponse.body.card.total_balance)).toBeCloseTo(840.10);
   });
 
+  test('lists credit cards owned by the admin account for admin login', async () => {
+    const adminUser = await db.query("SELECT id FROM users WHERE username = 'admin'");
+    const adminId = adminUser.rows[0].id;
+    const cardName = `${RUN_ID}-Admin card`;
+    await db.query(
+      `INSERT INTO credit_cards (user_id, name, total_balance, closing_date, card_user, issuer)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [adminId, cardName, '123.45', '2026-06-15', 'admin', 'chase']
+    );
+
+    const agent = request.agent(app);
+    const loginResponse = await agent
+      .post('/api/login')
+      .send({ username: 'admin', password: 'admin123456' });
+
+    expect(loginResponse.statusCode).toBe(200);
+
+    const listResponse = await agent.get('/api/credit-cards');
+    expect(listResponse.statusCode).toBe(200);
+    expect(listResponse.body.cards).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: cardName,
+          card_user: 'admin',
+          issuer: 'chase',
+          closing_date: '2026-06-15',
+        }),
+      ])
+    );
+  });
+
   test('validates credit card payloads', async () => {
     const agent = await createAgent(testUsername('credit-card-validation-owner'));
 
