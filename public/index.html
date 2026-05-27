@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=credit-cards-1" />
+  <link rel="stylesheet" href="styles.css?v=credit-cards-2" />
 </head>
 <body>
   <div class="container">
@@ -236,7 +236,7 @@
 
         <form id="credit-card-form" class="credit-card-form">
           <div class="field">
-            <label for="credit-card-name">Card name</label>
+            <label for="credit-card-name">Card No</label>
             <input id="credit-card-name" type="text" maxlength="80" placeholder="Visa, Amex, Chase..." required />
           </div>
           <div class="field">
@@ -317,6 +317,31 @@
         <div class="modal-actions">
           <button id="cancel-edit-tag" type="button" class="secondary">Cancel</button>
           <button id="save-edit-tag" type="submit">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="edit-credit-card-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="edit-credit-card-title">
+    <div class="modal credit-card-edit-modal">
+      <h3 id="edit-credit-card-title">Edit card</h3>
+      <form id="edit-credit-card-form" class="credit-card-edit-form" novalidate>
+        <div class="field">
+          <label for="edit-credit-card-name">Card No</label>
+          <input id="edit-credit-card-name" type="text" maxlength="80" placeholder="Visa, Amex, Chase..." required />
+        </div>
+        <div class="field">
+          <label for="edit-credit-card-balance">Total balance</label>
+          <input id="edit-credit-card-balance" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
+        </div>
+        <div class="field">
+          <label for="edit-credit-card-closing-date">Closing date</label>
+          <input id="edit-credit-card-closing-date" type="date" />
+        </div>
+        <p id="edit-credit-card-error" class="field-error hidden"></p>
+        <div class="modal-actions">
+          <button id="cancel-edit-credit-card" type="button" class="secondary">Cancel</button>
+          <button id="save-edit-credit-card" type="submit">Save</button>
         </div>
       </form>
     </div>
@@ -460,7 +485,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.min.js"></script>
-  <script src="credit-cards.js?v=credit-cards-module-2"></script>
-  <script src="app.js?v=credit-cards-module-2"></script>
+  <script src="js/features/creditCards/creditCards.module.js?v=credit-cards-module-4"></script>
+  <script src="app.js?v=credit-cards-module-3"></script>
 </body>
 </html>

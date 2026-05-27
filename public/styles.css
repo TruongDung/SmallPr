@@ -1655,20 +1655,34 @@ body.theme-dark .status-in_progress {
   background: var(--surface-soft);
 }
 
-.credit-card-form .field {
+.credit-card-form .field,
+.credit-card-edit-form .field {
   margin-bottom: 0;
 }
 
-.credit-card-form input {
+.credit-card-form input,
+.credit-card-edit-form input {
   min-height: 42px;
   border-radius: 8px;
 }
 
 .credit-card-form button,
-.credit-card-table button {
+.credit-card-table button,
+.credit-card-edit-form button {
   min-height: 38px;
   padding: 8px 12px;
   border-radius: 8px;
+}
+
+.credit-card-edit-form {
+  display: grid;
+  gap: 14px;
+}
+
+.credit-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 .credit-card-table-wrap {

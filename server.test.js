@@ -982,7 +982,7 @@ describe('Credit Card API', () => {
     expect(response.body).toHaveProperty('error', 'Authentication required');
   });
 
-  test('creates, lists, and updates a credit card closing date', async () => {
+  test('creates, lists, and updates a credit card', async () => {
     const agent = await createAgent(testUsername('credit-card-owner'));
 
     const createResponse = await agent
@@ -1010,13 +1010,18 @@ describe('Credit Card API', () => {
 
     const updateResponse = await agent
       .put(`/api/credit-cards/${createResponse.body.card.id}`)
-      .send({ closing_date: '2026-07-20' });
+      .send({
+        name: 'Chase Freedom',
+        total_balance: '840.10',
+        closing_date: '2026-07-20',
+      });
 
     expect(updateResponse.statusCode).toBe(200);
     expect(updateResponse.body.card).toMatchObject({
-      name: 'Chase Sapphire',
+      name: 'Chase Freedom',
       closing_date: '2026-07-20',
     });
+    expect(Number(updateResponse.body.card.total_balance)).toBeCloseTo(840.10);
   });
 
   test('validates credit card payloads', async () => {
@@ -1027,7 +1032,7 @@ describe('Credit Card API', () => {
       .send({ total_balance: '10.00', closing_date: '2026-06-15' });
 
     expect(missingNameResponse.statusCode).toBe(400);
-    expect(missingNameResponse.body).toHaveProperty('error', 'Credit card name is required');
+    expect(missingNameResponse.body).toHaveProperty('error', 'Credit card No is required');
 
     const invalidBalanceResponse = await agent
       .post('/api/credit-cards')

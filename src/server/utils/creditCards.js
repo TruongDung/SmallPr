@@ -1,0 +1,35 @@
+const normalizeCreditCardBalance = (balance) => {
+  if (balance === undefined || balance === null || balance === '') {
+    return 0;
+  }
+
+  const normalized = Number(balance);
+  if (!Number.isFinite(normalized) || normalized < 0 || normalized > 9999999999.99) {
+    return null;
+  }
+
+  return Math.round(normalized * 100) / 100;
+};
+
+const normalizeClosingDate = (closingDate) => {
+  if (closingDate === undefined || closingDate === null || closingDate === '') {
+    return '';
+  }
+
+  const normalized = String(closingDate);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    return null;
+  }
+
+  const date = new Date(`${normalized}T00:00:00Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== normalized) {
+    return null;
+  }
+
+  return normalized;
+};
+
+module.exports = {
+  normalizeClosingDate,
+  normalizeCreditCardBalance,
+};

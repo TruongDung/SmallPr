@@ -2,19 +2,17 @@ require('dotenv').config();
 
 const express = require('express');
 const bcrypt = require('bcrypt');
-const { Pool } = require('pg');
 const session = require('express-session');
 const path = require('path');
 const nodemailer = require('nodemailer');
+const { PORT, TASK_ALERT_TO } = require('./src/server/config/env');
+const { allAsync, getAsync, pool, runAsync } = require('./src/server/db/client');
+const createCreditCardsRouter = require('./src/server/routes/creditCards.routes');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-const DATABASE_URL = process.env.DATABASE_URL;
-const TASK_ALERT_TO = process.env.TASK_ALERT_TO;
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const MAX_TAG_LENGTH = 40;
 const MAX_TASK_TEXT_LENGTH = 10000;
-const MAX_CREDIT_CARD_NAME_LENGTH = 80;
 const MAX_WEATHER_CITY_LENGTH = 120;
 const VALID_PRIORITIES = new Set(['low', 'medium', 'high']);
 const VALID_STATUSES = new Set(['todo', 'in_progress', 'done']);
@@ -30,43 +28,6 @@ const TASK_PRIORITY_ORDER_SQL = `
 const DEFAULT_DAILY_QUOTE = {
   text: 'Make it simple enough to begin.',
   author: 'Unknown',
-};
-
-if (!DATABASE_URL || DATABASE_URL.includes('[YOUR-PASSWORD]')) {
-  throw new Error('DATABASE_URL must be set to your Supabase Postgres connection string.');
-}
-
-const pool = new Pool({
-  connectionString: DATABASE_URL,
-  ssl: /localhost|127\.0\.0\.1/.test(DATABASE_URL) ? false : { rejectUnauthorized: false },
-  connectionTimeoutMillis: 10000,
-});
-
-const toPostgresSql = (sql) => {
-  let index = 0;
-  return sql.replace(/\?/g, () => `$${++index}`);
-};
-
-const queryAsync = async (sql, params = []) => {
-  return pool.query(toPostgresSql(sql), params);
-};
-
-const runAsync = async (sql, params = []) => {
-  const result = await queryAsync(sql, params);
-  return {
-    changes: result.rowCount,
-    lastID: result.rows[0]?.id,
-  };
-};
-
-const getAsync = async (sql, params = []) => {
-  const result = await queryAsync(sql, params);
-  return result.rows[0];
-};
-
-const allAsync = async (sql, params = []) => {
-  const result = await queryAsync(sql, params);
-  return result.rows;
 };
 
 const initializeDatabase = async () => {
@@ -184,37 +145,6 @@ const normalizeStatus = (status, fallback = 'todo') => {
 
   const normalized = String(status).toLowerCase();
   return VALID_STATUSES.has(normalized) ? normalized : null;
-};
-
-const normalizeCreditCardBalance = (balance) => {
-  if (balance === undefined || balance === null || balance === '') {
-    return 0;
-  }
-
-  const normalized = Number(balance);
-  if (!Number.isFinite(normalized) || normalized < 0 || normalized > 9999999999.99) {
-    return null;
-  }
-
-  return Math.round(normalized * 100) / 100;
-};
-
-const normalizeClosingDate = (closingDate) => {
-  if (closingDate === undefined || closingDate === null || closingDate === '') {
-    return '';
-  }
-
-  const normalized = String(closingDate);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
-    return null;
-  }
-
-  const date = new Date(`${normalized}T00:00:00Z`);
-  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== normalized) {
-    return null;
-  }
-
-  return normalized;
 };
 
 const EMAIL_TRANSLATIONS = {
@@ -811,6 +741,13 @@ const adminRequired = async (req, res, next) => {
   }
 };
 
+app.use('/api/credit-cards', createCreditCardsRouter({
+  authRequired,
+  allAsync,
+  getAsync,
+  runAsync,
+}));
+
 app.post('/api/signup', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
@@ -1058,89 +995,6 @@ app.delete('/api/weather-cities/:id', authRequired, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to delete weather city' });
-  }
-});
-
-app.get('/api/credit-cards', authRequired, async (req, res) => {
-  try {
-    const cards = await allAsync(
-      `SELECT id, name, total_balance, closing_date, created_at, updated_at
-       FROM credit_cards
-       WHERE user_id = ?
-       ORDER BY LOWER(name), name`,
-      [req.session.userId]
-    );
-    res.json({ cards });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to load credit cards' });
-  }
-});
-
-app.post('/api/credit-cards', authRequired, async (req, res) => {
-  const { name, total_balance, closing_date } = req.body;
-  const normalizedName = String(name || '').trim();
-
-  if (!normalizedName) {
-    return res.status(400).json({ error: 'Credit card name is required' });
-  }
-
-  if (normalizedName.length > MAX_CREDIT_CARD_NAME_LENGTH) {
-    return res.status(400).json({ error: `Credit card name must be ${MAX_CREDIT_CARD_NAME_LENGTH} characters or less` });
-  }
-
-  const normalizedBalance = normalizeCreditCardBalance(total_balance);
-  if (normalizedBalance === null) {
-    return res.status(400).json({ error: 'Total balance must be a valid amount' });
-  }
-
-  const normalizedClosingDate = normalizeClosingDate(closing_date);
-  if (normalizedClosingDate === null) {
-    return res.status(400).json({ error: 'Closing date must be a valid date' });
-  }
-
-  try {
-    const result = await runAsync(
-      `INSERT INTO credit_cards (user_id, name, total_balance, closing_date)
-       VALUES (?, ?, ?, ?)
-       RETURNING id`,
-      [req.session.userId, normalizedName, normalizedBalance, normalizedClosingDate || null]
-    );
-    const card = await getAsync('SELECT id, name, total_balance, closing_date, created_at, updated_at FROM credit_cards WHERE id = ?', [result.lastID]);
-    res.json({ card });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to create credit card' });
-  }
-});
-
-app.put('/api/credit-cards/:id', authRequired, async (req, res) => {
-  const { id } = req.params;
-  const { closing_date } = req.body;
-  const normalizedClosingDate = normalizeClosingDate(closing_date);
-
-  if (normalizedClosingDate === null) {
-    return res.status(400).json({ error: 'Closing date must be a valid date' });
-  }
-
-  try {
-    const card = await getAsync('SELECT * FROM credit_cards WHERE id = ? AND user_id = ?', [id, req.session.userId]);
-    if (!card) {
-      return res.status(404).json({ error: 'Credit card not found' });
-    }
-
-    await runAsync(
-      'UPDATE credit_cards SET closing_date = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?',
-      [normalizedClosingDate || null, id, req.session.userId]
-    );
-    const updatedCard = await getAsync(
-      'SELECT id, name, total_balance, closing_date, created_at, updated_at FROM credit_cards WHERE id = ?',
-      [id]
-    );
-    res.json({ card: updatedCard });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to update credit card' });
   }
 });
 

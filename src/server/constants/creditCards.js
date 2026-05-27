@@ -1,0 +1,5 @@
+const MAX_CREDIT_CARD_NAME_LENGTH = 80;
+
+module.exports = {
+  MAX_CREDIT_CARD_NAME_LENGTH,
+};
