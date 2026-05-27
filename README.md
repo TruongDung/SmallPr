@@ -37,17 +37,18 @@ If your password contains special characters like `#` or `@`, URL-encode them be
 SMTP_HOST=smtp.gmail.com
 SMTP_PORT=465
 SMTP_SECURE=true
-SMTP_USER=test@gmail.com
-SMTP_PASS= testpass
-MAIL_FROM=test@gmail.com
-TASK_ALERT_TO= test@gmail.com
+SMTP_USER=<smtp-username>
+SMTP_PASS=<smtp-password>
+MAIL_FROM=<sender-email>
+TASK_ALERT_TO=<recipient-email>
+DEFAULT_ADMIN_PASSWORD=<admin-password>
 ```
 
-`TASK_ALERT_TO` defaults to `test@gmail.com` if it is not set.
+Set `TASK_ALERT_TO` only when task alerts should go to a fallback recipient. Set `DEFAULT_ADMIN_PASSWORD` only when bootstrapping a fresh database that does not already have an admin user.
 
 5. To automatically star and label task alert emails in Gmail, create a Gmail filter in ``:
 
-- Search query: `from:test@gmail.com "Task Manager"`
+- Search query: `from:<sender-email> "Task Manager"`
 - Filter actions: `Star it` and `Apply the label: Task Manager`
 
 The app adds `Task Manager` to every Add Task email body and header so the filter can reliably find it without adding `[Task Manager]` to the email title.

@@ -11,11 +11,15 @@ jest.mock('nodemailer', () => ({
 }));
 
 const RUN_ID = `test-${Date.now()}-${Math.round(Math.random() * 100000)}`;
+const TEST_ADMIN_PASSWORD = `${RUN_ID}-admin-password`;
+process.env.DEFAULT_ADMIN_PASSWORD = process.env.DEFAULT_ADMIN_PASSWORD || TEST_ADMIN_PASSWORD;
 const testUsername = (name) => `${RUN_ID}-${name}`;
 
+const bcrypt = require('bcrypt');
 const { app, db, dbReady } = require('./server');
 const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 jest.setTimeout(30000);
+let originalAdminPasswordHash = null;
 
 const createAgent = async (username = testUsername(`user-${Math.random()}`)) => {
   const agent = request.agent(app);
@@ -39,11 +43,20 @@ const attachment = (name = 'notes.txt', data = 'hello') => ({
 
 beforeAll(async () => {
   await dbReady;
+  const admin = await db.query("SELECT password FROM users WHERE username = 'admin'");
+  originalAdminPasswordHash = admin.rows[0]?.password || null;
+  if (originalAdminPasswordHash) {
+    const hashedPassword = await bcrypt.hash(TEST_ADMIN_PASSWORD, 10);
+    await db.query("UPDATE users SET password = $1 WHERE username = 'admin'", [hashedPassword]);
+  }
 });
 
 afterAll(async () => {
   warnSpy.mockRestore();
   try {
+    if (originalAdminPasswordHash) {
+      await db.query("UPDATE users SET password = $1 WHERE username = 'admin'", [originalAdminPasswordHash]);
+    }
     await db.query('DELETE FROM users WHERE username LIKE $1', [`${RUN_ID}%`]);
   } catch (error) {
     if (process.env.JEST_WORKER_ID) {
@@ -1055,7 +1068,7 @@ describe('Credit Card API', () => {
     const agent = request.agent(app);
     const loginResponse = await agent
       .post('/api/login')
-      .send({ username: 'admin', password: 'admin123456' });
+      .send({ username: 'admin', password: TEST_ADMIN_PASSWORD });
 
     expect(loginResponse.statusCode).toBe(200);
 
@@ -1132,15 +1145,26 @@ describe('Credit Card API', () => {
     expect(listResponse.statusCode).toBe(200);
     expect(listResponse.body.bills).toHaveLength(7);
 
-    const rent = listResponse.body.bills.find((bill) => bill.item === 'Rent');
-    const hoa = listResponse.body.bills.find((bill) => bill.item === 'HOA');
-    expect(rent).toMatchObject({
-      due_date: '1st of every month',
-      pay_before: '15th',
-      status: 'Paid',
-    });
-    expect(Number(rent.amount)).toBeCloseTo(1881.95);
-    expect(Number(hoa.amount)).toBeCloseTo(73.33);
+    const defaultBills = await db.query(
+      'SELECT item, amount, due_date, pay_before, status, sort_order FROM fast_access_bill_defaults ORDER BY sort_order'
+    );
+    expect(listResponse.body.bills.map((bill) => ({
+      item: bill.item,
+      amount: Number(bill.amount),
+      due_date: bill.due_date,
+      pay_before: bill.pay_before,
+      status: bill.status,
+      sort_order: bill.sort_order,
+    }))).toEqual(defaultBills.rows.map((bill) => ({
+      item: bill.item,
+      amount: Number(bill.amount),
+      due_date: bill.due_date,
+      pay_before: bill.pay_before,
+      status: bill.status,
+      sort_order: bill.sort_order,
+    })));
+
+    const hoa = listResponse.body.bills.at(-1);
 
     const updateResponse = await agent
       .put(`/api/credit-cards/fast-access-bills/${hoa.id}`)
@@ -1197,7 +1221,7 @@ describe('Admin API', () => {
     const agent = request.agent(app);
     const response = await agent
       .post('/api/login')
-      .send({ username: 'admin', password: 'admin123456' });
+      .send({ username: 'admin', password: TEST_ADMIN_PASSWORD });
 
     expect(response.statusCode).toBe(200);
     expect(response.body.user).toMatchObject({ username: 'admin' });

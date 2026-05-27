@@ -144,12 +144,18 @@ const initializeDatabase = async () => {
 
   const admin = await getAsync('SELECT id FROM users WHERE username = ?', ['admin']);
   if (!admin) {
-    const hashedPassword = await bcrypt.hash('admin123456', 10);
+    const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
+    if (!defaultAdminPassword) {
+      console.warn('Default admin user was not created: DEFAULT_ADMIN_PASSWORD is not set.');
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(defaultAdminPassword, 10);
     await runAsync(
       'INSERT INTO users (username, password) VALUES (?, ?) RETURNING id',
       ['admin', hashedPassword]
     );
-    console.log('Default admin user created with username: admin, password: admin123456');
+    console.log('Default admin user created.');
   }
 };
 
