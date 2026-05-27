@@ -1771,15 +1771,52 @@ body.theme-dark .status-in_progress {
 .fast-access-bills-table {
   width: 100%;
   min-width: 820px;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0 8px;
 }
 
 .fast-access-bills-table th,
 .fast-access-bills-table td {
   padding: 10px;
-  border-bottom: 1px solid var(--border);
   text-align: left;
   vertical-align: middle;
+}
+
+.fast-access-bills-table td {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.fast-access-bills-table td:first-child {
+  border-left: 1px solid var(--border);
+  border-radius: 8px 0 0 8px;
+}
+
+.fast-access-bills-table td:last-child {
+  border-right: 1px solid var(--border);
+  border-radius: 0 8px 8px 0;
+}
+
+.fast-access-bills-table td:only-child {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.fast-access-bill-group-summary td {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--surface-soft);
+  font-weight: 800;
+}
+
+.fast-access-bill-group-summary strong {
+  color: var(--text);
+}
+
+.fast-access-bill-group-summary span {
+  color: var(--primary-strong);
 }
 
 .fast-access-bills-table th {
@@ -2986,6 +3023,10 @@ body.theme-dark .status-in_progress {
     font-weight: 800;
     text-align: left;
     text-transform: uppercase;
+  }
+
+  .fast-access-bill-group-summary td::before {
+    display: none;
   }
 
   .credit-card-table td[data-label="Actions"] {

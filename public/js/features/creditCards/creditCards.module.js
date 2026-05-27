@@ -442,49 +442,92 @@
       if (updatedBill) closeEditBillModal();
     };
 
+    const billGroupKey = (bill) => String(bill.item || '').trim().toLowerCase();
+
+    const getBillGroups = () => {
+      const separateBillNames = new Set(['phone', 'auto loan', 'daycare']);
+      const groups = [];
+      const houseBills = fastAccessBills.filter((bill) => !separateBillNames.has(billGroupKey(bill)));
+      if (houseBills.length) {
+        groups.push({ label: t('monthlyBills'), bills: houseBills });
+      }
+
+      ['phone', 'auto loan', 'daycare'].forEach((billName) => {
+        const bills = fastAccessBills.filter((bill) => billGroupKey(bill) === billName);
+        if (bills.length) {
+          groups.push({ label: bills[0].item || t('notAvailable'), bills });
+        }
+      });
+
+      return groups;
+    };
+
+    const createBillGroupSummaryRow = (group) => {
+      const total = group.bills.reduce((sum, bill) => sum + normalizeBillAmount(bill.amount), 0);
+      const row = document.createElement('tr');
+      row.className = 'fast-access-bill-group-summary';
+
+      const cell = document.createElement('td');
+      cell.colSpan = 6;
+
+      const label = document.createElement('strong');
+      label.textContent = group.label;
+
+      const amount = document.createElement('span');
+      amount.textContent = formatCurrency(total);
+
+      cell.append(label, amount);
+      row.append(cell);
+      return row;
+    };
+
     const renderFastAccessBills = () => {
       if (!fastAccessBillsList) return;
 
       fastAccessBillsList.innerHTML = '';
-      fastAccessBills.forEach((bill) => {
-        const row = document.createElement('tr');
+      getBillGroups().forEach((group) => {
+        fastAccessBillsList.append(createBillGroupSummaryRow(group));
 
-        const itemCell = document.createElement('td');
-        itemCell.dataset.label = t('billItem');
-        const item = document.createElement('strong');
-        item.textContent = bill.item || t('notAvailable');
-        itemCell.append(item);
+        group.bills.forEach((bill) => {
+          const row = document.createElement('tr');
 
-        const amountCell = document.createElement('td');
-        amountCell.dataset.label = t('amount');
-        amountCell.textContent = formatCurrency(bill.amount);
+          const itemCell = document.createElement('td');
+          itemCell.dataset.label = t('billItem');
+          const item = document.createElement('strong');
+          item.textContent = bill.item || t('notAvailable');
+          itemCell.append(item);
 
-        const dueDateCell = document.createElement('td');
-        dueDateCell.dataset.label = t('dueDate');
-        dueDateCell.textContent = bill.due_date || t('notAvailable');
+          const amountCell = document.createElement('td');
+          amountCell.dataset.label = t('amount');
+          amountCell.textContent = formatCurrency(bill.amount);
 
-        const payBeforeCell = document.createElement('td');
-        payBeforeCell.dataset.label = t('payBefore');
-        payBeforeCell.textContent = bill.pay_before || t('notAvailable');
+          const dueDateCell = document.createElement('td');
+          dueDateCell.dataset.label = t('dueDate');
+          dueDateCell.textContent = bill.due_date || t('notAvailable');
 
-        const statusCell = document.createElement('td');
-        statusCell.dataset.label = t('status');
-        statusCell.textContent = bill.status || t('notAvailable');
+          const payBeforeCell = document.createElement('td');
+          payBeforeCell.dataset.label = t('payBefore');
+          payBeforeCell.textContent = bill.pay_before || t('notAvailable');
 
-        const actionsCell = document.createElement('td');
-        actionsCell.dataset.label = t('actions');
-        const actions = document.createElement('div');
-        actions.className = 'credit-card-actions';
-        const editButton = document.createElement('button');
-        editButton.type = 'button';
-        editButton.className = 'secondary';
-        editButton.textContent = t('edit');
-        editButton.addEventListener('click', () => openEditBillModal(bill));
-        actions.append(editButton);
-        actionsCell.append(actions);
+          const statusCell = document.createElement('td');
+          statusCell.dataset.label = t('status');
+          statusCell.textContent = bill.status || t('notAvailable');
 
-        row.append(itemCell, amountCell, dueDateCell, payBeforeCell, statusCell, actionsCell);
-        fastAccessBillsList.append(row);
+          const actionsCell = document.createElement('td');
+          actionsCell.dataset.label = t('actions');
+          const actions = document.createElement('div');
+          actions.className = 'credit-card-actions';
+          const editButton = document.createElement('button');
+          editButton.type = 'button';
+          editButton.className = 'secondary';
+          editButton.textContent = t('edit');
+          editButton.addEventListener('click', () => openEditBillModal(bill));
+          actions.append(editButton);
+          actionsCell.append(actions);
+
+          row.append(itemCell, amountCell, dueDateCell, payBeforeCell, statusCell, actionsCell);
+          fastAccessBillsList.append(row);
+        });
       });
 
       updateFastAccessTotals();

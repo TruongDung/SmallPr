@@ -1148,11 +1148,11 @@ describe('Credit Card API', () => {
 
     const listResponse = await agent.get('/api/credit-cards/fast-access-bills');
     expect(listResponse.statusCode).toBe(200);
-    expect(listResponse.body.bills).toHaveLength(7);
 
     const defaultBills = await db.query(
       'SELECT item, amount, due_date, pay_before, status, sort_order FROM fast_access_bill_defaults ORDER BY sort_order'
     );
+    expect(listResponse.body.bills).toHaveLength(defaultBills.rows.length);
     expect(listResponse.body.bills.map((bill) => ({
       item: bill.item,
       amount: Number(bill.amount),
