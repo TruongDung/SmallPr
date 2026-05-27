@@ -980,6 +980,10 @@ describe('Credit Card API', () => {
 
     expect(response.statusCode).toBe(401);
     expect(response.body).toHaveProperty('error', 'Authentication required');
+
+    const billsResponse = await request(app).get('/api/credit-cards/fast-access-bills');
+    expect(billsResponse.statusCode).toBe(401);
+    expect(billsResponse.body).toHaveProperty('error', 'Authentication required');
   });
 
   test('creates, lists, and updates a credit card', async () => {
@@ -1088,6 +1092,72 @@ describe('Credit Card API', () => {
 
     expect(otherUpdateResponse.statusCode).toBe(404);
     expect(otherUpdateResponse.body).toHaveProperty('error', 'Credit card not found');
+  });
+
+  test('seeds and updates fast access bills for each user', async () => {
+    const agent = await createAgent(testUsername('fast-access-owner'));
+
+    const listResponse = await agent.get('/api/credit-cards/fast-access-bills');
+    expect(listResponse.statusCode).toBe(200);
+    expect(listResponse.body.bills).toHaveLength(7);
+
+    const rent = listResponse.body.bills.find((bill) => bill.item === 'Rent');
+    const hoa = listResponse.body.bills.find((bill) => bill.item === 'HOA');
+    expect(rent).toMatchObject({
+      due_date: '1st of every month',
+      pay_before: '15th',
+      status: 'Paid',
+    });
+    expect(Number(rent.amount)).toBeCloseTo(1881.95);
+    expect(Number(hoa.amount)).toBeCloseTo(73.33);
+
+    const updateResponse = await agent
+      .put(`/api/credit-cards/fast-access-bills/${hoa.id}`)
+      .send({
+        item: 'HOA dues',
+        amount: '75.25',
+        due_date: '5th of every month',
+        pay_before: '10th',
+        status: 'Unpaid',
+      });
+
+    expect(updateResponse.statusCode).toBe(200);
+    expect(updateResponse.body.bill).toMatchObject({
+      item: 'HOA dues',
+      due_date: '5th of every month',
+      pay_before: '10th',
+      status: 'Unpaid',
+    });
+    expect(Number(updateResponse.body.bill.amount)).toBeCloseTo(75.25);
+  });
+
+  test('validates and protects fast access bills', async () => {
+    const ownerAgent = await createAgent(testUsername('fast-access-private-owner'));
+    const otherAgent = await createAgent(testUsername('fast-access-private-other'));
+
+    const listResponse = await ownerAgent.get('/api/credit-cards/fast-access-bills');
+    const internet = listResponse.body.bills.find((bill) => bill.item === 'Internet');
+
+    const invalidStatusResponse = await ownerAgent
+      .put(`/api/credit-cards/fast-access-bills/${internet.id}`)
+      .send({ status: 'Maybe' });
+
+    expect(invalidStatusResponse.statusCode).toBe(400);
+    expect(invalidStatusResponse.body).toHaveProperty('error', 'Status must be Paid or Unpaid');
+
+    const invalidAmountResponse = await ownerAgent
+      .put(`/api/credit-cards/fast-access-bills/${internet.id}`)
+      .send({ amount: '-1' });
+
+    expect(invalidAmountResponse.statusCode).toBe(400);
+    expect(invalidAmountResponse.body).toHaveProperty('error', 'Amount must be a valid amount');
+
+    const otherUpdateResponse = await otherAgent
+      .put(`/api/credit-cards/fast-access-bills/${internet.id}`)
+      .send({ status: 'Paid' });
+
+    expect(otherUpdateResponse.statusCode).toBe(404);
+    expect(otherUpdateResponse.body).toHaveProperty('error', 'Fast access bill not found');
   });
 });
 

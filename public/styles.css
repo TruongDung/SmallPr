@@ -1752,6 +1752,75 @@ body.theme-dark .status-in_progress {
   color: var(--primary-strong);
 }
 
+.fast-access-bills {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.fast-access-bills h3 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+}
+
+.fast-access-bills-table-wrap {
+  overflow-x: auto;
+}
+
+.fast-access-bills-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+}
+
+.fast-access-bills-table th,
+.fast-access-bills-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.fast-access-bills-table th {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+.fast-access-bills-table input,
+.fast-access-bills-table select {
+  width: 100%;
+  min-height: 38px;
+  border-radius: 8px;
+}
+
+.fast-access-bill-totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(160px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.fast-access-bill-totals div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.fast-access-bill-totals span {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.fast-access-bill-totals strong {
+  color: var(--primary-strong);
+}
+
 .credit-card-form {
   display: grid;
   grid-template-columns: minmax(150px, 1fr) minmax(130px, 0.8fr) minmax(130px, 0.8fr) minmax(120px, 0.7fr) minmax(140px, 0.8fr) auto;
@@ -2794,6 +2863,10 @@ body.theme-dark .status-in_progress {
     grid-template-columns: 1fr;
   }
 
+  .fast-access-bill-totals {
+    grid-template-columns: 1fr;
+  }
+
   .credit-card-form button {
     width: 100%;
   }
@@ -2808,25 +2881,41 @@ body.theme-dark .status-in_progress {
     border-spacing: 0 10px;
   }
 
-  .credit-card-table thead {
+  .fast-access-bills-table-wrap {
+    overflow-x: visible;
+  }
+
+  .fast-access-bills-table {
+    min-width: 0;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+  }
+
+  .credit-card-table thead,
+  .fast-access-bills-table thead {
     display: none;
   }
 
   .credit-card-table tbody,
   .credit-card-table tr,
-  .credit-card-table td {
+  .credit-card-table td,
+  .fast-access-bills-table tbody,
+  .fast-access-bills-table tr,
+  .fast-access-bills-table td {
     display: block;
     width: 100%;
   }
 
-  .credit-card-table tr {
+  .credit-card-table tr,
+  .fast-access-bills-table tr {
     border: 1px solid var(--border);
     border-radius: 10px;
     background: var(--surface);
     overflow: hidden;
   }
 
-  .credit-card-table td {
+  .credit-card-table td,
+  .fast-access-bills-table td {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -2837,11 +2926,13 @@ body.theme-dark .status-in_progress {
     overflow-wrap: anywhere;
   }
 
-  .credit-card-table td:last-child {
+  .credit-card-table td:last-child,
+  .fast-access-bills-table td:last-child {
     border-bottom: 0;
   }
 
-  .credit-card-table td::before {
+  .credit-card-table td::before,
+  .fast-access-bills-table td::before {
     content: attr(data-label);
     flex: 0 0 42%;
     color: var(--muted);
@@ -2862,6 +2953,12 @@ body.theme-dark .status-in_progress {
   .credit-card-actions {
     justify-content: flex-end;
     width: 100%;
+  }
+
+  .fast-access-bills-table input,
+  .fast-access-bills-table select {
+    flex: 1;
+    min-width: 0;
   }
 
   .credit-card-actions button {

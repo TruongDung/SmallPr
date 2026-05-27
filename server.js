@@ -83,6 +83,32 @@ const initializeDatabase = async () => {
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   )`);
 
+  await pool.query(`CREATE TABLE IF NOT EXISTS fast_access_bills (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    item TEXT NOT NULL,
+    amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    due_date TEXT,
+    pay_before TEXT,
+    status TEXT NOT NULL DEFAULT 'Unpaid',
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`);
+
+  await pool.query(`CREATE TABLE IF NOT EXISTS fast_access_bill_defaults (
+    id SERIAL PRIMARY KEY,
+    item TEXT NOT NULL,
+    amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    due_date TEXT,
+    pay_before TEXT,
+    status TEXT NOT NULL DEFAULT 'Unpaid',
+    sort_order INTEGER NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`);
+
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminder_at TEXT');
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS tag TEXT');
@@ -99,6 +125,26 @@ const initializeDatabase = async () => {
   await pool.query('ALTER TABLE credit_cards ADD COLUMN IF NOT EXISTS closing_date TEXT');
   await pool.query('ALTER TABLE credit_cards ADD COLUMN IF NOT EXISTS card_user TEXT');
   await pool.query('ALTER TABLE credit_cards ADD COLUMN IF NOT EXISTS issuer TEXT');
+  await pool.query('ALTER TABLE fast_access_bills ADD COLUMN IF NOT EXISTS due_date TEXT');
+  await pool.query('ALTER TABLE fast_access_bills ADD COLUMN IF NOT EXISTS pay_before TEXT');
+  await pool.query("ALTER TABLE fast_access_bills ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'Unpaid'");
+  await pool.query('ALTER TABLE fast_access_bills ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0');
+  await pool.query('ALTER TABLE fast_access_bill_defaults ADD COLUMN IF NOT EXISTS due_date TEXT');
+  await pool.query('ALTER TABLE fast_access_bill_defaults ADD COLUMN IF NOT EXISTS pay_before TEXT');
+  await pool.query("ALTER TABLE fast_access_bill_defaults ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'Unpaid'");
+  await pool.query('ALTER TABLE fast_access_bill_defaults ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0');
+  await pool.query(`
+    INSERT INTO fast_access_bill_defaults (item, amount, due_date, pay_before, status, sort_order)
+    VALUES
+      ('Rent', 1881.95, '1st of every month', '15th', 'Paid', 1),
+      ('Electricity', 93.80, '', '', 'Paid', 2),
+      ('Water', 79.36, '', '', 'Paid', 3),
+      ('Gas', 48.28, '', '', 'Paid', 4),
+      ('Internet', 54.99, '', '', 'Unpaid', 5),
+      ('Phone', 78.20, '', '', 'Unpaid', 6),
+      ('HOA', 73.33, '', '', 'Paid', 7)
+    ON CONFLICT (sort_order) DO NOTHING
+  `);
   await pool.query(`
     INSERT INTO task_tags (user_id, name, normalized_name)
     SELECT DISTINCT user_id, tag, LOWER(tag)

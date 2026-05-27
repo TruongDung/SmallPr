@@ -13,6 +13,10 @@
       cards: document.getElementById('credit-card-panel'),
       info: document.getElementById('credit-card-info-panel'),
     };
+    const fastAccessBillsList = document.getElementById('fast-access-bills-list');
+    const fastAccessTotalWithoutRent = document.getElementById('fast-access-total-without-rent');
+    const fastAccessRentAmount = document.getElementById('fast-access-rent-amount');
+    const fastAccessGrandTotal = document.getElementById('fast-access-grand-total');
     const editModal = document.getElementById('edit-credit-card-modal');
     const editForm = document.getElementById('edit-credit-card-form');
     const editTitle = document.getElementById('edit-credit-card-title');
@@ -26,6 +30,7 @@
     const saveEditButton = document.getElementById('save-edit-credit-card');
     let cards = [];
     let cardUsers = [];
+    let fastAccessBills = [];
     let pendingEditCard = null;
 
     const setText = (selector, text) => {
@@ -195,6 +200,132 @@
       return Number.isFinite(amount) ? amount.toFixed(2) : '';
     };
 
+    const normalizeBillAmount = (value) => {
+      const amount = Number(value || 0);
+      return Number.isFinite(amount) ? amount : 0;
+    };
+
+    const updateFastAccessTotals = () => {
+      const rentBill = fastAccessBills.find((bill) => Number(bill.sort_order) === 1)
+        || fastAccessBills.find((bill) => String(bill.item || '').trim().toLowerCase() === 'rent');
+      const rentAmount = rentBill ? normalizeBillAmount(rentBill.amount) : 0;
+      const totalWithoutRent = fastAccessBills.reduce((sum, bill) => {
+        if (rentBill && bill.id === rentBill.id) return sum;
+        return sum + normalizeBillAmount(bill.amount);
+      }, 0);
+
+      if (fastAccessTotalWithoutRent) fastAccessTotalWithoutRent.textContent = formatCurrency(totalWithoutRent);
+      if (fastAccessRentAmount) fastAccessRentAmount.textContent = formatCurrency(rentAmount);
+      if (fastAccessGrandTotal) fastAccessGrandTotal.textContent = formatCurrency(totalWithoutRent + rentAmount);
+    };
+
+    const updateFastAccessBill = async (bill, updates) => {
+      const nextBill = { ...bill, ...updates };
+      const result = await request(`/api/credit-cards/fast-access-bills/${bill.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          item: nextBill.item,
+          amount: nextBill.amount,
+          due_date: nextBill.due_date,
+          pay_before: nextBill.pay_before,
+          status: nextBill.status,
+        }),
+      });
+
+      if (result.error) {
+        message.textContent = result.error;
+        renderFastAccessBills();
+        return;
+      }
+
+      fastAccessBills = fastAccessBills.map((savedBill) => (
+        savedBill.id === bill.id ? result.bill : savedBill
+      ));
+      message.textContent = '';
+      renderFastAccessBills();
+    };
+
+    const createBillInput = ({ bill, field, type = 'text', label }) => {
+      const input = document.createElement('input');
+      input.type = type;
+      input.value = type === 'number' ? formatBalanceInput(bill[field]) : (bill[field] || '');
+      input.setAttribute('aria-label', `${label}: ${bill.item}`);
+      if (type === 'number') {
+        input.min = '0';
+        input.step = '0.01';
+        input.inputMode = 'decimal';
+      }
+
+      input.addEventListener('blur', () => {
+        const rawValue = input.value.trim();
+        if (type === 'number' && rawValue && !Number.isFinite(Number(rawValue))) {
+          message.textContent = t('invalidBillAmount');
+          renderFastAccessBills();
+          return;
+        }
+        const nextValue = type === 'number' ? formatBalanceInput(rawValue) : rawValue;
+        const currentValue = type === 'number' ? formatBalanceInput(bill[field]) : (bill[field] || '');
+        if (nextValue === currentValue) return;
+        updateFastAccessBill(bill, { [field]: type === 'number' ? Number(nextValue || 0) : nextValue });
+      });
+
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') input.blur();
+      });
+
+      return input;
+    };
+
+    const createBillStatusSelect = (bill) => {
+      const select = document.createElement('select');
+      select.setAttribute('aria-label', `${t('status')}: ${bill.item}`);
+      ['Paid', 'Unpaid'].forEach((status) => {
+        const option = document.createElement('option');
+        option.value = status;
+        option.textContent = status;
+        select.append(option);
+      });
+      select.value = bill.status || 'Unpaid';
+      select.addEventListener('change', () => {
+        updateFastAccessBill(bill, { status: select.value });
+      });
+      return select;
+    };
+
+    const renderFastAccessBills = () => {
+      if (!fastAccessBillsList) return;
+
+      fastAccessBillsList.innerHTML = '';
+      fastAccessBills.forEach((bill) => {
+        const row = document.createElement('tr');
+
+        const itemCell = document.createElement('td');
+        itemCell.dataset.label = t('billItem');
+        itemCell.append(createBillInput({ bill, field: 'item', label: t('billItem') }));
+
+        const amountCell = document.createElement('td');
+        amountCell.dataset.label = t('amount');
+        amountCell.append(createBillInput({ bill, field: 'amount', type: 'number', label: t('amount') }));
+
+        const dueDateCell = document.createElement('td');
+        dueDateCell.dataset.label = t('dueDate');
+        dueDateCell.append(createBillInput({ bill, field: 'due_date', label: t('dueDate') }));
+
+        const payBeforeCell = document.createElement('td');
+        payBeforeCell.dataset.label = t('payBefore');
+        payBeforeCell.append(createBillInput({ bill, field: 'pay_before', label: t('payBefore') }));
+
+        const statusCell = document.createElement('td');
+        statusCell.dataset.label = t('status');
+        statusCell.append(createBillStatusSelect(bill));
+
+        row.append(itemCell, amountCell, dueDateCell, payBeforeCell, statusCell);
+        fastAccessBillsList.append(row);
+      });
+
+      updateFastAccessTotals();
+    };
+
     const openEditModal = (card) => {
       pendingEditCard = card;
       clearEditError();
@@ -312,9 +443,10 @@
     };
 
     const load = async () => {
-      const [cardsResult, usersResult] = await Promise.all([
+      const [cardsResult, usersResult, fastAccessBillsResult] = await Promise.all([
         request('/api/credit-cards'),
         request('/api/credit-cards/users'),
+        request('/api/credit-cards/fast-access-bills'),
       ]);
 
       if (cardsResult.error) {
@@ -327,12 +459,19 @@
         return;
       }
 
+      if (fastAccessBillsResult.error) {
+        message.textContent = fastAccessBillsResult.error;
+        return;
+      }
+
       cards = cardsResult.cards || [];
+      fastAccessBills = fastAccessBillsResult.bills || [];
       cardUsers = mergeCardUsers(usersResult.users || [], cards);
       setUserOptions(userInput, userInput.value);
       setUserOptions(editUserInput, editUserInput.value);
       message.textContent = '';
       render(cards);
+      renderFastAccessBills();
     };
 
     const handleSubmit = async (event) => {
@@ -373,6 +512,15 @@
       setText('#credit-card-tab', t('creditCardSubTab'));
       setText('#credit-card-info-tab', t('creditCardInfoSubTab'));
       setText('#credit-card-quick-links-title', t('fastAccessLinks'));
+      setText('#fast-access-bills-title', t('monthlyBills'));
+      setText('.fast-access-bills-table th:nth-child(1)', t('billItem'));
+      setText('.fast-access-bills-table th:nth-child(2)', t('amount'));
+      setText('.fast-access-bills-table th:nth-child(3)', t('dueDate'));
+      setText('.fast-access-bills-table th:nth-child(4)', t('payBefore'));
+      setText('.fast-access-bills-table th:nth-child(5)', t('status'));
+      setText('#fast-access-total-without-rent-label', t('totalWithoutRent'));
+      setText('#fast-access-rent-amount-label', t('rentAmount'));
+      setText('#fast-access-grand-total-label', t('grandTotalIncludingRent'));
       translateQuickLinks();
       setText('label[for="credit-card-name"]', t('cardName'));
       nameInput.placeholder = t('cardNamePlaceholder');
@@ -399,6 +547,7 @@
       if (cancelEditButton) cancelEditButton.textContent = t('cancel');
       if (saveEditButton) saveEditButton.textContent = t('save');
       render();
+      renderFastAccessBills();
     };
 
     const bind = () => {

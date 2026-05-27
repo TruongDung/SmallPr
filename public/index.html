@@ -311,6 +311,37 @@
               <a class="credit-card-link" data-i18n-key="phoneLink" href="https://www.att.com/acctmgmt/overview" target="_blank" rel="noopener noreferrer">Phone</a>
             </div>
           </section>
+          <section class="fast-access-bills" aria-labelledby="fast-access-bills-title">
+            <h3 id="fast-access-bills-title">Monthly Bills</h3>
+            <div class="fast-access-bills-table-wrap">
+              <table class="fast-access-bills-table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Amount</th>
+                    <th>Due Date</th>
+                    <th>Pay Before</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="fast-access-bills-list"></tbody>
+              </table>
+            </div>
+            <div class="fast-access-bill-totals" aria-label="Bill totals">
+              <div>
+                <span id="fast-access-total-without-rent-label">Total without rent</span>
+                <strong id="fast-access-total-without-rent">$0.00</strong>
+              </div>
+              <div>
+                <span id="fast-access-rent-amount-label">Rent amount</span>
+                <strong id="fast-access-rent-amount">$0.00</strong>
+              </div>
+              <div>
+                <span id="fast-access-grand-total-label">Grand total including rent</span>
+                <strong id="fast-access-grand-total">$0.00</strong>
+              </div>
+            </div>
+          </section>
         </section>
       </section>
     </main>
@@ -554,7 +585,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.min.js"></script>
-  <script src="js/features/creditCards/creditCards.module.js?v=card-users-1"></script>
-  <script src="app.js?v=fast-links-1"></script>
+  <script src="js/features/creditCards/creditCards.module.js?v=fast-bills-1"></script>
+  <script src="app.js?v=fast-bills-1"></script>
 </body>
 </html>

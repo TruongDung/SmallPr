@@ -1,4 +1,5 @@
 const CREDIT_CARD_SELECT = 'id, name, card_user, issuer, total_balance, closing_date, created_at, updated_at';
+const FAST_ACCESS_BILL_SELECT = 'id, item, amount, due_date, pay_before, status, sort_order, created_at, updated_at';
 
 const createCreditCardsService = ({ allAsync, getAsync, runAsync }) => {
   const listForUser = (userId) => allAsync(
@@ -55,13 +56,63 @@ const createCreditCardsService = ({ allAsync, getAsync, runAsync }) => {
     return findById(id);
   };
 
+  const listFastAccessBillsForUser = (userId) => allAsync(
+    `SELECT ${FAST_ACCESS_BILL_SELECT}
+     FROM fast_access_bills
+     WHERE user_id = ?
+     ORDER BY sort_order, LOWER(item), item`,
+    [userId]
+  );
+
+  const seedFastAccessBillsForUser = async (userId) => {
+    const existing = await getAsync(
+      'SELECT id FROM fast_access_bills WHERE user_id = ? LIMIT 1',
+      [userId]
+    );
+    if (existing) return;
+
+    await runAsync(
+      `INSERT INTO fast_access_bills (user_id, item, amount, due_date, pay_before, status, sort_order)
+       SELECT ?, item, amount, due_date, pay_before, status, sort_order
+       FROM fast_access_bill_defaults
+       ORDER BY sort_order, LOWER(item), item
+       RETURNING id`,
+      [userId]
+    );
+  };
+
+  const findFastAccessBillForUser = (id, userId) => getAsync(
+    'SELECT * FROM fast_access_bills WHERE id = ? AND user_id = ?',
+    [id, userId]
+  );
+
+  const findFastAccessBillById = (id) => getAsync(
+    `SELECT ${FAST_ACCESS_BILL_SELECT} FROM fast_access_bills WHERE id = ?`,
+    [id]
+  );
+
+  const updateFastAccessBill = async ({ id, userId, item, amount, dueDate, payBefore, status }) => {
+    await runAsync(
+      `UPDATE fast_access_bills
+       SET item = ?, amount = ?, due_date = ?, pay_before = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+       WHERE id = ? AND user_id = ?`,
+      [item, amount, dueDate, payBefore, status, id, userId]
+    );
+
+    return findFastAccessBillById(id);
+  };
+
   return {
     create,
     findForUser,
+    findFastAccessBillForUser,
     getAccountUser,
+    listFastAccessBillsForUser,
     listCardUsersForUser,
+    seedFastAccessBillsForUser,
     listForUser,
     update,
+    updateFastAccessBill,
   };
 };
 
