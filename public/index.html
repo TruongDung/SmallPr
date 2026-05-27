@@ -322,6 +322,7 @@
                     <th>Due Date</th>
                     <th>Pay Before</th>
                     <th>Status</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="fast-access-bills-list"></tbody>
@@ -442,6 +443,42 @@
         <div class="modal-actions">
           <button id="cancel-edit-credit-card" type="button" class="secondary">Cancel</button>
           <button id="save-edit-credit-card" type="submit">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="edit-fast-access-bill-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="edit-fast-access-bill-title">
+    <div class="modal">
+      <h3 id="edit-fast-access-bill-title">Edit bill</h3>
+      <form id="edit-fast-access-bill-form" class="fast-access-bill-edit-form" novalidate>
+        <div class="field">
+          <label for="edit-fast-access-bill-item">Item</label>
+          <input id="edit-fast-access-bill-item" type="text" maxlength="120" required />
+        </div>
+        <div class="field">
+          <label for="edit-fast-access-bill-amount">Amount</label>
+          <input id="edit-fast-access-bill-amount" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
+        </div>
+        <div class="field">
+          <label for="edit-fast-access-bill-due-date">Due Date</label>
+          <input id="edit-fast-access-bill-due-date" type="text" maxlength="120" />
+        </div>
+        <div class="field">
+          <label for="edit-fast-access-bill-pay-before">Pay Before</label>
+          <input id="edit-fast-access-bill-pay-before" type="text" maxlength="120" />
+        </div>
+        <div class="field">
+          <label for="edit-fast-access-bill-status">Status</label>
+          <select id="edit-fast-access-bill-status">
+            <option value="Paid">Paid</option>
+            <option value="Unpaid">Unpaid</option>
+          </select>
+        </div>
+        <p id="edit-fast-access-bill-error" class="field-error hidden"></p>
+        <div class="modal-actions">
+          <button id="cancel-edit-fast-access-bill" type="button" class="secondary">Cancel</button>
+          <button id="save-edit-fast-access-bill" type="submit">Save</button>
         </div>
       </form>
     </div>
@@ -585,7 +622,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.min.js"></script>
-  <script src="js/features/creditCards/creditCards.module.js?v=fast-bills-1"></script>
-  <script src="app.js?v=fast-bills-1"></script>
+  <script src="js/features/creditCards/creditCards.module.js?v=fast-bills-table-1"></script>
+  <script src="app.js?v=fast-bills-table-1"></script>
 </body>
 </html>

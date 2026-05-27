@@ -17,6 +17,17 @@
     const fastAccessTotalWithoutRent = document.getElementById('fast-access-total-without-rent');
     const fastAccessRentAmount = document.getElementById('fast-access-rent-amount');
     const fastAccessGrandTotal = document.getElementById('fast-access-grand-total');
+    const editBillModal = document.getElementById('edit-fast-access-bill-modal');
+    const editBillForm = document.getElementById('edit-fast-access-bill-form');
+    const editBillTitle = document.getElementById('edit-fast-access-bill-title');
+    const editBillItemInput = document.getElementById('edit-fast-access-bill-item');
+    const editBillAmountInput = document.getElementById('edit-fast-access-bill-amount');
+    const editBillDueDateInput = document.getElementById('edit-fast-access-bill-due-date');
+    const editBillPayBeforeInput = document.getElementById('edit-fast-access-bill-pay-before');
+    const editBillStatusInput = document.getElementById('edit-fast-access-bill-status');
+    const editBillError = document.getElementById('edit-fast-access-bill-error');
+    const cancelEditBillButton = document.getElementById('cancel-edit-fast-access-bill');
+    const saveEditBillButton = document.getElementById('save-edit-fast-access-bill');
     const editModal = document.getElementById('edit-credit-card-modal');
     const editForm = document.getElementById('edit-credit-card-form');
     const editTitle = document.getElementById('edit-credit-card-title');
@@ -32,6 +43,7 @@
     let cardUsers = [];
     let fastAccessBills = [];
     let pendingEditCard = null;
+    let pendingEditBill = null;
 
     const setText = (selector, text) => {
       const element = document.querySelector(selector);
@@ -67,6 +79,16 @@
     const clearEditError = () => {
       editError.textContent = '';
       editError.classList.add('hidden');
+    };
+
+    const showEditBillError = (text) => {
+      editBillError.textContent = text;
+      editBillError.classList.remove('hidden');
+    };
+
+    const clearEditBillError = () => {
+      editBillError.textContent = '';
+      editBillError.classList.add('hidden');
     };
 
     const formatCurrency = (value) => {
@@ -219,7 +241,7 @@
       if (fastAccessGrandTotal) fastAccessGrandTotal.textContent = formatCurrency(totalWithoutRent + rentAmount);
     };
 
-    const updateFastAccessBill = async (bill, updates) => {
+    const updateFastAccessBill = async (bill, updates, { showModalError = false } = {}) => {
       const nextBill = { ...bill, ...updates };
       const result = await request(`/api/credit-cards/fast-access-bills/${bill.id}`, {
         method: 'PUT',
@@ -233,9 +255,13 @@
       });
 
       if (result.error) {
-        message.textContent = result.error;
+        if (showModalError) {
+          showEditBillError(result.error);
+        } else {
+          message.textContent = result.error;
+        }
         renderFastAccessBills();
-        return;
+        return null;
       }
 
       fastAccessBills = fastAccessBills.map((savedBill) => (
@@ -243,53 +269,58 @@
       ));
       message.textContent = '';
       renderFastAccessBills();
+      return result.bill;
     };
 
-    const createBillInput = ({ bill, field, type = 'text', label }) => {
-      const input = document.createElement('input');
-      input.type = type;
-      input.value = type === 'number' ? formatBalanceInput(bill[field]) : (bill[field] || '');
-      input.setAttribute('aria-label', `${label}: ${bill.item}`);
-      if (type === 'number') {
-        input.min = '0';
-        input.step = '0.01';
-        input.inputMode = 'decimal';
+    const openEditBillModal = (bill) => {
+      pendingEditBill = bill;
+      clearEditBillError();
+      editBillForm.reset();
+      editBillItemInput.value = bill.item || '';
+      editBillAmountInput.value = formatBalanceInput(bill.amount);
+      editBillDueDateInput.value = bill.due_date || '';
+      editBillPayBeforeInput.value = bill.pay_before || '';
+      editBillStatusInput.value = bill.status || 'Unpaid';
+      editBillModal.classList.remove('hidden');
+      editBillItemInput.focus();
+      editBillItemInput.select();
+    };
+
+    const closeEditBillModal = () => {
+      pendingEditBill = null;
+      clearEditBillError();
+      editBillForm.reset();
+      editBillModal.classList.add('hidden');
+    };
+
+    const updateBillFromModal = async () => {
+      if (!pendingEditBill) return;
+      clearEditBillError();
+      message.textContent = '';
+
+      const item = editBillItemInput.value.trim();
+      if (!item) {
+        showEditBillError(t('billItemRequired'));
+        editBillItemInput.focus();
+        return;
       }
 
-      input.addEventListener('blur', () => {
-        const rawValue = input.value.trim();
-        if (type === 'number' && rawValue && !Number.isFinite(Number(rawValue))) {
-          message.textContent = t('invalidBillAmount');
-          renderFastAccessBills();
-          return;
-        }
-        const nextValue = type === 'number' ? formatBalanceInput(rawValue) : rawValue;
-        const currentValue = type === 'number' ? formatBalanceInput(bill[field]) : (bill[field] || '');
-        if (nextValue === currentValue) return;
-        updateFastAccessBill(bill, { [field]: type === 'number' ? Number(nextValue || 0) : nextValue });
-      });
+      const amount = editBillAmountInput.value.trim();
+      if (amount && !Number.isFinite(Number(amount))) {
+        showEditBillError(t('invalidBillAmount'));
+        editBillAmountInput.focus();
+        return;
+      }
 
-      input.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') input.blur();
-      });
+      const updatedBill = await updateFastAccessBill(pendingEditBill, {
+        item,
+        amount: Number(amount || 0),
+        due_date: editBillDueDateInput.value.trim(),
+        pay_before: editBillPayBeforeInput.value.trim(),
+        status: editBillStatusInput.value,
+      }, { showModalError: true });
 
-      return input;
-    };
-
-    const createBillStatusSelect = (bill) => {
-      const select = document.createElement('select');
-      select.setAttribute('aria-label', `${t('status')}: ${bill.item}`);
-      ['Paid', 'Unpaid'].forEach((status) => {
-        const option = document.createElement('option');
-        option.value = status;
-        option.textContent = status;
-        select.append(option);
-      });
-      select.value = bill.status || 'Unpaid';
-      select.addEventListener('change', () => {
-        updateFastAccessBill(bill, { status: select.value });
-      });
-      return select;
+      if (updatedBill) closeEditBillModal();
     };
 
     const renderFastAccessBills = () => {
@@ -301,25 +332,39 @@
 
         const itemCell = document.createElement('td');
         itemCell.dataset.label = t('billItem');
-        itemCell.append(createBillInput({ bill, field: 'item', label: t('billItem') }));
+        const item = document.createElement('strong');
+        item.textContent = bill.item || t('notAvailable');
+        itemCell.append(item);
 
         const amountCell = document.createElement('td');
         amountCell.dataset.label = t('amount');
-        amountCell.append(createBillInput({ bill, field: 'amount', type: 'number', label: t('amount') }));
+        amountCell.textContent = formatCurrency(bill.amount);
 
         const dueDateCell = document.createElement('td');
         dueDateCell.dataset.label = t('dueDate');
-        dueDateCell.append(createBillInput({ bill, field: 'due_date', label: t('dueDate') }));
+        dueDateCell.textContent = bill.due_date || t('notAvailable');
 
         const payBeforeCell = document.createElement('td');
         payBeforeCell.dataset.label = t('payBefore');
-        payBeforeCell.append(createBillInput({ bill, field: 'pay_before', label: t('payBefore') }));
+        payBeforeCell.textContent = bill.pay_before || t('notAvailable');
 
         const statusCell = document.createElement('td');
         statusCell.dataset.label = t('status');
-        statusCell.append(createBillStatusSelect(bill));
+        statusCell.textContent = bill.status || t('notAvailable');
 
-        row.append(itemCell, amountCell, dueDateCell, payBeforeCell, statusCell);
+        const actionsCell = document.createElement('td');
+        actionsCell.dataset.label = t('actions');
+        const actions = document.createElement('div');
+        actions.className = 'credit-card-actions';
+        const editButton = document.createElement('button');
+        editButton.type = 'button';
+        editButton.className = 'secondary';
+        editButton.textContent = t('edit');
+        editButton.addEventListener('click', () => openEditBillModal(bill));
+        actions.append(editButton);
+        actionsCell.append(actions);
+
+        row.append(itemCell, amountCell, dueDateCell, payBeforeCell, statusCell, actionsCell);
         fastAccessBillsList.append(row);
       });
 
@@ -518,6 +563,7 @@
       setText('.fast-access-bills-table th:nth-child(3)', t('dueDate'));
       setText('.fast-access-bills-table th:nth-child(4)', t('payBefore'));
       setText('.fast-access-bills-table th:nth-child(5)', t('status'));
+      setText('.fast-access-bills-table th:nth-child(6)', t('actions'));
       setText('#fast-access-total-without-rent-label', t('totalWithoutRent'));
       setText('#fast-access-rent-amount-label', t('rentAmount'));
       setText('#fast-access-grand-total-label', t('grandTotalIncludingRent'));
@@ -546,6 +592,14 @@
       setText('label[for="edit-credit-card-closing-date"]', t('closingDate'));
       if (cancelEditButton) cancelEditButton.textContent = t('cancel');
       if (saveEditButton) saveEditButton.textContent = t('save');
+      if (editBillTitle) editBillTitle.textContent = t('editBill');
+      setText('label[for="edit-fast-access-bill-item"]', t('billItem'));
+      setText('label[for="edit-fast-access-bill-amount"]', t('amount'));
+      setText('label[for="edit-fast-access-bill-due-date"]', t('dueDate'));
+      setText('label[for="edit-fast-access-bill-pay-before"]', t('payBefore'));
+      setText('label[for="edit-fast-access-bill-status"]', t('status'));
+      if (cancelEditBillButton) cancelEditBillButton.textContent = t('cancel');
+      if (saveEditBillButton) saveEditBillButton.textContent = t('save');
       render();
       renderFastAccessBills();
     };
@@ -560,13 +614,24 @@
         event.preventDefault();
         await updateCard();
       });
+      editBillForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        await updateBillFromModal();
+      });
       cancelEditButton.addEventListener('click', closeEditModal);
+      cancelEditBillButton.addEventListener('click', closeEditBillModal);
       editModal.addEventListener('click', (event) => {
         if (event.target === editModal) closeEditModal();
+      });
+      editBillModal.addEventListener('click', (event) => {
+        if (event.target === editBillModal) closeEditBillModal();
       });
       document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && !editModal.classList.contains('hidden')) {
           closeEditModal();
+        }
+        if (event.key === 'Escape' && !editBillModal.classList.contains('hidden')) {
+          closeEditBillModal();
         }
       });
     };

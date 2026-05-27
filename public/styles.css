@@ -1788,10 +1788,13 @@ body.theme-dark .status-in_progress {
   text-transform: uppercase;
 }
 
-.fast-access-bills-table input,
-.fast-access-bills-table select {
-  width: 100%;
+.fast-access-bills-table td strong {
+  color: var(--text);
+}
+
+.fast-access-bills-table button {
   min-height: 38px;
+  padding: 8px 12px;
   border-radius: 8px;
 }
 
@@ -1819,6 +1822,21 @@ body.theme-dark .status-in_progress {
 
 .fast-access-bill-totals strong {
   color: var(--primary-strong);
+}
+
+.fast-access-bill-edit-form {
+  display: grid;
+  gap: 14px;
+}
+
+.fast-access-bill-edit-form .field {
+  margin-bottom: 0;
+}
+
+.fast-access-bill-edit-form input,
+.fast-access-bill-edit-form select {
+  min-height: 42px;
+  border-radius: 8px;
 }
 
 .credit-card-form {
@@ -2953,12 +2971,6 @@ body.theme-dark .status-in_progress {
   .credit-card-actions {
     justify-content: flex-end;
     width: 100%;
-  }
-
-  .fast-access-bills-table input,
-  .fast-access-bills-table select {
-    flex: 1;
-    min-width: 0;
   }
 
   .credit-card-actions button {
