@@ -1,6 +1,7 @@
 const authSection = document.getElementById('auth-section');
 const taskSection = document.getElementById('task-section');
 const adminSection = document.getElementById('admin-section');
+const creditCardSection = document.getElementById('credit-card-section');
 const appContainer = document.querySelector('.container');
 const userArea = document.getElementById('user-area');
 const floatingAddTask = document.getElementById('floating-add-task');
@@ -13,6 +14,13 @@ const cancelAddTask = document.getElementById('cancel-add-task');
 const saveAddTask = document.querySelector('#task-form button[type="submit"]');
 const tagForm = document.getElementById('tag-form');
 const tagManager = document.querySelector('.tag-manager');
+const taskHeader = document.querySelector('.task-header');
+const quoteWidget = document.getElementById('quote-widget');
+const weatherSection = document.getElementById('weather-section');
+const weatherForm = document.getElementById('weather-form');
+const weatherCityInput = document.getElementById('weather-city-input');
+const weatherList = document.getElementById('weather-list');
+const weatherMessage = document.getElementById('weather-message');
 const openAddUserModalButton = document.getElementById('open-add-user-modal');
 const adminUserModal = document.getElementById('admin-user-modal');
 const adminUserModalTitle = document.getElementById('admin-user-modal-title');
@@ -114,7 +122,6 @@ let tags = [];
 let users = [];
 let pendingAdminUser = null;
 const reminderTimers = new Map();
-let weatherClockTimer = null;
 let pendingDeleteTaskId = null;
 let pendingDeleteUser = null;
 let pendingDeleteTag = null;
@@ -126,11 +133,16 @@ let reminderAlertPreviousFocus = null;
 let preparedAttachment = null;
 let preparedEditAttachment = null;
 let removeEditAttachment = false;
-let currentWeatherCardHtml = '';
-let savedWeatherCities = [];
-const savedWeatherCards = new Map();
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
+const MAX_TASK_TEXT_LENGTH = 10000;
 const DEFAULT_TASK_PRIORITY = 'low';
+const DAILY_QUOTE_API_URL = '/api/daily-quote';
+const DAILY_QUOTE_CACHE_KEY = 'task-manager-daily-quote';
+const WEATHER_CACHE_PREFIX = 'task-manager-weather-cities';
+const DEFAULT_DAILY_QUOTE = {
+  text: 'Loading today\'s quote...',
+  author: '',
+};
 
 const translations = {
   en: {
@@ -189,7 +201,7 @@ const translations = {
     addComment: 'Add comment',
     comment: 'Comment',
     commentPlaceholder: 'Add a comment about this task...',
-    max500: '(max 5000 characters)',
+    max500: '(max 10000 characters)',
     dateTimeAlert: 'Date Time Alert',
     uploadFile: 'Upload File',
     addTask: 'Add Task',
@@ -204,6 +216,30 @@ const translations = {
     restore: 'Restore',
     addTaskShortcut: 'Add task',
     noArchivedTasks: 'No archived tasks.',
+    weather: 'Weather',
+    creditCards: 'Cards',
+    creditCardAccounts: 'Credit Cards',
+    cardName: 'Card name',
+    cardNamePlaceholder: 'Visa, Amex, Chase...',
+    totalBalance: 'Total Balance',
+    closingDate: 'Closing Date',
+    addCard: 'Add Card',
+    noCreditCards: 'No credit cards yet.',
+    creditCardAdded: 'Credit card added.',
+    closingDateSaved: 'Closing date saved.',
+    creditCardNameRequired: 'Card name is required',
+    invalidCreditCardBalance: 'Total balance must be a valid amount',
+    invalidClosingDate: 'Closing date must be a valid date',
+    addCity: 'Add City',
+    cityPlaceholder: 'Search city',
+    cityNotFound: 'City was not found.',
+    citySaved: 'City weather added.',
+    noSavedWeatherCities: 'No saved weather cities yet.',
+    loadingWeather: 'Loading weather...',
+    weatherUnable: 'Unable to load weather.',
+    humidity: 'Humidity',
+    localTime: 'Local Time',
+    wind: 'Wind',
     actions: 'Actions',
     welcome: 'Welcome, {username}',
     authRequired: 'Username and password are required.',
@@ -214,7 +250,8 @@ const translations = {
     passwordUpdated: 'Password updated.',
     titleRequired: 'Title is required',
     titleTooLong: 'Title must be 20 characters or less',
-    descriptionTooLong: 'Description must be 5000 characters or less',
+    descriptionTooLong: 'Description must be 10000 characters or less',
+    commentTooLong: 'Comment must be 10000 characters or less',
     attachmentTooLarge: 'File must be 5 MB or less',
     attachmentNotReady: 'Please wait for the file upload to finish',
     attachment: 'Attachment',
@@ -258,7 +295,7 @@ const translations = {
     userAdded: 'User added.',
     taskTitlePrompt: 'Task title (max 20 characters)',
     titleEmpty: 'Title cannot be empty',
-    taskDescriptionPrompt: 'Task description (max 5000 characters)',
+    taskDescriptionPrompt: 'Task description (max 10000 characters)',
     reminderPrompt: 'Date time alert (YYYY-MM-DDTHH:mm, leave empty for no alert)',
     sending: 'Sending...',
     emailSent: 'Email sent.',
@@ -267,18 +304,8 @@ const translations = {
     wordExported: 'Word exported.',
     reminderTitle: 'Reminder',
     taskReminderNow: 'Date time alert: {title} is happening now.',
-    weatherUnavailable: 'Location weather is unavailable in this browser.',
-    weatherUnable: 'Unable to load current city weather.',
-    weatherPermission: 'Allow location access to show current city weather.',
-    addCity: 'Add city',
-    cityPlaceholder: 'Search city',
-    cityNotFound: 'City was not found.',
-    citySaved: 'City weather added.',
-    loadingWeather: 'Loading weather...',
-    removeCity: 'Remove city',
-    currentCity: 'Current City',
-    humidity: 'Humidity',
-    localTime: 'Local Time',
+    dailyQuote: 'Daily Quote',
+    quoteAuthor: 'Quote author',
     exportDate: 'Export Date',
     myTasks: 'My Tasks',
     notAvailable: 'N/A',
@@ -339,7 +366,7 @@ const translations = {
     addComment: 'Thêm bình luận',
     comment: 'Bình luận',
     commentPlaceholder: 'Thêm bình luận về công việc này...',
-    max500: '(tối đa 5000 ký tự)',
+    max500: '(tối đa 10000 ký tự)',
     dateTimeAlert: 'Ngày giờ nhắc',
     uploadFile: 'Tải tệp lên',
     addTask: 'Thêm công việc',
@@ -354,6 +381,30 @@ const translations = {
     restore: 'Khoi phuc',
     addTaskShortcut: 'Them cong viec',
     noArchivedTasks: 'Khong co cong viec da luu tru.',
+    weather: 'Thoi tiet',
+    creditCards: 'The',
+    creditCardAccounts: 'The tin dung',
+    cardName: 'Ten the',
+    cardNamePlaceholder: 'Visa, Amex, Chase...',
+    totalBalance: 'Tong so du',
+    closingDate: 'Ngay chot sao ke',
+    addCard: 'Them the',
+    noCreditCards: 'Chua co the tin dung.',
+    creditCardAdded: 'Da them the tin dung.',
+    closingDateSaved: 'Da luu ngay chot sao ke.',
+    creditCardNameRequired: 'Vui long nhap ten the',
+    invalidCreditCardBalance: 'Tong so du khong hop le',
+    invalidClosingDate: 'Ngay chot sao ke khong hop le',
+    addCity: 'Them thanh pho',
+    cityPlaceholder: 'Tim thanh pho',
+    cityNotFound: 'Khong tim thay thanh pho.',
+    citySaved: 'Da them thoi tiet thanh pho.',
+    noSavedWeatherCities: 'Chua co thanh pho thoi tiet da luu.',
+    loadingWeather: 'Dang tai thoi tiet...',
+    weatherUnable: 'Khong the tai thoi tiet.',
+    humidity: 'Do am',
+    localTime: 'Gio dia phuong',
+    wind: 'Gio',
     actions: 'Thao tác',
     welcome: 'Xin chào, {username}',
     authRequired: 'Vui lòng nhập tên đăng nhập và mật khẩu.',
@@ -364,7 +415,8 @@ const translations = {
     passwordUpdated: 'Đã cập nhật mật khẩu.',
     titleRequired: 'Vui lòng nhập tiêu đề',
     titleTooLong: 'Tiêu đề phải từ 20 ký tự trở xuống',
-    descriptionTooLong: 'Mô tả phải từ 5000 ký tự trở xuống',
+    descriptionTooLong: 'Mô tả phải từ 10000 ký tự trở xuống',
+    commentTooLong: 'Bình luận phải từ 10000 ký tự trở xuống',
     attachmentTooLarge: 'Tệp phải từ 5 MB trở xuống',
     attachmentNotReady: 'Vui lòng chờ tệp tải lên hoàn tất',
     attachment: 'Tệp đính kèm',
@@ -403,7 +455,7 @@ const translations = {
     userAdded: 'Đã thêm người dùng.',
     taskTitlePrompt: 'Tiêu đề công việc (tối đa 20 ký tự)',
     titleEmpty: 'Tiêu đề không được để trống',
-    taskDescriptionPrompt: 'Mô tả công việc (tối đa 5000 ký tự)',
+    taskDescriptionPrompt: 'Mô tả công việc (tối đa 10000 ký tự)',
     reminderPrompt: 'Ngày giờ nhắc (YYYY-MM-DDTHH:mm, để trống nếu không nhắc)',
     sending: 'Đang gửi...',
     emailSent: 'Đã gửi email.',
@@ -411,18 +463,8 @@ const translations = {
     pdfExported: 'Đã xuất PDF.',
     wordExported: 'Đã xuất Word.',
     taskReminderNow: 'Nhắc ngày giờ: {title} đang diễn ra.',
-    weatherUnavailable: 'Trình duyệt này không hỗ trợ thời tiết theo vị trí.',
-    weatherUnable: 'Không thể tải thời tiết thành phố hiện tại.',
-    weatherPermission: 'Cho phép truy cập vị trí để hiển thị thời tiết thành phố hiện tại.',
-    addCity: 'Thêm thành phố',
-    cityPlaceholder: 'Tìm thành phố',
-    cityNotFound: 'Không tìm thấy thành phố.',
-    citySaved: 'Đã thêm thời tiết thành phố.',
-    loadingWeather: 'Đang tải thời tiết...',
-    removeCity: 'Xóa thành phố',
-    currentCity: 'Thành phố hiện tại',
-    humidity: 'Độ ẩm',
-    localTime: 'Giờ địa phương',
+    dailyQuote: 'Cau noi hom nay',
+    quoteAuthor: 'Tac gia cau noi',
     exportDate: 'Ngày xuất',
     myTasks: 'Công việc của tôi',
     notAvailable: 'Không có',
@@ -526,6 +568,10 @@ const applyTranslations = () => {
   setIconButtonLabel(exportPdfButton, t('exportPdf'));
   setIconButtonLabel(exportWordButton, t('exportWord'));
   logoutButton.textContent = t('logout');
+  setText('#weather-title', t('weather'));
+  weatherCityInput.placeholder = t('cityPlaceholder');
+  setText('#weather-form button[type="submit"]', t('addCity'));
+  creditCardModule.applyTranslations();
   setText('label[for="task-search-input"]', t('searchTasks'));
   taskSearchInput.placeholder = t('searchTasksPlaceholder');
   clearTaskSearch.setAttribute('aria-label', t('clearSearch'));
@@ -597,6 +643,8 @@ const applyTranslations = () => {
   if (currentUser) renderUserArea();
   if (currentUser) renderTags(tags);
   if (currentUser && (currentView === 'tasks' || currentView === 'archived')) renderTasks(tasks);
+  if (currentUser && currentView === 'weather') renderWeatherView();
+  if (currentUser && currentView === 'credit-cards') creditCardModule.render();
   if (currentUser && currentView === 'admin') renderUsers(users);
 };
 
@@ -975,298 +1023,299 @@ const scheduleTaskReminders = (loadedTasks) => {
   });
 };
 
-// Helper function to get weather icon
-const getWeatherIcon = (weatherCode) => {
-  if (weatherCode === 0 || weatherCode === 1) return '☀️'; // Clear/Mostly clear
-  if (weatherCode === 2 || weatherCode === 3) return '⛅'; // Partly cloudy/Overcast
-  if (weatherCode === 45 || weatherCode === 48) return '🌫️'; // Foggy
-  if (weatherCode >= 51 && weatherCode <= 67) return '🌧️'; // Drizzle/Rain
-  if (weatherCode >= 71 && weatherCode <= 77) return '❄️'; // Snow
-  if (weatherCode === 80 || weatherCode === 81 || weatherCode === 82) return '🌧️'; // Showers
-  if (weatherCode >= 85 && weatherCode <= 86) return '🌨️'; // Showers/Snow
-  if (weatherCode === 95 || weatherCode === 96 || weatherCode === 99) return '⛈️'; // Thunderstorm
-  return '🌤️';
+const renderQuoteWidget = () => {
+  const quoteWidget = document.getElementById('quote-widget');
+  quoteWidget.innerHTML = getDailyQuoteCard(DEFAULT_DAILY_QUOTE);
+  quoteWidget.classList.remove('hidden');
+  loadDailyQuote(quoteWidget);
 };
 
-// Fetch weather data
-const fetchWeather = async () => {
-  if (!navigator.geolocation) {
-    showWeatherMessage(t('weatherUnavailable'));
+const getDailyQuoteDateKey = () => new Date().toISOString().slice(0, 10);
+
+const getCachedDailyQuote = () => {
+  try {
+    const cached = JSON.parse(localStorage.getItem(DAILY_QUOTE_CACHE_KEY));
+    if (cached?.date === getDailyQuoteDateKey() && cached.quote?.text) {
+      return cached.quote;
+    }
+  } catch {
+    localStorage.removeItem(DAILY_QUOTE_CACHE_KEY);
+  }
+  return null;
+};
+
+const saveCachedDailyQuote = (quote) => {
+  localStorage.setItem(DAILY_QUOTE_CACHE_KEY, JSON.stringify({
+    date: getDailyQuoteDateKey(),
+    quote,
+  }));
+};
+
+const fetchDailyQuote = async () => {
+  const response = await fetch(DAILY_QUOTE_API_URL, { cache: 'no-store' });
+  if (!response.ok) {
+    throw new Error('Quote request failed');
+  }
+
+  const data = await response.json();
+  const quote = data.quote || (Array.isArray(data) ? data[0] : data);
+  return {
+    text: quote?.q || quote?.quote || quote?.text || DEFAULT_DAILY_QUOTE.text,
+    author: quote?.a || quote?.author || '',
+  };
+};
+
+const loadDailyQuote = async (quoteWidget) => {
+  const cachedQuote = getCachedDailyQuote();
+  if (cachedQuote) {
+    quoteWidget.innerHTML = getDailyQuoteCard(cachedQuote);
     return;
   }
 
-  return new Promise((resolve) => {
-    navigator.geolocation.getCurrentPosition(async (position) => {
-      try {
-        const { latitude, longitude } = position.coords;
-        await fetchWeatherForLocation(latitude, longitude); 
-      } catch (error) {
-        console.error('Error fetching weather:', error);
-        showWeatherMessage(t('weatherUnable'));
-      } finally {
-        resolve();
-      }
-    }, () => {
-      showWeatherMessage(t('weatherPermission'));
-      resolve();
-    }, {
-      enableHighAccuracy: false,
-      timeout: 10000,
-      maximumAge: 600000
-    });
-  });
-};
-
-// Fetch weather for a specific location
-const fetchWeatherForLocation = async (lat, lng, locationName) => {
   try {
-    const data = await fetchWeatherData(lat, lng);
-    if (data.current) {
-      displayWeather(data.current, lat, lng, locationName, data.timezone);
-    }
+    const quote = await fetchDailyQuote();
+    saveCachedDailyQuote(quote);
+    quoteWidget.innerHTML = getDailyQuoteCard(quote);
   } catch (error) {
-    console.error('Error fetching weather:', error);
-    showWeatherMessage(t('weatherUnable'));
+    console.error('Failed to load daily quote:', error);
+    quoteWidget.innerHTML = getDailyQuoteCard({
+      text: 'Unable to load today\'s quote.',
+      author: '',
+    });
   }
 };
 
-const fetchWeatherData = async (lat, lng) => {
-  const response = await fetch(
-    `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,weather_code,relative_humidity_2m,is_day&temperature_unit=fahrenheit&timezone=auto`
-  );
+const getDailyQuoteCard = (quote) => {
+  const author = quote.author || t('notAvailable');
+  return `
+    <section class="daily-quote" aria-label="${escapeHtml(t('dailyQuote'))}">
+      <div class="daily-quote-label">${escapeHtml(t('dailyQuote'))}</div>
+      <p>${escapeHtml(quote.text)}</p>
+      <div class="daily-quote-author">${escapeHtml(t('quoteAuthor'))}: ${escapeHtml(author)}</div>
+    </section>
+  `;
+};
 
+const getLegacySavedWeatherCitiesKey = () => `${WEATHER_CACHE_PREFIX}-${currentUser?.id || 'guest'}`;
+
+const loadLegacySavedWeatherCities = () => {
+  try {
+    return JSON.parse(localStorage.getItem(getLegacySavedWeatherCitiesKey())) || [];
+  } catch {
+    return [];
+  }
+};
+
+const migrateLegacyWeatherCities = async () => {
+  if (!currentUser) return;
+
+  const migrationKey = `task-manager-weather-db-migrated-${currentUser.id}`;
+  if (sessionStorage.getItem(migrationKey)) return;
+
+  const legacyCities = loadLegacySavedWeatherCities()
+    .filter((city) => city && city.latitude !== undefined && city.longitude !== undefined);
+
+  if (!legacyCities.length) {
+    sessionStorage.setItem(migrationKey, 'true');
+    return;
+  }
+
+  await Promise.all(legacyCities.map((city) => request('/api/weather-cities', {
+    method: 'POST',
+    body: JSON.stringify({
+      weather_key: city.weather_key || city.id,
+      name: city.name,
+      latitude: city.latitude,
+      longitude: city.longitude,
+    }),
+  })));
+
+  localStorage.removeItem(getLegacySavedWeatherCitiesKey());
+  sessionStorage.setItem(migrationKey, 'true');
+};
+
+const loadSavedWeatherCities = async () => {
+  await migrateLegacyWeatherCities();
+  const result = await request('/api/weather-cities');
+  if (result.error) {
+    throw new Error(result.error);
+  }
+  return result.cities || [];
+};
+
+const saveSavedWeatherCity = async (city) => {
+  const result = await request('/api/weather-cities', {
+    method: 'POST',
+    body: JSON.stringify(city),
+  });
+  if (result.error) {
+    throw new Error(result.error);
+  }
+  return result.city;
+};
+
+const deleteSavedWeatherCity = async (id) => {
+  const result = await request(`/api/weather-cities/${id}`, {
+    method: 'DELETE',
+  });
+  if (result.error) {
+    throw new Error(result.error);
+  }
+  return result;
+};
+
+const normalizeWeatherCityName = (match) => (
+  [match.name, match.country].filter(Boolean).join(', ')
+);
+
+const fetchWeatherCityMatch = async (city) => {
+  const response = await fetch(
+    `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`
+  );
+  if (!response.ok) {
+    throw new Error('City request failed');
+  }
+
+  const data = await response.json();
+  return data.results?.[0] || null;
+};
+
+const fetchWeatherData = async (latitude, longitude) => {
+  const response = await fetch(
+    `https://api.open-meteo.com/v1/forecast?latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}&current=temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m,is_day&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`
+  );
+  if (!response.ok) {
+    throw new Error('Weather request failed');
+  }
   return response.json();
 };
 
-const getSavedWeatherCitiesKey = () => `task-manager-weather-cities-${currentUser?.id || 'guest'}`;
-
-const loadSavedWeatherCities = () => {
-  try {
-    savedWeatherCities = JSON.parse(localStorage.getItem(getSavedWeatherCitiesKey())) || [];
-  } catch {
-    savedWeatherCities = [];
-  }
+const getWeatherIcon = (weatherCode) => {
+  if (weatherCode === 0 || weatherCode === 1) return 'Clear';
+  if (weatherCode === 2 || weatherCode === 3) return 'Clouds';
+  if (weatherCode === 45 || weatherCode === 48) return 'Fog';
+  if (weatherCode >= 51 && weatherCode <= 67) return 'Rain';
+  if (weatherCode >= 71 && weatherCode <= 77) return 'Snow';
+  if (weatherCode >= 80 && weatherCode <= 82) return 'Showers';
+  if (weatherCode >= 85 && weatherCode <= 86) return 'Snow';
+  if (weatherCode >= 95) return 'Storm';
+  return 'Weather';
 };
 
-const saveSavedWeatherCities = () => {
-  localStorage.setItem(getSavedWeatherCitiesKey(), JSON.stringify(savedWeatherCities));
-};
-
-const getWeatherSearchMarkup = () => `
-  <form class="weather-search-form">
-    <input class="weather-city-input" type="text" placeholder="${escapeHtml(t('cityPlaceholder'))}" aria-label="${escapeHtml(t('cityPlaceholder'))}" />
-    <button type="submit">${escapeHtml(t('addCity'))}</button>
-  </form>
-`;
-
-const bindWeatherSearchForm = (weatherWidget) => {
-  const form = weatherWidget.querySelector('.weather-search-form');
-  if (!form) return;
-
-  form.addEventListener('submit', handleWeatherCitySubmit);
-
-  weatherWidget.querySelectorAll('[data-remove-weather-city]').forEach((button) => {
-    button.addEventListener('click', () => removeSavedWeatherCity(button.dataset.removeWeatherCity));
+const getWeatherCard = (city, weatherData) => {
+  const current = weatherData.current || {};
+  const tempF = Math.round(Number(current.temperature_2m));
+  const tempC = Math.round((tempF - 32) * 5 / 9);
+  const timezone = weatherData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const localTime = new Date().toLocaleString(currentLanguage === 'vi' ? 'vi-VN' : 'en-US', {
+    timeZone: timezone,
+    dateStyle: 'medium',
+    timeStyle: 'short',
   });
+
+  return `
+    <article class="weather-card">
+      <div class="weather-card-top">
+        <div>
+          <div class="weather-card-kicker">${escapeHtml(getWeatherIcon(current.weather_code))}</div>
+          <h4>${escapeHtml(city.name || t('weather'))}</h4>
+        </div>
+        <button class="weather-remove" type="button" data-weather-id="${escapeHtml(city.id)}" aria-label="${escapeHtml(t('delete'))} ${escapeHtml(city.name || t('weather'))}" title="${escapeHtml(t('delete'))}">x</button>
+      </div>
+      <div class="weather-temp">${Number.isFinite(tempF) ? `${tempF}°F / ${tempC}°C` : t('notAvailable')}</div>
+      <div class="weather-meta">
+        <span><strong>${escapeHtml(t('humidity'))}</strong>${current.relative_humidity_2m ?? t('notAvailable')}%</span>
+        <span><strong>${escapeHtml(t('wind'))}</strong>${current.wind_speed_10m ?? t('notAvailable')} mph</span>
+        <span><strong>${escapeHtml(t('localTime'))}</strong>${escapeHtml(localTime)}</span>
+      </div>
+    </article>
+  `;
 };
 
-const fetchWeatherForCity = async (city) => {
-  showStatusToast(t('loadingWeather'));
+const renderWeatherView = async () => {
+  weatherMessage.textContent = t('loadingWeather');
+  weatherList.innerHTML = '';
 
+  let cities = [];
   try {
-    const response = await fetch(
-      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`
-    );
-    const data = await response.json();
-    const match = data.results?.[0];
-
-    if (!match) {
-      showStatusToast(t('cityNotFound'), 'error');
-      return;
-    }
-
-    const locationName = [match.name, match.admin1, match.country].filter(Boolean).join(', ');
-    const cityRecord = {
-      id: `${Number(match.latitude).toFixed(3)},${Number(match.longitude).toFixed(3)}`,
-      name: locationName,
-      latitude: match.latitude,
-      longitude: match.longitude,
-    };
-    const existingIndex = savedWeatherCities.findIndex((savedCity) => savedCity.id === cityRecord.id);
-
-    if (existingIndex >= 0) {
-      savedWeatherCities[existingIndex] = cityRecord;
-    } else {
-      savedWeatherCities.push(cityRecord);
-    }
-
-    saveSavedWeatherCities();
-    await loadSavedWeatherCity(cityRecord);
-    showStatusToast(t('citySaved'));
+    cities = (await loadSavedWeatherCities())
+    .filter((city) => city && city.latitude !== undefined && city.longitude !== undefined);
   } catch (error) {
-    console.error('Error fetching city weather:', error);
-    showStatusToast(t('weatherUnable'), 'error');
-  } finally {
-    const weatherWidget = document.getElementById('weather-widget');
-    const input = weatherWidget.querySelector('.weather-city-input');
-    if (input) input.value = '';
-  }
-};
-
-const handleWeatherCitySubmit = (event) => {
-  event.preventDefault();
-  const input = event.currentTarget.querySelector('.weather-city-input');
-  const city = input?.value.trim();
-
-  if (!city) {
-    input?.focus();
+    console.error('Failed to load saved weather cities:', error);
+    weatherMessage.textContent = t('weatherUnable');
     return;
   }
 
-  fetchWeatherForCity(city);
-};
+  if (!cities.length) {
+    weatherMessage.textContent = '';
+    weatherList.innerHTML = `<p class="weather-empty">${escapeHtml(t('noSavedWeatherCities'))}</p>`;
+    return;
+  }
 
-const removeSavedWeatherCity = (cityId) => {
-  savedWeatherCities = savedWeatherCities.filter((city) => city.id !== cityId);
-  savedWeatherCards.delete(cityId);
-  saveSavedWeatherCities();
-  renderWeatherWidget();
-};
-
-const loadSavedWeatherCity = async (city) => {
-  savedWeatherCards.set(city.id, getWeatherMessageCard(t('loadingWeather'), true, city.id));
-  renderWeatherWidget();
-
-  try {
-    const data = await fetchWeatherData(city.latitude, city.longitude);
-    if (data.current) {
-      savedWeatherCards.set(
-        city.id,
-        getWeatherCard(data.current, city.name, data.timezone, true, city.id)
-      );
-      renderWeatherWidget();
+  const cards = await Promise.all(cities.map(async (city) => {
+    try {
+      const weatherData = await fetchWeatherData(city.latitude, city.longitude);
+      return getWeatherCard(city, weatherData);
+    } catch (error) {
+      console.error('Failed to load city weather:', error);
+      return `
+        <article class="weather-card weather-card-error">
+          <h4>${escapeHtml(city.name || t('weather'))}</h4>
+          <p>${escapeHtml(t('weatherUnable'))}</p>
+        </article>
+      `;
     }
-  } catch (error) {
-    console.error('Error fetching saved city weather:', error);
-    savedWeatherCards.set(city.id, getWeatherMessageCard(t('weatherUnable'), true, city.id));
-    renderWeatherWidget();
+  }));
+
+  weatherMessage.textContent = '';
+  weatherList.innerHTML = cards.join('');
+};
+
+const handleWeatherSubmit = async (event) => {
+  event.preventDefault();
+  const city = weatherCityInput.value.trim();
+  if (!city) {
+    weatherCityInput.focus();
+    return;
   }
-};
 
-const loadSavedWeatherCityCards = () => {
-  savedWeatherCards.clear();
-  savedWeatherCities.forEach((city) => {
-    loadSavedWeatherCity(city);
-  });
-};
+  weatherMessage.textContent = t('loadingWeather');
 
-// Display weather on the widget
-const getCurrentTimeForTimezone = (timezone) => {
-  return new Date().toLocaleString('en-US', {
-    timeZone: timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
-  });
-};
-
-const showWeatherMessage = (message) => {
-  currentWeatherCardHtml = getWeatherMessageCard(message);
-  renderWeatherWidget();
-};
-
-const renderWeatherWidget = () => {
-  const weatherWidget = document.getElementById('weather-widget');
-  const cityCards = savedWeatherCities
-    .map((city) => savedWeatherCards.get(city.id) || getWeatherMessageCard(t('loadingWeather'), true, city.id))
-    .join('');
-
-  weatherWidget.innerHTML = `
-    ${getWeatherSearchMarkup()}
-    <div class="weather-cards">
-      ${currentWeatherCardHtml}
-      ${cityCards}
-    </div>
-  `;
-  bindWeatherSearchForm(weatherWidget);
-  weatherWidget.classList.remove('hidden');
-};
-
-const getWeatherMessageCard = (message, isSaved = false, cityId = '') => `
-  <div class="weather-card ${isSaved ? 'weather-city-card' : 'weather-current-card'}">
-    ${getWeatherRemoveButton(isSaved, cityId)}
-    <div class="weather-content">
-      <div class="weather-info">
-        <div class="weather-location">${escapeHtml(message)}</div>
-      </div>
-    </div>
-  </div>
-`;
-
-const getWeatherRemoveButton = (isSaved, cityId) => isSaved
-  ? `<button class="weather-remove" type="button" data-remove-weather-city="${escapeHtml(cityId)}" aria-label="${escapeHtml(t('removeCity'))}">×</button>`
-  : '';
-
-const getWeatherCard = (weather, cityName, timezone = '', isSaved = false, cityId = '') => {
-  const icon = getWeatherIcon(weather.weather_code);
-  const tempF = Math.round(weather.temperature_2m);
-  const tempC = Math.round((tempF - 32) * 5 / 9);
-  const humidity = weather.relative_humidity_2m;
-  const currentTime = getCurrentTimeForTimezone(timezone);
-  const dayNightClass = Number(weather.is_day) === 0 ? 'weather-night-card' : 'weather-day-card';
-
-  return `
-    <div class="weather-card ${isSaved ? 'weather-city-card' : 'weather-current-card'} ${dayNightClass}">
-      ${getWeatherRemoveButton(isSaved, cityId)}
-      <div class="weather-content">
-        <div class="weather-icon">${icon}</div>
-        <div class="weather-info">
-          <div class="weather-location">${escapeHtml(cityName)}</div>
-          <div class="weather-temp">${tempF}°F <span>/ ${tempC}°C</span></div>
-          <div class="weather-humidity">${t('humidity')}: ${humidity}%</div>
-        </div>
-        <div class="weather-time">
-          <div class="time-label">${t('localTime')}</div>
-          <div class="time-display" data-weather-timezone="${escapeHtml(timezone)}">${currentTime}</div>
-        </div>
-      </div>
-    </div>
-  `;
-};
-
-const getCurrentCityName = async (lat, lng) => {
   try {
-    const geoResponse = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&zoom=10&addressdetails=1`
-    );
-    const geoData = await geoResponse.json();
-    const address = geoData.address || {};
+    const match = await fetchWeatherCityMatch(city);
+    if (!match) {
+      weatherMessage.textContent = t('cityNotFound');
+      return;
+    }
 
-    return address.city
-      || address.town
-      || address.village
-      || address.hamlet
-      || address.municipality
-      || address.county
-      || t('currentCity');
-  } catch {
-    return t('currentCity');
+    const cityRecord = {
+      weather_key: `${Number(match.latitude).toFixed(3)},${Number(match.longitude).toFixed(3)}`,
+      name: normalizeWeatherCityName(match),
+      latitude: match.latitude,
+      longitude: match.longitude,
+    };
+    await saveSavedWeatherCity(cityRecord);
+    weatherCityInput.value = '';
+    showStatusToast(t('citySaved'));
+    renderWeatherView();
+  } catch (error) {
+    console.error('Failed to save weather city:', error);
+    weatherMessage.textContent = t('weatherUnable');
   }
 };
 
-const displayWeather = async (weather, lat, lng, locationName = '', timezone = '') => {
-  // Get location name from coordinates if not provided
-  const cityName = locationName || await getCurrentCityName(lat, lng);
-  currentWeatherCardHtml = getWeatherCard(weather, cityName, timezone);
-  renderWeatherWidget();
-  
-  // Update time every second
-  if (weatherClockTimer) {
-    clearInterval(weatherClockTimer);
-  }
+const handleWeatherListClick = async (event) => {
+  const removeButton = event.target.closest('.weather-remove');
+  if (!removeButton) return;
 
-  weatherClockTimer = setInterval(() => {
-    document.querySelectorAll('[data-weather-timezone]').forEach((timeDisplay) => {
-      timeDisplay.textContent = getCurrentTimeForTimezone(timeDisplay.dataset.weatherTimezone);
-    });
-  }, 1000);
+  const weatherId = removeButton.dataset.weatherId;
+  try {
+    await deleteSavedWeatherCity(weatherId);
+    renderWeatherView();
+  } catch (error) {
+    console.error('Failed to delete weather city:', error);
+    weatherMessage.textContent = t('weatherUnable');
+  }
 };
 
 const showSection = () => {
@@ -1274,6 +1323,7 @@ const showSection = () => {
     authSection.classList.remove('hidden');
     taskSection.classList.add('hidden');
     adminSection.classList.add('hidden');
+    creditCardSection.classList.add('hidden');
     floatingAddTask.classList.add('hidden');
     userArea.textContent = '';
     return;
@@ -1283,22 +1333,38 @@ const showSection = () => {
   renderUserArea();
 
   const showAdmin = currentView === 'admin' && currentUser.username === 'admin';
-  taskSection.classList.toggle('hidden', showAdmin);
+  const showCreditCards = currentView === 'credit-cards';
+  taskSection.classList.toggle('hidden', showAdmin || showCreditCards);
   adminSection.classList.toggle('hidden', !showAdmin);
-  floatingAddTask.classList.toggle('hidden', showAdmin);
+  creditCardSection.classList.toggle('hidden', !showCreditCards);
+  floatingAddTask.classList.toggle('hidden', showAdmin || showCreditCards || currentView === 'weather');
 
   if (showAdmin) {
     loadUsers();
     return;
   }
 
+  if (showCreditCards) {
+    creditCardModule.load();
+    return;
+  }
+
+  const showWeather = currentView === 'weather';
+  quoteWidget.classList.toggle('hidden', showWeather);
+  taskHeader.classList.toggle('hidden', showWeather);
+  tagManager.classList.toggle('hidden', showWeather || currentView === 'archived');
+  taskList.classList.toggle('hidden', showWeather);
+  weatherSection.classList.toggle('hidden', !showWeather);
+
+  if (showWeather) {
+    renderWeatherView();
+    return;
+  }
+
   taskForm.classList.toggle('hidden', currentView === 'archived');
-  tagManager.classList.toggle('hidden', currentView === 'archived');
   loadTags();
   loadTasks();
-  loadSavedWeatherCities();
-  loadSavedWeatherCityCards();
-  fetchWeather(); // Load weather when showing task section
+  renderQuoteWidget();
 };
 
 const showAddTaskModal = () => {
@@ -1342,6 +1408,24 @@ const renderUserArea = () => {
     showSection();
   });
 
+  const weatherButton = document.createElement('button');
+  weatherButton.type = 'button';
+  weatherButton.className = `secondary ${currentView === 'weather' ? 'active-nav' : ''}`;
+  weatherButton.textContent = t('weather');
+  weatherButton.addEventListener('click', () => {
+    currentView = 'weather';
+    showSection();
+  });
+
+  const creditCardsButton = document.createElement('button');
+  creditCardsButton.type = 'button';
+  creditCardsButton.className = `secondary ${currentView === 'credit-cards' ? 'active-nav' : ''}`;
+  creditCardsButton.textContent = t('creditCards');
+  creditCardsButton.addEventListener('click', () => {
+    currentView = 'credit-cards';
+    showSection();
+  });
+
   const tagButton = document.createElement('button');
   tagButton.type = 'button';
   tagButton.className = 'secondary';
@@ -1361,7 +1445,7 @@ const renderUserArea = () => {
   addTaskButton.title = t('addTaskShortcut');
   addTaskButton.addEventListener('click', openAddTaskFlow);
 
-  userArea.append(addTaskButton, tasksButton, archivedButton, tagButton);
+  userArea.append(addTaskButton, tasksButton, archivedButton, weatherButton, creditCardsButton, tagButton);
 
   if (currentUser.username === 'admin') {
     const adminButton = document.createElement('button');
@@ -1867,7 +1951,7 @@ const handleTaskSubmit = async (event) => {
     return;
   }
   
-  if (getRichEditorLength(descriptionEditor) > 5000) {
+  if (getRichEditorLength(descriptionEditor) > MAX_TASK_TEXT_LENGTH) {
     descriptionError.textContent = t('descriptionTooLong');
     descriptionError.classList.remove('hidden');
     return;
@@ -2519,9 +2603,15 @@ const handleEditTaskSubmit = async (event) => {
     return;
   }
   
-  if (getRichEditorLength(editTaskDescriptionInput) > 5000) {
+  if (getRichEditorLength(editTaskDescriptionInput) > MAX_TASK_TEXT_LENGTH) {
     editDescriptionError.textContent = t('descriptionTooLong');
     editDescriptionError.classList.remove('hidden');
+    return;
+  }
+
+  if (comment.length > MAX_TASK_TEXT_LENGTH) {
+    editFormError.textContent = t('commentTooLong');
+    editFormError.classList.remove('hidden');
     return;
   }
 
@@ -2633,6 +2723,10 @@ savePreviewComment.addEventListener('click', async () => {
   if (!pendingPreviewTask) return;
   const task = pendingPreviewTask;
   const comment = previewTaskCommentInput.value.trim();
+  if (comment.length > MAX_TASK_TEXT_LENGTH) {
+    showStatusToast(t('commentTooLong'), 'error');
+    return;
+  }
   hidePreviewTaskModal();
   const result = await updateTask(task.id, { comment });
   if (!result?.error) {
@@ -2980,6 +3074,13 @@ const exportToWord = async () => {
   showStatusToast(t('wordExported'));
 };
 
+const creditCardModule = window.CreditCardModule.create({
+  request,
+  t,
+  showStatusToast,
+  getLanguage: () => currentLanguage,
+});
+
 showLogin.addEventListener('click', () => setMode('login'));
 showSignup.addEventListener('click', () => setMode('signup'));
 languageSelect.addEventListener('change', (event) => setLanguage(event.target.value));
@@ -3005,6 +3106,9 @@ setupTagSuggestions(editTaskTagInput, editTaskTagSuggestions);
 authForm.addEventListener('submit', handleAuthSubmit);
 taskForm.addEventListener('submit', handleTaskSubmit);
 tagForm.addEventListener('submit', handleTagSubmit);
+weatherForm.addEventListener('submit', handleWeatherSubmit);
+weatherList.addEventListener('click', handleWeatherListClick);
+creditCardModule.bind();
 editTaskForm.addEventListener('submit', handleEditTaskSubmit);
 adminUserForm.addEventListener('submit', handleAdminUserSubmit);
 openAddUserModalButton.addEventListener('click', () => showAdminUserModal());

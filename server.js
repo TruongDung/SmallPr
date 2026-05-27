@@ -13,6 +13,9 @@ const DATABASE_URL = process.env.DATABASE_URL;
 const TASK_ALERT_TO = process.env.TASK_ALERT_TO;
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const MAX_TAG_LENGTH = 40;
+const MAX_TASK_TEXT_LENGTH = 10000;
+const MAX_CREDIT_CARD_NAME_LENGTH = 80;
+const MAX_WEATHER_CITY_LENGTH = 120;
 const VALID_PRIORITIES = new Set(['low', 'medium', 'high']);
 const VALID_STATUSES = new Set(['todo', 'in_progress', 'done']);
 const TASK_PRIORITY_ORDER_SQL = `
@@ -24,6 +27,10 @@ const TASK_PRIORITY_ORDER_SQL = `
   END,
   created_at DESC
 `;
+const DEFAULT_DAILY_QUOTE = {
+  text: 'Make it simple enough to begin.',
+  author: 'Unknown',
+};
 
 if (!DATABASE_URL || DATABASE_URL.includes('[YOUR-PASSWORD]')) {
   throw new Error('DATABASE_URL must be set to your Supabase Postgres connection string.');
@@ -102,6 +109,30 @@ const initializeDatabase = async () => {
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
   )`);
 
+  await pool.query(`CREATE TABLE IF NOT EXISTS weather_cities (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    weather_key TEXT NOT NULL,
+    name TEXT NOT NULL,
+    latitude DOUBLE PRECISION NOT NULL,
+    longitude DOUBLE PRECISION NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, weather_key),
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`);
+
+  await pool.query(`CREATE TABLE IF NOT EXISTS credit_cards (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    total_balance NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    closing_date TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`);
+
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminder_at TEXT');
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS tag TEXT');
@@ -114,6 +145,8 @@ const initializeDatabase = async () => {
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_type TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_data TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_size INTEGER DEFAULT 0');
+  await pool.query('ALTER TABLE credit_cards ADD COLUMN IF NOT EXISTS total_balance NUMERIC(12, 2) NOT NULL DEFAULT 0');
+  await pool.query('ALTER TABLE credit_cards ADD COLUMN IF NOT EXISTS closing_date TEXT');
   await pool.query(`
     INSERT INTO task_tags (user_id, name, normalized_name)
     SELECT DISTINCT user_id, tag, LOWER(tag)
@@ -151,6 +184,37 @@ const normalizeStatus = (status, fallback = 'todo') => {
 
   const normalized = String(status).toLowerCase();
   return VALID_STATUSES.has(normalized) ? normalized : null;
+};
+
+const normalizeCreditCardBalance = (balance) => {
+  if (balance === undefined || balance === null || balance === '') {
+    return 0;
+  }
+
+  const normalized = Number(balance);
+  if (!Number.isFinite(normalized) || normalized < 0 || normalized > 9999999999.99) {
+    return null;
+  }
+
+  return Math.round(normalized * 100) / 100;
+};
+
+const normalizeClosingDate = (closingDate) => {
+  if (closingDate === undefined || closingDate === null || closingDate === '') {
+    return '';
+  }
+
+  const normalized = String(closingDate);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalized)) {
+    return null;
+  }
+
+  const date = new Date(`${normalized}T00:00:00Z`);
+  if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== normalized) {
+    return null;
+  }
+
+  return normalized;
 };
 
 const EMAIL_TRANSLATIONS = {
@@ -241,6 +305,28 @@ const normalizeTag = (tag) => {
   }
 
   return String(tag).trim();
+};
+
+const normalizeWeatherCity = (body = {}) => {
+  const name = String(body.name || '').trim().slice(0, MAX_WEATHER_CITY_LENGTH);
+  const latitude = Number(body.latitude);
+  const longitude = Number(body.longitude);
+  const weatherKey = String(body.weather_key || body.weatherKey || body.id || `${latitude.toFixed(3)},${longitude.toFixed(3)}`).trim();
+
+  if (!name || !weatherKey || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return null;
+  }
+
+  if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+    return null;
+  }
+
+  return {
+    name,
+    latitude,
+    longitude,
+    weatherKey: weatherKey.slice(0, 80),
+  };
 };
 
 const ensureTaskTag = async (userId, tag) => {
@@ -415,6 +501,65 @@ const parseAttachment = (attachment) => {
   }
 
   return { name, type, data, size };
+};
+
+const fetchJsonWithTimeout = async (url, timeoutMs = 7000) => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        Accept: 'application/json',
+        'User-Agent': 'TaskManager/1.0',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`Quote request failed with ${response.status}`);
+    }
+
+    return response.json();
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
+const fetchDailyQuote = async () => {
+  const providers = [
+    async () => {
+      const data = await fetchJsonWithTimeout('https://zenquotes.io/api/random');
+      const quote = Array.isArray(data) ? data[0] : data;
+      return {
+        text: quote?.q,
+        author: quote?.a,
+      };
+    },
+    async () => {
+      const data = await fetchJsonWithTimeout('https://api.quotable.io/random');
+      return {
+        text: data?.content,
+        author: data?.author,
+      };
+    },
+  ];
+
+  for (const provider of providers) {
+    try {
+      const quote = await provider();
+      if (quote?.text) {
+        return {
+          text: String(quote.text).trim(),
+          author: String(quote.author || DEFAULT_DAILY_QUOTE.author).trim(),
+        };
+      }
+    } catch (error) {
+      console.warn('Daily quote provider failed:', error.message);
+    }
+  }
+
+  return DEFAULT_DAILY_QUOTE;
 };
 
 const sendTaskAlertEmail = async (task, user, language = 'en') => {
@@ -738,6 +883,16 @@ app.get('/api/me', async (req, res) => {
   }
 });
 
+app.get('/api/daily-quote', async (req, res) => {
+  try {
+    const quote = await fetchDailyQuote();
+    res.json({ quote });
+  } catch (error) {
+    console.error(error);
+    res.json({ quote: DEFAULT_DAILY_QUOTE });
+  }
+});
+
 app.get('/api/tasks', authRequired, async (req, res) => {
   try {
     const archived = req.query.archived === 'true' ? 1 : 0;
@@ -841,6 +996,151 @@ app.delete('/api/tags/:id', authRequired, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to delete tag' });
+  }
+});
+
+app.get('/api/weather-cities', authRequired, async (req, res) => {
+  try {
+    const cities = await allAsync(
+      `SELECT id, weather_key, name, latitude, longitude
+       FROM weather_cities
+       WHERE user_id = ?
+       ORDER BY LOWER(name), name`,
+      [req.session.userId]
+    );
+    res.json({ cities });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to load weather cities' });
+  }
+});
+
+app.post('/api/weather-cities', authRequired, async (req, res) => {
+  const city = normalizeWeatherCity(req.body);
+  if (!city) {
+    return res.status(400).json({ error: 'Valid city weather data is required' });
+  }
+
+  try {
+    const result = await queryAsync(
+      `INSERT INTO weather_cities (user_id, weather_key, name, latitude, longitude)
+       VALUES (?, ?, ?, ?, ?)
+       ON CONFLICT (user_id, weather_key)
+       DO UPDATE SET
+         name = EXCLUDED.name,
+         latitude = EXCLUDED.latitude,
+         longitude = EXCLUDED.longitude,
+         updated_at = CURRENT_TIMESTAMP
+       RETURNING id, weather_key, name, latitude, longitude`,
+      [req.session.userId, city.weatherKey, city.name, city.latitude, city.longitude]
+    );
+    res.json({ city: result.rows[0] });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to save weather city' });
+  }
+});
+
+app.delete('/api/weather-cities/:id', authRequired, async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const result = await runAsync(
+      'DELETE FROM weather_cities WHERE id = ? AND user_id = ? RETURNING id',
+      [id, req.session.userId]
+    );
+
+    if (!result.lastID) {
+      return res.status(404).json({ error: 'Weather city not found' });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to delete weather city' });
+  }
+});
+
+app.get('/api/credit-cards', authRequired, async (req, res) => {
+  try {
+    const cards = await allAsync(
+      `SELECT id, name, total_balance, closing_date, created_at, updated_at
+       FROM credit_cards
+       WHERE user_id = ?
+       ORDER BY LOWER(name), name`,
+      [req.session.userId]
+    );
+    res.json({ cards });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to load credit cards' });
+  }
+});
+
+app.post('/api/credit-cards', authRequired, async (req, res) => {
+  const { name, total_balance, closing_date } = req.body;
+  const normalizedName = String(name || '').trim();
+
+  if (!normalizedName) {
+    return res.status(400).json({ error: 'Credit card name is required' });
+  }
+
+  if (normalizedName.length > MAX_CREDIT_CARD_NAME_LENGTH) {
+    return res.status(400).json({ error: `Credit card name must be ${MAX_CREDIT_CARD_NAME_LENGTH} characters or less` });
+  }
+
+  const normalizedBalance = normalizeCreditCardBalance(total_balance);
+  if (normalizedBalance === null) {
+    return res.status(400).json({ error: 'Total balance must be a valid amount' });
+  }
+
+  const normalizedClosingDate = normalizeClosingDate(closing_date);
+  if (normalizedClosingDate === null) {
+    return res.status(400).json({ error: 'Closing date must be a valid date' });
+  }
+
+  try {
+    const result = await runAsync(
+      `INSERT INTO credit_cards (user_id, name, total_balance, closing_date)
+       VALUES (?, ?, ?, ?)
+       RETURNING id`,
+      [req.session.userId, normalizedName, normalizedBalance, normalizedClosingDate || null]
+    );
+    const card = await getAsync('SELECT id, name, total_balance, closing_date, created_at, updated_at FROM credit_cards WHERE id = ?', [result.lastID]);
+    res.json({ card });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to create credit card' });
+  }
+});
+
+app.put('/api/credit-cards/:id', authRequired, async (req, res) => {
+  const { id } = req.params;
+  const { closing_date } = req.body;
+  const normalizedClosingDate = normalizeClosingDate(closing_date);
+
+  if (normalizedClosingDate === null) {
+    return res.status(400).json({ error: 'Closing date must be a valid date' });
+  }
+
+  try {
+    const card = await getAsync('SELECT * FROM credit_cards WHERE id = ? AND user_id = ?', [id, req.session.userId]);
+    if (!card) {
+      return res.status(404).json({ error: 'Credit card not found' });
+    }
+
+    await runAsync(
+      'UPDATE credit_cards SET closing_date = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?',
+      [normalizedClosingDate || null, id, req.session.userId]
+    );
+    const updatedCard = await getAsync(
+      'SELECT id, name, total_balance, closing_date, created_at, updated_at FROM credit_cards WHERE id = ?',
+      [id]
+    );
+    res.json({ card: updatedCard });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to update credit card' });
   }
 });
 
@@ -1044,8 +1344,12 @@ app.post('/api/tasks', authRequired, async (req, res) => {
     return res.status(400).json({ error: 'Task title must be 20 characters or less' });
   }
   
-  if (description && stripHtml(description).length > 5000) {
-    return res.status(400).json({ error: 'Task description must be 5000 characters or less' });
+  if (description && stripHtml(description).length > MAX_TASK_TEXT_LENGTH) {
+    return res.status(400).json({ error: `Task description must be ${MAX_TASK_TEXT_LENGTH} characters or less` });
+  }
+
+  if (comment && String(comment).length > MAX_TASK_TEXT_LENGTH) {
+    return res.status(400).json({ error: `Task comment must be ${MAX_TASK_TEXT_LENGTH} characters or less` });
   }
 
   let parsedAttachment = null;
@@ -1121,8 +1425,12 @@ app.put('/api/tasks/:id', authRequired, async (req, res) => {
       return res.status(400).json({ error: `Task tag must be ${MAX_TAG_LENGTH} characters or less` });
     }
     
-    if (description && stripHtml(description).length > 5000) {
-      return res.status(400).json({ error: 'Task description must be 5000 characters or less' });
+    if (description && stripHtml(description).length > MAX_TASK_TEXT_LENGTH) {
+      return res.status(400).json({ error: `Task description must be ${MAX_TASK_TEXT_LENGTH} characters or less` });
+    }
+
+    if (comment && String(comment).length > MAX_TASK_TEXT_LENGTH) {
+      return res.status(400).json({ error: `Task comment must be ${MAX_TASK_TEXT_LENGTH} characters or less` });
     }
 
     const normalizedPriority = normalizePriority(priority, task.priority || 'medium');

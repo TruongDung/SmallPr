@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=credit-cards-1" />
 </head>
 <body>
   <div class="container">
@@ -71,8 +71,27 @@
       </section>
 
       <section id="task-section" class="card hidden">
-        <div id="weather-widget" class="weather-widget hidden"></div>
-        
+        <section id="weather-section" class="weather-section hidden" aria-labelledby="weather-title">
+          <div class="weather-header">
+            <h3 id="weather-title">Weather</h3>
+            <p id="weather-message" class="message"></p>
+          </div>
+          <form id="weather-form" class="weather-form">
+            <label for="weather-city-input" class="sr-only">City</label>
+            <input id="weather-city-input" type="text" placeholder="Search city" autocomplete="off" />
+            <button type="submit" class="secondary">Add City</button>
+          </form>
+          <div id="weather-list" class="weather-list"></div>
+        </section>
+
+        <div id="quote-widget" class="quote-widget">
+          <section class="daily-quote" aria-label="Daily Quote">
+            <div class="daily-quote-label">Daily Quote</div>
+            <p>Loading today's quote...</p>
+            <div class="daily-quote-author">Quote author: N/A</div>
+          </section>
+        </div>
+
         <div class="task-header">
           <div class="task-search">
             <label for="task-search-input" class="sr-only">Search tasks</label>
@@ -128,7 +147,7 @@
             <div id="task-tag-suggestions" class="tag-suggestions hidden" role="listbox"></div>
           </div>
           <div class="field">
-            <label for="task-description">Description <span class="field-max">(max 5000 characters)</span></label>
+            <label for="task-description">Description <span class="field-max">(max 10000 characters)</span></label>
             <div class="rich-editor">
               <div class="rich-editor-toolbar" aria-label="Description formatting">
                 <button type="button" data-editor="task-description" data-command="bold"><strong>B</strong></button>
@@ -203,6 +222,45 @@
               </tr>
             </thead>
             <tbody id="user-list"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="credit-card-section" class="card hidden">
+        <div class="credit-card-header">
+          <div>
+            <h2 id="credit-card-title">Credit Cards</h2>
+            <p id="credit-card-message" class="message"></p>
+          </div>
+        </div>
+
+        <form id="credit-card-form" class="credit-card-form">
+          <div class="field">
+            <label for="credit-card-name">Card name</label>
+            <input id="credit-card-name" type="text" maxlength="80" placeholder="Visa, Amex, Chase..." required />
+          </div>
+          <div class="field">
+            <label for="credit-card-balance">Total balance</label>
+            <input id="credit-card-balance" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
+          </div>
+          <div class="field">
+            <label for="credit-card-closing-date">Closing date</label>
+            <input id="credit-card-closing-date" type="date" />
+          </div>
+          <button id="add-credit-card" type="submit" class="secondary">Add Card</button>
+        </form>
+
+        <div class="credit-card-table-wrap">
+          <table class="credit-card-table">
+            <thead>
+              <tr>
+                <th>Card</th>
+                <th>Total Balance</th>
+                <th>Closing Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="credit-card-list"></tbody>
           </table>
         </div>
       </section>
@@ -295,7 +353,7 @@
           <div id="edit-task-tag-suggestions" class="tag-suggestions hidden" role="listbox"></div>
         </div>
         <div class="field">
-          <label for="edit-task-description-input">Description <span class="field-max">(max 5000 characters)</span></label>
+          <label for="edit-task-description-input">Description <span class="field-max">(max 10000 characters)</span></label>
           <div class="rich-editor">
             <div class="rich-editor-toolbar" aria-label="Description formatting">
               <button type="button" data-editor="edit-task-description-input" data-command="bold"><strong>B</strong></button>
@@ -311,7 +369,7 @@
         </div>
         <div class="field">
           <label for="edit-task-comment-input">Add comment</label>
-          <textarea id="edit-task-comment-input" rows="4" maxlength="1000" placeholder="Add a comment about this task..."></textarea>
+          <textarea id="edit-task-comment-input" rows="4" maxlength="10000" placeholder="Add a comment about this task..."></textarea>
         </div>
         <div class="field">
           <label for="edit-task-reminder-input">Date Time Alert</label>
@@ -339,7 +397,7 @@
       <div class="field preview-task-comment-field">
         <label for="preview-task-comment-input">Add comment</label>
         <div id="preview-task-comment-display" class="preview-task-comment-display hidden"></div>
-        <textarea id="preview-task-comment-input" rows="5" maxlength="1000" placeholder="Add a comment about this task..."></textarea>
+        <textarea id="preview-task-comment-input" rows="5" maxlength="10000" placeholder="Add a comment about this task..."></textarea>
       </div>
       <div class="modal-actions">
         <button id="send-preview-task-email" type="button" class="secondary task-action-icon" aria-label="Send Email" title="Send Email">✉</button>
@@ -402,6 +460,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.min.js"></script>
-  <script src="app.js"></script>
+  <script src="credit-cards.js?v=credit-cards-module-2"></script>
+  <script src="app.js?v=credit-cards-module-2"></script>
 </body>
 </html>

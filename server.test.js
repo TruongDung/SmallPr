@@ -286,15 +286,15 @@ describe('Task API', () => {
     expect(response.body).toHaveProperty('error', 'Task tag must be 40 characters or less');
   });
 
-  test('rejects task descriptions over 5000 plain-text characters on create and update', async () => {
+  test('rejects task descriptions over 10000 plain-text characters on create and update', async () => {
     const agent = await createAgent(testUsername('long-description-owner'));
 
     const createResponse = await agent
       .post('/api/tasks')
-      .send({ title: 'Long desc', description: `<p>${'x'.repeat(5001)}</p>` });
+      .send({ title: 'Long desc', description: `<p>${'x'.repeat(10001)}</p>` });
 
     expect(createResponse.statusCode).toBe(400);
-    expect(createResponse.body).toHaveProperty('error', 'Task description must be 5000 characters or less');
+    expect(createResponse.body).toHaveProperty('error', 'Task description must be 10000 characters or less');
 
     const validCreateResponse = await agent
       .post('/api/tasks')
@@ -302,10 +302,32 @@ describe('Task API', () => {
 
     const updateResponse = await agent
       .put(`/api/tasks/${validCreateResponse.body.task.id}`)
-      .send({ description: 'x'.repeat(5001) });
+      .send({ description: 'x'.repeat(10001) });
 
     expect(updateResponse.statusCode).toBe(400);
-    expect(updateResponse.body).toHaveProperty('error', 'Task description must be 5000 characters or less');
+    expect(updateResponse.body).toHaveProperty('error', 'Task description must be 10000 characters or less');
+  });
+
+  test('rejects task comments over 10000 characters on create and update', async () => {
+    const agent = await createAgent(testUsername('long-comment-owner'));
+
+    const createResponse = await agent
+      .post('/api/tasks')
+      .send({ title: 'Long comment', comment: 'x'.repeat(10001) });
+
+    expect(createResponse.statusCode).toBe(400);
+    expect(createResponse.body).toHaveProperty('error', 'Task comment must be 10000 characters or less');
+
+    const validCreateResponse = await agent
+      .post('/api/tasks')
+      .send({ title: 'Valid comment' });
+
+    const updateResponse = await agent
+      .put(`/api/tasks/${validCreateResponse.body.task.id}`)
+      .send({ comment: 'x'.repeat(10001) });
+
+    expect(updateResponse.statusCode).toBe(400);
+    expect(updateResponse.body).toHaveProperty('error', 'Task comment must be 10000 characters or less');
   });
 
   test('rejects invalid attachment payloads', async () => {
@@ -949,6 +971,97 @@ describe('Task API', () => {
     process.env.SMTP_HOST = originalEnv.SMTP_HOST;
     process.env.SMTP_USER = originalEnv.SMTP_USER;
     process.env.SMTP_PASS = originalEnv.SMTP_PASS;
+  });
+});
+
+describe('Credit Card API', () => {
+  test('requires authentication before listing credit cards', async () => {
+    const response = await request(app).get('/api/credit-cards');
+
+    expect(response.statusCode).toBe(401);
+    expect(response.body).toHaveProperty('error', 'Authentication required');
+  });
+
+  test('creates, lists, and updates a credit card closing date', async () => {
+    const agent = await createAgent(testUsername('credit-card-owner'));
+
+    const createResponse = await agent
+      .post('/api/credit-cards')
+      .send({
+        name: 'Chase Sapphire',
+        total_balance: '1240.55',
+        closing_date: '2026-06-15',
+      });
+
+    expect(createResponse.statusCode).toBe(200);
+    expect(createResponse.body.card).toMatchObject({
+      name: 'Chase Sapphire',
+      closing_date: '2026-06-15',
+    });
+    expect(Number(createResponse.body.card.total_balance)).toBeCloseTo(1240.55);
+
+    const listResponse = await agent.get('/api/credit-cards');
+    expect(listResponse.statusCode).toBe(200);
+    expect(listResponse.body.cards).toHaveLength(1);
+    expect(listResponse.body.cards[0]).toMatchObject({
+      name: 'Chase Sapphire',
+      closing_date: '2026-06-15',
+    });
+
+    const updateResponse = await agent
+      .put(`/api/credit-cards/${createResponse.body.card.id}`)
+      .send({ closing_date: '2026-07-20' });
+
+    expect(updateResponse.statusCode).toBe(200);
+    expect(updateResponse.body.card).toMatchObject({
+      name: 'Chase Sapphire',
+      closing_date: '2026-07-20',
+    });
+  });
+
+  test('validates credit card payloads', async () => {
+    const agent = await createAgent(testUsername('credit-card-validation-owner'));
+
+    const missingNameResponse = await agent
+      .post('/api/credit-cards')
+      .send({ total_balance: '10.00', closing_date: '2026-06-15' });
+
+    expect(missingNameResponse.statusCode).toBe(400);
+    expect(missingNameResponse.body).toHaveProperty('error', 'Credit card name is required');
+
+    const invalidBalanceResponse = await agent
+      .post('/api/credit-cards')
+      .send({ name: 'Bad balance', total_balance: '-1', closing_date: '2026-06-15' });
+
+    expect(invalidBalanceResponse.statusCode).toBe(400);
+    expect(invalidBalanceResponse.body).toHaveProperty('error', 'Total balance must be a valid amount');
+
+    const invalidDateResponse = await agent
+      .post('/api/credit-cards')
+      .send({ name: 'Bad date', total_balance: '10.00', closing_date: 'not-a-date' });
+
+    expect(invalidDateResponse.statusCode).toBe(400);
+    expect(invalidDateResponse.body).toHaveProperty('error', 'Closing date must be a valid date');
+  });
+
+  test('protects credit cards owned by other users', async () => {
+    const ownerAgent = await createAgent(testUsername('credit-card-private-owner'));
+    const otherAgent = await createAgent(testUsername('credit-card-private-other'));
+
+    const createResponse = await ownerAgent
+      .post('/api/credit-cards')
+      .send({ name: 'Private card', total_balance: '20.00', closing_date: '2026-06-15' });
+
+    const otherListResponse = await otherAgent.get('/api/credit-cards');
+    expect(otherListResponse.statusCode).toBe(200);
+    expect(otherListResponse.body.cards).toHaveLength(0);
+
+    const otherUpdateResponse = await otherAgent
+      .put(`/api/credit-cards/${createResponse.body.card.id}`)
+      .send({ closing_date: '2026-07-20' });
+
+    expect(otherUpdateResponse.statusCode).toBe(404);
+    expect(otherUpdateResponse.body).toHaveProperty('error', 'Credit card not found');
   });
 });
 
