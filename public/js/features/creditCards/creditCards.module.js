@@ -1,568 +1,61 @@
 (function () {
   const create = ({ request, t, showStatusToast, getLanguage }) => {
-    const form = document.getElementById('credit-card-form');
-    const nameInput = document.getElementById('credit-card-name');
-    const userInput = document.getElementById('credit-card-user');
-    const issuerInput = document.getElementById('credit-card-issuer');
-    const balanceInput = document.getElementById('credit-card-balance');
-    const closingDateInput = document.getElementById('credit-card-closing-date');
-    const list = document.getElementById('credit-card-list');
-    const message = document.getElementById('credit-card-message');
-    const financialTabs = [...document.querySelectorAll('[data-financial-tab]')];
-    const financialPanels = {
-      cards: document.getElementById('credit-card-panel'),
-      info: document.getElementById('credit-card-info-panel'),
-    };
-    const fastAccessBillsList = document.getElementById('fast-access-bills-list');
-    const fastAccessTotalWithoutRent = document.getElementById('fast-access-total-without-rent');
-    const fastAccessRentAmount = document.getElementById('fast-access-rent-amount');
-    const fastAccessGrandTotal = document.getElementById('fast-access-grand-total');
-    const editBillModal = document.getElementById('edit-fast-access-bill-modal');
-    const editBillForm = document.getElementById('edit-fast-access-bill-form');
-    const editBillTitle = document.getElementById('edit-fast-access-bill-title');
-    const editBillItemInput = document.getElementById('edit-fast-access-bill-item');
-    const editBillAmountInput = document.getElementById('edit-fast-access-bill-amount');
-    const editBillDueDateInput = document.getElementById('edit-fast-access-bill-due-date');
-    const editBillPayBeforeInput = document.getElementById('edit-fast-access-bill-pay-before');
-    const editBillStatusInput = document.getElementById('edit-fast-access-bill-status');
-    const editBillError = document.getElementById('edit-fast-access-bill-error');
-    const cancelEditBillButton = document.getElementById('cancel-edit-fast-access-bill');
-    const saveEditBillButton = document.getElementById('save-edit-fast-access-bill');
-    const editModal = document.getElementById('edit-credit-card-modal');
-    const editForm = document.getElementById('edit-credit-card-form');
-    const editTitle = document.getElementById('edit-credit-card-title');
-    const editNameInput = document.getElementById('edit-credit-card-name');
-    const editUserInput = document.getElementById('edit-credit-card-user');
-    const editIssuerInput = document.getElementById('edit-credit-card-issuer');
-    const editBalanceInput = document.getElementById('edit-credit-card-balance');
-    const editClosingDateInput = document.getElementById('edit-credit-card-closing-date');
-    const editError = document.getElementById('edit-credit-card-error');
-    const cancelEditButton = document.getElementById('cancel-edit-credit-card');
-    const saveEditButton = document.getElementById('save-edit-credit-card');
+    const feature = window.CreditCardFeature;
+    const elements = feature.dom.getElements();
+    const formatters = feature.createFormatters({ t, getLanguage });
+    const userOptions = feature.createUserOptions({ t, getLanguage });
+
     let cards = [];
-    let cardUsers = [];
-    let fastAccessBills = [];
     let pendingEditCard = null;
-    let pendingEditBill = null;
-    let cardSort = { field: 'balance', direction: 'desc' };
 
-    const setText = (selector, text) => {
-      const element = document.querySelector(selector);
-      if (element) element.textContent = text;
-    };
-
-    const translateQuickLinks = () => {
-      document.querySelectorAll('.credit-card-link[data-i18n-key]').forEach((link) => {
-        link.textContent = t(link.dataset.i18nKey);
-      });
-    };
-
-    const setActiveFinancialTab = (tabName) => {
-      const normalizedTabName = financialPanels[tabName] ? tabName : 'cards';
-
-      financialTabs.forEach((tab) => {
-        const isActive = tab.dataset.financialTab === normalizedTabName;
-        tab.classList.toggle('active', isActive);
-        tab.setAttribute('aria-selected', String(isActive));
-      });
-
-      Object.entries(financialPanels).forEach(([name, panel]) => {
-        if (!panel) return;
-        panel.classList.toggle('hidden', name !== normalizedTabName);
-      });
-    };
-
-    const showEditError = (text) => {
-      editError.textContent = text;
-      editError.classList.remove('hidden');
-    };
-
-    const clearEditError = () => {
-      editError.textContent = '';
-      editError.classList.add('hidden');
-    };
-
-    const showEditBillError = (text) => {
-      editBillError.textContent = text;
-      editBillError.classList.remove('hidden');
-    };
-
-    const clearEditBillError = () => {
-      editBillError.textContent = '';
-      editBillError.classList.add('hidden');
-    };
-
-    const formatCurrency = (value) => {
-      const amount = Number(value || 0);
-      return new Intl.NumberFormat(getLanguage() === 'vi' ? 'vi-VN' : 'en-US', {
-        style: 'currency',
-        currency: 'USD',
-      }).format(Number.isFinite(amount) ? amount : 0);
-    };
-
-    const formatDateOnly = (dateString) => {
-      if (!dateString) return t('notAvailable');
-      const date = new Date(`${dateString}T00:00:00`);
-      if (Number.isNaN(date.getTime())) return t('notAvailable');
-      return date.toLocaleDateString(getLanguage() === 'vi' ? 'vi-VN' : 'en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    };
-
-    const issuerLabels = {
-      citi: 'Citi',
-      amex: 'Amex',
-      discover: 'Discover',
-      boa: 'BOA',
-      chase: 'Chase',
-      capital_one: 'Capital One',
-      wells_fargo: 'Wells Fargo',
-      other: 'Other',
-    };
-
-    const formatIssuer = (issuer) => issuerLabels[issuer] || t('notAvailable');
-
-    const userGroupKey = (card) => (card.card_user || '').trim() || t('notAvailable');
-
-    const excludedCardUserNames = new Set(['admin', 'card holder']);
-
-    const isAllowedCardUser = (name) => {
-      const normalizedName = String(name || '').trim().toLowerCase();
-      return normalizedName && !excludedCardUserNames.has(normalizedName);
-    };
-
-    const mergeCardUsers = (savedUsers = [], cardsToMerge = cards) => {
-      const names = [
-        ...savedUsers,
-        ...cardsToMerge.map((card) => card.card_user),
-      ]
-        .map((name) => String(name || '').trim())
-        .filter(isAllowedCardUser);
-
-      return [...new Set(names)].sort((first, second) => (
-        first.localeCompare(second, getLanguage(), { sensitivity: 'base' })
-      ));
-    };
-
-    const setUserOptions = (select, selectedValue = '') => {
-      if (!select) return;
-
-      const normalizedSelectedValue = String(selectedValue || '').trim();
-      const optionValues = isAllowedCardUser(normalizedSelectedValue) && !cardUsers.includes(normalizedSelectedValue)
-        ? [normalizedSelectedValue, ...cardUsers]
-        : cardUsers;
-
-      select.innerHTML = '';
-
-      const placeholder = document.createElement('option');
-      placeholder.value = '';
-      placeholder.textContent = t('creditCardUserPlaceholder');
-      select.append(placeholder);
-
-      optionValues.forEach((user) => {
-        const option = document.createElement('option');
-        option.value = user;
-        option.textContent = user;
-        select.append(option);
-      });
-
-      select.value = isAllowedCardUser(normalizedSelectedValue) ? normalizedSelectedValue : '';
-    };
-
-    const getCardBalance = (card) => {
-      const amount = Number(card.total_balance || 0);
-      return Number.isFinite(amount) ? amount : 0;
-    };
-
-    const getCardClosingDateTime = (card) => {
-      if (!card.closing_date) return 0;
-      const date = new Date(`${card.closing_date}T00:00:00`);
-      return Number.isNaN(date.getTime()) ? 0 : date.getTime();
-    };
-
-    const compareText = (first, second) => (
-      String(first || '').localeCompare(String(second || ''), getLanguage(), { sensitivity: 'base' })
-    );
-
-    const compareCardsByField = (first, second, field = cardSort.field) => {
-      if (field === 'user') {
-        return compareText(userGroupKey(first), userGroupKey(second)) || compareText(first.name, second.name);
-      }
-
-      if (field === 'issuer') {
-        return compareText(formatIssuer(first.issuer), formatIssuer(second.issuer)) || compareText(first.name, second.name);
-      }
-
-      if (field === 'closingDate') {
-        return getCardClosingDateTime(first) - getCardClosingDateTime(second) || compareText(first.name, second.name);
-      }
-
-      return getCardBalance(first) - getCardBalance(second) || compareText(first.name, second.name);
-    };
-
-    const sortCards = (cardsToSort, field = cardSort.field, direction = cardSort.direction) => (
-      [...cardsToSort].sort((first, second) => {
-        const result = compareCardsByField(first, second, field);
-        return direction === 'asc' ? result : -result;
-      })
-    );
-
-    const groupCardsByUser = (cardsToGroup) => cardsToGroup.reduce((groups, card) => {
-      const user = userGroupKey(card);
-      const existing = groups.get(user) || { user, total: 0, cards: [] };
-      existing.total += getCardBalance(card);
-      existing.cards.push(card);
-      groups.set(user, existing);
-      return groups;
-    }, new Map());
-
-    const getSortedCardGroups = (cardsToGroup) => [...groupCardsByUser(cardsToGroup).values()]
-      .map((group) => ({
-        ...group,
-        cards: sortCards(group.cards),
-      }))
-      .sort((first, second) => {
-        if (cardSort.field === 'user') {
-          const result = first.user.localeCompare(second.user, getLanguage(), { sensitivity: 'base' });
-          return cardSort.direction === 'asc' ? result : -result;
-        }
-
-        const totalDifference = second.total - first.total;
-        if (totalDifference !== 0) return totalDifference;
-        return first.user.localeCompare(second.user, getLanguage(), { sensitivity: 'base' });
-      });
-
-    const updateCreditCardSortHeaders = () => {
-      document.querySelectorAll('[data-credit-card-sort]').forEach((button) => {
-        const isActive = button.dataset.creditCardSort === cardSort.field;
-        button.classList.toggle('active', isActive);
-        button.setAttribute('aria-sort', isActive ? (cardSort.direction === 'asc' ? 'ascending' : 'descending') : 'none');
-
-        const arrow = button.querySelector('.sort-arrow');
-        if (arrow) arrow.textContent = isActive ? (cardSort.direction === 'asc' ? '↑' : '↓') : '↕';
-      });
-    };
-
-    const setCreditCardSort = (field) => {
-      cardSort = {
-        field,
-        direction: cardSort.field === field && cardSort.direction === 'asc' ? 'desc' : 'asc',
-      };
-      render();
-    };
-
-    const createSortableHeader = (field, label) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'table-sort-button';
-      button.dataset.creditCardSort = field;
-      button.addEventListener('click', () => setCreditCardSort(field));
-
-      const text = document.createElement('span');
-      text.textContent = label;
-
-      const arrow = document.createElement('span');
-      arrow.className = 'sort-arrow';
-      arrow.setAttribute('aria-hidden', 'true');
-
-      button.append(text, arrow);
-      return button;
-    };
-
-    const renderCreditCardHeaders = () => {
-      const headerCells = document.querySelectorAll('.credit-card-table th');
-      const labels = [
-        t('cardName'),
-        t('creditCardUser'),
-        t('creditCardIssuer'),
-        t('totalBalance'),
-        t('closingDate'),
-        t('actions'),
-      ];
-      const sortableHeaders = {
-        1: 'user',
-        2: 'issuer',
-        3: 'balance',
-        4: 'closingDate',
-      };
-
-      headerCells.forEach((cell, index) => {
-        cell.innerHTML = '';
-        if (sortableHeaders[index]) {
-          cell.append(createSortableHeader(sortableHeaders[index], labels[index]));
-        } else {
-          cell.textContent = labels[index];
-        }
-      });
-      updateCreditCardSortHeaders();
-    };
-
-    const createSummaryRow = ({ label, total, className }) => {
-      const row = document.createElement('tr');
-      row.className = className;
-
-      const cell = document.createElement('td');
-      cell.colSpan = 6;
-
-      const labelElement = document.createElement('strong');
-      labelElement.textContent = label;
-
-      const totalElement = document.createElement('span');
-      totalElement.textContent = formatCurrency(total);
-
-      cell.append(labelElement, totalElement);
-      row.append(cell);
-      return row;
-    };
-
-    const createUserSummaryRow = (group) => createSummaryRow({
-      label: group.user,
-      total: group.total,
-      className: 'credit-card-user-summary',
-    });
-
-    const createGrandTotalRow = (cardsToTotal) => {
-      const total = cardsToTotal.reduce((sum, card) => {
-        const amount = Number(card.total_balance || 0);
-        return sum + (Number.isFinite(amount) ? amount : 0);
-      }, 0);
-
-      return createSummaryRow({
-        label: 'Total',
-        total,
-        className: 'credit-card-grand-total',
-      });
-    };
-
-    const formatBalanceInput = (value) => {
-      const amount = Number(value || 0);
-      return Number.isFinite(amount) ? amount.toFixed(2) : '';
-    };
-
-    const normalizeBillAmount = (value) => {
-      const amount = Number(value || 0);
-      return Number.isFinite(amount) ? amount : 0;
-    };
-
-    const updateFastAccessTotals = () => {
-      const rentBill = fastAccessBills.find((bill) => Number(bill.sort_order) === 1)
-        || fastAccessBills.find((bill) => String(bill.item || '').trim().toLowerCase() === 'rent');
-      const rentAmount = rentBill ? normalizeBillAmount(rentBill.amount) : 0;
-      const totalWithoutRent = fastAccessBills.reduce((sum, bill) => {
-        if (rentBill && bill.id === rentBill.id) return sum;
-        return sum + normalizeBillAmount(bill.amount);
-      }, 0);
-
-      if (fastAccessTotalWithoutRent) fastAccessTotalWithoutRent.textContent = formatCurrency(totalWithoutRent);
-      if (fastAccessRentAmount) fastAccessRentAmount.textContent = formatCurrency(rentAmount);
-      if (fastAccessGrandTotal) fastAccessGrandTotal.textContent = formatCurrency(totalWithoutRent + rentAmount);
-    };
-
-    const updateFastAccessBill = async (bill, updates, { showModalError = false } = {}) => {
-      const nextBill = { ...bill, ...updates };
-      const result = await request(`/api/credit-cards/fast-access-bills/${bill.id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          item: nextBill.item,
-          amount: nextBill.amount,
-          due_date: nextBill.due_date,
-          pay_before: nextBill.pay_before,
-          status: nextBill.status,
-        }),
-      });
-
-      if (result.error) {
-        if (showModalError) {
-          showEditBillError(result.error);
-        } else {
-          message.textContent = result.error;
-        }
-        renderFastAccessBills();
-        return null;
-      }
-
-      fastAccessBills = fastAccessBills.map((savedBill) => (
-        savedBill.id === bill.id ? result.bill : savedBill
-      ));
-      message.textContent = '';
-      renderFastAccessBills();
-      return result.bill;
-    };
-
-    const openEditBillModal = (bill) => {
-      pendingEditBill = bill;
-      clearEditBillError();
-      editBillForm.reset();
-      editBillItemInput.value = bill.item || '';
-      editBillAmountInput.value = formatBalanceInput(bill.amount);
-      editBillDueDateInput.value = bill.due_date || '';
-      editBillPayBeforeInput.value = bill.pay_before || '';
-      editBillStatusInput.value = bill.status || 'Unpaid';
-      editBillModal.classList.remove('hidden');
-      editBillItemInput.focus();
-      editBillItemInput.select();
-    };
-
-    const closeEditBillModal = () => {
-      pendingEditBill = null;
-      clearEditBillError();
-      editBillForm.reset();
-      editBillModal.classList.add('hidden');
-    };
-
-    const updateBillFromModal = async () => {
-      if (!pendingEditBill) return;
-      clearEditBillError();
-      message.textContent = '';
-
-      const item = editBillItemInput.value.trim();
-      if (!item) {
-        showEditBillError(t('billItemRequired'));
-        editBillItemInput.focus();
-        return;
-      }
-
-      const amount = editBillAmountInput.value.trim();
-      if (amount && !Number.isFinite(Number(amount))) {
-        showEditBillError(t('invalidBillAmount'));
-        editBillAmountInput.focus();
-        return;
-      }
-
-      const updatedBill = await updateFastAccessBill(pendingEditBill, {
-        item,
-        amount: Number(amount || 0),
-        due_date: editBillDueDateInput.value.trim(),
-        pay_before: editBillPayBeforeInput.value.trim(),
-        status: editBillStatusInput.value,
-      }, { showModalError: true });
-
-      if (updatedBill) closeEditBillModal();
-    };
-
-    const billGroupKey = (bill) => String(bill.item || '').trim().toLowerCase();
-
-    const getBillGroups = () => {
-      const separateBillNames = new Set(['phone', 'auto loan', 'daycare']);
-      const groups = [];
-      const houseBills = fastAccessBills.filter((bill) => !separateBillNames.has(billGroupKey(bill)));
-      if (houseBills.length) {
-        groups.push({ label: t('monthlyBills'), bills: houseBills });
-      }
-
-      ['phone', 'auto loan', 'daycare'].forEach((billName) => {
-        const bills = fastAccessBills.filter((bill) => billGroupKey(bill) === billName);
-        if (bills.length) {
-          groups.push({ label: bills[0].item || t('notAvailable'), bills });
-        }
-      });
-
-      return groups;
-    };
-
-    const createBillGroupSummaryRow = (group) => {
-      const total = group.bills.reduce((sum, bill) => sum + normalizeBillAmount(bill.amount), 0);
-      const row = document.createElement('tr');
-      row.className = 'fast-access-bill-group-summary';
-
-      const cell = document.createElement('td');
-      cell.colSpan = 6;
-
-      const label = document.createElement('strong');
-      label.textContent = group.label;
-
-      const amount = document.createElement('span');
-      amount.textContent = formatCurrency(total);
-
-      cell.append(label, amount);
-      row.append(cell);
-      return row;
-    };
-
-    const renderFastAccessBills = () => {
-      if (!fastAccessBillsList) return;
-
-      fastAccessBillsList.innerHTML = '';
-      getBillGroups().forEach((group) => {
-        fastAccessBillsList.append(createBillGroupSummaryRow(group));
-
-        group.bills.forEach((bill) => {
-          const row = document.createElement('tr');
-
-          const itemCell = document.createElement('td');
-          itemCell.dataset.label = t('billItem');
-          const item = document.createElement('strong');
-          item.textContent = bill.item || t('notAvailable');
-          itemCell.append(item);
-
-          const amountCell = document.createElement('td');
-          amountCell.dataset.label = t('amount');
-          amountCell.textContent = formatCurrency(bill.amount);
-
-          const dueDateCell = document.createElement('td');
-          dueDateCell.dataset.label = t('dueDate');
-          dueDateCell.textContent = bill.due_date || t('notAvailable');
-
-          const payBeforeCell = document.createElement('td');
-          payBeforeCell.dataset.label = t('payBefore');
-          payBeforeCell.textContent = bill.pay_before || t('notAvailable');
-
-          const statusCell = document.createElement('td');
-          statusCell.dataset.label = t('status');
-          statusCell.textContent = bill.status || t('notAvailable');
-
-          const actionsCell = document.createElement('td');
-          actionsCell.dataset.label = t('actions');
-          const actions = document.createElement('div');
-          actions.className = 'credit-card-actions';
-          const editButton = document.createElement('button');
-          editButton.type = 'button';
-          editButton.className = 'secondary';
-          editButton.textContent = t('edit');
-          editButton.addEventListener('click', () => openEditBillModal(bill));
-          actions.append(editButton);
-          actionsCell.append(actions);
-
-          row.append(itemCell, amountCell, dueDateCell, payBeforeCell, statusCell, actionsCell);
-          fastAccessBillsList.append(row);
-        });
-      });
-
-      updateFastAccessTotals();
-    };
+    const showEditError = (text) => feature.dom.setFieldError(elements.editError, text);
+    const clearEditError = () => feature.dom.clearFieldError(elements.editError);
 
     const openEditModal = (card) => {
       pendingEditCard = card;
       clearEditError();
-      editForm.reset();
-      editNameInput.value = card.name || '';
-      setUserOptions(editUserInput, card.card_user || '');
-      editIssuerInput.value = card.issuer || '';
-      editBalanceInput.value = formatBalanceInput(card.total_balance);
-      editClosingDateInput.value = card.closing_date || '';
-      editModal.classList.remove('hidden');
-      editNameInput.focus();
-      editNameInput.select();
+      elements.editForm.reset();
+      elements.editNameInput.value = card.name || '';
+      userOptions.setOptions(elements.editUserInput, card.card_user || '');
+      elements.editIssuerInput.value = card.issuer || '';
+      elements.editBalanceInput.value = formatters.formatBalanceInput(card.total_balance);
+      elements.editClosingDateInput.value = card.closing_date || '';
+      elements.editModal.classList.remove('hidden');
+      elements.editNameInput.focus();
+      elements.editNameInput.select();
     };
+
+    const cardTable = feature.createCardTable({
+      elements,
+      formatters,
+      t,
+      getLanguage,
+      onEdit: openEditModal,
+    });
+
+    const fastAccessBills = feature.createFastAccessBills({
+      elements,
+      formatters,
+      request,
+      t,
+    });
 
     const closeEditModal = () => {
       pendingEditCard = null;
       clearEditError();
-      editForm.reset();
-      editModal.classList.add('hidden');
+      elements.editForm.reset();
+      elements.editModal.classList.add('hidden');
     };
 
     const updateCard = async () => {
       if (!pendingEditCard) return;
       clearEditError();
-      message.textContent = '';
+      elements.message.textContent = '';
 
-      const name = editNameInput.value.trim();
+      const name = elements.editNameInput.value.trim();
       if (!name) {
         showEditError(t('creditCardNameRequired'));
-        editNameInput.focus();
+        elements.editNameInput.focus();
         return;
       }
 
@@ -570,10 +63,10 @@
         method: 'PUT',
         body: JSON.stringify({
           name,
-          card_user: editUserInput.value,
-          issuer: editIssuerInput.value,
-          total_balance: editBalanceInput.value,
-          closing_date: editClosingDateInput.value,
+          card_user: elements.editUserInput.value,
+          issuer: elements.editIssuerInput.value,
+          total_balance: elements.editBalanceInput.value,
+          closing_date: elements.editClosingDateInput.value,
         }),
       });
 
@@ -588,67 +81,7 @@
     };
 
     const render = (cardsToRender = cards) => {
-      list.innerHTML = '';
-
-      if (!cardsToRender.length) {
-        const row = document.createElement('tr');
-        const cell = document.createElement('td');
-        cell.colSpan = 6;
-        cell.className = 'credit-card-empty';
-        cell.textContent = t('noCreditCards');
-        row.append(cell);
-        list.append(row);
-        updateCreditCardSortHeaders();
-        return;
-      }
-
-      list.append(createGrandTotalRow(cardsToRender));
-
-      getSortedCardGroups(cardsToRender).forEach((group) => {
-        list.append(createUserSummaryRow(group));
-
-        group.cards.forEach((card) => {
-          const row = document.createElement('tr');
-
-          const nameCell = document.createElement('td');
-          nameCell.dataset.label = t('cardName');
-          const name = document.createElement('strong');
-          name.textContent = card.name;
-          nameCell.append(name);
-
-          const userCell = document.createElement('td');
-          userCell.dataset.label = t('creditCardUser');
-          userCell.textContent = card.card_user || t('notAvailable');
-
-          const issuerCell = document.createElement('td');
-          issuerCell.dataset.label = t('creditCardIssuer');
-          issuerCell.textContent = formatIssuer(card.issuer);
-
-          const balanceCell = document.createElement('td');
-          balanceCell.dataset.label = t('totalBalance');
-          balanceCell.textContent = formatCurrency(card.total_balance);
-
-          const closingDateCell = document.createElement('td');
-          closingDateCell.dataset.label = t('closingDate');
-          closingDateCell.textContent = formatDateOnly(card.closing_date);
-
-          const actionsCell = document.createElement('td');
-          actionsCell.dataset.label = t('actions');
-          const actions = document.createElement('div');
-          actions.className = 'credit-card-actions';
-          const editButton = document.createElement('button');
-          editButton.type = 'button';
-          editButton.className = 'secondary';
-          editButton.textContent = t('edit');
-          editButton.addEventListener('click', () => openEditModal(card));
-          actions.append(editButton);
-          actionsCell.append(actions);
-
-          row.append(nameCell, userCell, issuerCell, balanceCell, closingDateCell, actionsCell);
-          list.append(row);
-        });
-      });
-      updateCreditCardSortHeaders();
+      cardTable.render(cardsToRender);
     };
 
     const load = async () => {
@@ -659,38 +92,38 @@
       ]);
 
       if (cardsResult.error) {
-        message.textContent = cardsResult.error;
+        elements.message.textContent = cardsResult.error;
         return;
       }
 
       if (usersResult.error) {
-        message.textContent = usersResult.error;
+        elements.message.textContent = usersResult.error;
         return;
       }
 
       if (fastAccessBillsResult.error) {
-        message.textContent = fastAccessBillsResult.error;
+        elements.message.textContent = fastAccessBillsResult.error;
         return;
       }
 
       cards = cardsResult.cards || [];
-      fastAccessBills = fastAccessBillsResult.bills || [];
-      cardUsers = mergeCardUsers(usersResult.users || [], cards);
-      setUserOptions(userInput, userInput.value);
-      setUserOptions(editUserInput, editUserInput.value);
-      message.textContent = '';
+      fastAccessBills.setBills(fastAccessBillsResult.bills || []);
+      userOptions.merge(usersResult.users || [], cards);
+      userOptions.setOptions(elements.userInput, elements.userInput.value);
+      userOptions.setOptions(elements.editUserInput, elements.editUserInput.value);
+      elements.message.textContent = '';
       render(cards);
-      renderFastAccessBills();
+      fastAccessBills.render();
     };
 
     const handleSubmit = async (event) => {
       event.preventDefault();
-      message.textContent = '';
+      elements.message.textContent = '';
 
-      const name = nameInput.value.trim();
+      const name = elements.nameInput.value.trim();
       if (!name) {
-        message.textContent = t('creditCardNameRequired');
-        nameInput.focus();
+        elements.message.textContent = t('creditCardNameRequired');
+        elements.nameInput.focus();
         return;
       }
 
@@ -698,99 +131,73 @@
         method: 'POST',
         body: JSON.stringify({
           name,
-          card_user: userInput.value,
-          issuer: issuerInput.value,
-          total_balance: balanceInput.value,
-          closing_date: closingDateInput.value,
+          card_user: elements.userInput.value,
+          issuer: elements.issuerInput.value,
+          total_balance: elements.balanceInput.value,
+          closing_date: elements.closingDateInput.value,
         }),
       });
 
       if (result.error) {
-        message.textContent = result.error;
+        elements.message.textContent = result.error;
         return;
       }
 
-      form.reset();
-      setUserOptions(userInput);
+      elements.form.reset();
+      userOptions.setOptions(elements.userInput);
       showStatusToast(t('creditCardAdded'));
       load();
     };
 
     const applyTranslations = () => {
-      setText('#credit-card-title', t('creditCardAccounts'));
-      setText('#credit-card-tab', t('creditCardSubTab'));
-      setText('#credit-card-info-tab', t('creditCardInfoSubTab'));
-      setText('#credit-card-quick-links-title', t('fastAccessLinks'));
-      setText('#fast-access-bills-title', t('monthlyBills'));
-      setText('.fast-access-bills-table th:nth-child(1)', t('billItem'));
-      setText('.fast-access-bills-table th:nth-child(2)', t('amount'));
-      setText('.fast-access-bills-table th:nth-child(3)', t('dueDate'));
-      setText('.fast-access-bills-table th:nth-child(4)', t('payBefore'));
-      setText('.fast-access-bills-table th:nth-child(5)', t('status'));
-      setText('.fast-access-bills-table th:nth-child(6)', t('actions'));
-      setText('#fast-access-total-without-rent-label', t('totalWithoutRent'));
-      setText('#fast-access-rent-amount-label', t('rentAmount'));
-      setText('#fast-access-grand-total-label', t('grandTotalIncludingRent'));
-      translateQuickLinks();
-      setText('label[for="credit-card-name"]', t('cardName'));
-      nameInput.placeholder = t('cardNamePlaceholder');
-      setText('label[for="credit-card-user"]', t('creditCardUser'));
-      setUserOptions(userInput, userInput.value);
-      setText('label[for="credit-card-issuer"]', t('creditCardIssuer'));
-      setText('label[for="credit-card-balance"]', t('totalBalance'));
-      setText('label[for="credit-card-closing-date"]', t('closingDate'));
-      setText('#add-credit-card', t('addCard'));
-      renderCreditCardHeaders();
-      if (editTitle) editTitle.textContent = t('editCreditCard');
-      setText('label[for="edit-credit-card-name"]', t('cardName'));
-      editNameInput.placeholder = t('cardNamePlaceholder');
-      setText('label[for="edit-credit-card-user"]', t('creditCardUser'));
-      setUserOptions(editUserInput, editUserInput.value);
-      setText('label[for="edit-credit-card-issuer"]', t('creditCardIssuer'));
-      setText('label[for="edit-credit-card-balance"]', t('totalBalance'));
-      setText('label[for="edit-credit-card-closing-date"]', t('closingDate'));
-      if (cancelEditButton) cancelEditButton.textContent = t('cancel');
-      if (saveEditButton) saveEditButton.textContent = t('save');
-      if (editBillTitle) editBillTitle.textContent = t('editBill');
-      setText('label[for="edit-fast-access-bill-item"]', t('billItem'));
-      setText('label[for="edit-fast-access-bill-amount"]', t('amount'));
-      setText('label[for="edit-fast-access-bill-due-date"]', t('dueDate'));
-      setText('label[for="edit-fast-access-bill-pay-before"]', t('payBefore'));
-      setText('label[for="edit-fast-access-bill-status"]', t('status'));
-      if (cancelEditBillButton) cancelEditBillButton.textContent = t('cancel');
-      if (saveEditBillButton) saveEditBillButton.textContent = t('save');
+      feature.applyStaticTranslations({
+        elements,
+        setUserOptions: userOptions.setOptions,
+        renderHeaders: () => cardTable.renderHeaders(() => cards),
+        t,
+      });
       render();
-      renderFastAccessBills();
+      fastAccessBills.render();
     };
 
     const bind = () => {
-      financialTabs.forEach((tab) => {
-        tab.addEventListener('click', () => setActiveFinancialTab(tab.dataset.financialTab));
+      elements.financialTabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          feature.dom.setActiveFinancialTab({
+            tabs: elements.financialTabs,
+            panels: elements.financialPanels,
+          }, tab.dataset.financialTab);
+        });
       });
-      setActiveFinancialTab('cards');
-      form.addEventListener('submit', handleSubmit);
-      editForm.addEventListener('submit', async (event) => {
+
+      feature.dom.setActiveFinancialTab({
+        tabs: elements.financialTabs,
+        panels: elements.financialPanels,
+      }, 'cards');
+
+      elements.form.addEventListener('submit', handleSubmit);
+      elements.editForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         await updateCard();
       });
-      editBillForm.addEventListener('submit', async (event) => {
+      elements.editBillForm.addEventListener('submit', async (event) => {
         event.preventDefault();
-        await updateBillFromModal();
+        await fastAccessBills.updateFromModal();
       });
-      cancelEditButton.addEventListener('click', closeEditModal);
-      cancelEditBillButton.addEventListener('click', closeEditBillModal);
-      editModal.addEventListener('click', (event) => {
-        if (event.target === editModal) closeEditModal();
+      elements.cancelEditButton.addEventListener('click', closeEditModal);
+      elements.cancelEditBillButton.addEventListener('click', fastAccessBills.closeEditModal);
+      elements.editModal.addEventListener('click', (event) => {
+        if (event.target === elements.editModal) closeEditModal();
       });
-      editBillModal.addEventListener('click', (event) => {
-        if (event.target === editBillModal) closeEditBillModal();
+      elements.editBillModal.addEventListener('click', (event) => {
+        if (event.target === elements.editBillModal) fastAccessBills.closeEditModal();
       });
       document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && !editModal.classList.contains('hidden')) {
+        if (event.key === 'Escape' && !elements.editModal.classList.contains('hidden')) {
           closeEditModal();
         }
-        if (event.key === 'Escape' && !editBillModal.classList.contains('hidden')) {
-          closeEditBillModal();
+        if (event.key === 'Escape' && !elements.editBillModal.classList.contains('hidden')) {
+          fastAccessBills.closeEditModal();
         }
       });
     };

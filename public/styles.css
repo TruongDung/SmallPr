@@ -163,8 +163,8 @@ body.theme-dark .app-brand-mark {
 }
 
 .language-control select {
-  min-height: 36px;
-  padding-block: 7px;
+  min-height: 34px;
+  padding-block: 6px;
 }
 
 .theme-toggle {
@@ -172,8 +172,8 @@ body.theme-dark .app-brand-mark {
   align-items: center;
   gap: 7px;
   min-width: 0;
-  min-height: 36px;
-  padding: 7px 11px;
+  min-height: 34px;
+  padding: 6px 10px;
   border: 1px solid var(--border);
   border-radius: 999px;
   background: var(--surface);
@@ -741,6 +741,42 @@ button.danger {
 
 #user-area .add-task-shortcut:hover {
   background: var(--primary-strong);
+}
+
+.header-actions .theme-toggle,
+.header-actions .language-control select {
+  min-height: 36px;
+  height: 36px;
+  border-radius: 999px;
+  font-size: 0.92rem;
+}
+
+.header-actions {
+  grid-template-columns: max-content minmax(150px, 180px);
+  justify-content: end;
+}
+
+.header-actions .theme-toggle {
+  width: auto;
+  min-width: 112px;
+  padding: 6px 12px;
+  justify-self: end;
+}
+
+.header-actions .language-control {
+  width: 180px;
+  justify-self: end;
+}
+
+.header-actions .language-control select {
+  width: 100%;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.container:has(#auth-section:not(.hidden)) .header-actions {
+  grid-template-columns: max-content minmax(150px, 180px);
+  justify-content: end;
 }
 
 .task-header {
@@ -1920,14 +1956,19 @@ body.theme-dark .status-in_progress {
   flex-wrap: wrap;
 }
 
+.credit-card-actions button {
+  white-space: normal;
+}
+
 .credit-card-table-wrap {
   overflow-x: auto;
 }
 
 .credit-card-table {
   width: 100%;
-  min-width: 880px;
+  min-width: 0;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .credit-card-table th,
@@ -1936,6 +1977,7 @@ body.theme-dark .status-in_progress {
   border-bottom: 1px solid var(--border);
   text-align: left;
   vertical-align: middle;
+  overflow-wrap: anywhere;
 }
 
 .credit-card-table th {
