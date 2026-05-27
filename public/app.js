@@ -115,7 +115,13 @@ const uploadProgressPercent = document.getElementById('upload-progress-percent')
 
 let currentMode = 'login';
 let currentUser = null;
-let currentView = 'tasks';
+const SAVED_VIEW_KEY = 'task-manager-current-view';
+const VIEW_NAMES = new Set(['tasks', 'archived', 'tags', 'weather', 'credit-cards', 'admin']);
+const getSavedView = () => {
+  const savedView = localStorage.getItem(SAVED_VIEW_KEY);
+  return VIEW_NAMES.has(savedView) ? savedView : 'tasks';
+};
+let currentView = getSavedView();
 let currentLanguage = localStorage.getItem('task-manager-language') || 'en';
 let currentTheme = localStorage.getItem('task-manager-theme') || 'light';
 let currentTagFilter = '';
@@ -1380,6 +1386,13 @@ const handleWeatherListClick = async (event) => {
 
 const isTaskWorkspaceView = () => ['tasks', 'archived', 'tags'].includes(currentView);
 
+const setCurrentView = (view, { persist = true } = {}) => {
+  currentView = VIEW_NAMES.has(view) ? view : 'tasks';
+  if (persist) {
+    localStorage.setItem(SAVED_VIEW_KEY, currentView);
+  }
+};
+
 const setActiveTaskSubtab = () => {
   taskSubtabs.forEach((tab) => {
     const isActive = tab.dataset.taskTab === currentView;
@@ -1397,6 +1410,10 @@ const showSection = () => {
     floatingAddTask.classList.add('hidden');
     userArea.textContent = '';
     return;
+  }
+
+  if (currentView === 'admin' && currentUser.username !== 'admin') {
+    setCurrentView('tasks');
   }
 
   authSection.classList.add('hidden');
@@ -1456,7 +1473,7 @@ const showAddTaskModal = () => {
 };
 
 const openAddTaskFlow = () => {
-  currentView = 'tasks';
+  setCurrentView('tasks');
   showSection();
   showAddTaskModal();
 };
@@ -1478,7 +1495,7 @@ const renderUserArea = () => {
   tasksButton.textContent = t('tasks');
   tasksButton.addEventListener('click', () => {
     if (!isTaskWorkspaceView()) {
-      currentView = 'tasks';
+      setCurrentView('tasks');
     }
     showSection();
   });
@@ -1488,7 +1505,7 @@ const renderUserArea = () => {
   weatherButton.className = `secondary ${currentView === 'weather' ? 'active-nav' : ''}`;
   weatherButton.textContent = t('weather');
   weatherButton.addEventListener('click', () => {
-    currentView = 'weather';
+    setCurrentView('weather');
     showSection();
   });
 
@@ -1497,7 +1514,7 @@ const renderUserArea = () => {
   creditCardsButton.className = `secondary ${currentView === 'credit-cards' ? 'active-nav' : ''}`;
   creditCardsButton.textContent = t('creditCards');
   creditCardsButton.addEventListener('click', () => {
-    currentView = 'credit-cards';
+    setCurrentView('credit-cards');
     showSection();
   });
 
@@ -1517,7 +1534,7 @@ const renderUserArea = () => {
     adminButton.className = `secondary ${currentView === 'admin' ? 'active-nav' : ''}`;
     adminButton.textContent = t('manageUsers');
     adminButton.addEventListener('click', () => {
-      currentView = 'admin';
+      setCurrentView('admin');
       showSection();
     });
 
@@ -1589,7 +1606,7 @@ const handleAuthSubmit = async (event) => {
   }
 
   currentUser = result.user;
-  currentView = 'tasks';
+  setCurrentView(getSavedView());
   authForm.reset();
   showSection();
 };
@@ -1688,7 +1705,7 @@ const renderTags = (tags) => {
     }
     name.addEventListener('click', () => {
       currentTagFilter = tag.name;
-      currentView = 'tasks';
+      setCurrentView('tasks');
       showSection();
     });
 
@@ -2898,7 +2915,7 @@ const hideUploadProgress = () => {
 const handleLogout = async () => {
   await request('/api/logout', { method: 'POST' });
   currentUser = null;
-  currentView = 'tasks';
+  setCurrentView('tasks', { persist: false });
   showSection();
 };
 
@@ -3170,7 +3187,7 @@ weatherForm.addEventListener('submit', handleWeatherSubmit);
 weatherList.addEventListener('click', handleWeatherListClick);
 taskSubtabs.forEach((tab) => {
   tab.addEventListener('click', () => {
-    currentView = tab.dataset.taskTab;
+    setCurrentView(tab.dataset.taskTab);
     showSection();
   });
 });

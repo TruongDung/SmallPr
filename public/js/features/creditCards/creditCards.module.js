@@ -44,6 +44,7 @@
     let fastAccessBills = [];
     let pendingEditCard = null;
     let pendingEditBill = null;
+    let cardSort = { field: 'balance', direction: 'desc' };
 
     const setText = (selector, text) => {
       const element = document.querySelector(selector);
@@ -170,15 +171,133 @@
       select.value = isAllowedCardUser(normalizedSelectedValue) ? normalizedSelectedValue : '';
     };
 
+    const getCardBalance = (card) => {
+      const amount = Number(card.total_balance || 0);
+      return Number.isFinite(amount) ? amount : 0;
+    };
+
+    const getCardClosingDateTime = (card) => {
+      if (!card.closing_date) return 0;
+      const date = new Date(`${card.closing_date}T00:00:00`);
+      return Number.isNaN(date.getTime()) ? 0 : date.getTime();
+    };
+
+    const compareText = (first, second) => (
+      String(first || '').localeCompare(String(second || ''), getLanguage(), { sensitivity: 'base' })
+    );
+
+    const compareCardsByField = (first, second, field = cardSort.field) => {
+      if (field === 'user') {
+        return compareText(userGroupKey(first), userGroupKey(second)) || compareText(first.name, second.name);
+      }
+
+      if (field === 'issuer') {
+        return compareText(formatIssuer(first.issuer), formatIssuer(second.issuer)) || compareText(first.name, second.name);
+      }
+
+      if (field === 'closingDate') {
+        return getCardClosingDateTime(first) - getCardClosingDateTime(second) || compareText(first.name, second.name);
+      }
+
+      return getCardBalance(first) - getCardBalance(second) || compareText(first.name, second.name);
+    };
+
+    const sortCards = (cardsToSort, field = cardSort.field, direction = cardSort.direction) => (
+      [...cardsToSort].sort((first, second) => {
+        const result = compareCardsByField(first, second, field);
+        return direction === 'asc' ? result : -result;
+      })
+    );
+
     const groupCardsByUser = (cardsToGroup) => cardsToGroup.reduce((groups, card) => {
       const user = userGroupKey(card);
       const existing = groups.get(user) || { user, total: 0, cards: [] };
-      const amount = Number(card.total_balance || 0);
-      existing.total += Number.isFinite(amount) ? amount : 0;
+      existing.total += getCardBalance(card);
       existing.cards.push(card);
       groups.set(user, existing);
       return groups;
     }, new Map());
+
+    const getSortedCardGroups = (cardsToGroup) => [...groupCardsByUser(cardsToGroup).values()]
+      .map((group) => ({
+        ...group,
+        cards: sortCards(group.cards),
+      }))
+      .sort((first, second) => {
+        if (cardSort.field === 'user') {
+          const result = first.user.localeCompare(second.user, getLanguage(), { sensitivity: 'base' });
+          return cardSort.direction === 'asc' ? result : -result;
+        }
+
+        const totalDifference = second.total - first.total;
+        if (totalDifference !== 0) return totalDifference;
+        return first.user.localeCompare(second.user, getLanguage(), { sensitivity: 'base' });
+      });
+
+    const updateCreditCardSortHeaders = () => {
+      document.querySelectorAll('[data-credit-card-sort]').forEach((button) => {
+        const isActive = button.dataset.creditCardSort === cardSort.field;
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-sort', isActive ? (cardSort.direction === 'asc' ? 'ascending' : 'descending') : 'none');
+
+        const arrow = button.querySelector('.sort-arrow');
+        if (arrow) arrow.textContent = isActive ? (cardSort.direction === 'asc' ? '↑' : '↓') : '↕';
+      });
+    };
+
+    const setCreditCardSort = (field) => {
+      cardSort = {
+        field,
+        direction: cardSort.field === field && cardSort.direction === 'asc' ? 'desc' : 'asc',
+      };
+      render();
+    };
+
+    const createSortableHeader = (field, label) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'table-sort-button';
+      button.dataset.creditCardSort = field;
+      button.addEventListener('click', () => setCreditCardSort(field));
+
+      const text = document.createElement('span');
+      text.textContent = label;
+
+      const arrow = document.createElement('span');
+      arrow.className = 'sort-arrow';
+      arrow.setAttribute('aria-hidden', 'true');
+
+      button.append(text, arrow);
+      return button;
+    };
+
+    const renderCreditCardHeaders = () => {
+      const headerCells = document.querySelectorAll('.credit-card-table th');
+      const labels = [
+        t('cardName'),
+        t('creditCardUser'),
+        t('creditCardIssuer'),
+        t('totalBalance'),
+        t('closingDate'),
+        t('actions'),
+      ];
+      const sortableHeaders = {
+        1: 'user',
+        2: 'issuer',
+        3: 'balance',
+        4: 'closingDate',
+      };
+
+      headerCells.forEach((cell, index) => {
+        cell.innerHTML = '';
+        if (sortableHeaders[index]) {
+          cell.append(createSortableHeader(sortableHeaders[index], labels[index]));
+        } else {
+          cell.textContent = labels[index];
+        }
+      });
+      updateCreditCardSortHeaders();
+    };
 
     const createSummaryRow = ({ label, total, className }) => {
       const row = document.createElement('tr');
@@ -436,12 +555,13 @@
         cell.textContent = t('noCreditCards');
         row.append(cell);
         list.append(row);
+        updateCreditCardSortHeaders();
         return;
       }
 
       list.append(createGrandTotalRow(cardsToRender));
 
-      groupCardsByUser(cardsToRender).forEach((group) => {
+      getSortedCardGroups(cardsToRender).forEach((group) => {
         list.append(createUserSummaryRow(group));
 
         group.cards.forEach((card) => {
@@ -485,6 +605,7 @@
           list.append(row);
         });
       });
+      updateCreditCardSortHeaders();
     };
 
     const load = async () => {
@@ -576,12 +697,7 @@
       setText('label[for="credit-card-balance"]', t('totalBalance'));
       setText('label[for="credit-card-closing-date"]', t('closingDate'));
       setText('#add-credit-card', t('addCard'));
-      setText('.credit-card-table th:nth-child(1)', t('cardName'));
-      setText('.credit-card-table th:nth-child(2)', t('creditCardUser'));
-      setText('.credit-card-table th:nth-child(3)', t('creditCardIssuer'));
-      setText('.credit-card-table th:nth-child(4)', t('totalBalance'));
-      setText('.credit-card-table th:nth-child(5)', t('closingDate'));
-      setText('.credit-card-table th:nth-child(6)', t('actions'));
+      renderCreditCardHeaders();
       if (editTitle) editTitle.textContent = t('editCreditCard');
       setText('label[for="edit-credit-card-name"]', t('cardName'));
       editNameInput.placeholder = t('cardNamePlaceholder');

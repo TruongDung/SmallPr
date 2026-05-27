@@ -1907,6 +1907,34 @@ body.theme-dark .status-in_progress {
   text-transform: uppercase;
 }
 
+.table-sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+  text-transform: inherit;
+  cursor: pointer;
+}
+
+.table-sort-button:hover,
+.table-sort-button:focus-visible,
+.table-sort-button.active {
+  color: var(--primary-strong);
+}
+
+.sort-arrow {
+  width: 1em;
+  color: var(--primary-strong);
+  font-size: 0.9em;
+  line-height: 1;
+}
+
 .credit-card-table td strong {
   color: var(--text);
 }
