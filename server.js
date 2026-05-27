@@ -6,25 +6,12 @@ const session = require('express-session');
 const path = require('path');
 const nodemailer = require('nodemailer');
 const { PORT, TASK_ALERT_TO } = require('./src/server/config/env');
-const { allAsync, getAsync, pool, runAsync } = require('./src/server/db/client');
+const { allAsync, getAsync, pool, queryAsync, runAsync } = require('./src/server/db/client');
 const createCreditCardsRouter = require('./src/server/routes/creditCards.routes');
+const createTasksRouter = require('./src/server/routes/tasks.routes');
 
 const app = express();
-const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
-const MAX_TAG_LENGTH = 40;
-const MAX_TASK_TEXT_LENGTH = 10000;
 const MAX_WEATHER_CITY_LENGTH = 120;
-const VALID_PRIORITIES = new Set(['low', 'medium', 'high']);
-const VALID_STATUSES = new Set(['todo', 'in_progress', 'done']);
-const TASK_PRIORITY_ORDER_SQL = `
-  CASE priority
-    WHEN 'high' THEN 0
-    WHEN 'medium' THEN 1
-    WHEN 'low' THEN 2
-    ELSE 3
-  END,
-  created_at DESC
-`;
 const DEFAULT_DAILY_QUOTE = {
   text: 'Make it simple enough to begin.',
   author: 'Unknown',
@@ -132,24 +119,6 @@ const initializeDatabase = async () => {
 };
 
 const dbReady = initializeDatabase();
-
-const normalizePriority = (priority, fallback = 'medium') => {
-  if (priority === undefined || priority === null || priority === '') {
-    return fallback;
-  }
-
-  const normalized = String(priority).toLowerCase();
-  return VALID_PRIORITIES.has(normalized) ? normalized : null;
-};
-
-const normalizeStatus = (status, fallback = 'todo') => {
-  if (status === undefined || status === null || status === '') {
-    return fallback;
-  }
-
-  const normalized = String(status).toLowerCase();
-  return VALID_STATUSES.has(normalized) ? normalized : null;
-};
 
 const EMAIL_TRANSLATIONS = {
   en: {
@@ -261,26 +230,6 @@ const normalizeWeatherCity = (body = {}) => {
     longitude,
     weatherKey: weatherKey.slice(0, 80),
   };
-};
-
-const ensureTaskTag = async (userId, tag) => {
-  const normalizedTag = normalizeTag(tag);
-  if (!normalizedTag) {
-    return null;
-  }
-
-  const normalizedName = normalizedTag.toLowerCase();
-  await runAsync(
-    `INSERT INTO task_tags (user_id, name, normalized_name)
-     VALUES (?, ?, ?)
-     ON CONFLICT (user_id, normalized_name) DO NOTHING
-     RETURNING id`,
-    [userId, normalizedTag, normalizedName]
-  );
-  return getAsync(
-    'SELECT id, name FROM task_tags WHERE user_id = ? AND normalized_name = ?',
-    [userId, normalizedName]
-  );
 };
 
 const createMailTransporter = () => {
@@ -414,27 +363,6 @@ const formatRichTextEmailHtml = (value = '', fallback = '') => {
     })
     .join('')
     .replace(/(<br>)+$/g, '');
-};
-
-const sanitizeFileName = (name = '') => path.basename(String(name)).replace(/[<>:"/\\|?*\u0000-\u001F]/g, '_').slice(0, 180);
-
-const parseAttachment = (attachment) => {
-  if (!attachment) return null;
-
-  const name = sanitizeFileName(attachment.name);
-  const data = String(attachment.data || '');
-  const type = String(attachment.type || 'application/octet-stream').slice(0, 120);
-  const size = Number(attachment.size) || 0;
-
-  if (!name || !data.startsWith('data:')) {
-    throw new Error('Invalid attachment');
-  }
-
-  if (size > MAX_ATTACHMENT_BYTES || Buffer.byteLength(data, 'utf8') > MAX_ATTACHMENT_BYTES * 1.5) {
-    throw new Error('File must be 5 MB or less');
-  }
-
-  return { name, type, data, size };
 };
 
 const fetchJsonWithTimeout = async (url, timeoutMs = 7000) => {
@@ -752,6 +680,16 @@ app.use('/api/credit-cards', createCreditCardsRouter({
   runAsync,
 }));
 
+app.use('/api', createTasksRouter({
+  authRequired,
+  allAsync,
+  getAsync,
+  runAsync,
+  getUserById,
+  sendTaskAlertEmail,
+  sendTaskSummaryEmail,
+}));
+
 app.post('/api/signup', async (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
@@ -831,112 +769,6 @@ app.get('/api/daily-quote', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.json({ quote: DEFAULT_DAILY_QUOTE });
-  }
-});
-
-app.get('/api/tasks', authRequired, async (req, res) => {
-  try {
-    const archived = req.query.archived === 'true' ? 1 : 0;
-    const tasks = await allAsync(
-      `SELECT * FROM tasks
-       WHERE user_id = ? AND archived = ?
-       ORDER BY ${TASK_PRIORITY_ORDER_SQL}`,
-      [req.session.userId, archived]
-    );
-    res.json({ tasks });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to load tasks' });
-  }
-});
-
-app.get('/api/tags', authRequired, async (req, res) => {
-  try {
-    const tags = await allAsync(
-      'SELECT id, name FROM task_tags WHERE user_id = ? ORDER BY LOWER(name), name',
-      [req.session.userId]
-    );
-    res.json({ tags });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to load tags' });
-  }
-});
-
-app.post('/api/tags', authRequired, async (req, res) => {
-  const name = normalizeTag(req.body.name);
-  if (!name) {
-    return res.status(400).json({ error: 'Tag name is required' });
-  }
-  if (name.length > MAX_TAG_LENGTH) {
-    return res.status(400).json({ error: `Tag name must be ${MAX_TAG_LENGTH} characters or less` });
-  }
-
-  try {
-    const tag = await ensureTaskTag(req.session.userId, name);
-    res.json({ tag });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to save tag' });
-  }
-});
-
-app.put('/api/tags/:id', authRequired, async (req, res) => {
-  const { id } = req.params;
-  const name = normalizeTag(req.body.name);
-  if (!name) {
-    return res.status(400).json({ error: 'Tag name is required' });
-  }
-  if (name.length > MAX_TAG_LENGTH) {
-    return res.status(400).json({ error: `Tag name must be ${MAX_TAG_LENGTH} characters or less` });
-  }
-
-  try {
-    const tag = await getAsync('SELECT id, name FROM task_tags WHERE id = ? AND user_id = ?', [id, req.session.userId]);
-    if (!tag) {
-      return res.status(404).json({ error: 'Tag not found' });
-    }
-
-    const normalizedName = name.toLowerCase();
-    const existing = await getAsync(
-      'SELECT id, name FROM task_tags WHERE user_id = ? AND normalized_name = ?',
-      [req.session.userId, normalizedName]
-    );
-
-    if (existing && Number(existing.id) !== Number(id)) {
-      await runAsync('UPDATE tasks SET tag = ? WHERE user_id = ? AND LOWER(tag) = LOWER(?)', [existing.name, req.session.userId, tag.name]);
-      await runAsync('DELETE FROM task_tags WHERE id = ? AND user_id = ?', [id, req.session.userId]);
-      return res.json({ tag: existing });
-    }
-
-    await runAsync(
-      'UPDATE task_tags SET name = ?, normalized_name = ? WHERE id = ? AND user_id = ?',
-      [name, normalizedName, id, req.session.userId]
-    );
-    await runAsync('UPDATE tasks SET tag = ? WHERE user_id = ? AND LOWER(tag) = LOWER(?)', [name, req.session.userId, tag.name]);
-    const updatedTag = await getAsync('SELECT id, name FROM task_tags WHERE id = ? AND user_id = ?', [id, req.session.userId]);
-    res.json({ tag: updatedTag });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to update tag' });
-  }
-});
-
-app.delete('/api/tags/:id', authRequired, async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const tag = await getAsync('SELECT id, name FROM task_tags WHERE id = ? AND user_id = ?', [id, req.session.userId]);
-    if (!tag) {
-      return res.status(404).json({ error: 'Tag not found' });
-    }
-
-    await runAsync('UPDATE tasks SET tag = ? WHERE user_id = ? AND LOWER(tag) = LOWER(?)', ['', req.session.userId, tag.name]);
-    await runAsync('DELETE FROM task_tags WHERE id = ? AND user_id = ?', [id, req.session.userId]);
-    res.json({ success: true });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to delete tag' });
   }
 });
 
@@ -1129,253 +961,6 @@ app.delete('/api/admin/users/:id', adminRequired, async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to delete user' });
-  }
-});
-
-app.post('/api/tasks/send-email', authRequired, async (req, res) => {
-  try {
-    const tasks = await allAsync(
-      `SELECT * FROM tasks
-       WHERE user_id = ?
-       ORDER BY ${TASK_PRIORITY_ORDER_SQL}`,
-      [req.session.userId]
-    );
-    const user = await getUserById(req.session.userId);
-    const emailSent = await sendTaskSummaryEmail(tasks, user, req.body.language);
-
-    if (!emailSent) {
-      return res.status(500).json({ error: 'Email settings are not configured' });
-    }
-
-    res.json({ success: true, emailSent });
-  } catch (error) {
-    console.error('Failed to send task summary email:', error);
-    res.status(500).json({ error: 'Failed to send email' });
-  }
-});
-
-app.post('/api/tasks/:id/send-email', authRequired, async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const task = await getAsync('SELECT * FROM tasks WHERE id = ? AND user_id = ?', [id, req.session.userId]);
-    if (!task) {
-      return res.status(404).json({ error: 'Task not found' });
-    }
-
-    const user = await getUserById(req.session.userId);
-    const emailSent = await sendTaskAlertEmail(task, user, req.body.language);
-
-    if (!emailSent) {
-      return res.status(500).json({ error: 'Email settings are not configured' });
-    }
-
-    res.json({ success: true, emailSent });
-  } catch (error) {
-    console.error('Failed to send task email:', error);
-    res.status(500).json({ error: 'Failed to send email' });
-  }
-});
-
-app.post('/api/tasks', authRequired, async (req, res) => {
-  const { title, tag, description, comment, priority, status, time_spent_minutes, reminder_at, attachment, language } = req.body;
-  if (!title) {
-    return res.status(400).json({ error: 'Task title is required' });
-  }
-
-  const normalizedTag = normalizeTag(tag);
-  if (normalizedTag.length > MAX_TAG_LENGTH) {
-    return res.status(400).json({ error: `Task tag must be ${MAX_TAG_LENGTH} characters or less` });
-  }
-
-  const normalizedPriority = normalizePriority(priority);
-  if (!normalizedPriority) {
-    return res.status(400).json({ error: 'Task priority must be low, medium, or high' });
-  }
-
-  const normalizedStatus = normalizeStatus(status);
-  if (!normalizedStatus) {
-    return res.status(400).json({ error: 'Task status must be todo, in_progress, or done' });
-  }
-  
-  if (title.length > 20) {
-    return res.status(400).json({ error: 'Task title must be 20 characters or less' });
-  }
-  
-  if (description && stripHtml(description).length > MAX_TASK_TEXT_LENGTH) {
-    return res.status(400).json({ error: `Task description must be ${MAX_TASK_TEXT_LENGTH} characters or less` });
-  }
-
-  if (comment && String(comment).length > MAX_TASK_TEXT_LENGTH) {
-    return res.status(400).json({ error: `Task comment must be ${MAX_TASK_TEXT_LENGTH} characters or less` });
-  }
-
-  let parsedAttachment = null;
-  try {
-    parsedAttachment = parseAttachment(attachment);
-  } catch (attachmentError) {
-    return res.status(400).json({ error: attachmentError.message });
-  }
-
-  try {
-    const result = await runAsync(
-      `INSERT INTO tasks (
-        user_id, title, tag, description, comment, priority, status, completed, time_spent_minutes, reminder_at,
-        attachment_name, attachment_type, attachment_data, attachment_size
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
-      [
-        req.session.userId,
-        title,
-        normalizedTag,
-        description || '',
-        comment || '',
-        normalizedPriority,
-        normalizedStatus,
-        normalizedStatus === 'done' ? 1 : 0,
-        time_spent_minutes || 0,
-        reminder_at || null,
-        parsedAttachment?.name || null,
-        parsedAttachment?.type || null,
-        parsedAttachment?.data || null,
-        parsedAttachment?.size || 0,
-      ]
-    );
-    await ensureTaskTag(req.session.userId, normalizedTag);
-    const task = await getAsync('SELECT * FROM tasks WHERE id = ?', [result.lastID]);
-    const user = await getUserById(req.session.userId);
-    let emailSent = false;
-
-    if (normalizedPriority !== 'low') {
-      try {
-        emailSent = await sendTaskAlertEmail(task, user, language);
-      } catch (emailError) {
-        console.error('Failed to send task alert email:', emailError);
-      }
-    }
-
-    res.json({ task, emailSent });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to create task' });
-  }
-});
-
-app.put('/api/tasks/:id', authRequired, async (req, res) => {
-  const { id } = req.params;
-  const { title, tag, description, comment, priority, status, archived, completed, time_spent_minutes, reminder_at, attachment } = req.body;
-  const hasAttachmentUpdate = Object.prototype.hasOwnProperty.call(req.body, 'attachment');
-  const hasStatusUpdate = Object.prototype.hasOwnProperty.call(req.body, 'status');
-  const hasTagUpdate = Object.prototype.hasOwnProperty.call(req.body, 'tag');
-
-  try {
-    const task = await getAsync('SELECT * FROM tasks WHERE id = ? AND user_id = ?', [id, req.session.userId]);
-    if (!task) {
-      return res.status(404).json({ error: 'Task not found' });
-    }
-    
-    // Validation
-    if (title && title.length > 20) {
-      return res.status(400).json({ error: 'Task title must be 20 characters or less' });
-    }
-
-    const normalizedTag = normalizeTag(tag);
-    if (hasTagUpdate && normalizedTag.length > MAX_TAG_LENGTH) {
-      return res.status(400).json({ error: `Task tag must be ${MAX_TAG_LENGTH} characters or less` });
-    }
-    
-    if (description && stripHtml(description).length > MAX_TASK_TEXT_LENGTH) {
-      return res.status(400).json({ error: `Task description must be ${MAX_TASK_TEXT_LENGTH} characters or less` });
-    }
-
-    if (comment && String(comment).length > MAX_TASK_TEXT_LENGTH) {
-      return res.status(400).json({ error: `Task comment must be ${MAX_TASK_TEXT_LENGTH} characters or less` });
-    }
-
-    const normalizedPriority = normalizePriority(priority, task.priority || 'medium');
-    if (!normalizedPriority) {
-      return res.status(400).json({ error: 'Task priority must be low, medium, or high' });
-    }
-
-    let normalizedStatus = normalizeStatus(status, task.status || (task.completed ? 'done' : 'todo'));
-    if (hasStatusUpdate && !normalizedStatus) {
-      return res.status(400).json({ error: 'Task status must be todo, in_progress, or done' });
-    }
-    if (!hasStatusUpdate && completed !== undefined) {
-      normalizedStatus = completed ? 'done' : 'todo';
-    }
-
-    let parsedAttachment = null;
-    if (hasAttachmentUpdate) {
-      try {
-        parsedAttachment = parseAttachment(attachment);
-      } catch (attachmentError) {
-        return res.status(400).json({ error: attachmentError.message });
-      }
-    }
-
-    await runAsync(
-      `UPDATE tasks SET
-        title = ?,
-        tag = ?,
-        description = ?,
-        comment = ?,
-        priority = ?,
-        status = ?,
-        archived = ?,
-        completed = ?,
-        time_spent_minutes = ?,
-        reminder_at = ?,
-        attachment_name = ?,
-        attachment_type = ?,
-        attachment_data = ?,
-        attachment_size = ?,
-        updated_at = CURRENT_TIMESTAMP
-       WHERE id = ? AND user_id = ?`,
-      [
-        title || task.title,
-        hasTagUpdate ? normalizedTag : task.tag,
-        description !== undefined ? description : task.description,
-        comment !== undefined ? comment : task.comment,
-        normalizedPriority,
-        normalizedStatus,
-        archived !== undefined ? (archived ? 1 : 0) : task.archived,
-        normalizedStatus === 'done' ? 1 : 0,
-        time_spent_minutes !== undefined ? time_spent_minutes : task.time_spent_minutes,
-        reminder_at !== undefined ? reminder_at || null : task.reminder_at,
-        hasAttachmentUpdate ? parsedAttachment?.name || null : task.attachment_name,
-        hasAttachmentUpdate ? parsedAttachment?.type || null : task.attachment_type,
-        hasAttachmentUpdate ? parsedAttachment?.data || null : task.attachment_data,
-        hasAttachmentUpdate ? parsedAttachment?.size || 0 : task.attachment_size,
-        id,
-        req.session.userId
-      ]
-    );
-    if (hasTagUpdate) {
-      await ensureTaskTag(req.session.userId, normalizedTag);
-    }
-
-    const updatedTask = await getAsync('SELECT * FROM tasks WHERE id = ?', [id]);
-    res.json({ task: updatedTask });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to update task' });
-  }
-});
-
-app.delete('/api/tasks/:id', authRequired, async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const task = await getAsync('SELECT * FROM tasks WHERE id = ? AND user_id = ?', [id, req.session.userId]);
-    if (!task) {
-      return res.status(404).json({ error: 'Task not found' });
-    }
-
-    await runAsync('DELETE FROM tasks WHERE id = ? AND user_id = ?', [id, req.session.userId]);
-    res.json({ success: true });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to delete task' });
   }
 });
 
