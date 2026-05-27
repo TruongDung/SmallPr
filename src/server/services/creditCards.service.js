@@ -5,7 +5,7 @@ const createCreditCardsService = ({ allAsync, getAsync, runAsync }) => {
     `SELECT ${CREDIT_CARD_SELECT}
      FROM credit_cards
      WHERE user_id = ?
-     ORDER BY LOWER(name), name`,
+     ORDER BY LOWER(COALESCE(card_user, '')), card_user, LOWER(name), name`,
     [userId]
   );
 

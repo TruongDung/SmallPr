@@ -69,6 +69,55 @@
 
     const formatIssuer = (issuer) => issuerLabels[issuer] || t('notAvailable');
 
+    const userGroupKey = (card) => (card.card_user || '').trim() || t('notAvailable');
+
+    const groupCardsByUser = (cardsToGroup) => cardsToGroup.reduce((groups, card) => {
+      const user = userGroupKey(card);
+      const existing = groups.get(user) || { user, total: 0, cards: [] };
+      const amount = Number(card.total_balance || 0);
+      existing.total += Number.isFinite(amount) ? amount : 0;
+      existing.cards.push(card);
+      groups.set(user, existing);
+      return groups;
+    }, new Map());
+
+    const createSummaryRow = ({ label, total, className }) => {
+      const row = document.createElement('tr');
+      row.className = className;
+
+      const cell = document.createElement('td');
+      cell.colSpan = 6;
+
+      const labelElement = document.createElement('strong');
+      labelElement.textContent = label;
+
+      const totalElement = document.createElement('span');
+      totalElement.textContent = formatCurrency(total);
+
+      cell.append(labelElement, totalElement);
+      row.append(cell);
+      return row;
+    };
+
+    const createUserSummaryRow = (group) => createSummaryRow({
+      label: group.user,
+      total: group.total,
+      className: 'credit-card-user-summary',
+    });
+
+    const createGrandTotalRow = (cardsToTotal) => {
+      const total = cardsToTotal.reduce((sum, card) => {
+        const amount = Number(card.total_balance || 0);
+        return sum + (Number.isFinite(amount) ? amount : 0);
+      }, 0);
+
+      return createSummaryRow({
+        label: 'Total',
+        total,
+        className: 'credit-card-grand-total',
+      });
+    };
+
     const formatBalanceInput = (value) => {
       const amount = Number(value || 0);
       return Number.isFinite(amount) ? amount.toFixed(2) : '';
@@ -142,39 +191,51 @@
         return;
       }
 
-      cardsToRender.forEach((card) => {
-        const row = document.createElement('tr');
+      list.append(createGrandTotalRow(cardsToRender));
 
-        const nameCell = document.createElement('td');
-        const name = document.createElement('strong');
-        name.textContent = card.name;
-        nameCell.append(name);
+      groupCardsByUser(cardsToRender).forEach((group) => {
+        list.append(createUserSummaryRow(group));
 
-        const userCell = document.createElement('td');
-        userCell.textContent = card.card_user || t('notAvailable');
+        group.cards.forEach((card) => {
+          const row = document.createElement('tr');
 
-        const issuerCell = document.createElement('td');
-        issuerCell.textContent = formatIssuer(card.issuer);
+          const nameCell = document.createElement('td');
+          nameCell.dataset.label = t('cardName');
+          const name = document.createElement('strong');
+          name.textContent = card.name;
+          nameCell.append(name);
 
-        const balanceCell = document.createElement('td');
-        balanceCell.textContent = formatCurrency(card.total_balance);
+          const userCell = document.createElement('td');
+          userCell.dataset.label = t('creditCardUser');
+          userCell.textContent = card.card_user || t('notAvailable');
 
-        const closingDateCell = document.createElement('td');
-        closingDateCell.textContent = formatDateOnly(card.closing_date);
+          const issuerCell = document.createElement('td');
+          issuerCell.dataset.label = t('creditCardIssuer');
+          issuerCell.textContent = formatIssuer(card.issuer);
 
-        const actionsCell = document.createElement('td');
-        const actions = document.createElement('div');
-        actions.className = 'credit-card-actions';
-        const editButton = document.createElement('button');
-        editButton.type = 'button';
-        editButton.className = 'secondary';
-        editButton.textContent = t('edit');
-        editButton.addEventListener('click', () => openEditModal(card));
-        actions.append(editButton);
-        actionsCell.append(actions);
+          const balanceCell = document.createElement('td');
+          balanceCell.dataset.label = t('totalBalance');
+          balanceCell.textContent = formatCurrency(card.total_balance);
 
-        row.append(nameCell, userCell, issuerCell, balanceCell, closingDateCell, actionsCell);
-        list.append(row);
+          const closingDateCell = document.createElement('td');
+          closingDateCell.dataset.label = t('closingDate');
+          closingDateCell.textContent = formatDateOnly(card.closing_date);
+
+          const actionsCell = document.createElement('td');
+          actionsCell.dataset.label = t('actions');
+          const actions = document.createElement('div');
+          actions.className = 'credit-card-actions';
+          const editButton = document.createElement('button');
+          editButton.type = 'button';
+          editButton.className = 'secondary';
+          editButton.textContent = t('edit');
+          editButton.addEventListener('click', () => openEditModal(card));
+          actions.append(editButton);
+          actionsCell.append(actions);
+
+          row.append(nameCell, userCell, issuerCell, balanceCell, closingDateCell, actionsCell);
+          list.append(row);
+        });
       });
     };
 
