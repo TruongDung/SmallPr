@@ -517,6 +517,18 @@ input[type="file"]::file-selector-button {
   cursor: pointer;
 }
 
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  line-height: 1.25;
+}
+
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+  line-height: 1.25;
+  min-height: 1.25em;
+}
+
 input[type="password"] {
   min-height: 48px;
   font-size: 1.25rem;
@@ -3110,6 +3122,10 @@ body.theme-dark .status-in_progress {
   .credit-card-grand-total td {
     border-radius: 10px;
     border: 1px solid var(--border);
+  }
+
+  .credit-card-grand-total td {
+    margin-bottom: 18px;
   }
 
   .credit-card-user-summary td::before,
