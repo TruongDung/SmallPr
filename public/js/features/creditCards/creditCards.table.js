@@ -166,14 +166,18 @@
 
           const editButton = document.createElement('button');
           editButton.type = 'button';
-          editButton.className = 'secondary';
-          editButton.textContent = t('edit');
+          editButton.className = 'task-action-icon';
+          editButton.textContent = '✎';
+          editButton.setAttribute('aria-label', t('edit'));
+          editButton.title = t('edit');
           editButton.addEventListener('click', () => onEdit(card));
 
           const deleteButton = document.createElement('button');
           deleteButton.type = 'button';
-          deleteButton.className = 'danger';
-          deleteButton.textContent = t('delete');
+          deleteButton.className = 'task-action-icon danger';
+          deleteButton.textContent = '×';
+          deleteButton.setAttribute('aria-label', t('delete'));
+          deleteButton.title = t('delete');
           deleteButton.addEventListener('click', () => {
             if (typeof onDelete === 'function') onDelete(card);
           });

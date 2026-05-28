@@ -40,8 +40,18 @@
     setText('label[for="edit-credit-card-balance"]', t('totalBalance'));
     setText('label[for="edit-credit-card-interest-charge"]', t('interestCharge'));
     setText('label[for="edit-credit-card-closing-date"]', t('closingDate'));
-    if (elements.cancelEditButton) elements.cancelEditButton.textContent = t('cancel');
-    if (elements.saveEditButton) elements.saveEditButton.textContent = t('save');
+    if (elements.cancelEditButton) {
+      elements.cancelEditButton.className = 'task-action-icon secondary';
+      elements.cancelEditButton.textContent = '×';
+      elements.cancelEditButton.setAttribute('aria-label', t('cancel'));
+      elements.cancelEditButton.title = t('cancel');
+    }
+    if (elements.saveEditButton) {
+      elements.saveEditButton.className = 'task-action-icon';
+      elements.saveEditButton.textContent = '✓';
+      elements.saveEditButton.setAttribute('aria-label', t('save'));
+      elements.saveEditButton.title = t('save');
+    }
 
     if (elements.editBillTitle) elements.editBillTitle.textContent = t('editBill');
     setText('label[for="edit-fast-access-bill-item"]', t('billItem'));
@@ -49,8 +59,18 @@
     setText('label[for="edit-fast-access-bill-due-date"]', t('dueDate'));
     setText('label[for="edit-fast-access-bill-pay-before"]', t('payBefore'));
     setText('label[for="edit-fast-access-bill-status"]', t('status'));
-    if (elements.cancelEditBillButton) elements.cancelEditBillButton.textContent = t('cancel');
-    if (elements.saveEditBillButton) elements.saveEditBillButton.textContent = t('save');
+    if (elements.cancelEditBillButton) {
+      elements.cancelEditBillButton.className = 'task-action-icon secondary';
+      elements.cancelEditBillButton.textContent = '×';
+      elements.cancelEditBillButton.setAttribute('aria-label', t('cancel'));
+      elements.cancelEditBillButton.title = t('cancel');
+    }
+    if (elements.saveEditBillButton) {
+      elements.saveEditBillButton.className = 'task-action-icon';
+      elements.saveEditBillButton.textContent = '✓';
+      elements.saveEditBillButton.setAttribute('aria-label', t('save'));
+      elements.saveEditBillButton.title = t('save');
+    }
   };
 
   window.CreditCardFeature = {
