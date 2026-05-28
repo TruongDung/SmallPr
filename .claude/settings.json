@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xcodebuild -project ios/TaskManager/TaskManager.xcodeproj -list)",
+      "Bash(xcodebuild -project TaskManager.xcodeproj -scheme TaskManager -configuration Debug -destination 'platform=iOS Simulator,id=CC4CD6C4-1EA6-41B9-B686-4549EF9B63A6' -derivedDataPath build CODE_SIGNING_ALLOWED=NO build)",
+      "Read(//tmp/sim-shots/**)",
+      "Read(//private/tmp/sim-shots/**)"
+    ]
+  }
+}
