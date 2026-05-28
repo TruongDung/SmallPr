@@ -2027,11 +2027,21 @@ body.theme-dark .status-in_progress {
 .credit-card-user-summary td {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 16px;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.credit-card-user-summary td strong {
+  color: var(--primary-strong);
+  white-space: nowrap;
 }
 
 .credit-card-user-summary span {
   color: var(--primary-strong);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .credit-card-date-control {
@@ -2949,15 +2959,25 @@ body.theme-dark .status-in_progress {
 .credit-card-grand-total td {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 16px;
   background: color-mix(in srgb, var(--primary) 12%, var(--surface));
   color: var(--text);
   font-weight: 900;
   border-bottom: 2px solid var(--primary);
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+.credit-card-grand-total td strong {
+  color: var(--primary-strong);
+  white-space: nowrap;
 }
 
 .credit-card-grand-total span {
   color: var(--primary-strong);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 
