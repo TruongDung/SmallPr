@@ -11,6 +11,8 @@ const normalizeCreditCardBalance = (balance) => {
   return Math.round(normalized * 100) / 100;
 };
 
+const normalizeCreditCardInterestCharge = (interestCharge) => normalizeCreditCardBalance(interestCharge);
+
 const normalizeClosingDate = (closingDate) => {
   if (closingDate === undefined || closingDate === null || closingDate === '') {
     return '';
@@ -49,6 +51,7 @@ const normalizeCreditCardIssuer = (issuer, allowedIssuers) => {
 module.exports = {
   normalizeClosingDate,
   normalizeCreditCardBalance,
+  normalizeCreditCardInterestCharge,
   normalizeCreditCardIssuer,
   normalizeCreditCardUser,
 };

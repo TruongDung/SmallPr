@@ -11,6 +11,7 @@ const { createCreditCardsService } = require('../services/creditCards.service');
 const {
   normalizeClosingDate,
   normalizeCreditCardBalance,
+  normalizeCreditCardInterestCharge,
   normalizeCreditCardIssuer,
   normalizeCreditCardUser,
 } = require('../utils/creditCards');
@@ -73,7 +74,7 @@ const validateFastAccessBillDetails = ({ item, amount, due_date, pay_before, sta
   };
 };
 
-const validateCreditCardDetails = ({ name, card_user, issuer, total_balance, closing_date }, existingCard = {}) => {
+const validateCreditCardDetails = ({ name, card_user, issuer, total_balance, interest_charge, closing_date }, existingCard = {}) => {
   const normalizedName = name === undefined ? existingCard.name : String(name || '').trim();
   if (!normalizedName) {
     return { error: 'Credit card No is required' };
@@ -105,6 +106,13 @@ const validateCreditCardDetails = ({ name, card_user, issuer, total_balance, clo
     return { error: 'Total balance must be a valid amount' };
   }
 
+  const normalizedInterestCharge = interest_charge === undefined
+    ? Number(existingCard.interest_charge || 0)
+    : normalizeCreditCardInterestCharge(interest_charge);
+  if (normalizedInterestCharge === null) {
+    return { error: 'Interest charge must be a valid amount' };
+  }
+
   const normalizedClosingDate = normalizeClosingDate(
     closing_date === undefined ? existingCard.closing_date : closing_date
   );
@@ -118,6 +126,7 @@ const validateCreditCardDetails = ({ name, card_user, issuer, total_balance, clo
       cardUser: normalizedCardUser,
       issuer: normalizedIssuer,
       totalBalance: normalizedBalance,
+      interestCharge: normalizedInterestCharge,
       closingDate: normalizedClosingDate,
     },
   };

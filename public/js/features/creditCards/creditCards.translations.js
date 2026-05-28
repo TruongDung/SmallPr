@@ -23,8 +23,12 @@
     setUserOptions(elements.userInput, elements.userInput.value);
     setText('label[for="credit-card-issuer"]', t('creditCardIssuer'));
     setText('label[for="credit-card-balance"]', t('totalBalance'));
+    setText('label[for="credit-card-interest-charge"]', t('interestCharge'));
     setText('label[for="credit-card-closing-date"]', t('closingDate'));
     setText('#add-credit-card', t('addCard'));
+    if (elements.openAddButton) elements.openAddButton.textContent = t('addCard');
+    if (elements.addTitle) elements.addTitle.textContent = t('addCreditCard');
+    if (elements.cancelAddButton) elements.cancelAddButton.textContent = t('cancel');
     renderHeaders();
 
     if (elements.editTitle) elements.editTitle.textContent = t('editCreditCard');
@@ -34,6 +38,7 @@
     setUserOptions(elements.editUserInput, elements.editUserInput.value);
     setText('label[for="edit-credit-card-issuer"]', t('creditCardIssuer'));
     setText('label[for="edit-credit-card-balance"]', t('totalBalance'));
+    setText('label[for="edit-credit-card-interest-charge"]', t('interestCharge'));
     setText('label[for="edit-credit-card-closing-date"]', t('closingDate'));
     if (elements.cancelEditButton) elements.cancelEditButton.textContent = t('cancel');
     if (elements.saveEditButton) elements.saveEditButton.textContent = t('save');

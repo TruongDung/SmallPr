@@ -19,6 +19,7 @@
       userOptions.setOptions(elements.editUserInput, card.card_user || '');
       elements.editIssuerInput.value = card.issuer || '';
       elements.editBalanceInput.value = formatters.formatBalanceInput(card.total_balance);
+      elements.editInterestChargeInput.value = formatters.formatBalanceInput(card.interest_charge);
       elements.editClosingDateInput.value = card.closing_date || '';
       elements.editModal.classList.remove('hidden');
       elements.editNameInput.focus();
@@ -66,6 +67,7 @@
           card_user: elements.editUserInput.value,
           issuer: elements.editIssuerInput.value,
           total_balance: elements.editBalanceInput.value,
+          interest_charge: elements.editInterestChargeInput.value,
           closing_date: elements.editClosingDateInput.value,
         }),
       });
@@ -116,6 +118,19 @@
       fastAccessBills.render();
     };
 
+    const openAddModal = () => {
+      elements.form.reset();
+      userOptions.setOptions(elements.userInput);
+      elements.message.textContent = '';
+      elements.addModal.classList.remove('hidden');
+      elements.nameInput.focus();
+    };
+
+    const closeAddModal = () => {
+      elements.form.reset();
+      elements.addModal.classList.add('hidden');
+    };
+
     const handleSubmit = async (event) => {
       event.preventDefault();
       elements.message.textContent = '';
@@ -134,6 +149,7 @@
           card_user: elements.userInput.value,
           issuer: elements.issuerInput.value,
           total_balance: elements.balanceInput.value,
+          interest_charge: elements.interestChargeInput.value,
           closing_date: elements.closingDateInput.value,
         }),
       });
@@ -143,7 +159,7 @@
         return;
       }
 
-      elements.form.reset();
+      closeAddModal();
       userOptions.setOptions(elements.userInput);
       showStatusToast(t('creditCardAdded'));
       load();
@@ -177,6 +193,11 @@
       }, 'cards');
 
       elements.form.addEventListener('submit', handleSubmit);
+      elements.openAddButton.addEventListener('click', openAddModal);
+      elements.cancelAddButton.addEventListener('click', closeAddModal);
+      elements.addModal.addEventListener('click', (event) => {
+        if (event.target === elements.addModal) closeAddModal();
+      });
       elements.editForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         await updateCard();
@@ -194,10 +215,14 @@
         if (event.target === elements.editBillModal) fastAccessBills.closeEditModal();
       });
       document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && !elements.editModal.classList.contains('hidden')) {
+        if (event.key !== 'Escape') return;
+        if (!elements.addModal.classList.contains('hidden')) {
+          closeAddModal();
+        }
+        if (!elements.editModal.classList.contains('hidden')) {
           closeEditModal();
         }
-        if (event.key === 'Escape' && !elements.editBillModal.classList.contains('hidden')) {
+        if (!elements.editBillModal.classList.contains('hidden')) {
           fastAccessBills.closeEditModal();
         }
       });

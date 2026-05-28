@@ -1945,6 +1945,12 @@ body.theme-dark .status-in_progress {
 }
 
 /* Form (add card) and edit-form (modal) — share input/button sizing */
+.credit-card-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
 .credit-card-form {
   display: grid;
   grid-template-columns: minmax(150px, 1fr) minmax(130px, 0.8fr) minmax(130px, 0.8fr) minmax(120px, 0.7fr) minmax(140px, 0.8fr) auto;

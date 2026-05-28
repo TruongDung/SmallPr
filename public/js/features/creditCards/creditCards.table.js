@@ -6,6 +6,8 @@
 
     const getCardBalance = (card) => formatters.normalizeAmount(card.total_balance);
 
+    const getCardInterestCharge = (card) => formatters.normalizeAmount(card.interest_charge);
+
     const getCardClosingDateTime = (card) => {
       if (!card.closing_date) return 0;
       const date = new Date(`${card.closing_date}T00:00:00`);
@@ -25,6 +27,11 @@
 
       if (field === 'closingDate') {
         return getCardClosingDateTime(first) - getCardClosingDateTime(second)
+          || formatters.compareText(first.name, second.name);
+      }
+
+      if (field === 'interestCharge') {
+        return getCardInterestCharge(first) - getCardInterestCharge(second)
           || formatters.compareText(first.name, second.name);
       }
 
@@ -69,7 +76,7 @@
       row.className = className;
 
       const cell = document.createElement('td');
-      cell.colSpan = 6;
+      cell.colSpan = 7;
 
       const labelElement = document.createElement('strong');
       labelElement.textContent = label;
@@ -111,7 +118,7 @@
       if (!cardsToRender.length) {
         const row = document.createElement('tr');
         const cell = document.createElement('td');
-        cell.colSpan = 6;
+        cell.colSpan = 7;
         cell.className = 'credit-card-empty';
         cell.textContent = t('noCreditCards');
         row.append(cell);
@@ -144,6 +151,10 @@
           balanceCell.dataset.label = t('totalBalance');
           balanceCell.textContent = formatters.formatCurrency(card.total_balance);
 
+          const interestChargeCell = document.createElement('td');
+          interestChargeCell.dataset.label = t('interestCharge');
+          interestChargeCell.textContent = formatters.formatCurrency(card.interest_charge);
+
           const closingDateCell = document.createElement('td');
           closingDateCell.dataset.label = t('closingDate');
           closingDateCell.textContent = formatters.formatDateOnly(card.closing_date);
@@ -161,7 +172,7 @@
 
           actions.append(editButton);
           actionsCell.append(actions);
-          row.append(nameCell, userCell, issuerCell, balanceCell, closingDateCell, actionsCell);
+          row.append(nameCell, userCell, issuerCell, balanceCell, interestChargeCell, closingDateCell, actionsCell);
           elements.list.append(row);
         });
       });
@@ -204,6 +215,7 @@
         t('creditCardUser'),
         t('creditCardIssuer'),
         t('totalBalance'),
+        t('interestCharge'),
         t('closingDate'),
         t('actions'),
       ];
@@ -211,7 +223,8 @@
         1: 'user',
         2: 'issuer',
         3: 'balance',
-        4: 'closingDate',
+        4: 'interestCharge',
+        5: 'closingDate',
       };
 
       headerCells.forEach((cell, index) => {

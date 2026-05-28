@@ -246,41 +246,9 @@
         </div>
 
         <section id="credit-card-panel" class="financial-panel" role="tabpanel" aria-labelledby="credit-card-tab">
-          <form id="credit-card-form" class="credit-card-form">
-            <div class="field">
-              <label for="credit-card-name">Card No</label>
-              <input id="credit-card-name" type="text" maxlength="80" placeholder="Card number or nickname" required />
-            </div>
-            <div class="field">
-              <label for="credit-card-user">User</label>
-              <select id="credit-card-user">
-                <option value="">Select user</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="credit-card-issuer">Type</label>
-              <select id="credit-card-issuer">
-                <option value="">Select type</option>
-                <option value="citi">Citi</option>
-                <option value="amex">Amex</option>
-                <option value="discover">Discover</option>
-                <option value="boa">BOA</option>
-                <option value="chase">Chase</option>
-                <option value="capital_one">Capital One</option>
-                <option value="wells_fargo">Wells Fargo</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div class="field">
-              <label for="credit-card-balance">Balance</label>
-              <input id="credit-card-balance" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
-            </div>
-            <div class="field">
-              <label for="credit-card-closing-date">Closing date</label>
-              <input id="credit-card-closing-date" type="date" />
-            </div>
-            <button id="add-credit-card" type="submit" class="secondary">Add Card</button>
-          </form>
+          <div class="credit-card-toolbar">
+            <button id="open-add-credit-card" type="button" class="primary">Add Card</button>
+          </div>
 
           <div class="credit-card-table-wrap">
             <table class="credit-card-table">
@@ -290,6 +258,7 @@
                   <th>User</th>
                   <th>Type</th>
                   <th>Balance</th>
+                  <th>Interest charge</th>
                   <th>Closing Date</th>
                   <th>Actions</th>
                 </tr>
@@ -395,6 +364,54 @@
     </div>
   </div>
 
+  <div id="add-credit-card-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="add-credit-card-title">
+    <div class="modal credit-card-edit-modal">
+      <h3 id="add-credit-card-title">Add card</h3>
+      <form id="credit-card-form" class="credit-card-edit-form" novalidate>
+        <div class="field">
+          <label for="credit-card-name">Card No</label>
+          <input id="credit-card-name" type="text" maxlength="80" placeholder="Card number or nickname" required />
+        </div>
+        <div class="field">
+          <label for="credit-card-user">User</label>
+          <select id="credit-card-user">
+            <option value="">Select user</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="credit-card-issuer">Type</label>
+          <select id="credit-card-issuer">
+            <option value="">Select type</option>
+            <option value="citi">Citi</option>
+            <option value="amex">Amex</option>
+            <option value="discover">Discover</option>
+            <option value="boa">BOA</option>
+            <option value="chase">Chase</option>
+            <option value="capital_one">Capital One</option>
+            <option value="wells_fargo">Wells Fargo</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="credit-card-balance">Balance</label>
+          <input id="credit-card-balance" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
+        </div>
+        <div class="field">
+          <label for="credit-card-interest-charge">Interest charge</label>
+          <input id="credit-card-interest-charge" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
+        </div>
+        <div class="field">
+          <label for="credit-card-closing-date">Closing date</label>
+          <input id="credit-card-closing-date" type="date" />
+        </div>
+        <div class="modal-actions">
+          <button id="cancel-add-credit-card" type="button" class="secondary">Cancel</button>
+          <button id="add-credit-card" type="submit">Add Card</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="edit-credit-card-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="edit-credit-card-title">
     <div class="modal credit-card-edit-modal">
       <h3 id="edit-credit-card-title">Edit card</h3>
@@ -426,6 +443,10 @@
         <div class="field">
           <label for="edit-credit-card-balance">Balance</label>
           <input id="edit-credit-card-balance" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
+        </div>
+        <div class="field">
+          <label for="edit-credit-card-interest-charge">Interest charge</label>
+          <input id="edit-credit-card-interest-charge" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
         </div>
         <div class="field">
           <label for="edit-credit-card-closing-date">Closing date</label>
@@ -615,13 +636,13 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.min.js"></script>
-  <script src="js/features/creditCards/creditCards.dom.js?v=credit-card-modules-1"></script>
-  <script src="js/features/creditCards/creditCards.formatters.js?v=credit-card-modules-1"></script>
-  <script src="js/features/creditCards/creditCards.users.js?v=credit-card-modules-1"></script>
-  <script src="js/features/creditCards/creditCards.table.js?v=credit-card-modules-1"></script>
-  <script src="js/features/creditCards/creditCards.bills.js?v=credit-card-modules-1"></script>
-  <script src="js/features/creditCards/creditCards.translations.js?v=credit-card-modules-1"></script>
-  <script src="js/features/creditCards/creditCards.module.js?v=credit-card-modules-1"></script>
-  <script src="app.js?v=rebuild-20260527-1"></script>
+  <script src="js/features/creditCards/creditCards.dom.js?v=credit-card-add-modal-1"></script>
+  <script src="js/features/creditCards/creditCards.formatters.js?v=credit-card-add-modal-1"></script>
+  <script src="js/features/creditCards/creditCards.users.js?v=credit-card-add-modal-1"></script>
+  <script src="js/features/creditCards/creditCards.table.js?v=credit-card-add-modal-1"></script>
+  <script src="js/features/creditCards/creditCards.bills.js?v=credit-card-add-modal-1"></script>
+  <script src="js/features/creditCards/creditCards.translations.js?v=credit-card-add-modal-1"></script>
+  <script src="js/features/creditCards/creditCards.module.js?v=credit-card-add-modal-1"></script>
+  <script src="app.js?v=credit-card-add-modal-1"></script>
 </body>
 </html>

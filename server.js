@@ -75,6 +75,7 @@ const initializeDatabase = async () => {
     user_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     total_balance NUMERIC(12, 2) NOT NULL DEFAULT 0,
+    interest_charge NUMERIC(12, 2) NOT NULL DEFAULT 0,
     closing_date TEXT,
     card_user TEXT,
     issuer TEXT,
@@ -122,6 +123,7 @@ const initializeDatabase = async () => {
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_data TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS attachment_size INTEGER DEFAULT 0');
   await pool.query('ALTER TABLE credit_cards ADD COLUMN IF NOT EXISTS total_balance NUMERIC(12, 2) NOT NULL DEFAULT 0');
+  await pool.query('ALTER TABLE credit_cards ADD COLUMN IF NOT EXISTS interest_charge NUMERIC(12, 2) NOT NULL DEFAULT 0');
   await pool.query('ALTER TABLE credit_cards ADD COLUMN IF NOT EXISTS closing_date TEXT');
   await pool.query('ALTER TABLE credit_cards ADD COLUMN IF NOT EXISTS card_user TEXT');
   await pool.query('ALTER TABLE credit_cards ADD COLUMN IF NOT EXISTS issuer TEXT');
