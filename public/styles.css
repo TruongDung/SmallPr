@@ -1700,6 +1700,12 @@ body.theme-dark .status-in_progress {
   overflow-x: auto;
 }
 
+/* ============================================================
+   Credit Cards — desktop layout
+   Sections: header · tabs · quick links · form · table · summary rows · misc
+   ============================================================ */
+
+/* Header */
 .credit-card-header {
   display: flex;
   justify-content: space-between;
@@ -1712,6 +1718,7 @@ body.theme-dark .status-in_progress {
   font-size: 1.2rem;
 }
 
+/* Financial tabs (Cards / Bills toggle) */
 .financial-tabs {
   display: inline-flex;
   flex-wrap: wrap;
@@ -1745,6 +1752,7 @@ body.theme-dark .status-in_progress {
   min-width: 0;
 }
 
+/* Quick links grid above the form */
 .credit-card-quick-links {
   margin-bottom: 18px;
   padding: 12px;
@@ -1912,6 +1920,7 @@ body.theme-dark .status-in_progress {
   border-radius: 8px;
 }
 
+/* Form (add card) and edit-form (modal) — share input/button sizing */
 .credit-card-form {
   display: grid;
   grid-template-columns: minmax(150px, 1fr) minmax(130px, 0.8fr) minmax(130px, 0.8fr) minmax(120px, 0.7fr) minmax(140px, 0.8fr) auto;
@@ -1922,6 +1931,11 @@ body.theme-dark .status-in_progress {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface-soft);
+}
+
+.credit-card-edit-form {
+  display: grid;
+  gap: 14px;
 }
 
 .credit-card-form .field,
@@ -1945,11 +1959,7 @@ body.theme-dark .status-in_progress {
   border-radius: 8px;
 }
 
-.credit-card-edit-form {
-  display: grid;
-  gap: 14px;
-}
-
+/* Row-level action buttons inside the table */
 .credit-card-actions {
   display: flex;
   gap: 8px;
@@ -1960,6 +1970,7 @@ body.theme-dark .status-in_progress {
   white-space: normal;
 }
 
+/* Table */
 .credit-card-table-wrap {
   overflow-x: auto;
 }
@@ -2018,13 +2029,13 @@ body.theme-dark .status-in_progress {
   color: var(--text);
 }
 
-.credit-card-user-summary td {
-  background: var(--surface-soft);
-  color: var(--text);
-  font-weight: 800;
-}
-
-.credit-card-user-summary td {
+/* Summary rows
+   - .credit-card-user-summary: per-user subtotal row
+   - .credit-card-grand-total:  bottom row showing the overall total
+   Both render label + amount on one line; both nowrap so currency
+   never breaks mid-number on narrow widths. */
+.credit-card-user-summary td,
+.credit-card-grand-total td {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -2033,17 +2044,33 @@ body.theme-dark .status-in_progress {
   word-break: normal;
 }
 
-.credit-card-user-summary td strong {
+.credit-card-user-summary td {
+  background: var(--surface-soft);
+  color: var(--text);
+  font-weight: 800;
+}
+
+.credit-card-grand-total td {
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+  color: var(--text);
+  font-weight: 900;
+  border-bottom: 2px solid var(--primary);
+}
+
+.credit-card-user-summary td strong,
+.credit-card-grand-total td strong {
   color: var(--primary-strong);
   white-space: nowrap;
 }
 
-.credit-card-user-summary span {
+.credit-card-user-summary span,
+.credit-card-grand-total span {
   color: var(--primary-strong);
   white-space: nowrap;
   flex-shrink: 0;
 }
 
+/* Date control + empty state */
 .credit-card-date-control {
   display: flex;
   align-items: center;
@@ -2956,91 +2983,62 @@ body.theme-dark .status-in_progress {
 }
 
 
-.credit-card-grand-total td {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
-  color: var(--text);
-  font-weight: 900;
-  border-bottom: 2px solid var(--primary);
-  overflow-wrap: normal;
-  word-break: normal;
-}
-
-.credit-card-grand-total td strong {
-  color: var(--primary-strong);
-  white-space: nowrap;
-}
-
-.credit-card-grand-total span {
-  color: var(--primary-strong);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-
+/* ============================================================
+   Credit Cards — narrow viewport (<=640px)
+   Tables flip from row-layout to card-layout: each <tr> becomes
+   a bordered card, each <td> a label/value row showing its
+   data-label. .fast-access-bills-table shares the same treatment.
+   ============================================================ */
 @media (max-width: 640px) {
+
+  /* Page-level spacing tweaks */
   .credit-card-header {
     margin-bottom: 14px;
-  }
-
-  .credit-card-form {
-    grid-template-columns: 1fr;
-    gap: 10px;
-    padding: 12px;
-  }
-
-  .financial-tabs {
-    grid-template-columns: 1fr;
-  }
-
-  .task-subtabs:not(.hidden) {
-    grid-template-columns: 1fr;
   }
 
   .credit-card-quick-links {
     margin-bottom: 14px;
   }
 
-  .credit-card-link-grid {
+  /* Stack tab/grid layouts into a single column */
+  .financial-tabs,
+  .task-subtabs:not(.hidden),
+  .credit-card-link-grid,
+  .fast-access-bill-totals {
     grid-template-columns: 1fr;
   }
 
-  .fast-access-bill-totals {
+  /* Add-card form: single column, full-width submit */
+  .credit-card-form {
     grid-template-columns: 1fr;
+    gap: 10px;
+    padding: 12px;
   }
 
   .credit-card-form button {
     width: 100%;
   }
 
-  .credit-card-table-wrap {
-    overflow-x: visible;
-  }
-
-  .credit-card-table {
-    min-width: 0;
-    border-collapse: separate;
-    border-spacing: 0 10px;
-  }
-
+  /* Table wrappers no longer need horizontal scroll — cells stack */
+  .credit-card-table-wrap,
   .fast-access-bills-table-wrap {
     overflow-x: visible;
   }
 
+  .credit-card-table,
   .fast-access-bills-table {
     min-width: 0;
     border-collapse: separate;
     border-spacing: 0 10px;
   }
 
+  /* Hide the table header — labels move into each cell via data-label */
   .credit-card-table thead,
   .fast-access-bills-table thead {
     display: none;
   }
 
+  /* Each row becomes a bordered card; each cell a stacked block */
   .credit-card-table tbody,
   .credit-card-table tr,
   .credit-card-table td,
@@ -3059,6 +3057,7 @@ body.theme-dark .status-in_progress {
     overflow: hidden;
   }
 
+  /* Cell renders label (left) + value (right) on one line */
   .credit-card-table td,
   .fast-access-bills-table td {
     display: flex;
@@ -3076,6 +3075,7 @@ body.theme-dark .status-in_progress {
     border-bottom: 0;
   }
 
+  /* Inject column header into each cell via data-label */
   .credit-card-table td::before,
   .fast-access-bills-table td::before {
     content: attr(data-label);
@@ -3091,6 +3091,7 @@ body.theme-dark .status-in_progress {
     display: none;
   }
 
+  /* Actions cell: full-width buttons stacked to the right */
   .credit-card-table td[data-label="Actions"] {
     align-items: stretch;
   }
@@ -3108,6 +3109,7 @@ body.theme-dark .status-in_progress {
     width: 100%;
   }
 
+  /* Summary rows render as standalone cards without a data-label prefix */
   .credit-card-user-summary,
   .credit-card-grand-total {
     border: 0;
@@ -3125,6 +3127,7 @@ body.theme-dark .status-in_progress {
     content: none;
   }
 
+  /* Edit modal sizing */
   .credit-card-edit-modal {
     width: min(100%, 380px);
     max-height: calc(100dvh - 32px);
