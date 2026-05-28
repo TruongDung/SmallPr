@@ -561,6 +561,20 @@ const setActionIconButton = (button, label, icon) => {
   button.title = label;
 };
 
+const setNavButtonContent = (button, label, icon) => {
+  button.textContent = '';
+  const iconSpan = document.createElement('span');
+  iconSpan.className = 'nav-icon';
+  iconSpan.setAttribute('aria-hidden', 'true');
+  iconSpan.textContent = icon;
+  const labelSpan = document.createElement('span');
+  labelSpan.className = 'nav-label';
+  labelSpan.textContent = label;
+  button.append(iconSpan, labelSpan);
+  button.setAttribute('aria-label', label);
+  button.title = label;
+};
+
 const applyTheme = () => {
   const isDark = currentTheme === 'dark';
   document.body.classList.toggle('theme-dark', isDark);
@@ -1491,12 +1505,13 @@ const renderUserArea = () => {
   const welcome = document.createElement('span');
   welcome.textContent = t('welcome', { username: currentUser.username });
   userArea.append(welcome);
-  logoutButton.className = 'secondary';
+  logoutButton.className = 'secondary nav-button';
+  setNavButtonContent(logoutButton, t('logout'), '⎋');
 
   const tasksButton = document.createElement('button');
   tasksButton.type = 'button';
-  tasksButton.className = `secondary ${isTaskWorkspaceView() ? 'active-nav' : ''}`;
-  tasksButton.textContent = t('tasks');
+  tasksButton.className = `secondary nav-button ${isTaskWorkspaceView() ? 'active-nav' : ''}`;
+  setNavButtonContent(tasksButton, t('tasks'), '☰');
   tasksButton.addEventListener('click', () => {
     if (!isTaskWorkspaceView()) {
       setCurrentView('tasks');
@@ -1506,8 +1521,8 @@ const renderUserArea = () => {
 
   const weatherButton = document.createElement('button');
   weatherButton.type = 'button';
-  weatherButton.className = `secondary ${currentView === 'weather' ? 'active-nav' : ''}`;
-  weatherButton.textContent = t('weather');
+  weatherButton.className = `secondary nav-button ${currentView === 'weather' ? 'active-nav' : ''}`;
+  setNavButtonContent(weatherButton, t('weather'), '☀');
   weatherButton.addEventListener('click', () => {
     setCurrentView('weather');
     showSection();
@@ -1515,8 +1530,8 @@ const renderUserArea = () => {
 
   const creditCardsButton = document.createElement('button');
   creditCardsButton.type = 'button';
-  creditCardsButton.className = `secondary ${currentView === 'credit-cards' ? 'active-nav' : ''}`;
-  creditCardsButton.textContent = t('creditCards');
+  creditCardsButton.className = `secondary nav-button ${currentView === 'credit-cards' ? 'active-nav' : ''}`;
+  setNavButtonContent(creditCardsButton, t('creditCards'), '$');
   creditCardsButton.addEventListener('click', () => {
     setCurrentView('credit-cards');
     showSection();
@@ -1535,8 +1550,8 @@ const renderUserArea = () => {
   if (currentUser.username === 'admin') {
     const adminButton = document.createElement('button');
     adminButton.type = 'button';
-    adminButton.className = `secondary ${currentView === 'admin' ? 'active-nav' : ''}`;
-    adminButton.textContent = t('manageUsers');
+    adminButton.className = `secondary nav-button ${currentView === 'admin' ? 'active-nav' : ''}`;
+    setNavButtonContent(adminButton, t('manageUsers'), '👤');
     adminButton.addEventListener('click', () => {
       setCurrentView('admin');
       showSection();
@@ -1853,18 +1868,23 @@ const renderUsers = (users) => {
     const row = document.createElement('tr');
 
     const idCell = document.createElement('td');
+    idCell.dataset.label = t('id');
     idCell.textContent = user.id;
 
     const usernameCell = document.createElement('td');
+    usernameCell.dataset.label = t('username');
     usernameCell.textContent = user.username;
 
     const emailCell = document.createElement('td');
+    emailCell.dataset.label = t('email');
     emailCell.textContent = user.email || '';
 
     const taskCountCell = document.createElement('td');
+    taskCountCell.dataset.label = t('tasks');
     taskCountCell.textContent = user.task_count;
 
     const actionsCell = document.createElement('td');
+    actionsCell.dataset.label = t('actions');
     const actions = document.createElement('div');
     actions.className = 'user-actions';
 

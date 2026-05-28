@@ -737,6 +737,18 @@ button.danger {
   padding: 7px 11px;
 }
 
+#user-area .nav-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#user-area .nav-button .nav-icon {
+  display: none;
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
 #user-area .add-task-shortcut {
   width: 34px;
   height: 34px;
@@ -2720,10 +2732,27 @@ body.theme-dark .status-in_progress {
   }
 
   #user-area button {
-    flex: 1 1 calc(33.333% - 6px);
+    flex: 0 0 auto;
     min-width: 0;
-    padding: 9px 6px;
-    font-size: 0.92rem;
+    padding: 0;
+    font-size: 1.05rem;
+  }
+
+  #user-area .nav-button {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: inline-grid;
+    place-items: center;
+  }
+
+  #user-area .nav-button .nav-icon {
+    display: inline-block;
+    font-size: 1.15rem;
+  }
+
+  #user-area .nav-button .nav-label {
+    display: none;
   }
 
   #user-area .add-task-shortcut {
@@ -2889,12 +2918,70 @@ body.theme-dark .status-in_progress {
     display: none;
   }
 
+  .user-table-wrap {
+    overflow-x: visible;
+  }
+
   .user-table {
-    min-width: 640px;
+    min-width: 0;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+  }
+
+  .user-table thead {
+    display: none;
+  }
+
+  .user-table tbody,
+  .user-table tr,
+  .user-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .user-table tr {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  .user-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  .user-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .user-table td::before {
+    content: attr(data-label);
+    flex: 0 0 38%;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-align: left;
+    text-transform: uppercase;
   }
 
   .user-actions {
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    width: 100%;
+    gap: 6px;
+  }
+
+  .user-actions button {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 8px 10px;
   }
 
   .modal-backdrop {
