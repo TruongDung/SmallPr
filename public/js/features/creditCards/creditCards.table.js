@@ -120,8 +120,6 @@
         return;
       }
 
-      elements.list.append(createGrandTotalRow(cardsToRender));
-
       getSortedCardGroups(cardsToRender).forEach((group) => {
         elements.list.append(createUserSummaryRow(group));
 
@@ -167,6 +165,8 @@
           elements.list.append(row);
         });
       });
+
+      elements.list.append(createGrandTotalRow(cardsToRender));
 
       updateSortHeaders();
     };

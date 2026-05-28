@@ -230,8 +230,6 @@
         return;
       }
 
-      list.append(createGrandTotalRow(cardsToRender));
-
       groupCardsByUser(cardsToRender).forEach((group) => {
         list.append(createUserSummaryRow(group));
 
@@ -276,6 +274,8 @@
           list.append(row);
         });
       });
+
+      list.append(createGrandTotalRow(cardsToRender));
     };
 
     const load = async () => {
