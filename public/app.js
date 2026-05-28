@@ -134,6 +134,7 @@ const reminderTimers = new Map();
 let pendingDeleteTaskId = null;
 let pendingDeleteUser = null;
 let pendingDeleteTag = null;
+let pendingDeleteCard = null;
 let pendingEditTag = null;
 let pendingEditTask = null;
 let pendingPreviewTask = null;
@@ -261,6 +262,9 @@ const translations = {
     noCreditCards: 'No credit cards yet.',
     creditCardAdded: 'Credit card added.',
     creditCardUpdated: 'Credit card updated.',
+    creditCardDeleted: 'Credit card deleted.',
+    deleteCreditCardTitle: 'Delete card?',
+    deleteCreditCardMessage: 'Card {name} will be permanently removed.',
     editCreditCard: 'Edit card',
     closingDateSaved: 'Closing date saved.',
     creditCardNameRequired: 'Card No is required',
@@ -453,6 +457,9 @@ const translations = {
     noCreditCards: 'Chưa có thẻ tín dụng.',
     creditCardAdded: 'Đã thêm thẻ tín dụng.',
     creditCardUpdated: 'Đã cập nhật thẻ tín dụng.',
+    creditCardDeleted: 'Đã xóa thẻ tín dụng.',
+    deleteCreditCardTitle: 'Xóa thẻ?',
+    deleteCreditCardMessage: 'Thẻ {name} sẽ bị xóa vĩnh viễn.',
     editCreditCard: 'Chỉnh sửa thẻ',
     closingDateSaved: 'Đã lưu ngày chốt sao kê.',
     creditCardNameRequired: 'Vui lòng nhập số thẻ.',
@@ -2458,6 +2465,7 @@ const showDeleteConfirm = (id) => {
   pendingDeleteTaskId = id;
   pendingDeleteUser = null;
   pendingDeleteTag = null;
+  pendingDeleteCard = null;
   deleteConfirmTitle.textContent = t('deleteTaskTitle');
   deleteConfirmMessage.textContent = t('deleteTaskMessage');
   deleteConfirmModal.classList.remove('hidden');
@@ -2468,6 +2476,7 @@ const showUserDeleteConfirm = (user) => {
   pendingDeleteTaskId = null;
   pendingDeleteUser = user;
   pendingDeleteTag = null;
+  pendingDeleteCard = null;
   deleteConfirmTitle.textContent = t('deleteUserTitle');
   deleteConfirmMessage.textContent = t('deleteUserMessage', { username: user.username });
   deleteConfirmModal.classList.remove('hidden');
@@ -2478,8 +2487,20 @@ const showTagDeleteConfirm = (tag) => {
   pendingDeleteTaskId = null;
   pendingDeleteUser = null;
   pendingDeleteTag = tag;
+  pendingDeleteCard = null;
   deleteConfirmTitle.textContent = t('deleteTagTitle');
   deleteConfirmMessage.textContent = t('deleteTagMessage', { tag: tag.name });
+  deleteConfirmModal.classList.remove('hidden');
+  confirmDeleteNo.focus();
+};
+
+const showCreditCardDeleteConfirm = (card) => {
+  pendingDeleteTaskId = null;
+  pendingDeleteUser = null;
+  pendingDeleteTag = null;
+  pendingDeleteCard = card;
+  deleteConfirmTitle.textContent = t('deleteCreditCardTitle');
+  deleteConfirmMessage.textContent = t('deleteCreditCardMessage', { name: card.name });
   deleteConfirmModal.classList.remove('hidden');
   confirmDeleteNo.focus();
 };
@@ -2488,16 +2509,18 @@ const hideDeleteConfirm = () => {
   pendingDeleteTaskId = null;
   pendingDeleteUser = null;
   pendingDeleteTag = null;
+  pendingDeleteCard = null;
   deleteConfirmModal.classList.add('hidden');
 };
 
 confirmDeleteNo.addEventListener('click', hideDeleteConfirm);
 
 confirmDeleteYes.addEventListener('click', async () => {
-  if (!pendingDeleteTaskId && !pendingDeleteUser && !pendingDeleteTag) return;
+  if (!pendingDeleteTaskId && !pendingDeleteUser && !pendingDeleteTag && !pendingDeleteCard) return;
   const taskId = pendingDeleteTaskId;
   const user = pendingDeleteUser;
   const tag = pendingDeleteTag;
+  const card = pendingDeleteCard;
   hideDeleteConfirm();
   if (taskId) {
     await deleteTask(taskId);
@@ -2505,6 +2528,10 @@ confirmDeleteYes.addEventListener('click', async () => {
   }
   if (tag) {
     await deleteTag(tag);
+    return;
+  }
+  if (card) {
+    await creditCardModule.deleteCard(card);
     return;
   }
   await deleteUser(user);
@@ -3191,6 +3218,7 @@ const creditCardModule = window.CreditCardModule.create({
   t,
   showStatusToast,
   getLanguage: () => currentLanguage,
+  confirmDelete: showCreditCardDeleteConfirm,
 });
 
 showLogin.addEventListener('click', () => setMode('login'));

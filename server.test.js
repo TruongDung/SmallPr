@@ -1141,6 +1141,31 @@ describe('Credit Card API', () => {
 
     expect(otherUpdateResponse.statusCode).toBe(404);
     expect(otherUpdateResponse.body).toHaveProperty('error', 'Credit card not found');
+
+    const otherDeleteResponse = await otherAgent
+      .delete(`/api/credit-cards/${createResponse.body.card.id}`);
+    expect(otherDeleteResponse.statusCode).toBe(404);
+    expect(otherDeleteResponse.body).toHaveProperty('error', 'Credit card not found');
+  });
+
+  test('deletes a credit card owned by the user', async () => {
+    const agent = await createAgent(testUsername('credit-card-deleter'));
+
+    const createResponse = await agent
+      .post('/api/credit-cards')
+      .send({ name: 'Disposable card', total_balance: '10.00', closing_date: '2026-09-01' });
+    expect(createResponse.statusCode).toBe(200);
+    const cardId = createResponse.body.card.id;
+
+    const deleteResponse = await agent.delete(`/api/credit-cards/${cardId}`);
+    expect(deleteResponse.statusCode).toBe(200);
+    expect(deleteResponse.body).toEqual({ success: true });
+
+    const listResponse = await agent.get('/api/credit-cards');
+    expect(listResponse.body.cards.find((card) => card.id === cardId)).toBeUndefined();
+
+    const repeatDeleteResponse = await agent.delete(`/api/credit-cards/${cardId}`);
+    expect(repeatDeleteResponse.statusCode).toBe(404);
   });
 
   test('seeds and updates fast access bills for each user', async () => {

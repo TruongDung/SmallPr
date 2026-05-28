@@ -1,5 +1,5 @@
 (function () {
-  const create = ({ request, t, showStatusToast, getLanguage }) => {
+  const create = ({ request, t, showStatusToast, getLanguage, confirmDelete }) => {
     const feature = window.CreditCardFeature;
     const elements = feature.dom.getElements();
     const formatters = feature.createFormatters({ t, getLanguage });
@@ -32,6 +32,9 @@
       t,
       getLanguage,
       onEdit: openEditModal,
+      onDelete: (card) => {
+        if (typeof confirmDelete === 'function') confirmDelete(card);
+      },
     });
 
     const fastAccessBills = feature.createFastAccessBills({
@@ -79,6 +82,23 @@
 
       closeEditModal();
       showStatusToast(t('creditCardUpdated'));
+      load();
+    };
+
+    const deleteCard = async (card) => {
+      if (!card) return;
+      elements.message.textContent = '';
+
+      const result = await request(`/api/credit-cards/${card.id}`, {
+        method: 'DELETE',
+      });
+
+      if (result.error) {
+        elements.message.textContent = result.error;
+        return;
+      }
+
+      showStatusToast(t('creditCardDeleted'));
       load();
     };
 
@@ -233,6 +253,7 @@
       bind,
       load,
       render,
+      deleteCard,
     };
   };
 

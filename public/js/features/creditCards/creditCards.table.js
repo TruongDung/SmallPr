@@ -1,5 +1,5 @@
 (function () {
-  const createCardTable = ({ elements, formatters, t, getLanguage, onEdit }) => {
+  const createCardTable = ({ elements, formatters, t, getLanguage, onEdit, onDelete }) => {
     let cardSort = { field: 'balance', direction: 'desc' };
 
     const userGroupKey = (card) => (card.card_user || '').trim() || t('notAvailable');
@@ -170,7 +170,15 @@
           editButton.textContent = t('edit');
           editButton.addEventListener('click', () => onEdit(card));
 
-          actions.append(editButton);
+          const deleteButton = document.createElement('button');
+          deleteButton.type = 'button';
+          deleteButton.className = 'danger';
+          deleteButton.textContent = t('delete');
+          deleteButton.addEventListener('click', () => {
+            if (typeof onDelete === 'function') onDelete(card);
+          });
+
+          actions.append(editButton, deleteButton);
           actionsCell.append(actions);
           row.append(nameCell, userCell, issuerCell, balanceCell, interestChargeCell, closingDateCell, actionsCell);
           elements.list.append(row);

@@ -56,6 +56,11 @@ const createCreditCardsService = ({ allAsync, getAsync, runAsync }) => {
     return findById(id);
   };
 
+  const remove = ({ id, userId }) => runAsync(
+    'DELETE FROM credit_cards WHERE id = ? AND user_id = ? RETURNING id',
+    [id, userId]
+  );
+
   const listFastAccessBillsForUser = (userId) => allAsync(
     `SELECT ${FAST_ACCESS_BILL_SELECT}
      FROM fast_access_bills
@@ -119,6 +124,7 @@ const createCreditCardsService = ({ allAsync, getAsync, runAsync }) => {
     listForAdmin,
     seedFastAccessBillsForUser,
     listForUser,
+    remove,
     update,
     updateFastAccessBill,
   };

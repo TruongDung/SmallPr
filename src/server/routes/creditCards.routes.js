@@ -251,6 +251,23 @@ const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync })
     }
   });
 
+  router.delete('/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      const card = await creditCards.findForUser(id, req.session.userId);
+      if (!card) {
+        return res.status(404).json({ error: 'Credit card not found' });
+      }
+
+      await creditCards.remove({ id, userId: req.session.userId });
+      res.json({ success: true });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to delete credit card' });
+    }
+  });
+
   return router;
 };
 
