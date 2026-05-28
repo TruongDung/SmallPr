@@ -2042,19 +2042,9 @@ body.theme-dark .status-in_progress {
   gap: 16px;
   overflow-wrap: normal;
   word-break: normal;
-}
-
-.credit-card-user-summary td {
   background: var(--surface-soft);
   color: var(--text);
   font-weight: 800;
-}
-
-.credit-card-grand-total td {
-  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
-  color: var(--text);
-  font-weight: 900;
-  border-bottom: 2px solid var(--primary);
 }
 
 .credit-card-user-summary td strong,

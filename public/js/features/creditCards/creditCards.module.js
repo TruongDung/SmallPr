@@ -154,6 +154,7 @@
         elements,
         setUserOptions: userOptions.setOptions,
         renderHeaders: () => cardTable.renderHeaders(() => cards),
+        renderBillsHeaders: () => fastAccessBills.renderHeaders(),
         t,
       });
       render();

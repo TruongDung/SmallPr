@@ -14,8 +14,6 @@
       info: document.getElementById('credit-card-info-panel'),
     },
     fastAccessBillsList: document.getElementById('fast-access-bills-list'),
-    fastAccessTotalWithoutRent: document.getElementById('fast-access-total-without-rent'),
-    fastAccessRentAmount: document.getElementById('fast-access-rent-amount'),
     fastAccessGrandTotal: document.getElementById('fast-access-grand-total'),
     editBillModal: document.getElementById('edit-fast-access-bill-modal'),
     editBillForm: document.getElementById('edit-fast-access-bill-form'),

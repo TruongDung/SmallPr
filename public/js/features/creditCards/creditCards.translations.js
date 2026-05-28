@@ -5,7 +5,7 @@
     });
   };
 
-  const applyStaticTranslations = ({ elements, setUserOptions, renderHeaders, t }) => {
+  const applyStaticTranslations = ({ elements, setUserOptions, renderHeaders, renderBillsHeaders, t }) => {
     const { setText } = window.CreditCardFeature.dom;
 
     setText('#credit-card-title', t('creditCardAccounts'));
@@ -13,14 +13,7 @@
     setText('#credit-card-info-tab', t('creditCardInfoSubTab'));
     setText('#credit-card-quick-links-title', t('fastAccessLinks'));
     setText('#fast-access-bills-title', t('monthlyBills'));
-    setText('.fast-access-bills-table th:nth-child(1)', t('billItem'));
-    setText('.fast-access-bills-table th:nth-child(2)', t('amount'));
-    setText('.fast-access-bills-table th:nth-child(3)', t('dueDate'));
-    setText('.fast-access-bills-table th:nth-child(4)', t('payBefore'));
-    setText('.fast-access-bills-table th:nth-child(5)', t('status'));
-    setText('.fast-access-bills-table th:nth-child(6)', t('actions'));
-    setText('#fast-access-total-without-rent-label', t('totalWithoutRent'));
-    setText('#fast-access-rent-amount-label', t('rentAmount'));
+    renderBillsHeaders();
     setText('#fast-access-grand-total-label', t('grandTotalIncludingRent'));
     translateQuickLinks(t);
 

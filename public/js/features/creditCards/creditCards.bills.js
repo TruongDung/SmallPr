@@ -2,6 +2,7 @@
   const createFastAccessBills = ({ elements, formatters, request, t }) => {
     let bills = [];
     let pendingEditBill = null;
+    let billSort = { field: null, direction: null };
 
     const showEditBillError = (text) => window.CreditCardFeature.dom.setFieldError(elements.editBillError, text);
     const clearEditBillError = () => window.CreditCardFeature.dom.clearFieldError(elements.editBillError);
@@ -13,35 +14,31 @@
     };
 
     const updateTotals = () => {
-      const rentBill = bills.find((bill) => Number(bill.sort_order) === 1)
-        || bills.find((bill) => String(bill.item || '').trim().toLowerCase() === 'rent');
-      const rentAmount = rentBill ? formatters.normalizeAmount(rentBill.amount) : 0;
-      const totalWithoutRent = bills.reduce((sum, bill) => {
-        if (rentBill && bill.id === rentBill.id) return sum;
-        return sum + formatters.normalizeAmount(bill.amount);
-      }, 0);
+      const grandTotal = bills.reduce((sum, bill) => sum + formatters.normalizeAmount(bill.amount), 0);
 
-      if (elements.fastAccessTotalWithoutRent) {
-        elements.fastAccessTotalWithoutRent.textContent = formatters.formatCurrency(totalWithoutRent);
-      }
-      if (elements.fastAccessRentAmount) {
-        elements.fastAccessRentAmount.textContent = formatters.formatCurrency(rentAmount);
-      }
       if (elements.fastAccessGrandTotal) {
-        elements.fastAccessGrandTotal.textContent = formatters.formatCurrency(totalWithoutRent + rentAmount);
+        elements.fastAccessGrandTotal.textContent = formatters.formatCurrency(grandTotal);
       }
+    };
+
+    const sortBills = (billsToSort) => {
+      if (billSort.field !== 'amount') return billsToSort;
+      return [...billsToSort].sort((first, second) => {
+        const result = formatters.normalizeAmount(first.amount) - formatters.normalizeAmount(second.amount);
+        return billSort.direction === 'asc' ? result : -result;
+      });
     };
 
     const getBillGroups = () => {
       const separateBillNames = new Set(['phone', 'auto loan', 'daycare']);
       const groups = [];
       const houseBills = bills.filter((bill) => !separateBillNames.has(billGroupKey(bill)));
-      if (houseBills.length) groups.push({ label: t('monthlyBills'), bills: houseBills });
+      if (houseBills.length) groups.push({ label: t('monthlyBills'), bills: sortBills(houseBills) });
 
       ['phone', 'auto loan', 'daycare'].forEach((billName) => {
         const matchingBills = bills.filter((bill) => billGroupKey(bill) === billName);
         if (matchingBills.length) {
-          groups.push({ label: matchingBills[0].item || t('notAvailable'), bills: matchingBills });
+          groups.push({ label: matchingBills[0].item || t('notAvailable'), bills: sortBills(matchingBills) });
         }
       });
 
@@ -147,6 +144,68 @@
       if (updatedBill) closeEditModal();
     };
 
+    const updateSortHeaders = () => {
+      document.querySelectorAll('[data-bill-sort]').forEach((button) => {
+        const isActive = button.dataset.billSort === billSort.field;
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-sort', isActive ? (billSort.direction === 'asc' ? 'ascending' : 'descending') : 'none');
+
+        const arrow = button.querySelector('.sort-arrow');
+        if (arrow) arrow.textContent = isActive ? (billSort.direction === 'asc' ? '^' : 'v') : '<>';
+      });
+    };
+
+    const setSort = (field) => {
+      billSort = {
+        field,
+        direction: billSort.field === field && billSort.direction === 'asc' ? 'desc' : 'asc',
+      };
+      render();
+    };
+
+    const createSortableHeader = (field, label) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'table-sort-button';
+      button.dataset.billSort = field;
+      button.addEventListener('click', () => setSort(field));
+
+      const text = document.createElement('span');
+      text.textContent = label;
+
+      const arrow = document.createElement('span');
+      arrow.className = 'sort-arrow';
+      arrow.setAttribute('aria-hidden', 'true');
+
+      button.append(text, arrow);
+      return button;
+    };
+
+    const renderHeaders = () => {
+      const headerCells = document.querySelectorAll('.fast-access-bills-table th');
+      const labels = [
+        t('billItem'),
+        t('amount'),
+        t('dueDate'),
+        t('payBefore'),
+        t('status'),
+        t('actions'),
+      ];
+      const sortableHeaders = {
+        1: 'amount',
+      };
+
+      headerCells.forEach((cell, index) => {
+        cell.innerHTML = '';
+        if (sortableHeaders[index]) {
+          cell.append(createSortableHeader(sortableHeaders[index], labels[index]));
+        } else {
+          cell.textContent = labels[index];
+        }
+      });
+      updateSortHeaders();
+    };
+
     const render = () => {
       if (!elements.fastAccessBillsList) return;
 
@@ -198,11 +257,13 @@
       });
 
       updateTotals();
+      updateSortHeaders();
     };
 
     return {
       closeEditModal,
       render,
+      renderHeaders,
       setBills,
       updateFromModal,
     };
