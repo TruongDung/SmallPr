@@ -1603,7 +1603,11 @@ const request = async (url, options = {}) => {
     },
     ...options,
   });
-  return response.json();
+  try {
+    return await response.json();
+  } catch (error) {
+    return { error: `Request failed (${response.status} ${response.statusText || ''})`.trim() };
+  }
 };
 
 const init = async () => {
