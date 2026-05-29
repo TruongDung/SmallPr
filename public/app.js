@@ -2669,24 +2669,6 @@ cancelEditTag.addEventListener('click', hideEditTagModal);
 
 cancelAddTask.addEventListener('click', hideAddTaskModal);
 
-addTaskModal.addEventListener('click', (event) => {
-  if (event.target === addTaskModal) {
-    hideAddTaskModal();
-  }
-});
-
-editTagModal.addEventListener('click', (event) => {
-  if (event.target === editTagModal) {
-    hideEditTagModal();
-  }
-});
-
-adminUserModal.addEventListener('click', (event) => {
-  if (event.target === adminUserModal) {
-    hideAdminUserModal();
-  }
-});
-
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !deleteConfirmModal.classList.contains('hidden')) {
     hideDeleteConfirm();
@@ -2899,12 +2881,6 @@ const handleEditTaskSubmit = async (event) => {
 };
 
 cancelEditTask.addEventListener('click', hideEditTaskModal);
-
-editTaskModal.addEventListener('click', (event) => {
-  if (event.target === editTaskModal) {
-    hideEditTaskModal();
-  }
-});
 
 const showPreviewTaskModal = (task) => {
   pendingPreviewTask = task;

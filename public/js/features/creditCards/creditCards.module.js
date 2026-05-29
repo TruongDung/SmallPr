@@ -215,9 +215,6 @@
       elements.form.addEventListener('submit', handleSubmit);
       elements.openAddButton.addEventListener('click', openAddModal);
       elements.cancelAddButton.addEventListener('click', closeAddModal);
-      elements.addModal.addEventListener('click', (event) => {
-        if (event.target === elements.addModal) closeAddModal();
-      });
       elements.editForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         await updateCard();
@@ -228,12 +225,6 @@
       });
       elements.cancelEditButton.addEventListener('click', closeEditModal);
       elements.cancelEditBillButton.addEventListener('click', fastAccessBills.closeEditModal);
-      elements.editModal.addEventListener('click', (event) => {
-        if (event.target === elements.editModal) closeEditModal();
-      });
-      elements.editBillModal.addEventListener('click', (event) => {
-        if (event.target === elements.editBillModal) fastAccessBills.closeEditModal();
-      });
       document.addEventListener('keydown', (event) => {
         if (event.key !== 'Escape') return;
         if (!elements.addModal.classList.contains('hidden')) {
