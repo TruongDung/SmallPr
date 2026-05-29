@@ -4,6 +4,10 @@
     let pendingEditBill = null;
     let billSort = { field: null, direction: null };
 
+    const otherBills = [
+      { id: 'other-study-dsa', item: 'Study DSA', amount: 1760, due_date: '', pay_before: '', status: '', readOnly: true },
+    ];
+
     const showEditBillError = (text) => window.CreditCardFeature.dom.setFieldError(elements.editBillError, text);
     const clearEditBillError = () => window.CreditCardFeature.dom.clearFieldError(elements.editBillError);
 
@@ -13,8 +17,11 @@
       bills = nextBills || [];
     };
 
+    const otherTotal = () => otherBills.reduce((sum, bill) => sum + formatters.normalizeAmount(bill.amount), 0);
+
     const updateTotals = () => {
-      const grandTotal = bills.reduce((sum, bill) => sum + formatters.normalizeAmount(bill.amount), 0);
+      const billsTotal = bills.reduce((sum, bill) => sum + formatters.normalizeAmount(bill.amount), 0);
+      const grandTotal = billsTotal + otherTotal();
 
       if (elements.fastAccessGrandTotal) {
         elements.fastAccessGrandTotal.textContent = formatters.formatCurrency(grandTotal);
@@ -41,6 +48,10 @@
           groups.push({ label: matchingBills[0].item || t('notAvailable'), bills: sortBills(matchingBills) });
         }
       });
+
+      if (otherBills.length) {
+        groups.push({ label: t('otherSubTab') || 'Other', bills: sortBills(otherBills) });
+      }
 
       return groups;
     };
@@ -243,15 +254,17 @@
           const actions = document.createElement('div');
           actions.className = 'credit-card-actions';
 
-          const editButton = document.createElement('button');
-          editButton.type = 'button';
-          editButton.className = 'task-action-icon';
-          editButton.textContent = '✎';
-          editButton.setAttribute('aria-label', t('edit'));
-          editButton.title = t('edit');
-          editButton.addEventListener('click', () => openEditModal(bill));
+          if (!bill.readOnly) {
+            const editButton = document.createElement('button');
+            editButton.type = 'button';
+            editButton.className = 'task-action-icon';
+            editButton.textContent = '✎';
+            editButton.setAttribute('aria-label', t('edit'));
+            editButton.title = t('edit');
+            editButton.addEventListener('click', () => openEditModal(bill));
 
-          actions.append(editButton);
+            actions.append(editButton);
+          }
           actionsCell.append(actions);
           row.append(itemCell, amountCell, dueDateCell, payBeforeCell, statusCell, actionsCell);
           elements.fastAccessBillsList.append(row);
