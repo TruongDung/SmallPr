@@ -766,8 +766,10 @@ const applyTranslations = () => {
   setText('label[for="admin-username"]', t('username'));
   setText('label[for="admin-email"]', t('email'));
   setText('label[for="admin-password"]', t('password'));
-  cancelAdminUser.textContent = t('cancel');
-  saveAdminUser.textContent = pendingAdminUser ? t('save') : t('addUser');
+  cancelAdminUser.setAttribute('aria-label', t('cancel'));
+  cancelAdminUser.title = t('cancel');
+  saveAdminUser.setAttribute('aria-label', pendingAdminUser ? t('save') : t('addUser'));
+  saveAdminUser.title = pendingAdminUser ? t('save') : t('addUser');
   setText('.user-table th:nth-child(1)', t('username'));
   setText('.user-table th:nth-child(2)', t('name'));
   setText('.user-table th:nth-child(3)', t('email'));
@@ -1985,7 +1987,10 @@ const renderUsers = (users) => {
 
     const taskCountCell = document.createElement('td');
     taskCountCell.dataset.label = t('tasks');
-    taskCountCell.textContent = user.task_count;
+    const taskBadge = document.createElement('span');
+    taskBadge.className = 'user-task-badge';
+    taskBadge.textContent = user.task_count;
+    taskCountCell.append(taskBadge);
 
     const actionsCell = document.createElement('td');
     actionsCell.dataset.label = t('actions');
@@ -2038,7 +2043,8 @@ const showAdminUserModal = (user = null) => {
   adminUserForm.reset();
 
   adminUserModalTitle.textContent = user ? t('editUser') : t('addUser');
-  saveAdminUser.textContent = user ? t('save') : t('addUser');
+  saveAdminUser.setAttribute('aria-label', user ? t('save') : t('addUser'));
+  saveAdminUser.title = user ? t('save') : t('addUser');
   adminPasswordField.classList.toggle('hidden', Boolean(user));
   adminPasswordInput.required = !user;
 

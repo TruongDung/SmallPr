@@ -256,6 +256,58 @@
       bodyInput.addEventListener('blur', flushSave);
       searchInput.addEventListener('input', renderList);
       window.addEventListener('beforeunload', flushSave);
+      
+      // Make links clickable in the note body with Ctrl/Cmd + Click
+      bodyInput.addEventListener('click', (e) => {
+        if (!e.ctrlKey && !e.metaKey) return;
+        
+        const text = bodyInput.value;
+        const cursorPos = bodyInput.selectionStart;
+        
+        // URL regex pattern
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        let match;
+        
+        // Find if cursor is on a URL
+        while ((match = urlRegex.exec(text)) !== null) {
+          const urlStart = match.index;
+          const urlEnd = match.index + match[0].length;
+          
+          if (cursorPos >= urlStart && cursorPos <= urlEnd) {
+            e.preventDefault();
+            const url = match[0];
+            window.open(url, '_blank', 'noopener,noreferrer');
+            return;
+          }
+        }
+      });
+      
+      // Update title attribute to show Ctrl+Click hint on URLs
+      bodyInput.addEventListener('mouseup', () => {
+        const text = bodyInput.value;
+        const cursorPos = bodyInput.selectionStart;
+        
+        // URL regex pattern
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        let match;
+        let onUrl = false;
+        
+        // Check if cursor is on a URL
+        while ((match = urlRegex.exec(text)) !== null) {
+          const urlStart = match.index;
+          const urlEnd = match.index + match[0].length;
+          
+          if (cursorPos >= urlStart && cursorPos <= urlEnd) {
+            onUrl = true;
+            bodyInput.title = 'Ctrl+Click to open link';
+            break;
+          }
+        }
+        
+        if (!onUrl) {
+          bodyInput.title = '';
+        }
+      });
     };
 
     return { applyTranslations, bind, load, deleteNote };

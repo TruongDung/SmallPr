@@ -258,7 +258,7 @@
             const editButton = document.createElement('button');
             editButton.type = 'button';
             editButton.className = 'task-action-icon';
-            editButton.textContent = '✎';
+            editButton.textContent = '✏';
             editButton.setAttribute('aria-label', t('edit'));
             editButton.title = t('edit');
             editButton.addEventListener('click', () => openEditModal(bill));
