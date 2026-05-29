@@ -718,8 +718,15 @@ button {
 
 button.secondary {
   background: transparent;
-  color: var(--text);
+  color: #1a202c;
   border: 1px solid var(--border);
+  font-weight: 700;
+}
+
+button.secondary:hover {
+  background: var(--surface-soft);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 button.active-nav {
@@ -1112,7 +1119,270 @@ button.danger {
 }
 
 .weather-card {
+  position: relative;
   padding: 16px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+}
+
+.weather-animation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  opacity: 0.3;
+  z-index: 0;
+}
+
+.weather-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Weather-specific gradient backgrounds */
+.weather-clear {
+  background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%);
+  animation: clearSky 10s ease-in-out infinite;
+}
+
+@keyframes clearSky {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.weather-clouds {
+  background: linear-gradient(135deg, #bdc3c7 0%, #2c3e50 100%);
+}
+
+.weather-rain,
+.weather-showers {
+  background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+}
+
+.weather-snow {
+  background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+  color: #2c3e50;
+}
+
+.weather-storm {
+  background: linear-gradient(135deg, #373B44 0%, #4286f4 100%);
+  animation: stormFlash 3s ease-in-out infinite;
+}
+
+@keyframes stormFlash {
+  0%, 90%, 100% {
+    filter: brightness(1);
+  }
+  93%, 96% {
+    filter: brightness(1.3);
+  }
+}
+
+.weather-fog {
+  background: linear-gradient(135deg, #757F9A 0%, #D7DDE8 100%);
+}
+
+/* Override text colors for light backgrounds */
+.weather-snow .weather-card-kicker,
+.weather-snow h4,
+.weather-snow .weather-temp,
+.weather-snow .weather-meta,
+.weather-snow .weather-meta strong {
+  color: #2c3e50;
+}
+
+.weather-snow .weather-remove {
+  color: #2c3e50;
+  border-color: rgba(44, 62, 80, 0.3);
+}
+
+.weather-snow .weather-remove:hover {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* Make all weather card text white by default */
+.weather-card h4,
+.weather-card .weather-temp,
+.weather-card .weather-meta,
+.weather-card .weather-meta strong {
+  color: white;
+}
+
+.weather-card .weather-card-kicker {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  backdrop-filter: blur(10px);
+}
+
+.weather-card .weather-remove {
+  color: white;
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.weather-card .weather-remove:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.weather-card .weather-meta span {
+  border-top-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Rain animation */
+.weather-rain .weather-animation::before,
+.weather-showers .weather-animation::before {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: 0;
+  right: 0;
+  height: 200%;
+  background-image: 
+    linear-gradient(transparent 0%, transparent 50%, rgba(30, 80, 200, 0.5) 50%, rgba(30, 80, 200, 0.5) 52%, transparent 52%);
+  background-size: 4px 20px;
+  animation: rain 0.8s linear infinite;
+}
+
+body.theme-dark .weather-rain .weather-animation::before,
+body.theme-dark .weather-showers .weather-animation::before {
+  background-image: 
+    linear-gradient(transparent 0%, transparent 50%, rgba(100, 150, 255, 0.6) 50%, rgba(100, 150, 255, 0.6) 52%, transparent 52%);
+}
+
+@keyframes rain {
+  to {
+    transform: translateY(50%);
+  }
+}
+
+/* Snow animation */
+.weather-snow .weather-animation::before {
+  content: '❄ ❄ ❄ ❄ ❄ ❄ ❄ ❄ ❄ ❄';
+  position: absolute;
+  top: -20px;
+  left: 0;
+  right: 0;
+  color: rgba(100, 150, 220, 0.6);
+  font-size: 24px;
+  animation: snow 8s linear infinite;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+body.theme-dark .weather-snow .weather-animation::before {
+  color: rgba(220, 240, 255, 0.8);
+}
+
+@keyframes snow {
+  to {
+    transform: translateY(400px);
+  }
+}
+
+/* Clouds animation */
+.weather-clouds .weather-animation::before,
+.weather-fog .weather-animation::before {
+  content: '☁';
+  position: absolute;
+  top: 20px;
+  left: -50px;
+  font-size: 80px;
+  color: rgba(120, 140, 180, 0.4);
+  animation: clouds 15s linear infinite;
+}
+
+body.theme-dark .weather-clouds .weather-animation::before,
+body.theme-dark .weather-fog .weather-animation::before {
+  color: rgba(180, 200, 230, 0.5);
+}
+
+.weather-clouds .weather-animation::after,
+.weather-fog .weather-animation::after {
+  content: '☁';
+  position: absolute;
+  top: 60px;
+  right: -50px;
+  font-size: 70px;
+  color: rgba(120, 140, 180, 0.35);
+  animation: clouds-reverse 18s linear infinite;
+}
+
+body.theme-dark .weather-clouds .weather-animation::after,
+body.theme-dark .weather-fog .weather-animation::after {
+  color: rgba(180, 200, 230, 0.4);
+}
+
+@keyframes clouds {
+  to {
+    transform: translateX(400px);
+  }
+}
+
+@keyframes clouds-reverse {
+  to {
+    transform: translateX(-400px);
+  }
+}
+
+/* Storm animation */
+.weather-storm .weather-animation::before {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: 0;
+  right: 0;
+  height: 200%;
+  background-image: 
+    linear-gradient(transparent 0%, transparent 50%, rgba(200, 160, 0, 0.6) 50%, rgba(200, 160, 0, 0.6) 52%, transparent 52%);
+  background-size: 3px 15px;
+  animation: storm 0.5s linear infinite;
+}
+
+body.theme-dark .weather-storm .weather-animation::before {
+  background-image: 
+    linear-gradient(transparent 0%, transparent 50%, rgba(255, 220, 100, 0.7) 50%, rgba(255, 220, 100, 0.7) 52%, transparent 52%);
+}
+
+@keyframes storm {
+  to {
+    transform: translateY(50%) translateX(10px);
+  }
+}
+
+/* Clear/Sunny animation */
+.weather-clear .weather-animation::before {
+  content: '☀';
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 100px;
+  color: rgba(255, 180, 0, 0.3);
+  animation: sunny 3s ease-in-out infinite;
+}
+
+body.theme-dark .weather-clear .weather-animation::before {
+  color: rgba(255, 220, 100, 0.4);
+}
+
+@keyframes sunny {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.6;
+  }
 }
 
 .weather-card-top {
@@ -2256,29 +2526,30 @@ body.theme-dark .status-in_progress {
 .credit-card-table-wrap {
   overflow-x: auto;
   border-radius: 12px;
-  border: 1px solid var(--border);
-  background: var(--card-bg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
 }
 
 .credit-card-table {
   width: 100%;
   min-width: 0;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0 10px;
   table-layout: fixed;
 }
 
 .credit-card-table th,
 .credit-card-table td {
-  padding: 16px;
-  border-bottom: 1px solid var(--border);
+  padding: 14px;
   text-align: left;
   vertical-align: middle;
   overflow-wrap: anywhere;
 }
 
 .credit-card-table thead {
+  position: sticky;
+  top: 0;
   background: var(--bg);
+  z-index: 1;
 }
 
 .credit-card-table th {
@@ -2287,18 +2558,38 @@ body.theme-dark .status-in_progress {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  padding-bottom: 12px;
 }
 
 .credit-card-table tbody tr {
-  transition: background-color 0.15s ease;
+  transition: all 0.2s ease;
 }
 
-.credit-card-table tbody tr:hover {
+.credit-card-table tbody tr:hover td {
   background: var(--hover-bg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
-.credit-card-table tbody tr:last-child td {
-  border-bottom: none;
+.credit-card-table td {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.credit-card-table td:first-child {
+  border-left: 1px solid var(--border);
+  border-radius: 10px 0 0 10px;
+  font-weight: 500;
+}
+
+.credit-card-table td:last-child {
+  border-right: 1px solid var(--border);
+  border-radius: 0 10px 10px 0;
+}
+
+.credit-card-table td:only-child {
+  border: 1px solid var(--border);
+  border-radius: 10px;
 }
 
 .table-sort-button {
@@ -2349,6 +2640,14 @@ body.theme-dark .status-in_progress {
   background: var(--surface-soft);
   color: var(--text);
   font-weight: 800;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.credit-card-grand-total td {
+  background: var(--surface-tint);
+  border: 2px solid var(--primary);
+  font-size: 1.1rem;
 }
 
 .credit-card-user-summary td strong,

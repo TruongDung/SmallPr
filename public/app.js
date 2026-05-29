@@ -1352,7 +1352,8 @@ const getWeatherCard = (city, weatherData) => {
   });
 
   return `
-    <article class="weather-card">
+    <article class="weather-card weather-${escapeHtml(getWeatherIcon(current.weather_code)).toLowerCase()}">
+      <div class="weather-animation"></div>
       <div class="weather-card-top">
         <div>
           <div class="weather-card-kicker">${escapeHtml(getWeatherIcon(current.weather_code))}</div>
