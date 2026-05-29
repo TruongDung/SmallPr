@@ -757,8 +757,8 @@ const applyTranslations = () => {
   setText('label[for="edit-task-reminder-input"]', t('dateTimeAlert'));
   setText('label[for="edit-task-attachment-input"]', t('uploadFile'));
   renderEditAttachmentState();
-  cancelEditTask.textContent = t('cancel');
-  setText('#save-edit-task', t('save'));
+  setActionIconButton(cancelEditTask, t('cancel'), '×');
+  setActionIconButton(document.getElementById('save-edit-task'), t('save'), '✓');
   setText('#admin-section h2', t('manageUsers'));
   setText('#open-add-user-modal', t('addUser'));
   adminUserModalTitle.textContent = pendingAdminUser ? t('editUser') : t('addUser');
