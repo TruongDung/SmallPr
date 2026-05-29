@@ -712,7 +712,7 @@ const authRequired = (req, res, next) => {
 };
 
 const getUserById = async (id) => {
-  return getAsync('SELECT id, username, email FROM users WHERE id = ?', [id]);
+  return getAsync('SELECT id, username, name, email FROM users WHERE id = ?', [id]);
 };
 
 const adminRequired = async (req, res, next) => {
@@ -780,7 +780,7 @@ app.post('/api/login', async (req, res) => {
   }
 
   try {
-    const user = await getAsync('SELECT id, username, email, password FROM users WHERE username = ?', [username]);
+    const user = await getAsync('SELECT id, username, name, email, password FROM users WHERE username = ?', [username]);
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -791,7 +791,7 @@ app.post('/api/login', async (req, res) => {
     }
 
     req.session.userId = user.id;
-    res.json({ user: { id: user.id, username: user.username, email: user.email } });
+    res.json({ user: { id: user.id, username: user.username, name: user.name, email: user.email } });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Login failed' });

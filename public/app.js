@@ -302,7 +302,7 @@ const translations = {
     localTime: 'Local Time',
     wind: 'Wind',
     actions: 'Actions',
-    welcome: 'Welcome, {username}',
+    welcome: 'Welcome, {name}',
     authRequired: 'Username and password are required.',
     resetPassword: 'Reset Password',
     delete: 'Delete',
@@ -360,6 +360,7 @@ const translations = {
     reminderPrompt: 'Date time alert (YYYY-MM-DDTHH:mm, leave empty for no alert)',
     sending: 'Sending...',
     emailSent: 'Email sent.',
+    emailFailed: 'Could not send email.',
     excelExported: 'Excel exported.',
     pdfExported: 'PDF exported.',
     wordExported: 'Word exported.',
@@ -512,7 +513,7 @@ const translations = {
     localTime: 'Giờ địa phương',
     wind: 'Gió',
     actions: 'Thao tác',
-    welcome: 'Xin chào, {username}',
+    welcome: 'Xin chào, {name}',
     authRequired: 'Vui lòng nhập tên đăng nhập và mật khẩu.',
     resetPassword: 'Đặt lại mật khẩu',
     delete: 'Xóa',
@@ -570,6 +571,7 @@ const translations = {
     reminderPrompt: 'Ngày giờ nhắc (YYYY-MM-DDTHH:mm, để trống nếu không nhắc)',
     sending: 'Đang gửi...',
     emailSent: 'Đã gửi email.',
+    emailFailed: 'Không thể gửi email.',
     excelExported: 'Đã xuất Excel.',
     pdfExported: 'Đã xuất PDF.',
     wordExported: 'Đã xuất Word.',
@@ -766,8 +768,8 @@ const applyTranslations = () => {
   setText('label[for="admin-password"]', t('password'));
   cancelAdminUser.textContent = t('cancel');
   saveAdminUser.textContent = pendingAdminUser ? t('save') : t('addUser');
-  setText('.user-table th:nth-child(1)', t('name'));
-  setText('.user-table th:nth-child(2)', t('username'));
+  setText('.user-table th:nth-child(1)', t('username'));
+  setText('.user-table th:nth-child(2)', t('name'));
   setText('.user-table th:nth-child(3)', t('email'));
   setText('.user-table th:nth-child(4)', t('tasks'));
   setText('.user-table th:nth-child(5)', t('actions'));
@@ -1561,7 +1563,7 @@ const hideAddTaskModal = () => {
 const renderUserArea = () => {
   userArea.innerHTML = '';
   const welcome = document.createElement('span');
-  welcome.textContent = t('welcome', { username: currentUser.username });
+  welcome.textContent = t('welcome', { name: currentUser.name || currentUser.username });
   userArea.append(welcome);
   logoutButton.className = 'secondary nav-button';
   setNavButtonContent(logoutButton, t('logout'), '⎋');
@@ -1969,13 +1971,13 @@ const renderUsers = (users) => {
   users.forEach((user) => {
     const row = document.createElement('tr');
 
-    const nameCell = document.createElement('td');
-    nameCell.dataset.label = t('name');
-    nameCell.textContent = user.name || '';
-
     const usernameCell = document.createElement('td');
     usernameCell.dataset.label = t('username');
     usernameCell.textContent = user.username;
+
+    const nameCell = document.createElement('td');
+    nameCell.dataset.label = t('name');
+    nameCell.textContent = user.name || '';
 
     const emailCell = document.createElement('td');
     emailCell.dataset.label = t('email');
@@ -2020,7 +2022,7 @@ const renderUsers = (users) => {
     }
 
     actionsCell.append(actions);
-    row.append(nameCell, usernameCell, emailCell, taskCountCell, actionsCell);
+    row.append(usernameCell, nameCell, emailCell, taskCountCell, actionsCell);
     userList.append(row);
   });
 };
@@ -2047,8 +2049,8 @@ const showAdminUserModal = (user = null) => {
   }
 
   adminUserModal.classList.remove('hidden');
-  adminNameInput.focus();
-  adminNameInput.select();
+  adminUsernameInput.focus();
+  adminUsernameInput.select();
 };
 
 const hideAdminUserModal = () => {
@@ -3021,14 +3023,18 @@ const hideStatusToast = () => {
   statusToast.classList.add('hidden');
 };
 
-const showStatusToast = (message, tone = 'success') => {
+const showStatusToast = (message, tone = 'success', options = {}) => {
   if (statusToastTimer) {
     clearTimeout(statusToastTimer);
+    statusToastTimer = null;
   }
 
   statusToast.textContent = message;
   statusToast.classList.toggle('status-toast-error', tone === 'error');
   statusToast.classList.remove('hidden');
+  if (options.persist) {
+    return;
+  }
   statusToastTimer = setTimeout(() => {
     hideStatusToast();
     statusToastTimer = null;
@@ -3080,9 +3086,8 @@ const handleLogout = async () => {
 };
 
 const sendSummaryEmail = async () => {
-  const originalText = sendSummaryEmailButton.textContent;
   sendSummaryEmailButton.disabled = true;
-  sendSummaryEmailButton.textContent = t('sending');
+  showStatusToast(t('sending'), 'success', { persist: true });
 
   try {
     const result = await request('/api/tasks/send-email', {
@@ -3096,9 +3101,10 @@ const sendSummaryEmail = async () => {
     }
 
     showStatusToast(t('emailSent'));
+  } catch (error) {
+    showStatusToast(error.message || t('emailFailed'), 'error');
   } finally {
     sendSummaryEmailButton.disabled = false;
-    sendSummaryEmailButton.textContent = originalText;
   }
 };
 
