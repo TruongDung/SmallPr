@@ -1629,12 +1629,9 @@ body.theme-dark .status-in_progress {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.task-action-icon.danger {
+.task-action-icon.danger:hover {
   border-color: var(--danger);
   color: var(--danger);
-}
-
-.task-action-icon.danger:hover {
   background: var(--error-bg);
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
