@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <meta name="theme-color" content="#2f70ff" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Task Manager" />
@@ -68,6 +68,37 @@
           <button type="submit">Submit</button>
           <p id="auth-message" class="message"></p>
         </form>
+      </section>
+
+      <section id="notes-section" class="card hidden">
+        <div class="notes-layout">
+          <aside class="notes-sidebar" aria-label="Notes list">
+            <div class="notes-sidebar-header">
+              <h2 id="notes-title">Notes</h2>
+              <button id="add-note-button" type="button" class="secondary task-action-icon" aria-label="New note" title="New note">+</button>
+            </div>
+            <p id="notes-message" class="message"></p>
+            <div class="notes-search">
+              <label for="notes-search-input" class="sr-only">Search notes</label>
+              <span class="task-search-icon" aria-hidden="true">⌕</span>
+              <input id="notes-search-input" type="search" placeholder="Search notes" autocomplete="off" />
+            </div>
+            <ul id="notes-list" class="notes-list" role="list"></ul>
+          </aside>
+          <article class="notes-editor" aria-label="Note editor">
+            <div id="notes-editor-empty" class="notes-editor-empty">
+              <p>Select a note or create a new one.</p>
+            </div>
+            <div id="notes-editor-form" class="notes-editor-form hidden">
+              <div class="notes-editor-toolbar">
+                <input id="note-title-input" type="text" maxlength="200" placeholder="Title" class="notes-editor-title" />
+                <button id="delete-note-button" type="button" class="task-action-icon danger" aria-label="Delete note" title="Delete note">🗑</button>
+              </div>
+              <textarea id="note-body-input" class="notes-editor-body" placeholder="Start writing..." rows="14"></textarea>
+              <p id="note-saved-indicator" class="notes-saved-indicator" aria-live="polite"></p>
+            </div>
+          </article>
+        </div>
       </section>
 
       <section id="task-section" class="card hidden">
@@ -643,6 +674,7 @@
   <script src="js/features/creditCards/creditCards.bills.js?v=credit-card-icons-3"></script>
   <script src="js/features/creditCards/creditCards.translations.js?v=credit-card-icons-3"></script>
   <script src="js/features/creditCards/creditCards.module.js?v=credit-card-icons-3"></script>
+  <script src="js/features/notes/notes.module.js?v=notes-1"></script>
   <script src="app.js?v=credit-card-icons-3"></script>
 </body>
 </html>

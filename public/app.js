@@ -2,6 +2,7 @@ const authSection = document.getElementById('auth-section');
 const taskSection = document.getElementById('task-section');
 const adminSection = document.getElementById('admin-section');
 const creditCardSection = document.getElementById('credit-card-section');
+const notesSection = document.getElementById('notes-section');
 const appContainer = document.querySelector('.container');
 const userArea = document.getElementById('user-area');
 const floatingAddTask = document.getElementById('floating-add-task');
@@ -117,7 +118,7 @@ const uploadProgressPercent = document.getElementById('upload-progress-percent')
 let currentMode = 'login';
 let currentUser = null;
 const SAVED_VIEW_KEY = 'task-manager-current-view';
-const VIEW_NAMES = new Set(['tasks', 'archived', 'tags', 'weather', 'credit-cards', 'admin']);
+const VIEW_NAMES = new Set(['notes', 'tasks', 'archived', 'tags', 'weather', 'credit-cards', 'admin']);
 const getSavedView = () => {
   const savedView = localStorage.getItem(SAVED_VIEW_KEY);
   return VIEW_NAMES.has(savedView) ? savedView : 'tasks';
@@ -135,6 +136,7 @@ let pendingDeleteTaskId = null;
 let pendingDeleteUser = null;
 let pendingDeleteTag = null;
 let pendingDeleteCard = null;
+let pendingDeleteNote = null;
 let pendingEditTag = null;
 let pendingEditTask = null;
 let pendingPreviewTask = null;
@@ -221,6 +223,18 @@ const translations = {
     userUpdated: 'User updated.',
     id: 'ID',
     tasks: 'Tasks',
+    notes: 'Notes',
+    newNote: 'New note',
+    deleteNote: 'Delete note',
+    deleteNoteTitle: 'Delete note?',
+    deleteNoteMessage: 'This note will be permanently removed.',
+    noteSaved: 'Saved',
+    noteSaving: 'Saving...',
+    notesEmpty: 'No notes yet. Tap + to start.',
+    notePlaceholderTitle: 'Title',
+    notePlaceholderBody: 'Start writing...',
+    untitledNote: 'New note',
+    searchNotes: 'Search notes',
     archive: 'Archive',
     archived: 'Archived',
     restore: 'Restore',
@@ -417,6 +431,18 @@ const translations = {
     userUpdated: 'Đã cập nhật người dùng.',
     id: 'ID',
     tasks: 'Công việc',
+    notes: 'Ghi chú',
+    newNote: 'Ghi chú mới',
+    deleteNote: 'Xóa ghi chú',
+    deleteNoteTitle: 'Xóa ghi chú?',
+    deleteNoteMessage: 'Ghi chú này sẽ bị xóa vĩnh viễn.',
+    noteSaved: 'Đã lưu',
+    noteSaving: 'Đang lưu...',
+    notesEmpty: 'Chưa có ghi chú. Nhấn + để bắt đầu.',
+    notePlaceholderTitle: 'Tiêu đề',
+    notePlaceholderBody: 'Bắt đầu viết...',
+    untitledNote: 'Ghi chú mới',
+    searchNotes: 'Tìm ghi chú',
     archive: 'Lưu trữ',
     archived: 'Đã lưu trữ',
     restore: 'Khôi phục',
@@ -664,6 +690,7 @@ const applyTranslations = () => {
   weatherCityInput.placeholder = t('cityPlaceholder');
   setText('#weather-form button[type="submit"]', t('addCity'));
   creditCardModule.applyTranslations();
+  notesModule.applyTranslations();
   setText('label[for="task-search-input"]', t('searchTasks'));
   taskSearchInput.placeholder = t('searchTasksPlaceholder');
   clearTaskSearch.setAttribute('aria-label', t('clearSearch'));
@@ -1438,6 +1465,7 @@ const showSection = () => {
     taskSection.classList.add('hidden');
     adminSection.classList.add('hidden');
     creditCardSection.classList.add('hidden');
+    notesSection.classList.add('hidden');
     floatingAddTask.classList.add('hidden');
     userArea.textContent = '';
     return;
@@ -1452,11 +1480,13 @@ const showSection = () => {
 
   const showAdmin = currentView === 'admin' && currentUser.username === 'admin';
   const showCreditCards = currentView === 'credit-cards';
+  const showNotes = currentView === 'notes';
   const showTaskWorkspace = isTaskWorkspaceView();
-  taskSection.classList.toggle('hidden', showAdmin || showCreditCards);
+  taskSection.classList.toggle('hidden', showAdmin || showCreditCards || showNotes);
   adminSection.classList.toggle('hidden', !showAdmin);
   creditCardSection.classList.toggle('hidden', !showCreditCards);
-  floatingAddTask.classList.toggle('hidden', showAdmin || showCreditCards || currentView === 'weather' || currentView === 'tags');
+  notesSection.classList.toggle('hidden', !showNotes);
+  floatingAddTask.classList.toggle('hidden', showAdmin || showCreditCards || showNotes || currentView === 'weather' || currentView === 'tags');
 
   if (showAdmin) {
     loadUsers();
@@ -1465,6 +1495,11 @@ const showSection = () => {
 
   if (showCreditCards) {
     creditCardModule.load();
+    return;
+  }
+
+  if (showNotes) {
+    notesModule.load();
     return;
   }
 
@@ -1521,6 +1556,15 @@ const renderUserArea = () => {
   logoutButton.className = 'secondary nav-button';
   setNavButtonContent(logoutButton, t('logout'), '⎋');
 
+  const notesButton = document.createElement('button');
+  notesButton.type = 'button';
+  notesButton.className = `secondary nav-button ${currentView === 'notes' ? 'active-nav' : ''}`;
+  setNavButtonContent(notesButton, t('notes'), '✎');
+  notesButton.addEventListener('click', () => {
+    setCurrentView('notes');
+    showSection();
+  });
+
   const tasksButton = document.createElement('button');
   tasksButton.type = 'button';
   tasksButton.className = `secondary nav-button ${isTaskWorkspaceView() ? 'active-nav' : ''}`;
@@ -1558,7 +1602,7 @@ const renderUserArea = () => {
   addTaskButton.title = t('addTaskShortcut');
   addTaskButton.addEventListener('click', openAddTaskFlow);
 
-  userArea.append(addTaskButton, tasksButton, weatherButton, creditCardsButton);
+  userArea.append(addTaskButton, notesButton, tasksButton, weatherButton, creditCardsButton);
 
   if (currentUser.username === 'admin') {
     const adminButton = document.createElement('button');
@@ -2472,6 +2516,7 @@ const showDeleteConfirm = (id) => {
   pendingDeleteUser = null;
   pendingDeleteTag = null;
   pendingDeleteCard = null;
+  pendingDeleteNote = null;
   deleteConfirmTitle.textContent = t('deleteTaskTitle');
   deleteConfirmMessage.textContent = t('deleteTaskMessage');
   deleteConfirmModal.classList.remove('hidden');
@@ -2483,6 +2528,7 @@ const showUserDeleteConfirm = (user) => {
   pendingDeleteUser = user;
   pendingDeleteTag = null;
   pendingDeleteCard = null;
+  pendingDeleteNote = null;
   deleteConfirmTitle.textContent = t('deleteUserTitle');
   deleteConfirmMessage.textContent = t('deleteUserMessage', { username: user.username });
   deleteConfirmModal.classList.remove('hidden');
@@ -2494,6 +2540,7 @@ const showTagDeleteConfirm = (tag) => {
   pendingDeleteUser = null;
   pendingDeleteTag = tag;
   pendingDeleteCard = null;
+  pendingDeleteNote = null;
   deleteConfirmTitle.textContent = t('deleteTagTitle');
   deleteConfirmMessage.textContent = t('deleteTagMessage', { tag: tag.name });
   deleteConfirmModal.classList.remove('hidden');
@@ -2505,8 +2552,21 @@ const showCreditCardDeleteConfirm = (card) => {
   pendingDeleteUser = null;
   pendingDeleteTag = null;
   pendingDeleteCard = card;
+  pendingDeleteNote = null;
   deleteConfirmTitle.textContent = t('deleteCreditCardTitle');
   deleteConfirmMessage.textContent = t('deleteCreditCardMessage', { name: card.name });
+  deleteConfirmModal.classList.remove('hidden');
+  confirmDeleteNo.focus();
+};
+
+const showNoteDeleteConfirm = (note) => {
+  pendingDeleteTaskId = null;
+  pendingDeleteUser = null;
+  pendingDeleteTag = null;
+  pendingDeleteCard = null;
+  pendingDeleteNote = note;
+  deleteConfirmTitle.textContent = t('deleteNoteTitle');
+  deleteConfirmMessage.textContent = t('deleteNoteMessage');
   deleteConfirmModal.classList.remove('hidden');
   confirmDeleteNo.focus();
 };
@@ -2516,17 +2576,19 @@ const hideDeleteConfirm = () => {
   pendingDeleteUser = null;
   pendingDeleteTag = null;
   pendingDeleteCard = null;
+  pendingDeleteNote = null;
   deleteConfirmModal.classList.add('hidden');
 };
 
 confirmDeleteNo.addEventListener('click', hideDeleteConfirm);
 
 confirmDeleteYes.addEventListener('click', async () => {
-  if (!pendingDeleteTaskId && !pendingDeleteUser && !pendingDeleteTag && !pendingDeleteCard) return;
+  if (!pendingDeleteTaskId && !pendingDeleteUser && !pendingDeleteTag && !pendingDeleteCard && !pendingDeleteNote) return;
   const taskId = pendingDeleteTaskId;
   const user = pendingDeleteUser;
   const tag = pendingDeleteTag;
   const card = pendingDeleteCard;
+  const note = pendingDeleteNote;
   hideDeleteConfirm();
   if (taskId) {
     await deleteTask(taskId);
@@ -2538,6 +2600,10 @@ confirmDeleteYes.addEventListener('click', async () => {
   }
   if (card) {
     await creditCardModule.deleteCard(card);
+    return;
+  }
+  if (note) {
+    await notesModule.deleteNote(note);
     return;
   }
   await deleteUser(user);
@@ -3227,6 +3293,13 @@ const creditCardModule = window.CreditCardModule.create({
   confirmDelete: showCreditCardDeleteConfirm,
 });
 
+const notesModule = window.NotesModule.create({
+  request,
+  t,
+  showStatusToast,
+  confirmDelete: showNoteDeleteConfirm,
+});
+
 showLogin.addEventListener('click', () => setMode('login'));
 showSignup.addEventListener('click', () => setMode('signup'));
 languageSelect.addEventListener('change', (event) => setLanguage(event.target.value));
@@ -3261,6 +3334,7 @@ taskSubtabs.forEach((tab) => {
   });
 });
 creditCardModule.bind();
+notesModule.bind();
 editTaskForm.addEventListener('submit', handleEditTaskSubmit);
 adminUserForm.addEventListener('submit', handleAdminUserSubmit);
 openAddUserModalButton.addEventListener('click', () => showAdminUserModal());
