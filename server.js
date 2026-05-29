@@ -122,6 +122,7 @@ const initializeDatabase = async () => {
 
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminder_at TEXT');
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT');
+  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS tag TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS comment TEXT');
   await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS priority TEXT NOT NULL DEFAULT 'medium'");
@@ -239,6 +240,12 @@ const normalizeLanguage = (language) => (language === 'vi' ? 'vi' : 'en');
 const normalizeEmail = (email) => {
   if (email === undefined || email === null) return null;
   const normalized = String(email).trim();
+  return normalized || null;
+};
+
+const normalizeName = (name) => {
+  if (name === undefined || name === null) return null;
+  const normalized = String(name).trim();
   return normalized || null;
 };
 
@@ -969,10 +976,10 @@ app.delete('/api/notes/:id', authRequired, async (req, res) => {
 app.get('/api/admin/users', adminRequired, async (req, res) => {
   try {
     const users = await allAsync(
-      `SELECT users.id, users.username, users.email, COUNT(tasks.id)::int AS task_count
+      `SELECT users.id, users.username, users.name, users.email, COUNT(tasks.id)::int AS task_count
        FROM users
        LEFT JOIN tasks ON tasks.user_id = users.id
-       GROUP BY users.id, users.username, users.email
+       GROUP BY users.id, users.username, users.name, users.email
        ORDER BY users.id ASC`
     );
     res.json({ users });
@@ -985,6 +992,7 @@ app.get('/api/admin/users', adminRequired, async (req, res) => {
 app.post('/api/admin/users', adminRequired, async (req, res) => {
   const { username, password } = req.body;
   const email = normalizeEmail(req.body.email);
+  const name = normalizeName(req.body.name);
   if (!username || !password) {
     return res.status(400).json({ error: 'Username and password are required' });
   }
@@ -997,15 +1005,15 @@ app.post('/api/admin/users', adminRequired, async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await runAsync(
-      'INSERT INTO users (username, email, password) VALUES (?, ?, ?) RETURNING id',
-      [username, email, hashedPassword]
+      'INSERT INTO users (username, name, email, password) VALUES (?, ?, ?, ?) RETURNING id',
+      [username, name, email, hashedPassword]
     );
     const user = await getAsync(
-      `SELECT users.id, users.username, users.email, COUNT(tasks.id)::int AS task_count
+      `SELECT users.id, users.username, users.name, users.email, COUNT(tasks.id)::int AS task_count
        FROM users
        LEFT JOIN tasks ON tasks.user_id = users.id
        WHERE users.id = ?
-       GROUP BY users.id, users.username, users.email`,
+       GROUP BY users.id, users.username, users.name, users.email`,
       [result.lastID]
     );
     res.json({ user });
@@ -1019,6 +1027,7 @@ app.put('/api/admin/users/:id', adminRequired, async (req, res) => {
   const { id } = req.params;
   const username = String(req.body.username || '').trim();
   const email = normalizeEmail(req.body.email);
+  const name = normalizeName(req.body.name);
   if (!username) {
     return res.status(400).json({ error: 'Username is required' });
   }
@@ -1034,13 +1043,13 @@ app.put('/api/admin/users/:id', adminRequired, async (req, res) => {
       return res.status(409).json({ error: 'Username already exists' });
     }
 
-    await runAsync('UPDATE users SET username = ?, email = ? WHERE id = ?', [username, email, id]);
+    await runAsync('UPDATE users SET username = ?, name = ?, email = ? WHERE id = ?', [username, name, email, id]);
     const updatedUser = await getAsync(
-      `SELECT users.id, users.username, users.email, COUNT(tasks.id)::int AS task_count
+      `SELECT users.id, users.username, users.name, users.email, COUNT(tasks.id)::int AS task_count
        FROM users
        LEFT JOIN tasks ON tasks.user_id = users.id
        WHERE users.id = ?
-       GROUP BY users.id, users.username, users.email`,
+       GROUP BY users.id, users.username, users.name, users.email`,
       [id]
     );
     res.json({ user: updatedUser });

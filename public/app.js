@@ -28,6 +28,7 @@ const openAddUserModalButton = document.getElementById('open-add-user-modal');
 const adminUserModal = document.getElementById('admin-user-modal');
 const adminUserModalTitle = document.getElementById('admin-user-modal-title');
 const adminUserForm = document.getElementById('admin-user-form');
+const adminNameInput = document.getElementById('admin-name');
 const adminUsernameInput = document.getElementById('admin-username');
 const adminEmailInput = document.getElementById('admin-email');
 const adminPasswordField = document.getElementById('admin-password-field');
@@ -172,6 +173,7 @@ const translations = {
     login: 'Login',
     signup: 'Sign Up',
     username: 'Username',
+    name: 'Name',
     email: 'Email',
     password: 'Password',
     showPassword: 'Show password',
@@ -381,6 +383,7 @@ const translations = {
     login: 'Đăng nhập',
     signup: 'Đăng ký',
     username: 'Tên đăng nhập',
+    name: 'Tên',
     email: 'Email',
     password: 'Mật khẩu',
     showPassword: 'Hiện mật khẩu',
@@ -757,12 +760,13 @@ const applyTranslations = () => {
   setText('#admin-section h2', t('manageUsers'));
   setText('#open-add-user-modal', t('addUser'));
   adminUserModalTitle.textContent = pendingAdminUser ? t('editUser') : t('addUser');
+  setText('label[for="admin-name"]', t('name'));
   setText('label[for="admin-username"]', t('username'));
   setText('label[for="admin-email"]', t('email'));
   setText('label[for="admin-password"]', t('password'));
   cancelAdminUser.textContent = t('cancel');
   saveAdminUser.textContent = pendingAdminUser ? t('save') : t('addUser');
-  setText('.user-table th:nth-child(1)', t('id'));
+  setText('.user-table th:nth-child(1)', t('name'));
   setText('.user-table th:nth-child(2)', t('username'));
   setText('.user-table th:nth-child(3)', t('email'));
   setText('.user-table th:nth-child(4)', t('tasks'));
@@ -1965,9 +1969,9 @@ const renderUsers = (users) => {
   users.forEach((user) => {
     const row = document.createElement('tr');
 
-    const idCell = document.createElement('td');
-    idCell.dataset.label = t('id');
-    idCell.textContent = user.id;
+    const nameCell = document.createElement('td');
+    nameCell.dataset.label = t('name');
+    nameCell.textContent = user.name || '';
 
     const usernameCell = document.createElement('td');
     usernameCell.dataset.label = t('username');
@@ -2016,7 +2020,7 @@ const renderUsers = (users) => {
     }
 
     actionsCell.append(actions);
-    row.append(idCell, usernameCell, emailCell, taskCountCell, actionsCell);
+    row.append(nameCell, usernameCell, emailCell, taskCountCell, actionsCell);
     userList.append(row);
   });
 };
@@ -2037,13 +2041,14 @@ const showAdminUserModal = (user = null) => {
   adminPasswordInput.required = !user;
 
   if (user) {
+    adminNameInput.value = user.name || '';
     adminUsernameInput.value = user.username || '';
     adminEmailInput.value = user.email || '';
   }
 
   adminUserModal.classList.remove('hidden');
-  adminUsernameInput.focus();
-  adminUsernameInput.select();
+  adminNameInput.focus();
+  adminNameInput.select();
 };
 
 const hideAdminUserModal = () => {
@@ -2061,6 +2066,7 @@ const handleAdminUserSubmit = async (event) => {
   clearAdminUserFormError();
 
   const username = adminUsernameInput.value.trim();
+  const name = adminNameInput.value.trim();
   const email = adminEmailInput.value.trim();
   const password = adminPasswordInput.value.trim();
   const isEditing = Boolean(pendingAdminUser);
@@ -2073,7 +2079,7 @@ const handleAdminUserSubmit = async (event) => {
 
   const result = await request(isEditing ? `/api/admin/users/${pendingAdminUser.id}` : '/api/admin/users', {
     method: isEditing ? 'PUT' : 'POST',
-    body: JSON.stringify(isEditing ? { username, email } : { username, email, password }),
+    body: JSON.stringify(isEditing ? { username, name, email } : { username, name, email, password }),
   });
 
   if (result.error) {
