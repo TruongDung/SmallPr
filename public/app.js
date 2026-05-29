@@ -1631,6 +1631,12 @@ const setMode = (mode) => {
   showLogin.classList.toggle('active', mode === 'login');
   showSignup.classList.toggle('active', mode === 'signup');
   passwordInput.setAttribute('autocomplete', mode === 'login' ? 'current-password' : 'new-password');
+  if (mode === 'signup') {
+    authForm.username.value = '';
+    authForm.password.value = '';
+    if (rememberMeCheckbox) rememberMeCheckbox.checked = false;
+    authMessage.textContent = '';
+  }
 };
 
 const setLanguage = (language) => {
@@ -1982,14 +1988,18 @@ const renderUsers = (users) => {
 
     const editButton = document.createElement('button');
     editButton.type = 'button';
-    editButton.className = 'secondary';
-    editButton.textContent = t('edit');
+    editButton.className = 'task-action-icon';
+    editButton.textContent = '✎';
+    editButton.setAttribute('aria-label', t('edit'));
+    editButton.title = t('edit');
     editButton.addEventListener('click', () => showAdminUserModal(user));
 
     const resetButton = document.createElement('button');
     resetButton.type = 'button';
-    resetButton.className = 'secondary';
-    resetButton.textContent = t('resetPassword');
+    resetButton.className = 'task-action-icon';
+    resetButton.textContent = '🔑';
+    resetButton.setAttribute('aria-label', t('resetPassword'));
+    resetButton.title = t('resetPassword');
     resetButton.addEventListener('click', () => resetUserPassword(user));
 
     actions.append(editButton, resetButton);
@@ -1997,8 +2007,10 @@ const renderUsers = (users) => {
     if (user.username !== 'admin' && user.id !== currentUser.id) {
       const deleteButton = document.createElement('button');
       deleteButton.type = 'button';
-      deleteButton.className = 'danger';
-      deleteButton.textContent = t('delete');
+      deleteButton.className = 'task-action-icon danger';
+      deleteButton.textContent = '🗑';
+      deleteButton.setAttribute('aria-label', t('delete'));
+      deleteButton.title = t('delete');
       deleteButton.addEventListener('click', () => showUserDeleteConfirm(user));
       actions.append(deleteButton);
     }

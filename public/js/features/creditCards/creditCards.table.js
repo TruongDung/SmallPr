@@ -76,7 +76,7 @@
       row.className = className;
 
       const cell = document.createElement('td');
-      cell.colSpan = 7;
+      cell.colSpan = 6;
 
       const labelElement = document.createElement('strong');
       labelElement.textContent = label;
@@ -118,7 +118,7 @@
       if (!cardsToRender.length) {
         const row = document.createElement('tr');
         const cell = document.createElement('td');
-        cell.colSpan = 7;
+        cell.colSpan = 6;
         cell.className = 'credit-card-empty';
         cell.textContent = t('noCreditCards');
         row.append(cell);
@@ -138,10 +138,6 @@
           const name = document.createElement('strong');
           name.textContent = card.name;
           nameCell.append(name);
-
-          const userCell = document.createElement('td');
-          userCell.dataset.label = t('creditCardUser');
-          userCell.textContent = card.card_user || t('notAvailable');
 
           const issuerCell = document.createElement('td');
           issuerCell.dataset.label = t('creditCardIssuer');
@@ -184,7 +180,7 @@
 
           actions.append(editButton, deleteButton);
           actionsCell.append(actions);
-          row.append(nameCell, userCell, issuerCell, balanceCell, interestChargeCell, closingDateCell, actionsCell);
+          row.append(nameCell, issuerCell, balanceCell, interestChargeCell, closingDateCell, actionsCell);
           elements.list.append(row);
         });
       });
@@ -224,7 +220,6 @@
       const headerCells = document.querySelectorAll('.credit-card-table th');
       const labels = [
         t('cardName'),
-        t('creditCardUser'),
         t('creditCardIssuer'),
         t('totalBalance'),
         t('interestCharge'),
@@ -232,11 +227,10 @@
         t('actions'),
       ];
       const sortableHeaders = {
-        1: 'user',
-        2: 'issuer',
-        3: 'balance',
-        4: 'interestCharge',
-        5: 'closingDate',
+        1: 'issuer',
+        2: 'balance',
+        3: 'interestCharge',
+        4: 'closingDate',
       };
 
       headerCells.forEach((cell, index) => {

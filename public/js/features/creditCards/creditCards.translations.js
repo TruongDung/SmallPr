@@ -26,7 +26,11 @@
     setText('label[for="credit-card-interest-charge"]', t('interestCharge'));
     setText('label[for="credit-card-closing-date"]', t('closingDate'));
     setText('#add-credit-card', t('addCard'));
-    if (elements.openAddButton) elements.openAddButton.textContent = t('addCard');
+    if (elements.openAddButton) {
+      elements.openAddButton.textContent = '+';
+      elements.openAddButton.setAttribute('aria-label', t('addCard'));
+      elements.openAddButton.title = t('addCard');
+    }
     if (elements.addTitle) elements.addTitle.textContent = t('addCreditCard');
     if (elements.cancelAddButton) elements.cancelAddButton.textContent = t('cancel');
     renderHeaders();

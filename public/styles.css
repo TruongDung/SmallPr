@@ -2180,12 +2180,38 @@ body.theme-dark .status-in_progress {
 
 .user-actions {
   display: flex;
-  gap: 8px;
+  gap: 7px;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .user-actions button {
-  padding: 8px 12px;
+  width: 36px;
+  height: 36px;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.user-actions button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.user-actions button.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.user-actions button.danger:hover {
+  background: var(--error-bg);
 }
 
 .quote-widget {
@@ -3030,14 +3056,15 @@ body.theme-dark .status-in_progress {
   .user-actions {
     flex-wrap: wrap;
     justify-content: flex-end;
-    width: 100%;
     gap: 6px;
   }
 
   .user-actions button {
-    flex: 1 1 auto;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 auto;
     min-width: 0;
-    padding: 8px 10px;
+    padding: 0;
   }
 
   .modal-backdrop {
