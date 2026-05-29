@@ -118,6 +118,9 @@ const uploadProgressPercent = document.getElementById('upload-progress-percent')
 let currentMode = 'login';
 let currentUser = null;
 const SAVED_VIEW_KEY = 'task-manager-current-view';
+const REMEMBER_ME_KEY = 'task-manager-remember-me';
+const rememberMeCheckbox = document.getElementById('remember-me');
+const rememberMeText = document.getElementById('remember-me-text');
 const VIEW_NAMES = new Set(['notes', 'tasks', 'archived', 'tags', 'weather', 'credit-cards', 'admin']);
 const getSavedView = () => {
   const savedView = localStorage.getItem(SAVED_VIEW_KEY);
@@ -165,6 +168,7 @@ const translations = {
     lightMode: 'Light',
     switchToDarkMode: 'Switch to dark mode',
     switchToLightMode: 'Switch to light mode',
+    rememberMe: 'Remember me',
     login: 'Login',
     signup: 'Sign Up',
     username: 'Username',
@@ -373,6 +377,7 @@ const translations = {
     lightMode: 'Sáng',
     switchToDarkMode: 'Chuyển sang chế độ tối',
     switchToLightMode: 'Chuyển sang chế độ sáng',
+    rememberMe: 'Ghi nhớ đăng nhập',
     login: 'Đăng nhập',
     signup: 'Đăng ký',
     username: 'Tên đăng nhập',
@@ -674,6 +679,7 @@ const applyTranslations = () => {
   setText('label[for="language-select"]', t('language'));
   showLogin.textContent = t('login');
   showSignup.textContent = t('signup');
+  if (rememberMeText) rememberMeText.textContent = t('rememberMe');
   setText('label[for="username"]', t('username'));
   setText('label[for="password"]', t('password'));
   togglePasswordButton.setAttribute(
@@ -1656,7 +1662,21 @@ const request = async (url, options = {}) => {
   }
 };
 
+const prefillRememberedCredentials = () => {
+  try {
+    const saved = localStorage.getItem(REMEMBER_ME_KEY);
+    if (!saved) return;
+    const { username, password } = JSON.parse(saved) || {};
+    if (typeof username === 'string') authForm.username.value = username;
+    if (typeof password === 'string') authForm.password.value = password;
+    if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
+  } catch (error) {
+    console.warn('Failed to load remembered credentials', error);
+  }
+};
+
 const init = async () => {
+  prefillRememberedCredentials();
   const result = await request('/api/me');
   currentUser = result.user;
   showSection();
@@ -1685,9 +1705,20 @@ const handleAuthSubmit = async (event) => {
     return;
   }
 
+  if (rememberMeCheckbox?.checked) {
+    try {
+      localStorage.setItem(REMEMBER_ME_KEY, JSON.stringify({ username, password }));
+    } catch (error) {
+      console.warn('Failed to remember credentials', error);
+    }
+  } else {
+    localStorage.removeItem(REMEMBER_ME_KEY);
+  }
+
   currentUser = result.user;
   setCurrentView(getSavedView());
   authForm.reset();
+  if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
   showSection();
 };
 
@@ -3051,6 +3082,7 @@ const handleLogout = async () => {
   currentUser = null;
   setCurrentView('tasks', { persist: false });
   showSection();
+  prefillRememberedCredentials();
 };
 
 const sendSummaryEmail = async () => {

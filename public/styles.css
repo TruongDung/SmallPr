@@ -299,6 +299,30 @@ h2 {
   border-radius: 10px;
 }
 
+#auth-section .remember-me-field {
+  margin-bottom: 14px;
+}
+
+.remember-me-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+#auth-section input#remember-me {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border-radius: 4px;
+  accent-color: var(--primary);
+}
+
 #auth-form > button[type="submit"] {
   width: 100%;
   margin-top: 2px;
