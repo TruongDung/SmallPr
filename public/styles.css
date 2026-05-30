@@ -2213,11 +2213,11 @@ body.theme-dark .status-in_progress {
 .credit-card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  gap: 20px;
+  align-items: flex-start;
+  gap: 16px;
   margin-bottom: 24px;
   padding-bottom: 16px;
-  border-bottom: 2px solid var(--border);
+  border-bottom: 1px solid var(--border);
 }
 
 .credit-card-header > div {
@@ -2225,9 +2225,10 @@ body.theme-dark .status-in_progress {
 }
 
 .credit-card-header h2 {
-  margin: 0 0 8px 0;
-  font-size: 1.75rem;
-  font-weight: 600;
+  margin: 0 0 6px 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--text);
 }
 
@@ -2287,17 +2288,18 @@ body.theme-dark .status-in_progress {
 /* Quick links grid above the form */
 .credit-card-quick-links {
   margin-bottom: 24px;
-  padding: 20px;
+  padding: 22px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--surface);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
 }
 
 .credit-card-quick-links h3 {
   margin: 0 0 16px;
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--text);
 }
 
@@ -2335,17 +2337,18 @@ body.theme-dark .status-in_progress {
 }
 
 .fast-access-bills {
-  padding: 20px;
+  padding: 22px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--surface);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
 }
 
 .fast-access-bills h3 {
   margin: 0 0 16px;
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   color: var(--text);
 }
 
@@ -2359,12 +2362,12 @@ body.theme-dark .status-in_progress {
   width: 100%;
   min-width: 820px;
   border-collapse: separate;
-  border-spacing: 0 10px;
+  border-spacing: 0 12px;
 }
 
 .fast-access-bills-table th,
 .fast-access-bills-table td {
-  padding: 14px;
+  padding: 16px 18px;
   text-align: left;
   vertical-align: middle;
 }
@@ -2378,42 +2381,49 @@ body.theme-dark .status-in_progress {
 
 .fast-access-bills-table th {
   color: var(--muted);
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: 0.78rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding-bottom: 12px;
+  letter-spacing: 0.05em;
+  padding-bottom: 10px;
+  padding-top: 4px;
 }
 
 .fast-access-bills-table tbody tr {
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.fast-access-bills-table tbody tr:hover {
+  transform: translateY(-1px);
 }
 
 .fast-access-bills-table tbody tr:hover td {
   background: var(--hover-bg);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
 }
 
 .fast-access-bills-table td {
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   background: var(--surface);
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .fast-access-bills-table td:first-child {
   border-left: 1px solid var(--border);
-  border-radius: 10px 0 0 10px;
-  font-weight: 500;
+  border-radius: 12px 0 0 12px;
+  font-weight: 600;
 }
 
 .fast-access-bills-table td:last-child {
   border-right: 1px solid var(--border);
-  border-radius: 0 10px 10px 0;
+  border-radius: 0 12px 12px 0;
 }
 
 .fast-access-bills-table td:only-child {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .fast-access-bill-group-summary td {
@@ -2422,6 +2432,7 @@ body.theme-dark .status-in_progress {
   gap: 16px;
   background: var(--surface-soft);
   font-weight: 800;
+  letter-spacing: 0.01em;
 }
 
 .fast-access-bill-group-summary strong {
@@ -2430,12 +2441,6 @@ body.theme-dark .status-in_progress {
 
 .fast-access-bill-group-summary span {
   color: var(--primary-strong);
-}
-
-.fast-access-bills-table th {
-  color: var(--muted);
-  font-size: 0.78rem;
-  text-transform: uppercase;
 }
 
 .fast-access-bills-table td strong {
@@ -2459,48 +2464,33 @@ body.theme-dark .status-in_progress {
   display: flex;
   justify-content: flex-end;
   gap: 16px;
-  margin-top: 20px;
-  padding: 20px;
-  border-radius: 12px;
+  margin-top: 22px;
+  padding: 20px 24px;
+  border-radius: 14px;
   background: var(--surface-tint);
   border: 2px solid var(--primary);
+  box-shadow: 0 8px 24px rgba(47, 112, 255, 0.16);
 }
 
 .fast-access-bill-totals > div {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
 }
 
 .fast-access-bill-totals span {
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   color: var(--muted);
-  font-weight: 500;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .fast-access-bill-totals strong {
-  font-size: 1.5rem;
-  color: var(--primary);
-  font-weight: 700;
-}
-
-.fast-access-bill-totals div {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-}
-
-.fast-access-bill-totals span {
-  color: var(--muted);
-  font-weight: 700;
-}
-
-.fast-access-bill-totals strong {
+  font-size: 1.6rem;
   color: var(--primary-strong);
+  font-weight: 800;
+  letter-spacing: -0.01em;
 }
 
 .fast-access-bill-edit-form {
@@ -2625,13 +2615,13 @@ body.theme-dark .status-in_progress {
   width: 100%;
   min-width: 0;
   border-collapse: separate;
-  border-spacing: 0 10px;
+  border-spacing: 0 12px;
   table-layout: fixed;
 }
 
 .credit-card-table th,
 .credit-card-table td {
-  padding: 14px;
+  padding: 16px 18px;
   text-align: left;
   vertical-align: middle;
   overflow-wrap: anywhere;
@@ -2646,42 +2636,49 @@ body.theme-dark .status-in_progress {
 
 .credit-card-table th {
   color: var(--muted);
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: 0.78rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding-bottom: 12px;
+  letter-spacing: 0.05em;
+  padding-bottom: 10px;
+  padding-top: 4px;
 }
 
 .credit-card-table tbody tr {
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.credit-card-table tbody tr:hover {
+  transform: translateY(-1px);
 }
 
 .credit-card-table tbody tr:hover td {
   background: var(--hover-bg);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
 }
 
 .credit-card-table td {
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
   background: var(--surface);
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .credit-card-table td:first-child {
   border-left: 1px solid var(--border);
-  border-radius: 10px 0 0 10px;
-  font-weight: 500;
+  border-radius: 12px 0 0 12px;
+  font-weight: 600;
 }
 
 .credit-card-table td:last-child {
   border-right: 1px solid var(--border);
-  border-radius: 0 10px 10px 0;
+  border-radius: 0 12px 12px 0;
 }
 
 .credit-card-table td:only-child {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .table-sort-button {
@@ -2729,7 +2726,9 @@ body.theme-dark .status-in_progress {
   color: var(--text);
   font-weight: 800;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
 }
 
 .credit-card-summary-inner {
@@ -2746,7 +2745,9 @@ body.theme-dark .status-in_progress {
 .credit-card-grand-total td {
   background: var(--surface-tint);
   border: 2px solid var(--primary);
-  font-size: 1.1rem;
+  font-size: 1.15rem;
+  padding: 18px 22px;
+  box-shadow: 0 8px 22px rgba(47, 112, 255, 0.18);
 }
 
 .credit-card-user-summary td strong,
@@ -3716,7 +3717,7 @@ body.theme-dark .status-in_progress {
   .user-table {
     min-width: 0;
     border-collapse: separate;
-    border-spacing: 0 10px;
+    border-spacing: 0 14px;
   }
 
   .user-table thead {
@@ -3732,8 +3733,9 @@ body.theme-dark .status-in_progress {
 
   .user-table tr {
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 14px;
     background: var(--surface);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
     overflow: hidden;
   }
 
@@ -3741,15 +3743,17 @@ body.theme-dark .status-in_progress {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 14px;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border);
+    gap: 16px;
+    padding: 14px 16px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
     text-align: right;
     overflow-wrap: anywhere;
   }
 
   .user-table td:last-child {
     border-bottom: 0;
+    padding-top: 12px;
+    padding-bottom: 14px;
   }
 
   .user-table td::before {
@@ -3959,7 +3963,7 @@ body.theme-dark .status-in_progress {
   .fast-access-bills-table {
     min-width: 0;
     border-collapse: separate;
-    border-spacing: 0 10px;
+    border-spacing: 0 14px;
   }
 
   /* Hide the table header — labels move into each cell via data-label */
@@ -3982,8 +3986,9 @@ body.theme-dark .status-in_progress {
   .credit-card-table tr,
   .fast-access-bills-table tr {
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 14px;
     background: var(--surface);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
     overflow: hidden;
   }
 
@@ -3993,9 +3998,9 @@ body.theme-dark .status-in_progress {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 14px;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border);
+    gap: 16px;
+    padding: 14px 16px;
+    border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
     text-align: right;
     overflow-wrap: anywhere;
   }
@@ -4003,6 +4008,8 @@ body.theme-dark .status-in_progress {
   .credit-card-table td:last-child,
   .fast-access-bills-table td:last-child {
     border-bottom: 0;
+    padding-top: 12px;
+    padding-bottom: 14px;
   }
 
   /* Inject column header into each cell via data-label */
@@ -4015,6 +4022,7 @@ body.theme-dark .status-in_progress {
     font-weight: 800;
     text-align: left;
     text-transform: uppercase;
+    letter-spacing: 0.04em;
   }
 
   .fast-access-bill-group-summary td::before {
@@ -4056,12 +4064,21 @@ body.theme-dark .status-in_progress {
 
   .credit-card-user-summary td,
   .credit-card-grand-total td {
-    border-radius: 10px;
+    border-radius: 14px;
     border: 1px solid var(--border);
+    padding: 16px 18px;
+  }
+
+  .credit-card-user-summary td {
+    background: var(--surface-soft);
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
   }
 
   .credit-card-grand-total td {
-    margin-bottom: 18px;
+    margin-bottom: 22px;
+    background: var(--surface-tint);
+    border: 2px solid var(--primary);
+    box-shadow: 0 6px 18px rgba(47, 112, 255, 0.18);
   }
 
   .credit-card-user-summary td::before,
