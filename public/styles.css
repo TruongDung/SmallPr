@@ -1670,6 +1670,47 @@ body.theme-dark .tag-manager-name.active {
   min-width: 0;
   display: grid;
   gap: 12px;
+  /* Per-status accent palette; overridden by .task-column-{status} below.
+     Used by header pill, column body tint, and task card accent. */
+  --status-accent: var(--muted);
+  --status-accent-strong: var(--text);
+  --status-tint: var(--surface-soft);
+}
+
+.task-column-todo {
+  --status-accent: #2563eb;          /* blue */
+  --status-accent-strong: #1d4ed8;
+  --status-tint: rgba(37, 99, 235, 0.06);
+}
+
+.task-column-in_progress {
+  --status-accent: #b45309;          /* amber */
+  --status-accent-strong: #92400e;
+  --status-tint: rgba(217, 119, 6, 0.07);
+}
+
+.task-column-done {
+  --status-accent: #047857;          /* green */
+  --status-accent-strong: #065f46;
+  --status-tint: rgba(5, 150, 105, 0.07);
+}
+
+body.theme-dark .task-column-todo {
+  --status-accent: #93c5fd;
+  --status-accent-strong: #bfdbfe;
+  --status-tint: rgba(96, 165, 250, 0.12);
+}
+
+body.theme-dark .task-column-in_progress {
+  --status-accent: #fbbf24;
+  --status-accent-strong: #fcd34d;
+  --status-tint: rgba(251, 191, 36, 0.12);
+}
+
+body.theme-dark .task-column-done {
+  --status-accent: #6ee7b7;
+  --status-accent-strong: #a7f3d0;
+  --status-tint: rgba(110, 231, 183, 0.12);
 }
 
 .task-column-wide {
@@ -1685,22 +1726,34 @@ body.theme-dark .tag-manager-name.active {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--status-tint);
+  border-left: 3px solid var(--status-accent);
 }
 
 .task-column-header h3 {
   margin: 0;
   font-size: 1rem;
+  font-weight: 700;
+  color: var(--status-accent-strong);
+  letter-spacing: -0.01em;
 }
 
 .task-count {
   min-width: 28px;
-  padding: 4px 8px;
+  padding: 4px 10px;
   border-radius: 999px;
-  background: var(--bg);
-  color: var(--muted);
-  font-size: 0.85rem;
-  font-weight: 700;
+  background: var(--status-accent);
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 800;
   text-align: center;
+  letter-spacing: 0.02em;
+}
+
+body.theme-dark .task-count {
+  color: #0b1220;
 }
 
 .task-column-body {
@@ -1708,15 +1761,26 @@ body.theme-dark .tag-manager-name.active {
   min-height: 120px;
   display: grid;
   gap: 14px;
-  padding: 4px;
-  border: 1px solid transparent;
-  border-radius: 12px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--status-accent) 18%, transparent);
+  border-radius: 14px;
+  background: var(--status-tint);
   transition: background 0.16s ease, border-color 0.16s ease;
 }
 
 .task-column-body.drag-over {
   border-color: var(--primary);
   background: var(--drop-bg);
+}
+
+/* Per-status left accent on each task card so it stays scannable
+   even when scrolled away from its column header. */
+.task-column-todo .task-item,
+.task-column-in_progress .task-item,
+.task-column-done .task-item {
+  box-shadow:
+    inset 4px 0 0 var(--status-accent),
+    0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .task-empty {
@@ -2464,21 +2528,23 @@ body.theme-dark .status-in_progress {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
   margin-top: 16px;
-  padding: 10px 16px;
+  padding: 12px 18px;
   border-radius: 10px;
-  color: #ffffff;
-  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
-  border: none;
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--primary) 28%, transparent);
+  background: var(--surface-tint);
+  border: 2px solid var(--primary);
+  box-shadow: 0 4px 14px rgba(47, 112, 255, 0.16);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 .fast-access-bill-totals > div {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 16px;
   width: 100%;
   padding: 0;
   border: 0;
@@ -2487,19 +2553,21 @@ body.theme-dark .status-in_progress {
 }
 
 .fast-access-bill-totals span {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.85);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  color: var(--primary-strong);
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
 }
 
 .fast-access-bill-totals strong {
-  font-size: 1.15rem;
-  color: #ffffff;
+  color: var(--primary-strong);
   font-weight: 800;
+  font-size: 1rem;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .fast-access-bill-edit-form {
@@ -3660,16 +3728,28 @@ body.theme-dark .status-in_progress {
     position: sticky;
     top: calc(4px + env(safe-area-inset-top));
     z-index: 2;
-    padding: 8px 10px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: color-mix(in srgb, var(--surface) 92%, var(--surface-tint));
+    padding: 10px 12px;
+    border: 1px solid color-mix(in srgb, var(--status-accent) 22%, var(--border));
+    border-left: 4px solid var(--status-accent);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--surface) 88%, var(--status-tint));
+    backdrop-filter: saturate(140%) blur(6px);
+    -webkit-backdrop-filter: saturate(140%) blur(6px);
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
   }
 
   .task-column-body {
     min-height: 72px;
     gap: 10px;
-    padding: 0;
+    padding: 6px;
+  }
+
+  .task-column-todo .task-item,
+  .task-column-in_progress .task-item,
+  .task-column-done .task-item {
+    box-shadow:
+      inset 4px 0 0 var(--status-accent),
+      0 1px 3px rgba(15, 23, 42, 0.08);
   }
 
   .task-item {

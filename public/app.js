@@ -2318,7 +2318,8 @@ const renderTasks = (tasks) => {
 
   const createColumn = (title, status, columnTasks) => {
     const column = document.createElement('section');
-    column.className = 'task-column';
+    column.className = `task-column task-column-${status}`;
+    column.dataset.status = status;
 
     const heading = document.createElement('h3');
     heading.textContent = title;
