@@ -154,23 +154,59 @@
       }
     };
 
-    const addNote = async () => {
-      await flushSave();
-      const result = await request('/api/notes', {
-        method: 'POST',
-        body: JSON.stringify({ title: '', body: '' }),
-      });
-
-      if (result.error) {
-        setMessage(result.error);
-        return;
+    const addNote = () => {
+      // Capture the previously active note's edits before we repurpose the
+      // shared editor inputs for the new note.
+      const previousNoteId = activeNoteId;
+      const previousTitle = titleInput.value;
+      const previousBody = bodyInput.value;
+      const hadPendingSave = pendingSave || Boolean(saveTimer);
+      if (saveTimer) {
+        clearTimeout(saveTimer);
+        saveTimer = null;
       }
+      pendingSave = false;
 
-      notes.unshift(result.note);
-      activeNoteId = result.note.id;
-      showEditor(result.note);
-      renderList();
+      // Show an empty editor and focus the title synchronously so iOS places
+      // the cursor and opens the keyboard within the user's tap gesture.
+      // Focusing after an await would lose the gesture and iOS would ignore it.
+      activeNoteId = null;
+      editorEmpty.classList.add('hidden');
+      editorForm.classList.remove('hidden');
+      titleInput.value = '';
+      bodyInput.value = '';
+      savedIndicator.textContent = '';
       titleInput.focus();
+
+      (async () => {
+        if (hadPendingSave && previousNoteId) {
+          const previousNote = notes.find((entry) => entry.id === previousNoteId);
+          if (previousNote && (previousNote.title !== previousTitle || previousNote.body !== previousBody)) {
+            const saveResult = await request(`/api/notes/${previousNoteId}`, {
+              method: 'PUT',
+              body: JSON.stringify({ title: previousTitle, body: previousBody }),
+            });
+            if (!saveResult.error && saveResult.note) {
+              notes = notes.map((entry) => (entry.id === saveResult.note.id ? saveResult.note : entry));
+            }
+          }
+        }
+
+        const result = await request('/api/notes', {
+          method: 'POST',
+          body: JSON.stringify({ title: titleInput.value, body: bodyInput.value }),
+        });
+
+        if (result.error) {
+          setMessage(result.error);
+          return;
+        }
+
+        notes.unshift(result.note);
+        activeNoteId = result.note.id;
+        notes.sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
+        renderList();
+      })();
     };
 
     const deleteNote = async (note) => {

@@ -723,8 +723,17 @@ const applyTranslations = () => {
   editTagTitle.textContent = t('renameTag');
   setText('label[for="edit-tag-name-input"]', t('tagName'));
   editTagNameInput.placeholder = t('tagPlaceholder');
-  cancelEditTag.textContent = t('cancel');
-  setText('#save-edit-tag', t('save'));
+  cancelEditTag.className = 'task-action-icon secondary';
+  cancelEditTag.textContent = '×';
+  cancelEditTag.setAttribute('aria-label', t('cancel'));
+  cancelEditTag.title = t('cancel');
+  const saveEditTagButton = document.getElementById('save-edit-tag');
+  if (saveEditTagButton) {
+    saveEditTagButton.className = 'task-action-icon';
+    saveEditTagButton.textContent = '✓';
+    saveEditTagButton.setAttribute('aria-label', t('save'));
+    saveEditTagButton.title = t('save');
+  }
   setText('label[for="task-description"]', `${t('description')} ${t('max500')}`);
   document.getElementById('task-description').setAttribute('data-placeholder', t('descriptionPlaceholder'));
   setText('label[for="task-reminder"]', t('dateTimeAlert'));
@@ -775,8 +784,14 @@ const applyTranslations = () => {
   setText('.user-table th:nth-child(3)', t('email'));
   setText('.user-table th:nth-child(4)', t('tasks'));
   setText('.user-table th:nth-child(5)', t('actions'));
-  confirmDeleteNo.textContent = t('no');
-  confirmDeleteYes.textContent = t('yes');
+  confirmDeleteNo.className = 'task-action-icon secondary';
+  confirmDeleteNo.textContent = '×';
+  confirmDeleteNo.setAttribute('aria-label', t('no'));
+  confirmDeleteNo.title = t('no');
+  confirmDeleteYes.className = 'task-action-icon danger';
+  confirmDeleteYes.textContent = '✓';
+  confirmDeleteYes.setAttribute('aria-label', t('yes'));
+  confirmDeleteYes.title = t('yes');
   if (currentUser) renderUserArea();
   if (currentUser) setActiveTaskSubtab();
   if (currentUser) renderTags(tags);

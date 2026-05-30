@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=user-responsive-1" />
+  <link rel="stylesheet" href="styles.css?v=edit-tag-center-1" />
 </head>
 <body>
   <div class="container">
@@ -385,8 +385,8 @@
       <h3 id="delete-confirm-title">Delete task?</h3>
       <p id="delete-confirm-message">This task will be permanently removed.</p>
       <div class="modal-actions">
-        <button id="confirm-delete-no" type="button" class="secondary">No</button>
-        <button id="confirm-delete-yes" type="button" class="danger">Yes</button>
+        <button id="confirm-delete-no" type="button" class="task-action-icon secondary" aria-label="No" title="No">×</button>
+        <button id="confirm-delete-yes" type="button" class="task-action-icon danger" aria-label="Yes" title="Yes">✓</button>
       </div>
     </div>
   </div>
@@ -401,8 +401,8 @@
           <p id="edit-tag-error" class="field-error hidden"></p>
         </div>
         <div class="modal-actions">
-          <button id="cancel-edit-tag" type="button" class="secondary">Cancel</button>
-          <button id="save-edit-tag" type="submit">Save</button>
+          <button id="cancel-edit-tag" type="button" class="task-action-icon secondary" aria-label="Cancel" title="Cancel">×</button>
+          <button id="save-edit-tag" type="submit" class="task-action-icon" aria-label="Save" title="Save">✓</button>
         </div>
       </form>
     </div>
@@ -449,8 +449,8 @@
           <input id="credit-card-closing-date" type="date" />
         </div>
         <div class="modal-actions">
-          <button id="cancel-add-credit-card" type="button" class="secondary">Cancel</button>
-          <button id="add-credit-card" type="submit">Add Card</button>
+          <button id="cancel-add-credit-card" type="button" class="task-action-icon secondary" aria-label="Cancel" title="Cancel">×</button>
+          <button id="add-credit-card" type="submit" class="task-action-icon" aria-label="Add Card" title="Add Card">✓</button>
         </div>
       </form>
     </div>
@@ -684,14 +684,14 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.min.js"></script>
-  <script src="js/features/creditCards/creditCards.dom.js?v=credit-card-icons-4"></script>
-  <script src="js/features/creditCards/creditCards.formatters.js?v=credit-card-icons-4"></script>
-  <script src="js/features/creditCards/creditCards.users.js?v=credit-card-icons-4"></script>
-  <script src="js/features/creditCards/creditCards.table.js?v=credit-card-icons-4"></script>
-  <script src="js/features/creditCards/creditCards.bills.js?v=credit-card-icons-4"></script>
-  <script src="js/features/creditCards/creditCards.translations.js?v=credit-card-icons-4"></script>
-  <script src="js/features/creditCards/creditCards.module.js?v=credit-card-icons-4"></script>
-  <script src="js/features/notes/notes.module.js?v=notes-1"></script>
-  <script src="app.js?v=sending-toast-1"></script>
+  <script src="js/features/creditCards/creditCards.dom.js?v=credit-card-icons-5"></script>
+  <script src="js/features/creditCards/creditCards.formatters.js?v=credit-card-icons-5"></script>
+  <script src="js/features/creditCards/creditCards.users.js?v=credit-card-icons-5"></script>
+  <script src="js/features/creditCards/creditCards.table.js?v=credit-card-icons-5"></script>
+  <script src="js/features/creditCards/creditCards.bills.js?v=credit-card-icons-5"></script>
+  <script src="js/features/creditCards/creditCards.translations.js?v=credit-card-icons-5"></script>
+  <script src="js/features/creditCards/creditCards.module.js?v=credit-card-icons-5"></script>
+  <script src="js/features/notes/notes.module.js?v=notes-2"></script>
+  <script src="app.js?v=tag-modal-icons-1"></script>
 </body>
 </html>

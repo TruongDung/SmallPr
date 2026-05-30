@@ -25,14 +25,24 @@
     setText('label[for="credit-card-balance"]', t('totalBalance'));
     setText('label[for="credit-card-interest-charge"]', t('interestCharge'));
     setText('label[for="credit-card-closing-date"]', t('closingDate'));
-    setText('#add-credit-card', t('addCard'));
+    if (elements.addSubmitButton) {
+      elements.addSubmitButton.className = 'task-action-icon';
+      elements.addSubmitButton.textContent = '✓';
+      elements.addSubmitButton.setAttribute('aria-label', t('addCard'));
+      elements.addSubmitButton.title = t('addCard');
+    }
     if (elements.openAddButton) {
       elements.openAddButton.textContent = '+';
       elements.openAddButton.setAttribute('aria-label', t('addCard'));
       elements.openAddButton.title = t('addCard');
     }
     if (elements.addTitle) elements.addTitle.textContent = t('addCreditCard');
-    if (elements.cancelAddButton) elements.cancelAddButton.textContent = t('cancel');
+    if (elements.cancelAddButton) {
+      elements.cancelAddButton.className = 'task-action-icon secondary';
+      elements.cancelAddButton.textContent = '×';
+      elements.cancelAddButton.setAttribute('aria-label', t('cancel'));
+      elements.cancelAddButton.title = t('cancel');
+    }
     renderHeaders();
 
     if (elements.editTitle) elements.editTitle.textContent = t('editCreditCard');
