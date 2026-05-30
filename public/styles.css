@@ -2464,21 +2464,21 @@ body.theme-dark .status-in_progress {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-top: 22px;
-  padding: 18px 24px;
-  border-radius: 14px;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 10px 16px;
+  border-radius: 10px;
   color: #ffffff;
   background: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
   border: none;
-  box-shadow: 0 10px 28px color-mix(in srgb, var(--primary) 35%, transparent);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--primary) 28%, transparent);
 }
 
 .fast-access-bill-totals > div {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px;
   width: 100%;
   padding: 0;
   border: 0;
@@ -2487,7 +2487,7 @@ body.theme-dark .status-in_progress {
 }
 
 .fast-access-bill-totals span {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   color: rgba(255, 255, 255, 0.85);
   font-weight: 700;
   text-transform: uppercase;
@@ -2495,7 +2495,7 @@ body.theme-dark .status-in_progress {
 }
 
 .fast-access-bill-totals strong {
-  font-size: 1.75rem;
+  font-size: 1.15rem;
   color: #ffffff;
   font-weight: 800;
   letter-spacing: -0.01em;
@@ -2733,11 +2733,12 @@ body.theme-dark .status-in_progress {
 .credit-card-grand-total td {
   background: var(--surface-soft);
   color: var(--text);
-  font-weight: 800;
+  font-weight: 700;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px 20px;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
+  border-radius: 10px;
+  padding: 10px 16px;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.05);
+  font-size: 0.95rem;
 }
 
 .credit-card-summary-inner {
@@ -2754,9 +2755,9 @@ body.theme-dark .status-in_progress {
 .credit-card-grand-total td {
   background: var(--surface-tint);
   border: 2px solid var(--primary);
-  font-size: 1.15rem;
-  padding: 18px 22px;
-  box-shadow: 0 8px 22px rgba(47, 112, 255, 0.18);
+  font-size: 1rem;
+  padding: 12px 18px;
+  box-shadow: 0 4px 14px rgba(47, 112, 255, 0.16);
 }
 
 .credit-card-user-summary td strong,
