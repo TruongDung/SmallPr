@@ -137,8 +137,16 @@ const createTasksRouter = ({
 
       res.json({ success: true, emailSent });
     } catch (error) {
-      console.error('Failed to send task summary email:', error);
-      res.status(500).json({ error: 'Failed to send email' });
+      console.error('Failed to send task summary email:', {
+        code: error.code,
+        command: error.command,
+        response: error.response,
+        message: error.message,
+      });
+      res.status(500).json({
+        error: 'Failed to send email',
+        detail: error.code || error.message || 'unknown',
+      });
     }
   });
 
@@ -160,8 +168,16 @@ const createTasksRouter = ({
 
       res.json({ success: true, emailSent });
     } catch (error) {
-      console.error('Failed to send task email:', error);
-      res.status(500).json({ error: 'Failed to send email' });
+      console.error('Failed to send task email:', {
+        code: error.code,
+        command: error.command,
+        response: error.response,
+        message: error.message,
+      });
+      res.status(500).json({
+        error: 'Failed to send email',
+        detail: error.code || error.message || 'unknown',
+      });
     }
   });
 
