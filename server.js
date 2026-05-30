@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const bcrypt = require('bcrypt');
 const session = require('express-session');
+const pgSession = require('connect-pg-simple')(session);
 const path = require('path');
 const nodemailer = require('nodemailer');
 const { PORT, TASK_ALERT_TO } = require('./src/server/config/env');
@@ -681,13 +682,22 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
 
 app.use(express.json({ limit: '8mb' }));
 app.use(express.urlencoded({ extended: true }));
+// Vercel/serverless chạy sau proxy → cần bật để cookie `secure` hoạt động đúng.
+app.set('trust proxy', 1);
 app.use(
   session({
+    store: new pgSession({
+      pool,
+      createTableIfMissing: true,
+    }),
     secret: process.env.SESSION_SECRET || 'task-manager-secret',
     resave: false,
     saveUninitialized: false,
     cookie: {
       maxAge: 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
     },
   })
 );
