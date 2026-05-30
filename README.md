@@ -69,3 +69,5 @@ Open it in Xcode on a Mac, set your Apple signing team, connect your iPhone, and
 - Password: `admin`
 
 You can use these credentials to log in, or create a new account via the signup form.
+
+## Test Deployment
