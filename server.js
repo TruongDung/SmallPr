@@ -332,6 +332,10 @@ const createMailTransporter = () => {
       user: SMTP_USER,
       pass: SMTP_PASS,
     },
+    // Fail fast on Vercel (10s function timeout) instead of hanging on SMTP.
+    connectionTimeout: 7000,
+    greetingTimeout: 5000,
+    socketTimeout: 7000,
   });
 };
 
