@@ -23,7 +23,11 @@
     "supertest": "^6.3.3"
   },
   "jest": {
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/mcp-servers/"
+    ]
   },
   "author": "",
   "license": "MIT"

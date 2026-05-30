@@ -3,6 +3,7 @@ require('dotenv').config();
 const express = require('express');
 const bcrypt = require('bcrypt');
 const session = require('express-session');
+const PgSession = require('connect-pg-simple')(session);
 const path = require('path');
 const nodemailer = require('nodemailer');
 const { PORT, TASK_ALERT_TO } = require('./src/server/config/env');
@@ -681,13 +682,29 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
 
 app.use(express.json({ limit: '8mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Vercel terminates TLS at the edge and forwards plain HTTP to the function.
+// Without this, Express marks the connection as "insecure" and refuses to send
+// secure cookies, breaking sessions in production.
+app.set('trust proxy', 1);
+
+const isProduction = process.env.NODE_ENV === 'production';
+
 app.use(
   session({
+    store: new PgSession({
+      pool,
+      tableName: 'session',
+      createTableIfMissing: true,
+    }),
     secret: process.env.SESSION_SECRET || 'task-manager-secret',
     resave: false,
     saveUninitialized: false,
     cookie: {
       maxAge: 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: isProduction,
     },
   })
 );
