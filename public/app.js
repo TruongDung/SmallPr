@@ -1710,6 +1710,62 @@ const init = async () => {
   const result = await request('/api/me');
   currentUser = result.user;
   showSection();
+  if (currentUser) connectRealtime();
+};
+
+// Real-time sync — keeps web and iOS WebView in lockstep.
+// We refetch the affected list on each event rather than try to splice
+// individual changes into local state — small payloads, simple and correct.
+let realtimeSocket = null;
+let pendingTaskRefresh = null;
+let pendingNoteRefresh = null;
+
+const scheduleTaskRefresh = () => {
+  if (pendingTaskRefresh) return;
+  pendingTaskRefresh = setTimeout(() => {
+    pendingTaskRefresh = null;
+    if (currentUser) {
+      loadTasks();
+      loadTags();
+    }
+  }, 150);
+};
+
+const scheduleNoteRefresh = () => {
+  if (pendingNoteRefresh) return;
+  pendingNoteRefresh = setTimeout(() => {
+    pendingNoteRefresh = null;
+    if (currentUser && currentView === 'notes') {
+      notesModule.load();
+    }
+  }, 150);
+};
+
+const connectRealtime = () => {
+  if (typeof window.io !== 'function') return;
+  if (realtimeSocket && realtimeSocket.connected) return;
+
+  realtimeSocket = window.io({
+    withCredentials: true,
+    transports: ['websocket', 'polling'],
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+  });
+
+  ['task:created', 'task:updated', 'task:deleted'].forEach((event) => {
+    realtimeSocket.on(event, scheduleTaskRefresh);
+  });
+
+  ['note:created', 'note:updated', 'note:deleted'].forEach((event) => {
+    realtimeSocket.on(event, scheduleNoteRefresh);
+  });
+};
+
+const disconnectRealtime = () => {
+  if (!realtimeSocket) return;
+  realtimeSocket.removeAllListeners();
+  realtimeSocket.disconnect();
+  realtimeSocket = null;
 };
 
 const handleAuthSubmit = async (event) => {
@@ -1750,6 +1806,7 @@ const handleAuthSubmit = async (event) => {
   authForm.reset();
   if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
   showSection();
+  connectRealtime();
 };
 
 const loadTags = async () => {
@@ -3103,6 +3160,7 @@ const hideUploadProgress = () => {
 const handleLogout = async () => {
   await request('/api/logout', { method: 'POST' });
   currentUser = null;
+  disconnectRealtime();
   setCurrentView('tasks', { persist: false });
   showSection();
   prefillRememberedCredentials();

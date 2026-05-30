@@ -5,6 +5,7 @@ const {
   MAX_TASK_TEXT_LENGTH,
 } = require('../constants/tasks');
 const { createTasksService } = require('../services/tasks.service');
+const { emitToUser } = require('../realtime');
 const {
   normalizePriority,
   normalizeStatus,
@@ -246,6 +247,7 @@ const createTasksRouter = ({
         }
       }
 
+      emitToUser(req.session.userId, 'task:created', { task });
       res.json({ task, emailSent });
     } catch (error) {
       console.error(error);
@@ -326,6 +328,7 @@ const createTasksRouter = ({
         await tasks.ensureTaskTag(req.session.userId, normalizedTag);
       }
 
+      emitToUser(req.session.userId, 'task:updated', { task: updatedTask });
       res.json({ task: updatedTask });
     } catch (error) {
       console.error(error);
@@ -343,6 +346,7 @@ const createTasksRouter = ({
       }
 
       await tasks.deleteTask(id, req.session.userId);
+      emitToUser(req.session.userId, 'task:deleted', { id: Number(id) });
       res.json({ success: true });
     } catch (error) {
       console.error(error);

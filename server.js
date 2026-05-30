@@ -1,13 +1,16 @@
 require('dotenv').config();
 
+const http = require('http');
 const express = require('express');
 const bcrypt = require('bcrypt');
 const session = require('express-session');
 const PgSession = require('connect-pg-simple')(session);
 const path = require('path');
 const nodemailer = require('nodemailer');
+const { Server: SocketIOServer } = require('socket.io');
 const { PORT, TASK_ALERT_TO } = require('./src/server/config/env');
 const { allAsync, getAsync, pool, queryAsync, runAsync } = require('./src/server/db/client');
+const { emitToUser } = require('./src/server/realtime');
 const createCreditCardsRouter = require('./src/server/routes/creditCards.routes');
 const createTasksRouter = require('./src/server/routes/tasks.routes');
 
@@ -719,24 +722,49 @@ app.set('trust proxy', 1);
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-app.use(
-  session({
-    store: new PgSession({
-      pool,
-      tableName: 'session',
-      createTableIfMissing: true,
-    }),
-    secret: process.env.SESSION_SECRET || 'task-manager-secret',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      maxAge: 24 * 60 * 60 * 1000,
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: isProduction,
-    },
-  })
-);
+const sessionMiddleware = session({
+  store: new PgSession({
+    pool,
+    tableName: 'session',
+    createTableIfMissing: true,
+  }),
+  secret: process.env.SESSION_SECRET || 'task-manager-secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 24 * 60 * 60 * 1000,
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: isProduction,
+  },
+});
+
+app.use(sessionMiddleware);
+
+// HTTP server + Socket.IO so the web app and iOS WebView stay in sync.
+// Socket.IO needs a persistent connection — works locally and on any
+// long-running Node host (Render, Railway, Fly.io). Vercel's serverless
+// functions cannot hold the connection open, so events won't broadcast
+// there even though the rest of the API still works.
+const httpServer = http.createServer(app);
+const io = new SocketIOServer(httpServer, {
+  cors: { origin: false },
+});
+require('./src/server/realtime').setIo(io);
+
+// Share the express-session middleware with Socket.IO so we can authenticate
+// the connection and scope events to the signed-in user.
+io.engine.use(sessionMiddleware);
+
+io.on('connection', (socket) => {
+  const session = socket.request?.session;
+  const userId = session?.userId;
+  if (!userId) {
+    socket.disconnect(true);
+    return;
+  }
+  socket.join(`user:${userId}`);
+});
 
 app.use(async (req, res, next) => {
   try {
@@ -967,6 +995,7 @@ app.post('/api/notes', authRequired, async (req, res) => {
        RETURNING id, title, body, created_at, updated_at`,
       [req.session.userId, title, body]
     );
+    emitToUser(req.session.userId, 'note:created', { note: result.rows[0] });
     res.json({ note: result.rows[0] });
   } catch (error) {
     console.error(error);
@@ -992,6 +1021,7 @@ app.put('/api/notes/:id', authRequired, async (req, res) => {
       return res.status(404).json({ error: 'Note not found' });
     }
 
+    emitToUser(req.session.userId, 'note:updated', { note: result.rows[0] });
     res.json({ note: result.rows[0] });
   } catch (error) {
     console.error(error);
@@ -1012,6 +1042,7 @@ app.delete('/api/notes/:id', authRequired, async (req, res) => {
       return res.status(404).json({ error: 'Note not found' });
     }
 
+    emitToUser(req.session.userId, 'note:deleted', { id: Number(id) });
     res.json({ success: true });
   } catch (error) {
     console.error(error);
@@ -1158,7 +1189,7 @@ app.get('*', (req, res) => {
 if (require.main === module) {
   dbReady
     .then(() => {
-      app.listen(PORT, () => {
+      httpServer.listen(PORT, () => {
         console.log(`Server running at http://localhost:${PORT}`);
       });
     })
@@ -1172,3 +1203,5 @@ module.exports = app;
 module.exports.app = app;
 module.exports.db = pool;
 module.exports.dbReady = dbReady;
+module.exports.httpServer = httpServer;
+module.exports.io = io;

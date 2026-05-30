@@ -1,4 +1,4 @@
-const CACHE_NAME = 'task-manager-ios-v71';
+const CACHE_NAME = 'task-manager-ios-v72';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -35,7 +35,7 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
-  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) {
+  if (url.origin !== self.location.origin || url.pathname.startsWith('/api/') || url.pathname.startsWith('/socket.io/')) {
     return;
   }
 
