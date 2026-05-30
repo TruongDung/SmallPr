@@ -148,6 +148,24 @@ const initializeDatabase = async () => {
   await pool.query("ALTER TABLE fast_access_bill_defaults ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'Unpaid'");
   await pool.query('ALTER TABLE fast_access_bill_defaults ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0');
 
+  // Seed the standard fast-access bills if the table is empty (fresh DB, CI, etc.).
+  // Existing rows are preserved because sort_order is UNIQUE.
+  // Amounts are placeholders — users customize them through the UI.
+  await pool.query(`
+    INSERT INTO fast_access_bill_defaults (item, amount, due_date, pay_before, status, sort_order)
+    VALUES
+      ('Rent',        0.00, '', '', 'Unpaid', 1),
+      ('Electricity', 0.00, '', '', 'Unpaid', 2),
+      ('Water',       0.00, '', '', 'Unpaid', 3),
+      ('Gas',         0.00, '', '', 'Unpaid', 4),
+      ('Internet',    0.00, '', '', 'Unpaid', 5),
+      ('Phone',       0.00, '', '', 'Unpaid', 6),
+      ('HOA',         0.00, '', '', 'Unpaid', 7),
+      ('Auto loan',   0.00, '', '', 'Unpaid', 8),
+      ('Daycare',     0.00, '', '', 'Unpaid', 9)
+    ON CONFLICT (sort_order) DO NOTHING
+  `);
+
   await pool.query(`
     INSERT INTO task_tags (user_id, name, normalized_name)
     SELECT DISTINCT user_id, tag, LOWER(tag)
