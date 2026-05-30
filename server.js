@@ -324,10 +324,17 @@ const createMailTransporter = () => {
     return null;
   }
 
+  const port = Number(SMTP_PORT) || 587;
+  const secure = SMTP_SECURE === 'true' || port === 465;
+
   return nodemailer.createTransport({
     host: SMTP_HOST,
-    port: Number(SMTP_PORT) || 587,
-    secure: SMTP_SECURE === 'true',
+    port,
+    secure,
+    // For STARTTLS ports (587/25), require an upgrade to TLS so the connection
+    // is encrypted even though `secure` is false.
+    requireTLS: !secure,
+    tls: { minVersion: 'TLSv1.2' },
     auth: {
       user: SMTP_USER,
       pass: SMTP_PASS,
