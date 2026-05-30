@@ -78,13 +78,17 @@
       const cell = document.createElement('td');
       cell.colSpan = 6;
 
+      const inner = document.createElement('div');
+      inner.className = 'credit-card-summary-inner';
+
       const labelElement = document.createElement('strong');
       labelElement.textContent = label;
 
       const totalElement = document.createElement('span');
       totalElement.textContent = formatters.formatCurrency(total);
 
-      cell.append(labelElement, totalElement);
+      inner.append(labelElement, totalElement);
+      cell.append(inner);
       row.append(cell);
       return row;
     };

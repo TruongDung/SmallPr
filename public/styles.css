@@ -2719,21 +2719,28 @@ body.theme-dark .status-in_progress {
 /* Summary rows
    - .credit-card-user-summary: per-user subtotal row
    - .credit-card-grand-total:  bottom row showing the overall total
+   The td stays a real table cell so colSpan spans all columns even with
+   table-layout: fixed; an inner wrapper handles the label/amount layout.
    Both render label + amount on one line; both nowrap so currency
    never breaks mid-number on narrow widths. */
 .credit-card-user-summary td,
 .credit-card-grand-total td {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  overflow-wrap: normal;
-  word-break: normal;
   background: var(--surface-soft);
   color: var(--text);
   font-weight: 800;
   border: 1px solid var(--border);
   border-radius: 10px;
+}
+
+.credit-card-summary-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  flex: 1 1 auto;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .credit-card-grand-total td {
@@ -2748,8 +2755,8 @@ body.theme-dark .status-in_progress {
   white-space: nowrap;
 }
 
-.credit-card-user-summary span,
-.credit-card-grand-total span {
+.credit-card-user-summary .credit-card-summary-inner span,
+.credit-card-grand-total .credit-card-summary-inner span {
   color: var(--primary-strong);
   white-space: nowrap;
   flex-shrink: 0;
