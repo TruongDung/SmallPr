@@ -143,6 +143,10 @@
                 <button id="delete-note-button" type="button" class="task-action-icon danger" aria-label="Delete note" title="Delete note">🗑</button>
               </div>
               <textarea id="note-body-input" class="notes-editor-body" placeholder="Start writing..." rows="14"></textarea>
+              <div id="note-preview" class="note-preview hidden"></div>
+              <div class="notes-editor-actions">
+                <button id="toggle-preview-button" type="button" class="secondary">Preview</button>
+              </div>
               <p id="note-saved-indicator" class="notes-saved-indicator" aria-live="polite"></p>
             </div>
           </article>
@@ -867,6 +871,7 @@
   <script src="js/features/notes/notes.module.js?v=notes-2"></script>
   <script src="js/features/dashboard/dashboard.module.js?v=dashboard-1"></script>
   <script src="js/transactions.module.js?v=transactions-1"></script>
+  <script src="js/notes-code-highlighter.js?v=code-highlight-1"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="app.js?v=dashboard-1"></script>
 </body>

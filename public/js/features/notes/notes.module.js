@@ -11,11 +11,14 @@
     const bodyInput = document.getElementById('note-body-input');
     const deleteButton = document.getElementById('delete-note-button');
     const savedIndicator = document.getElementById('note-saved-indicator');
+    const previewDiv = document.getElementById('note-preview');
+    const togglePreviewButton = document.getElementById('toggle-preview-button');
 
     let notes = [];
     let activeNoteId = null;
     let saveTimer = null;
     let pendingSave = false;
+    let showPreview = false;
 
     const formatRelativeDate = (isoString) => {
       if (!isoString) return '';
@@ -287,12 +290,30 @@
       addButton.addEventListener('click', addNote);
       deleteButton.addEventListener('click', requestDeleteActive);
       titleInput.addEventListener('input', scheduleSave);
-      bodyInput.addEventListener('input', scheduleSave);
+      bodyInput.addEventListener('input', () => {
+        scheduleSave();
+        if (showPreview) {
+          updatePreview();
+        }
+      });
       titleInput.addEventListener('blur', flushSave);
       bodyInput.addEventListener('blur', flushSave);
       searchInput.addEventListener('input', renderList);
       window.addEventListener('beforeunload', flushSave);
-      
+
+      // Toggle preview button
+      if (togglePreviewButton) {
+        togglePreviewButton.addEventListener('click', () => {
+          showPreview = !showPreview;
+          bodyInput.classList.toggle('hidden', showPreview);
+          previewDiv.classList.toggle('hidden', !showPreview);
+          togglePreviewButton.textContent = showPreview ? 'Edit' : 'Preview';
+          if (showPreview) {
+            updatePreview();
+          }
+        });
+      }
+
       // Make links clickable in the note body with Ctrl/Cmd + Click
       bodyInput.addEventListener('click', (e) => {
         if (!e.ctrlKey && !e.metaKey) return;
@@ -344,6 +365,12 @@
           bodyInput.title = '';
         }
       });
+    };
+
+    const updatePreview = () => {
+      if (!previewDiv || !window.NotesCodeHighlighter) return;
+      const highlighted = window.NotesCodeHighlighter.detectAndHighlightCodeBlocks(bodyInput.value);
+      previewDiv.innerHTML = highlighted || '<p style="color: #999;">Nothing to preview</p>';
     };
 
     return { applyTranslations, bind, load, deleteNote };
