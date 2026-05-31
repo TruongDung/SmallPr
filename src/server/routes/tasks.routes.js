@@ -5,6 +5,7 @@ const {
   MAX_TASK_TEXT_LENGTH,
 } = require('../constants/tasks');
 const { createTasksService } = require('../services/tasks.service');
+const { createRecurrenceService } = require('../services/recurrence.service');
 const { emitToUser } = require('../realtime');
 const {
   normalizePriority,
@@ -25,6 +26,7 @@ const createTasksRouter = ({
 }) => {
   const router = express.Router();
   const tasks = createTasksService({ allAsync, getAsync, runAsync });
+  const recurrence = createRecurrenceService({ createTask: tasks.createTask });
 
   router.use(['/tasks', '/tags'], authRequired);
 
@@ -183,7 +185,10 @@ const createTasksRouter = ({
   });
 
   router.post('/tasks', async (req, res) => {
-    const { title, tag, description, comment, priority, status, time_spent_minutes, reminder_at, attachment, language } = req.body;
+    const {
+      title, tag, description, comment, priority, status, time_spent_minutes, reminder_at, attachment, language,
+      is_recurring, recurrence_pattern, recurrence_interval, recurrence_days
+    } = req.body;
     if (!title) {
       return res.status(400).json({ error: 'Task title is required' });
     }
@@ -234,6 +239,10 @@ const createTasksRouter = ({
         timeSpentMinutes: time_spent_minutes,
         reminderAt: reminder_at,
         attachment: parsedAttachment,
+        isRecurring: is_recurring || false,
+        recurrencePattern: recurrence_pattern || null,
+        recurrenceInterval: recurrence_interval || null,
+        recurrenceDays: recurrence_days || null
       });
       await tasks.ensureTaskTag(req.session.userId, normalizedTag);
       const user = await getUserById(req.session.userId);
@@ -257,7 +266,10 @@ const createTasksRouter = ({
 
   router.put('/tasks/:id', async (req, res) => {
     const { id } = req.params;
-    const { title, tag, description, comment, priority, status, archived, completed, time_spent_minutes, reminder_at, attachment } = req.body;
+    const {
+      title, tag, description, comment, priority, status, archived, completed, time_spent_minutes, reminder_at, attachment,
+      is_recurring, recurrence_pattern, recurrence_interval, recurrence_days
+    } = req.body;
     const hasAttachmentUpdate = Object.prototype.hasOwnProperty.call(req.body, 'attachment');
     const hasStatusUpdate = Object.prototype.hasOwnProperty.call(req.body, 'status');
     const hasTagUpdate = Object.prototype.hasOwnProperty.call(req.body, 'tag');
@@ -323,9 +335,25 @@ const createTasksRouter = ({
         reminderAt: reminder_at,
         hasAttachmentUpdate,
         attachment: parsedAttachment,
+        isRecurring: is_recurring,
+        recurrencePattern: recurrence_pattern,
+        recurrenceInterval: recurrence_interval,
+        recurrenceDays: recurrence_days
       });
       if (hasTagUpdate) {
         await tasks.ensureTaskTag(req.session.userId, normalizedTag);
+      }
+
+      // If task was marked as done and is recurring, create next instance
+      if (normalizedStatus === 'done' && task.is_recurring && task.status !== 'done') {
+        try {
+          const nextTask = await recurrence.createNextRecurringInstance(updatedTask);
+          if (nextTask) {
+            emitToUser(req.session.userId, 'task:created', { task: nextTask });
+          }
+        } catch (recurrenceError) {
+          console.error('Failed to create next recurring instance:', recurrenceError);
+        }
       }
 
       emitToUser(req.session.userId, 'task:updated', { task: updatedTask });

@@ -140,6 +140,12 @@ const initializeDatabase = async () => {
   )`);
 
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminder_at TEXT');
+  await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS is_recurring BOOLEAN DEFAULT FALSE');
+  await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS recurrence_pattern TEXT');
+  await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS recurrence_interval INTEGER');
+  await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS recurrence_days TEXT');
+  await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS parent_task_id INTEGER');
+  await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS next_occurrence_date DATE');
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT');
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS tag TEXT');

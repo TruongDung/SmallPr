@@ -5089,3 +5089,87 @@ body.theme-dark .status-in_progress {
     padding: 8px 10px;
   }
 }
+
+/* Recurring Tasks -------------------------------------------------- */
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkbox-label input[type="checkbox"] {
+  cursor: pointer;
+}
+
+.recurrence-options {
+  padding: 16px;
+  background: var(--surface-soft);
+  border-radius: 8px;
+  margin-top: 8px;
+  border: 1px solid var(--border);
+}
+
+.inline-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline-field input {
+  width: 80px;
+}
+
+.weekday-selector {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.weekday-selector label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--surface);
+  font-size: 0.9rem;
+}
+
+.weekday-selector label:hover {
+  background: var(--surface-soft);
+}
+
+.weekday-selector label:has(input:checked) {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.weekday-selector input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+.recurring-badge {
+  display: inline-block;
+  font-size: 0.9em;
+  opacity: 0.7;
+  margin-left: 4px;
+}
+
+@media (max-width: 640px) {
+  .weekday-selector {
+    gap: 6px;
+  }
+
+  .weekday-selector label {
+    padding: 4px 8px;
+    font-size: 0.85rem;
+  }
+}

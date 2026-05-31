@@ -251,6 +251,40 @@
             <input id="task-reminder" type="datetime-local" />
           </div>
           <div class="field">
+            <label class="checkbox-label">
+              <input type="checkbox" id="task-recurring" />
+              <span>Recurring task</span>
+            </label>
+          </div>
+          <div id="recurrence-options" class="recurrence-options hidden">
+            <div class="field">
+              <label for="task-recurrence-pattern">Repeat</label>
+              <select id="task-recurrence-pattern">
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+              </select>
+            </div>
+            <div id="daily-options" class="field">
+              <label for="task-recurrence-interval">Every</label>
+              <div class="inline-field">
+                <input type="number" id="task-recurrence-interval" min="1" max="365" value="1" />
+                <span>day(s)</span>
+              </div>
+            </div>
+            <div id="weekly-options" class="field hidden">
+              <label>On days</label>
+              <div class="weekday-selector">
+                <label><input type="checkbox" name="weekday" value="0" /> Sun</label>
+                <label><input type="checkbox" name="weekday" value="1" /> Mon</label>
+                <label><input type="checkbox" name="weekday" value="2" /> Tue</label>
+                <label><input type="checkbox" name="weekday" value="3" /> Wed</label>
+                <label><input type="checkbox" name="weekday" value="4" /> Thu</label>
+                <label><input type="checkbox" name="weekday" value="5" /> Fri</label>
+                <label><input type="checkbox" name="weekday" value="6" /> Sat</label>
+              </div>
+            </div>
+          </div>
+          <div class="field">
             <label for="task-attachment">Upload File</label>
             <input id="task-attachment" type="file" />
             <p id="attachment-error" class="field-error hidden"></p>

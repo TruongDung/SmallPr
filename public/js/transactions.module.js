@@ -242,6 +242,13 @@
             body: JSON.stringify(data),
           });
           showStatusToast(t('transactionAdded') || 'Transaction added', 'success');
+
+          // Update filter to show the month of the newly created transaction
+          const transactionDate = new Date(data.occurred_on);
+          const transactionMonth = `${transactionDate.getFullYear()}-${String(transactionDate.getMonth() + 1).padStart(2, '0')}`;
+          monthFilter.value = transactionMonth;
+          currentFilters.year = transactionDate.getFullYear().toString();
+          currentFilters.month = (transactionDate.getMonth() + 1).toString();
         }
         closeModal();
         await load();

@@ -57,6 +57,12 @@ const taskStatusInput = document.getElementById('task-status');
 const taskTagInput = document.getElementById('task-tag');
 const taskTagSuggestions = document.getElementById('task-tag-suggestions');
 const taskReminderInput = document.getElementById('task-reminder');
+const taskRecurringCheckbox = document.getElementById('task-recurring');
+const recurrenceOptions = document.getElementById('recurrence-options');
+const taskRecurrencePattern = document.getElementById('task-recurrence-pattern');
+const taskRecurrenceInterval = document.getElementById('task-recurrence-interval');
+const dailyOptions = document.getElementById('daily-options');
+const weeklyOptions = document.getElementById('weekly-options');
 const taskAttachmentInput = document.getElementById('task-attachment');
 const passwordInput = document.getElementById('password');
 const togglePasswordButton = document.getElementById('toggle-password');
@@ -1846,6 +1852,11 @@ const request = async (url, options = {}) => {
   }
 };
 
+const getSelectedWeekdays = () => {
+  const checkboxes = document.querySelectorAll('#weekly-options input[type="checkbox"]:checked');
+  return Array.from(checkboxes).map(cb => cb.value).join(',');
+};
+
 const prefillRememberedCredentials = () => {
   try {
     const saved = localStorage.getItem(REMEMBER_ME_KEY);
@@ -2393,12 +2404,20 @@ const handleTaskSubmit = async (event) => {
   const description = getRichEditorValue(descriptionEditor);
   const reminder_at = taskReminderInput.value || null;
   const attachmentFile = taskAttachmentInput.files[0] || null;
-  
+
+  // Recurrence data
+  const is_recurring = taskRecurringCheckbox.checked;
+  const recurrence_pattern = is_recurring ? taskRecurrencePattern.value : null;
+  const recurrence_interval = is_recurring && recurrence_pattern === 'daily' ?
+    parseInt(taskRecurrenceInterval.value) : null;
+  const recurrence_days = is_recurring && recurrence_pattern === 'weekly' ?
+    getSelectedWeekdays() : null;
+
   const titleError = document.getElementById('title-error');
   const descriptionError = document.getElementById('description-error');
   const attachmentError = document.getElementById('attachment-error');
   const formError = document.getElementById('form-error');
-  
+
   // Clear previous errors
   titleError.classList.add('hidden');
   descriptionError.classList.add('hidden');
@@ -2411,13 +2430,13 @@ const handleTaskSubmit = async (event) => {
     formError.classList.remove('hidden');
     return;
   }
-  
+
   if (title.length > 20) {
     titleError.textContent = t('titleTooLong');
     titleError.classList.remove('hidden');
     return;
   }
-  
+
   if (getRichEditorLength(descriptionEditor) > MAX_TASK_TEXT_LENGTH) {
     descriptionError.textContent = t('descriptionTooLong');
     descriptionError.classList.remove('hidden');
@@ -2436,10 +2455,20 @@ const handleTaskSubmit = async (event) => {
     return;
   }
 
+  // Validate weekly recurrence has at least one day selected
+  if (is_recurring && recurrence_pattern === 'weekly' && (!recurrence_days || recurrence_days === '')) {
+    formError.textContent = t('weeklyRecurrenceNeedsDays') || 'Please select at least one day for weekly recurrence';
+    formError.classList.remove('hidden');
+    return;
+  }
+
   try {
     const result = await request('/api/tasks', {
       method: 'POST',
-      body: JSON.stringify({ title, tag, description, priority, status, reminder_at, attachment: preparedAttachment, language: currentLanguage }),
+      body: JSON.stringify({
+        title, tag, description, priority, status, reminder_at, attachment: preparedAttachment, language: currentLanguage,
+        is_recurring, recurrence_pattern, recurrence_interval, recurrence_days
+      }),
     });
 
     if (result.error) {
@@ -2455,6 +2484,8 @@ const handleTaskSubmit = async (event) => {
       taskStatusInput.value = 'todo';
       descriptionEditor.innerHTML = '';
       preparedAttachment = null;
+      taskRecurringCheckbox.checked = false;
+      recurrenceOptions.classList.add('hidden');
       titleError.classList.add('hidden');
       descriptionError.classList.add('hidden');
       attachmentError.classList.add('hidden');
@@ -2621,6 +2652,13 @@ const createTaskCard = (task) => {
     meta.className = 'task-meta';
     const title = document.createElement('strong');
     title.textContent = task.title;
+    if (task.is_recurring) {
+      const recurringBadge = document.createElement('span');
+      recurringBadge.className = 'recurring-badge';
+      recurringBadge.textContent = '🔄';
+      recurringBadge.title = 'Recurring task';
+      title.append(' ', recurringBadge);
+    }
     const badges = document.createElement('div');
     badges.className = 'task-badges';
     const priority = document.createElement('span');
@@ -3640,6 +3678,18 @@ closePickerAfterTodaySelection(taskReminderInput);
 closePickerAfterTodaySelection(editTaskReminderInput);
 setupTagSuggestions(taskTagInput, taskTagSuggestions);
 setupTagSuggestions(editTaskTagInput, editTaskTagSuggestions);
+
+// Recurring task UI toggles
+taskRecurringCheckbox.addEventListener('change', () => {
+  recurrenceOptions.classList.toggle('hidden', !taskRecurringCheckbox.checked);
+});
+
+taskRecurrencePattern.addEventListener('change', () => {
+  const pattern = taskRecurrencePattern.value;
+  dailyOptions.classList.toggle('hidden', pattern !== 'daily');
+  weeklyOptions.classList.toggle('hidden', pattern !== 'weekly');
+});
+
 authForm.addEventListener('submit', handleAuthSubmit);
 taskForm.addEventListener('submit', handleTaskSubmit);
 tagForm.addEventListener('submit', handleTagSubmit);

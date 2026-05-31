@@ -90,12 +90,19 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     timeSpentMinutes,
     reminderAt,
     attachment,
+    isRecurring,
+    recurrencePattern,
+    recurrenceInterval,
+    recurrenceDays,
+    parentTaskId,
+    nextOccurrenceDate
   }) => {
     const result = await runAsync(
       `INSERT INTO tasks (
         user_id, title, tag, description, comment, priority, status, completed, time_spent_minutes, reminder_at,
-        attachment_name, attachment_type, attachment_data, attachment_size
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+        attachment_name, attachment_type, attachment_data, attachment_size,
+        is_recurring, recurrence_pattern, recurrence_interval, recurrence_days, parent_task_id, next_occurrence_date
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       [
         userId,
         title,
@@ -111,6 +118,12 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         attachment?.type || null,
         attachment?.data || null,
         attachment?.size || 0,
+        isRecurring || false,
+        recurrencePattern || null,
+        recurrenceInterval || null,
+        recurrenceDays || null,
+        parentTaskId || null,
+        nextOccurrenceDate || null
       ]
     );
 
@@ -133,6 +146,10 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     reminderAt,
     hasAttachmentUpdate,
     attachment,
+    isRecurring,
+    recurrencePattern,
+    recurrenceInterval,
+    recurrenceDays
   }) => {
     await runAsync(
       `UPDATE tasks SET
@@ -150,6 +167,10 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         attachment_type = ?,
         attachment_data = ?,
         attachment_size = ?,
+        is_recurring = ?,
+        recurrence_pattern = ?,
+        recurrence_interval = ?,
+        recurrence_days = ?,
         updated_at = CURRENT_TIMESTAMP
        WHERE id = ? AND user_id = ?`,
       [
@@ -167,6 +188,10 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         hasAttachmentUpdate ? attachment?.type || null : existingTask.attachment_type,
         hasAttachmentUpdate ? attachment?.data || null : existingTask.attachment_data,
         hasAttachmentUpdate ? attachment?.size || 0 : existingTask.attachment_size,
+        isRecurring !== undefined ? isRecurring : existingTask.is_recurring,
+        recurrencePattern !== undefined ? recurrencePattern : existingTask.recurrence_pattern,
+        recurrenceInterval !== undefined ? recurrenceInterval : existingTask.recurrence_interval,
+        recurrenceDays !== undefined ? recurrenceDays : existingTask.recurrence_days,
         id,
         userId
       ]
