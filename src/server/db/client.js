@@ -1,6 +1,18 @@
 const { Pool } = require('pg');
+const pgTypes = require('pg-types');
 
 const { DATABASE_URL } = require('../config/env');
+
+// Postgres TIMESTAMP (without time zone) is parsed by pg as if it were
+// local time. When the server runs in any non-UTC tz (or the value was
+// stored from a different tz than the reader's), the round-trip silently
+// shifts. We register a parser for OID 1114 (TIMESTAMP) that appends 'Z'
+// so the value is interpreted as UTC, matching what we wrote with
+// CURRENT_TIMESTAMP and what the client expects when computing
+// "n minutes ago" labels.
+pgTypes.setTypeParser(1114, (value) => (
+  value === null ? null : new Date(`${value}Z`)
+));
 
 const pool = new Pool({
   connectionString: DATABASE_URL,

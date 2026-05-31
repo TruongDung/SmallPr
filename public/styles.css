@@ -4731,13 +4731,38 @@ body.theme-dark .status-in_progress {
 /* Recent Notes ---------------------------------------------------------- */
 
 .dashboard-note-row {
-  grid-template-columns: 1fr auto;
-  grid-template-rows: auto auto;
-  row-gap: 4px;
+  /* Override the shared 3-column grid above — notes render as a vertical
+     stack so titles, excerpts, and timestamps each get their own line and
+     long URLs wrap instead of bleeding off the card. */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  min-width: 0;
 }
-.dashboard-note-title { font-weight: 600; color: var(--text); grid-column: 1; }
-.dashboard-note-time  { font-size: 0.78rem; color: var(--muted); grid-column: 2; align-self: start; }
-.dashboard-note-excerpt { grid-column: 1 / -1; font-size: 0.86rem; color: var(--muted); }
+.dashboard-note-title {
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dashboard-note-excerpt {
+  font-size: 0.86rem;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.dashboard-note-time {
+  align-self: flex-end;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
 
 /* Bills ----------------------------------------------------------------- */
 
