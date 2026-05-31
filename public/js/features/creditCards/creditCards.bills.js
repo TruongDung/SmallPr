@@ -257,8 +257,8 @@
           if (!bill.readOnly) {
             const editButton = document.createElement('button');
             editButton.type = 'button';
-            editButton.className = 'task-action-icon';
-            editButton.textContent = '✏';
+            editButton.className = 'task-action-icon secondary';
+            editButton.textContent = '✎';
             editButton.setAttribute('aria-label', t('edit'));
             editButton.title = t('edit');
             editButton.addEventListener('click', () => openEditModal(bill));
