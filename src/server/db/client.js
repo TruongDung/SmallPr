@@ -20,6 +20,13 @@ const pool = new Pool({
   connectionTimeoutMillis: 10000,
 });
 
+pool.on('error', (error, client) => {
+  console.error('Unexpected Postgres pool error:', error?.message || error);
+  if (client) {
+    client.release(true);
+  }
+});
+
 const toPostgresSql = (sql) => {
   let index = 0;
   return sql.replace(/\?/g, () => `$${++index}`);

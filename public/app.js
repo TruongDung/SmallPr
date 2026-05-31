@@ -3661,7 +3661,11 @@ showSignup.addEventListener('click', () => setMode('signup'));
 languageSelect.addEventListener('change', (event) => setLanguage(event.target.value));
 themeToggle.addEventListener('click', toggleTheme);
 togglePasswordButton.addEventListener('click', togglePasswordVisibility);
+const taskSubtabAddButton = document.getElementById('task-subtab-add-button');
 floatingAddTask.addEventListener('click', openAddTaskFlow);
+if (taskSubtabAddButton) {
+  taskSubtabAddButton.addEventListener('click', openAddTaskFlow);
+}
 taskSearchInput.addEventListener('input', () => {
   updateTaskSearchState();
   renderTasks(tasks);

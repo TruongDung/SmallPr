@@ -85,17 +85,14 @@ body.is-uploading {
 }
 
 .app-header {
-  display: grid;
-  grid-template-columns: minmax(220px, 0.85fr) minmax(0, 1.35fr);
-  justify-content: stretch;
-  align-items: center;
-  gap: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  row-gap: 18px;
   margin-bottom: 20px;
-  padding: 10px 14px;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: color-mix(in srgb, var(--surface) 88%, var(--surface-tint));
-  box-shadow: 0 8px 22px var(--card-shadow);
+  padding: 14px 18px;
 }
 
 .app-brand {
@@ -104,6 +101,7 @@ body.is-uploading {
   gap: 10px;
   min-width: 0;
   max-width: 100%;
+  flex: 0 1 auto;
 }
 
 .app-brand-mark {
@@ -126,6 +124,10 @@ body.theme-dark .app-brand-mark {
 
 .app-brand-copy {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
 }
 
 .app-brand-copy h1 {
@@ -144,14 +146,15 @@ body.theme-dark .app-brand-mark {
 }
 
 .header-actions {
-  display: grid;
-  grid-template-columns: minmax(130px, 1fr) minmax(170px, 1fr);
-  align-items: center;
+  display: flex;
+  align-items: flex-start;
   justify-content: flex-end;
-  column-gap: 10px;
-  row-gap: 8px;
+  flex-wrap: wrap;
+  gap: 10px;
   min-width: 0;
-  width: 100%;
+  flex: 1 1 100%;
+  padding-top: 10px;
+  border-top: 1px solid transparent;
 }
 
 .language-control {
@@ -752,19 +755,24 @@ button.danger {
 
 #user-area {
   display: flex;
-  grid-column: 1 / -1;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
   flex-wrap: wrap;
   min-width: 0;
+  flex: 0 1 auto;
 }
 
 #user-area span {
   min-width: 0;
+  max-width: 220px;
   overflow-wrap: anywhere;
   color: var(--muted);
   font-weight: 600;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 #user-area button {
@@ -856,8 +864,10 @@ button.danger {
 }
 
 .task-subtabs {
-  display: inline-flex;
+  display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
   gap: 6px;
   margin-bottom: 24px;
   padding: 6px;
@@ -896,6 +906,27 @@ button.danger {
   color: var(--primary);
   font-weight: 700;
   box-shadow: 0 2px 8px var(--card-shadow);
+}
+
+#task-subtab-add-button {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 8px;
+  display: inline-grid;
+  place-items: center;
+  background: var(--primary);
+  color: white;
+  border: 1px solid var(--primary);
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+#task-subtab-add-button:hover {
+  background: var(--primary-hover, #2563eb);
+  border-color: var(--primary-hover, #2563eb);
 }
 
 .export-buttons {
@@ -3502,7 +3533,7 @@ body.theme-dark .status-in_progress {
   }
 
   .header-actions {
-    grid-template-columns: minmax(150px, 1fr) minmax(190px, 1fr);
+    justify-content: flex-start;
   }
 
   #user-area {
@@ -3549,7 +3580,10 @@ body.theme-dark .status-in_progress {
   }
 
   .header-actions {
-    grid-template-columns: 1fr;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
     gap: 8px;
     width: 100%;
   }
@@ -3569,7 +3603,12 @@ body.theme-dark .status-in_progress {
   }
 
   #user-area span {
-    flex: 1 0 100%;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     text-align: center;
     margin-bottom: 2px;
   }
