@@ -173,11 +173,15 @@ app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-module.exports = {
-  app,
-  cacheReady,
-  db: pool,
-  dbReady,
-  httpServer,
-  io,
-};
+// Export the Express app as the module's default so platforms like Vercel,
+// which import this file as a serverless function and require the default
+// export to be a request handler (or server), get a valid `(req, res)` handler.
+// The remaining values are attached as properties so existing destructuring
+// importers (e.g. server.js) keep working.
+module.exports = app;
+module.exports.app = app;
+module.exports.cacheReady = cacheReady;
+module.exports.db = pool;
+module.exports.dbReady = dbReady;
+module.exports.httpServer = httpServer;
+module.exports.io = io;

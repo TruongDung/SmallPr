@@ -44,11 +44,24 @@ const connectRedis = async () => {
   return connectPromise;
 };
 
+// On serverless (e.g. Vercel) a request often arrives before the 'ready'
+// event has fired on a cold/frozen instance, so the synchronous `ready` flag
+// is still false and every read/write would silently bail — defeating the
+// cache entirely. Awaiting connectRedis() (idempotent: returns the in-flight
+// connect promise) lets the socket finish connecting, then we gate on the
+// live `client.isOpen` instead of the lagging flag.
+const ensureClient = async () => {
+  if (!isEnabled()) return null;
+  await connectRedis();
+  return client?.isOpen ? client : null;
+};
+
 const getJson = async (key) => {
-  if (!isReady()) return null;
+  const c = await ensureClient();
+  if (!c) return null;
 
   try {
-    const cached = await client.get(key);
+    const cached = await c.get(key);
     return cached ? JSON.parse(cached) : null;
   } catch (error) {
     console.warn('Redis cache read failed:', error?.message || error);
@@ -57,10 +70,11 @@ const getJson = async (key) => {
 };
 
 const setJson = async (key, value, ttlSeconds = CACHE_TTL_SECONDS) => {
-  if (!isReady()) return false;
+  const c = await ensureClient();
+  if (!c) return false;
 
   try {
-    await client.set(key, JSON.stringify(value), { EX: ttlSeconds });
+    await c.set(key, JSON.stringify(value), { EX: ttlSeconds });
     return true;
   } catch (error) {
     console.warn('Redis cache write failed:', error?.message || error);
@@ -69,14 +83,15 @@ const setJson = async (key, value, ttlSeconds = CACHE_TTL_SECONDS) => {
 };
 
 const deleteByPattern = async (pattern) => {
-  if (!isReady()) return 0;
+  const c = await ensureClient();
+  if (!c) return 0;
 
   let deleted = 0;
   try {
-    for await (const keys of client.scanIterator({ MATCH: pattern, COUNT: 100 })) {
+    for await (const keys of c.scanIterator({ MATCH: pattern, COUNT: 100 })) {
       const batch = Array.isArray(keys) ? keys : [keys];
       if (batch.length > 0) {
-        deleted += await client.del(batch);
+        deleted += await c.del(batch);
       }
     }
   } catch (error) {

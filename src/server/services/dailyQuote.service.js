@@ -1,13 +1,22 @@
 // Shared daily-quote fetcher used by GET /api/daily-quote and the dashboard.
 // Tries zenquotes.io, falls back to api.quotable.io, then a hardcoded default.
-// Both upstream calls are protected by a 7s AbortController timeout.
+// Both upstream calls are protected by a 2.5s AbortController timeout.
+//
+// The resolved quote is cached in Redis under a single global key so the slow
+// external call stays off the dashboard's hot path — without this, every cold
+// dashboard rebuild (common on serverless) blocked on a third-party request.
+
+const cache = require('../cache/redis');
 
 const DEFAULT_DAILY_QUOTE = {
   text: 'Make it simple enough to begin.',
   author: 'Unknown',
 };
 
-const fetchJsonWithTimeout = async (url, timeoutMs = 7000) => {
+const QUOTE_CACHE_KEY = 'cache:daily-quote';
+const QUOTE_CACHE_TTL_SECONDS = 6 * 60 * 60; // 6 hours — it's a *daily* quote.
+
+const fetchJsonWithTimeout = async (url, timeoutMs = 2500) => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -30,7 +39,7 @@ const fetchJsonWithTimeout = async (url, timeoutMs = 7000) => {
   }
 };
 
-const fetchDailyQuote = async () => {
+const fetchFreshQuote = async () => {
   const providers = [
     async () => {
       const data = await fetchJsonWithTimeout('https://zenquotes.io/api/random');
@@ -64,6 +73,24 @@ const fetchDailyQuote = async () => {
   }
 
   return DEFAULT_DAILY_QUOTE;
+};
+
+// Cache-aware entry point. Returns a Redis-cached quote when available;
+// otherwise fetches a fresh one and stores it. Cache failures are non-fatal —
+// it always degrades to a live fetch (and finally the hardcoded default).
+const fetchDailyQuote = async () => {
+  const cached = await cache.getJson(QUOTE_CACHE_KEY);
+  if (cached?.text) return cached;
+
+  const quote = await fetchFreshQuote();
+
+  // Only persist real upstream results, not the hardcoded fallback, so a brief
+  // provider outage doesn't pin the default quote for the full TTL.
+  if (quote && quote !== DEFAULT_DAILY_QUOTE) {
+    await cache.setJson(QUOTE_CACHE_KEY, quote, QUOTE_CACHE_TTL_SECONDS);
+  }
+
+  return quote;
 };
 
 module.exports = {
