@@ -79,4 +79,71 @@ Open it in Xcode on a Mac, set your Apple signing team, connect your iPhone, and
 
 You can use these credentials to log in, or create a new account via the signup form.
 
-## Test1
+
+## Recommended Refactoring Priorities
+
+### 1. Split `server.js` Immediately
+
+`server.js` is currently handling database schema creation, migrations, seed data, email services, session management, Socket.IO, and route registration in a single file of approximately 1,194 lines.
+
+It should be separated into:
+
+- `app.js`
+- `server.js`
+- `db/migrations/*`
+- `services/email/*`
+- `services/auth/*`
+- `routes/*`
+- `middleware/*`
+
+This will improve maintainability, testability, and overall project structure.
+
+### 2. Use Proper Database Migrations Instead of Runtime Schema Changes
+
+The application currently creates tables and alters the database schema during server startup.
+
+A more maintainable approach is to use a dedicated migration framework such as:
+
+- Knex
+- Prisma
+- Drizzle
+- node-pg-migrate
+
+This provides clear schema versioning, safer deployments, and easier rollback capabilities.
+
+### 3. Standardize the Database Layer
+
+The current `client.js` converts `?` placeholders into `$1`, `$2`, etc. to emulate SQLite-style queries on PostgreSQL.
+
+A better approach is to use native PostgreSQL parameterized queries consistently or adopt an ORM/query builder. This reduces hidden complexity and makes database issues easier to debug.
+
+### 4. Move Validation Out of Route Handlers
+
+`tasks.routes.js` is currently responsible for validation, business logic execution, email notifications, and real-time event emission.
+
+Validation should be extracted into dedicated schema files using a validation library such as:
+
+- Zod
+- Joi
+
+For example:
+
+- `task.schema.js`
+- `task.service.js`
+- `task.controller.js`
+
+Routes should focus only on request orchestration.
+
+### 5. Modularize the Frontend
+
+`public/index.html` has grown significantly and currently contains functionality for dashboards, notes, tasks, weather, exports, modals, finance, and more.
+
+Consider migrating the frontend to React + Vite. If a full migration is not yet feasible, split the codebase into modules such as:
+
+- `tasks.js`
+- `notes.js`
+- `dashboard.js`
+- `finance.js`
+- `apiClient.js`
+
+This will improve code organization, readability, and long-term scalability.

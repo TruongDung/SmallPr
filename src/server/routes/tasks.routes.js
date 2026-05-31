@@ -1,19 +1,13 @@
 const express = require('express');
 
-const {
-  MAX_TAG_LENGTH,
-  MAX_TASK_TEXT_LENGTH,
-} = require('../constants/tasks');
 const { createTasksService } = require('../services/tasks.service');
 const { createRecurrenceService } = require('../services/recurrence.service');
 const { emitToUser } = require('../realtime');
 const {
-  normalizePriority,
-  normalizeStatus,
-  normalizeTag,
-  parseAttachment,
-  stripHtml,
-} = require('../utils/tasks');
+  validateCreateTask,
+  validateTagName,
+  validateUpdateTask,
+} = require('../schemas/task.schema');
 
 const createTasksRouter = ({
   authRequired,
@@ -52,13 +46,11 @@ const createTasksRouter = ({
   });
 
   router.post('/tags', async (req, res) => {
-    const name = normalizeTag(req.body.name);
-    if (!name) {
-      return res.status(400).json({ error: 'Tag name is required' });
+    const validation = validateTagName(req.body.name);
+    if (validation.error) {
+      return res.status(400).json({ error: validation.error });
     }
-    if (name.length > MAX_TAG_LENGTH) {
-      return res.status(400).json({ error: `Tag name must be ${MAX_TAG_LENGTH} characters or less` });
-    }
+    const name = validation.value;
 
     try {
       const tag = await tasks.ensureTaskTag(req.session.userId, name);
@@ -71,13 +63,11 @@ const createTasksRouter = ({
 
   router.put('/tags/:id', async (req, res) => {
     const { id } = req.params;
-    const name = normalizeTag(req.body.name);
-    if (!name) {
-      return res.status(400).json({ error: 'Tag name is required' });
+    const validation = validateTagName(req.body.name);
+    if (validation.error) {
+      return res.status(400).json({ error: validation.error });
     }
-    if (name.length > MAX_TAG_LENGTH) {
-      return res.status(400).json({ error: `Tag name must be ${MAX_TAG_LENGTH} characters or less` });
-    }
+    const name = validation.value;
 
     try {
       const tag = await tasks.getTagForUser(id, req.session.userId);
@@ -185,72 +175,24 @@ const createTasksRouter = ({
   });
 
   router.post('/tasks', async (req, res) => {
-    const {
-      title, tag, description, comment, priority, status, time_spent_minutes, reminder_at, attachment, language,
-      is_recurring, recurrence_pattern, recurrence_interval, recurrence_days
-    } = req.body;
-    if (!title) {
-      return res.status(400).json({ error: 'Task title is required' });
+    const validation = validateCreateTask(req.body);
+    if (validation.error) {
+      return res.status(400).json({ error: validation.error });
     }
-
-    const normalizedTag = normalizeTag(tag);
-    if (normalizedTag.length > MAX_TAG_LENGTH) {
-      return res.status(400).json({ error: `Task tag must be ${MAX_TAG_LENGTH} characters or less` });
-    }
-
-    const normalizedPriority = normalizePriority(priority);
-    if (!normalizedPriority) {
-      return res.status(400).json({ error: 'Task priority must be low, medium, or high' });
-    }
-
-    const normalizedStatus = normalizeStatus(status);
-    if (!normalizedStatus) {
-      return res.status(400).json({ error: 'Task status must be todo, in_progress, or done' });
-    }
-
-    if (title.length > 20) {
-      return res.status(400).json({ error: 'Task title must be 20 characters or less' });
-    }
-
-    if (description && stripHtml(description).length > MAX_TASK_TEXT_LENGTH) {
-      return res.status(400).json({ error: `Task description must be ${MAX_TASK_TEXT_LENGTH} characters or less` });
-    }
-
-    if (comment && String(comment).length > MAX_TASK_TEXT_LENGTH) {
-      return res.status(400).json({ error: `Task comment must be ${MAX_TASK_TEXT_LENGTH} characters or less` });
-    }
-
-    let parsedAttachment = null;
-    try {
-      parsedAttachment = parseAttachment(attachment);
-    } catch (attachmentError) {
-      return res.status(400).json({ error: attachmentError.message });
-    }
+    const taskInput = validation.value;
 
     try {
       const task = await tasks.createTask({
         userId: req.session.userId,
-        title,
-        tag: normalizedTag,
-        description,
-        comment,
-        priority: normalizedPriority,
-        status: normalizedStatus,
-        timeSpentMinutes: time_spent_minutes,
-        reminderAt: reminder_at,
-        attachment: parsedAttachment,
-        isRecurring: is_recurring || false,
-        recurrencePattern: recurrence_pattern || null,
-        recurrenceInterval: recurrence_interval || null,
-        recurrenceDays: recurrence_days || null
+        ...taskInput,
       });
-      await tasks.ensureTaskTag(req.session.userId, normalizedTag);
+      await tasks.ensureTaskTag(req.session.userId, taskInput.tag);
       const user = await getUserById(req.session.userId);
       let emailSent = false;
 
-      if (normalizedPriority !== 'low') {
+      if (taskInput.priority !== 'low') {
         try {
-          emailSent = await sendTaskAlertEmail(task, user, language);
+          emailSent = await sendTaskAlertEmail(task, user, taskInput.language);
         } catch (emailError) {
           console.error('Failed to send task alert email:', emailError);
         }
@@ -266,13 +208,6 @@ const createTasksRouter = ({
 
   router.put('/tasks/:id', async (req, res) => {
     const { id } = req.params;
-    const {
-      title, tag, description, comment, priority, status, archived, completed, time_spent_minutes, reminder_at, attachment,
-      is_recurring, recurrence_pattern, recurrence_interval, recurrence_days
-    } = req.body;
-    const hasAttachmentUpdate = Object.prototype.hasOwnProperty.call(req.body, 'attachment');
-    const hasStatusUpdate = Object.prototype.hasOwnProperty.call(req.body, 'status');
-    const hasTagUpdate = Object.prototype.hasOwnProperty.call(req.body, 'tag');
 
     try {
       const task = await tasks.getTaskForUser(id, req.session.userId);
@@ -280,72 +215,24 @@ const createTasksRouter = ({
         return res.status(404).json({ error: 'Task not found' });
       }
 
-      if (title && title.length > 20) {
-        return res.status(400).json({ error: 'Task title must be 20 characters or less' });
+      const validation = validateUpdateTask(req.body, task);
+      if (validation.error) {
+        return res.status(400).json({ error: validation.error });
       }
-
-      const normalizedTag = normalizeTag(tag);
-      if (hasTagUpdate && normalizedTag.length > MAX_TAG_LENGTH) {
-        return res.status(400).json({ error: `Task tag must be ${MAX_TAG_LENGTH} characters or less` });
-      }
-
-      if (description && stripHtml(description).length > MAX_TASK_TEXT_LENGTH) {
-        return res.status(400).json({ error: `Task description must be ${MAX_TASK_TEXT_LENGTH} characters or less` });
-      }
-
-      if (comment && String(comment).length > MAX_TASK_TEXT_LENGTH) {
-        return res.status(400).json({ error: `Task comment must be ${MAX_TASK_TEXT_LENGTH} characters or less` });
-      }
-
-      const normalizedPriority = normalizePriority(priority, task.priority || 'medium');
-      if (!normalizedPriority) {
-        return res.status(400).json({ error: 'Task priority must be low, medium, or high' });
-      }
-
-      let normalizedStatus = normalizeStatus(status, task.status || (task.completed ? 'done' : 'todo'));
-      if (hasStatusUpdate && !normalizedStatus) {
-        return res.status(400).json({ error: 'Task status must be todo, in_progress, or done' });
-      }
-      if (!hasStatusUpdate && completed !== undefined) {
-        normalizedStatus = completed ? 'done' : 'todo';
-      }
-
-      let parsedAttachment = null;
-      if (hasAttachmentUpdate) {
-        try {
-          parsedAttachment = parseAttachment(attachment);
-        } catch (attachmentError) {
-          return res.status(400).json({ error: attachmentError.message });
-        }
-      }
+      const taskInput = validation.value;
 
       const updatedTask = await tasks.updateTask({
         id,
         userId: req.session.userId,
         existingTask: task,
-        title,
-        tag: normalizedTag,
-        hasTagUpdate,
-        description,
-        comment,
-        priority: normalizedPriority,
-        status: normalizedStatus,
-        archived,
-        timeSpentMinutes: time_spent_minutes,
-        reminderAt: reminder_at,
-        hasAttachmentUpdate,
-        attachment: parsedAttachment,
-        isRecurring: is_recurring,
-        recurrencePattern: recurrence_pattern,
-        recurrenceInterval: recurrence_interval,
-        recurrenceDays: recurrence_days
+        ...taskInput,
       });
-      if (hasTagUpdate) {
-        await tasks.ensureTaskTag(req.session.userId, normalizedTag);
+      if (taskInput.hasTagUpdate) {
+        await tasks.ensureTaskTag(req.session.userId, taskInput.tag);
       }
 
       // If task was marked as done and is recurring, create next instance
-      if (normalizedStatus === 'done' && task.is_recurring && task.status !== 'done') {
+      if (taskInput.status === 'done' && task.is_recurring && task.status !== 'done') {
         try {
           const nextTask = await recurrence.createNextRecurringInstance(updatedTask);
           if (nextTask) {
