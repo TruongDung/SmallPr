@@ -105,7 +105,7 @@ const createTransactionsService = ({ allAsync, getAsync, runAsync }) => {
     `SELECT DISTINCT category
      FROM transactions
      WHERE user_id = ? AND category IS NOT NULL AND category <> ''
-     ORDER BY LOWER(category), category`,
+     ORDER BY category`,
     [userId]
   );
 

@@ -139,6 +139,11 @@ const initializeDatabase = async () => {
     FOREIGN KEY(credit_card_id) REFERENCES credit_cards(id) ON DELETE SET NULL
   )`);
 
+  // Fix NOT NULL constraints that may have been added incorrectly
+  await pool.query('ALTER TABLE transactions ALTER COLUMN category DROP NOT NULL').catch(() => {});
+  await pool.query('ALTER TABLE transactions ALTER COLUMN account DROP NOT NULL').catch(() => {});
+  await pool.query('ALTER TABLE transactions ALTER COLUMN note DROP NOT NULL').catch(() => {});
+
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminder_at TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS is_recurring BOOLEAN DEFAULT FALSE');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS recurrence_pattern TEXT');
