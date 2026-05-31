@@ -252,6 +252,18 @@ const translations = {
     creditCardAccounts: 'Financial',
     creditCardSubTab: 'Credit card',
     creditCardInfoSubTab: 'Expense',
+    transactionsSubTab: 'Transactions',
+    addTransaction: 'Add Transaction',
+    editTransaction: 'Edit Transaction',
+    transactionAdded: 'Transaction added',
+    transactionUpdated: 'Transaction updated',
+    transactionDeleted: 'Transaction deleted',
+    failedToLoadTransactions: 'Failed to load transactions',
+    failedToSaveTransaction: 'Failed to save transaction',
+    failedToDeleteTransaction: 'Failed to delete transaction',
+    confirmDeleteTransaction: 'Delete this transaction?',
+    income: 'Income',
+    expense: 'Expense',
     fastAccessLinks: 'Fast Access',
     monthlyBills: 'Monthly bill house',
     otherSubTab: 'Other',
@@ -517,6 +529,18 @@ const translations = {
     creditCardAccounts: 'Tài chính',
     creditCardSubTab: 'Thẻ tín dụng',
     creditCardInfoSubTab: 'Chi phí',
+    transactionsSubTab: 'Giao dịch',
+    addTransaction: 'Thêm giao dịch',
+    editTransaction: 'Sửa giao dịch',
+    transactionAdded: 'Đã thêm giao dịch',
+    transactionUpdated: 'Đã cập nhật giao dịch',
+    transactionDeleted: 'Đã xóa giao dịch',
+    failedToLoadTransactions: 'Không thể tải giao dịch',
+    failedToSaveTransaction: 'Không thể lưu giao dịch',
+    failedToDeleteTransaction: 'Không thể xóa giao dịch',
+    confirmDeleteTransaction: 'Xóa giao dịch này?',
+    income: 'Thu nhập',
+    expense: 'Chi tiêu',
     fastAccessLinks: 'Liên kết nhanh',
     monthlyBills: 'Hóa đơn hằng tháng',
     otherSubTab: 'Khác',
@@ -1891,6 +1915,14 @@ const connectRealtime = () => {
 
   ['note:created', 'note:updated', 'note:deleted'].forEach((event) => {
     realtimeSocket.on(event, scheduleNoteRefresh);
+  });
+
+  ['transaction:created', 'transaction:updated', 'transaction:deleted'].forEach((event) => {
+    realtimeSocket.on(event, () => {
+      if (transactionsModule && typeof transactionsModule.load === 'function') {
+        transactionsModule.load();
+      }
+    });
   });
 
   // Dashboard listens for tasks, notes, bills, and credit cards via its own
@@ -3549,6 +3581,13 @@ const creditCardModule = window.CreditCardModule.create({
   confirmDelete: showCreditCardDeleteConfirm,
 });
 
+const transactionsModule = window.TransactionsModule.create({
+  request,
+  t,
+  showStatusToast,
+  getLanguage: () => currentLanguage,
+});
+
 const notesModule = window.NotesModule.create({
   request,
   t,
@@ -3613,6 +3652,8 @@ taskSubtabs.forEach((tab) => {
   });
 });
 creditCardModule.bind();
+transactionsModule.bind();
+window.transactionsModule = transactionsModule;
 notesModule.bind();
 dashboardModule.bind();
 editTaskForm.addEventListener('submit', handleEditTaskSubmit);

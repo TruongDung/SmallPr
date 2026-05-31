@@ -320,8 +320,9 @@
         </div>
 
         <div class="financial-tabs" role="tablist" aria-label="Financial">
-          <button id="credit-card-tab" class="financial-tab active" type="button" role="tab" aria-selected="true" aria-controls="credit-card-panel" data-financial-tab="cards">Credit card</button>
-          <button id="credit-card-info-tab" class="financial-tab" type="button" role="tab" aria-selected="false" aria-controls="credit-card-info-panel" data-financial-tab="info">Expense</button>
+          <button id="credit-card-tab" class="financial-tab active" type="button" role="tab" aria-selected="true" aria-controls="credit-card-panel" data-financial-tab="cards" data-i18n-key="creditCardSubTab">Credit card</button>
+          <button id="credit-card-info-tab" class="financial-tab" type="button" role="tab" aria-selected="false" aria-controls="credit-card-info-panel" data-financial-tab="info" data-i18n-key="creditCardInfoSubTab">Expense</button>
+          <button id="transactions-tab" class="financial-tab" type="button" role="tab" aria-selected="false" aria-controls="transactions-panel" data-financial-tab="transactions" data-i18n-key="transactionsSubTab">Transactions</button>
         </div>
 
         <section id="credit-card-panel" class="financial-panel" role="tabpanel" aria-labelledby="credit-card-tab">
@@ -383,6 +384,55 @@
             </div>
           </section>
         </section>
+
+        <section id="transactions-panel" class="financial-panel hidden" role="tabpanel" aria-labelledby="transactions-tab">
+          <div class="transactions-toolbar">
+            <div class="transactions-filters">
+              <input type="month" id="transaction-month-filter" aria-label="Filter by month" />
+              <select id="transaction-kind-filter" aria-label="Filter by type">
+                <option value="">All Types</option>
+                <option value="income">Income</option>
+                <option value="expense">Expense</option>
+              </select>
+              <select id="transaction-category-filter" aria-label="Filter by category">
+                <option value="">All Categories</option>
+              </select>
+            </div>
+            <button id="open-add-transaction" type="button" class="primary task-action-icon" aria-label="Add Transaction" title="Add Transaction">+</button>
+          </div>
+
+          <div class="transactions-summary">
+            <div class="summary-card income-card">
+              <span class="summary-label">Income</span>
+              <span id="summary-income" class="summary-amount">$0.00</span>
+            </div>
+            <div class="summary-card expense-card">
+              <span class="summary-label">Expenses</span>
+              <span id="summary-expense" class="summary-amount">$0.00</span>
+            </div>
+            <div class="summary-card balance-card">
+              <span class="summary-label">Net</span>
+              <span id="summary-balance" class="summary-amount">$0.00</span>
+            </div>
+          </div>
+
+          <div class="transactions-table-wrap">
+            <table class="transactions-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Category</th>
+                  <th>Amount</th>
+                  <th>Account</th>
+                  <th>Note</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="transactions-list"></tbody>
+            </table>
+          </div>
+        </section>
       </section>
     </main>
   </div>
@@ -430,6 +480,53 @@
         <button id="confirm-delete-no" type="button" class="task-action-icon secondary" aria-label="No" title="No">×</button>
         <button id="confirm-delete-yes" type="button" class="task-action-icon danger" aria-label="Yes" title="Yes">✓</button>
       </div>
+    </div>
+  </div>
+
+  <div id="transaction-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="transaction-modal-title">
+    <div class="modal transaction-modal">
+      <h3 id="transaction-modal-title">Add Transaction</h3>
+      <form id="transaction-form" class="transaction-form" novalidate>
+        <div class="field">
+          <label for="transaction-kind">Type</label>
+          <select id="transaction-kind" required>
+            <option value="expense">Expense</option>
+            <option value="income">Income</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="transaction-amount">Amount</label>
+          <input id="transaction-amount" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" required />
+        </div>
+        <div class="field">
+          <label for="transaction-category">Category</label>
+          <input id="transaction-category" type="text" maxlength="100" list="transaction-category-suggestions" placeholder="Food, Salary, etc." />
+          <datalist id="transaction-category-suggestions"></datalist>
+        </div>
+        <div class="field">
+          <label for="transaction-date">Date</label>
+          <input id="transaction-date" type="date" required />
+        </div>
+        <div class="field">
+          <label for="transaction-account">Account</label>
+          <input id="transaction-account" type="text" maxlength="100" placeholder="Cash, Bank, etc." />
+        </div>
+        <div class="field">
+          <label for="transaction-credit-card">Link to Credit Card</label>
+          <select id="transaction-credit-card">
+            <option value="">None</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="transaction-note">Note</label>
+          <textarea id="transaction-note" maxlength="500" rows="3" placeholder="Optional notes..."></textarea>
+        </div>
+        <p id="transaction-form-error" class="field-error hidden"></p>
+        <div class="modal-actions">
+          <button id="cancel-transaction" type="button" class="task-action-icon secondary" aria-label="Cancel" title="Cancel">×</button>
+          <button id="save-transaction" type="submit" class="task-action-icon" aria-label="Save" title="Save">✓</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -735,6 +832,7 @@
   <script src="js/features/creditCards/creditCards.module.js?v=credit-card-icons-6"></script>
   <script src="js/features/notes/notes.module.js?v=notes-2"></script>
   <script src="js/features/dashboard/dashboard.module.js?v=dashboard-1"></script>
+  <script src="js/transactions.module.js?v=transactions-1"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="app.js?v=dashboard-1"></script>
 </body>

@@ -14,6 +14,7 @@ const { emitToUser } = require('./src/server/realtime');
 const createCreditCardsRouter = require('./src/server/routes/creditCards.routes');
 const createTasksRouter = require('./src/server/routes/tasks.routes');
 const createDashboardRouter = require('./src/server/routes/dashboard.routes');
+const createTransactionsRouter = require('./src/server/routes/transactions.routes');
 const { fetchDailyQuote, DEFAULT_DAILY_QUOTE } = require('./src/server/services/dailyQuote.service');
 
 const app = express();
@@ -120,6 +121,22 @@ const initializeDatabase = async () => {
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`);
+
+  await pool.query(`CREATE TABLE IF NOT EXISTS transactions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    occurred_on DATE NOT NULL,
+    kind TEXT NOT NULL,
+    amount NUMERIC(12, 2) NOT NULL,
+    category TEXT,
+    account TEXT,
+    note TEXT,
+    credit_card_id INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(credit_card_id) REFERENCES credit_cards(id) ON DELETE SET NULL
   )`);
 
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminder_at TEXT');
@@ -748,6 +765,13 @@ const adminRequired = async (req, res, next) => {
 };
 
 app.use('/api/credit-cards', createCreditCardsRouter({
+  authRequired,
+  allAsync,
+  getAsync,
+  runAsync,
+}));
+
+app.use('/api/transactions', createTransactionsRouter({
   authRequired,
   allAsync,
   getAsync,

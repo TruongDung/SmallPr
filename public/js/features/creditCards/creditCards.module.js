@@ -200,10 +200,16 @@
     const bind = () => {
       elements.financialTabs.forEach((tab) => {
         tab.addEventListener('click', () => {
+          const tabName = tab.dataset.financialTab;
           feature.dom.setActiveFinancialTab({
             tabs: elements.financialTabs,
             panels: elements.financialPanels,
-          }, tab.dataset.financialTab);
+          }, tabName);
+
+          // Render transactions module when transactions tab is clicked
+          if (tabName === 'transactions' && window.transactionsModule) {
+            window.transactionsModule.render();
+          }
         });
       });
 
