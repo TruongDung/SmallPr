@@ -8,6 +8,7 @@ const {
   MAX_CREDIT_CARD_USER_LENGTH,
 } = require('../constants/creditCards');
 const { createCreditCardsService } = require('../services/creditCards.service');
+const { emitToUser } = require('../realtime');
 const {
   normalizeClosingDate,
   normalizeCreditCardBalance,
@@ -168,6 +169,7 @@ const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync })
         userId: req.session.userId,
         ...validation.values,
       });
+      emitToUser(req.session.userId, 'bill:updated', { bill: updatedBill });
       res.json({ bill: updatedBill });
     } catch (error) {
       console.error(error);
@@ -218,6 +220,7 @@ const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync })
         userId: req.session.userId,
         ...validation.values,
       });
+      emitToUser(req.session.userId, 'card:updated', { id: card.id });
       res.json({ card });
     } catch (error) {
       console.error(error);
@@ -244,6 +247,7 @@ const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync })
         userId: req.session.userId,
         ...validation.values,
       });
+      emitToUser(req.session.userId, 'card:updated', { id: Number(id) });
       res.json({ card: updatedCard });
     } catch (error) {
       console.error(error);
@@ -261,6 +265,7 @@ const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync })
       }
 
       await creditCards.remove({ id, userId: req.session.userId });
+      emitToUser(req.session.userId, 'card:updated', { id: Number(id) });
       res.json({ success: true });
     } catch (error) {
       console.error(error);

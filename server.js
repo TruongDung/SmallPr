@@ -13,13 +13,11 @@ const { allAsync, getAsync, pool, queryAsync, runAsync } = require('./src/server
 const { emitToUser } = require('./src/server/realtime');
 const createCreditCardsRouter = require('./src/server/routes/creditCards.routes');
 const createTasksRouter = require('./src/server/routes/tasks.routes');
+const createDashboardRouter = require('./src/server/routes/dashboard.routes');
+const { fetchDailyQuote, DEFAULT_DAILY_QUOTE } = require('./src/server/services/dailyQuote.service');
 
 const app = express();
 const MAX_WEATHER_CITY_LENGTH = 120;
-const DEFAULT_DAILY_QUOTE = {
-  text: 'Make it simple enough to begin.',
-  author: 'Unknown',
-};
 
 const initializeDatabase = async () => {
   await pool.query(`CREATE TABLE IF NOT EXISTS users (
@@ -150,6 +148,7 @@ const initializeDatabase = async () => {
   await pool.query('ALTER TABLE fast_access_bill_defaults ADD COLUMN IF NOT EXISTS pay_before TEXT');
   await pool.query("ALTER TABLE fast_access_bill_defaults ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'Unpaid'");
   await pool.query('ALTER TABLE fast_access_bill_defaults ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0');
+  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS dashboard_preferences JSONB');
 
   // Seed the standard fast-access bills if the table is empty (fresh DB, CI, etc.).
   // Existing rows are preserved because sort_order is UNIQUE.
@@ -458,65 +457,6 @@ const formatRichTextEmailHtml = (value = '', fallback = '') => {
     .replace(/(<br>)+$/g, '');
 };
 
-const fetchJsonWithTimeout = async (url, timeoutMs = 7000) => {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        Accept: 'application/json',
-        'User-Agent': 'TaskManager/1.0',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Quote request failed with ${response.status}`);
-    }
-
-    return response.json();
-  } finally {
-    clearTimeout(timeout);
-  }
-};
-
-const fetchDailyQuote = async () => {
-  const providers = [
-    async () => {
-      const data = await fetchJsonWithTimeout('https://zenquotes.io/api/random');
-      const quote = Array.isArray(data) ? data[0] : data;
-      return {
-        text: quote?.q,
-        author: quote?.a,
-      };
-    },
-    async () => {
-      const data = await fetchJsonWithTimeout('https://api.quotable.io/random');
-      return {
-        text: data?.content,
-        author: data?.author,
-      };
-    },
-  ];
-
-  for (const provider of providers) {
-    try {
-      const quote = await provider();
-      if (quote?.text) {
-        return {
-          text: String(quote.text).trim(),
-          author: String(quote.author || DEFAULT_DAILY_QUOTE.author).trim(),
-        };
-      }
-    } catch (error) {
-      console.warn('Daily quote provider failed:', error.message);
-    }
-  }
-
-  return DEFAULT_DAILY_QUOTE;
-};
-
 const sendTaskAlertEmail = async (task, user, language = 'en') => {
   const transporter = createMailTransporter();
   if (!transporter) {
@@ -822,6 +762,13 @@ app.use('/api', createTasksRouter({
   getUserById,
   sendTaskAlertEmail,
   sendTaskSummaryEmail,
+}));
+
+app.use('/api', createDashboardRouter({
+  authRequired,
+  allAsync,
+  getAsync,
+  runAsync,
 }));
 
 app.post('/api/signup', async (req, res) => {

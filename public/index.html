@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=task-status-accents-1" />
+  <link rel="stylesheet" href="styles.css?v=dashboard-1" />
 </head>
 <body>
   <div class="container">
@@ -75,6 +75,48 @@
           <p id="auth-message" class="message"></p>
         </form>
       </section>
+
+      <section id="dashboard-section" class="card hidden" aria-labelledby="dashboard-title">
+        <header class="dashboard-header">
+          <div class="dashboard-header-row">
+            <h2 id="dashboard-title">Today</h2>
+            <div class="dashboard-header-actions">
+              <button id="dashboard-add-task" type="button" class="task-action-icon" aria-label="Add task" title="Add task">+</button>
+              <button id="dashboard-new-note" type="button" class="task-action-icon secondary" aria-label="New note" title="New note">✎</button>
+              <button id="dashboard-customize" type="button" class="task-action-icon secondary" aria-label="Customize dashboard" title="Customize">⚙</button>
+            </div>
+          </div>
+          <p id="dashboard-live-region" class="dashboard-live-region" role="status" aria-live="polite"></p>
+        </header>
+        <div id="dashboard-error" class="dashboard-banner-error hidden"></div>
+        <div id="dashboard-grid" class="dashboard-grid"></div>
+      </section>
+
+      <div id="dashboard-customize-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="dashboard-customize-title">
+        <div class="modal-card dashboard-customize-card">
+          <div class="modal-header">
+            <h2 id="dashboard-customize-title">Customize dashboard</h2>
+            <button id="dashboard-customize-close" type="button" class="task-action-icon secondary" aria-label="Close" title="Close">×</button>
+          </div>
+          <div class="dashboard-customize-body">
+            <label class="dashboard-customize-field">
+              <span id="dashboard-default-landing-label">Default landing view</span>
+              <select id="dashboard-default-landing">
+                <option value="today">Today</option>
+                <option value="last_used">Last used</option>
+              </select>
+            </label>
+            <ul id="dashboard-customize-list" class="dashboard-customize-list" role="list"></ul>
+          </div>
+          <div class="modal-footer dashboard-customize-footer">
+            <button id="dashboard-customize-reset" type="button" class="secondary">Reset to default</button>
+            <div class="dashboard-customize-footer-primary">
+              <button id="dashboard-customize-cancel" type="button" class="task-action-icon secondary" aria-label="Cancel" title="Cancel">×</button>
+              <button id="dashboard-customize-save" type="button" class="task-action-icon" aria-label="Save" title="Save">✓</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <section id="notes-section" class="card hidden">
         <div class="notes-layout">
@@ -692,7 +734,8 @@
   <script src="js/features/creditCards/creditCards.translations.js?v=credit-card-icons-6"></script>
   <script src="js/features/creditCards/creditCards.module.js?v=credit-card-icons-6"></script>
   <script src="js/features/notes/notes.module.js?v=notes-2"></script>
+  <script src="js/features/dashboard/dashboard.module.js?v=dashboard-1"></script>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="app.js?v=realtime-1"></script>
+  <script src="app.js?v=dashboard-1"></script>
 </body>
 </html>

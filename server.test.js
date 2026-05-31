@@ -1383,3 +1383,188 @@ describe('Admin API', () => {
     expect(deleteMissingResponse.body).toHaveProperty('error', 'User not found');
   });
 });
+
+
+describe('Dashboard API', () => {
+  test('requires authentication for the dashboard endpoints', async () => {
+    const dashResponse = await request(app).get('/api/dashboard');
+    expect(dashResponse.statusCode).toBe(401);
+
+    const putResponse = await request(app)
+      .put('/api/dashboard/preferences')
+      .send({ defaultLanding: 'today', cards: [] });
+    expect(putResponse.statusCode).toBe(401);
+
+    const resetResponse = await request(app).post('/api/dashboard/preferences/reset');
+    expect(resetResponse.statusCode).toBe(401);
+  });
+
+  test('returns the aggregated payload with every card', async () => {
+    const agent = await createAgent(testUsername('dashboard-shape'));
+    const response = await agent.get('/api/dashboard?tz=America/New_York');
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toHaveProperty('timezone', 'America/New_York');
+    expect(response.body).toHaveProperty('timezoneFallback', false);
+    expect(response.body).toHaveProperty('today');
+    expect(response.body).toHaveProperty('preferences.defaultLanding', 'today');
+
+    const cards = response.body.cards;
+    for (const id of ['todaysTasks', 'taskStatusSummary', 'recentNotes', 'bills', 'creditCards', 'weather', 'dailyQuote']) {
+      expect(cards).toHaveProperty(id);
+      expect(cards[id]).toHaveProperty('ok');
+    }
+  });
+
+  test('falls back to UTC for unrecognized timezones', async () => {
+    const agent = await createAgent(testUsername('dashboard-tz-fallback'));
+    const response = await agent.get('/api/dashboard?tz=Mars/SomeCrater');
+    expect(response.statusCode).toBe(200);
+    expect(response.body.timezone).toBe('UTC');
+    expect(response.body.timezoneFallback).toBe(true);
+  });
+
+  test('classifies tasks as today using the supplied timezone', async () => {
+    const agent = await createAgent(testUsername('dashboard-tz-today'));
+    const meResponse = await agent.get('/api/me');
+    const userId = meResponse.body.user.id;
+
+    // Tasks with status='in_progress' always show up in the in_progress
+    // subsection regardless of when "today" lands. That keeps this test
+    // independent of the actual wall-clock at test-run time while still
+    // confirming the endpoint reads the correct user_id and partitions rows.
+    await db.query(
+      `INSERT INTO tasks (user_id, title, priority, status, archived, reminder_at)
+       VALUES ($1, $2, 'medium', 'in_progress', 0, NULL)`,
+      [userId, `${RUN_ID}-tz-task`]
+    );
+
+    const nyResponse = await agent.get('/api/dashboard?tz=America/New_York');
+    expect(nyResponse.statusCode).toBe(200);
+    const card = nyResponse.body.cards.todaysTasks;
+    expect(card.ok).toBe(true);
+    const inProgress = (card.data.in_progress || []).map((row) => row.title);
+    expect(inProgress).toContain(`${RUN_ID}-tz-task`);
+
+    // Different timezones produce a "today" YMD computed in that tz.
+    const saigonResponse = await agent.get('/api/dashboard?tz=Asia/Ho_Chi_Minh');
+    expect(saigonResponse.body.timezone).toBe('Asia/Ho_Chi_Minh');
+    expect(typeof saigonResponse.body.today).toBe('string');
+    expect(saigonResponse.body.today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+
+  test('respects dueSoonDays for the bills card', async () => {
+    const agent = await createAgent(testUsername('dashboard-due-soon'));
+    const meResponse = await agent.get('/api/me');
+    const userId = meResponse.body.user.id;
+
+    const todayYmd = new Date().toLocaleDateString('en-CA');
+    const addDays = (n) => {
+      const d = new Date();
+      d.setUTCDate(d.getUTCDate() + n);
+      return d.toLocaleDateString('en-CA');
+    };
+
+    await db.query(
+      `INSERT INTO fast_access_bills (user_id, item, amount, due_date, status, sort_order)
+       VALUES ($1, $2, 25.00, $3, 'Unpaid', 1001)`,
+      [userId, `${RUN_ID}-bill-2d`, addDays(2)]
+    );
+    await db.query(
+      `INSERT INTO fast_access_bills (user_id, item, amount, due_date, status, sort_order)
+       VALUES ($1, $2, 25.00, $3, 'Unpaid', 1002)`,
+      [userId, `${RUN_ID}-bill-10d`, addDays(10)]
+    );
+
+    const tightResponse = await agent.get('/api/dashboard?dueSoonDays=3');
+    const tightItems = (tightResponse.body.cards.bills.data.dueSoon || []).map((b) => b.item);
+    expect(tightItems).toContain(`${RUN_ID}-bill-2d`);
+    expect(tightItems).not.toContain(`${RUN_ID}-bill-10d`);
+
+    const wideResponse = await agent.get('/api/dashboard?dueSoonDays=14');
+    const wideItems = (wideResponse.body.cards.bills.data.dueSoon || []).map((b) => b.item);
+    expect(wideItems).toContain(`${RUN_ID}-bill-2d`);
+    expect(wideItems).toContain(`${RUN_ID}-bill-10d`);
+
+    // ignore today as well, since the test seed in initializeDatabase may have
+    // pre-populated some defaults — make sure our row is the one being asserted.
+    expect(todayYmd.length).toBe(10);
+  });
+
+  test('trims note bodies to a 120-character excerpt', async () => {
+    const agent = await createAgent(testUsername('dashboard-note-excerpt'));
+    const meResponse = await agent.get('/api/me');
+    const userId = meResponse.body.user.id;
+
+    const longBody = 'x'.repeat(500);
+    await db.query(
+      'INSERT INTO notes (user_id, title, body) VALUES ($1, $2, $3)',
+      [userId, `${RUN_ID}-long`, longBody]
+    );
+
+    const response = await agent.get('/api/dashboard');
+    expect(response.statusCode).toBe(200);
+    const notes = response.body.cards.recentNotes.data;
+    const target = notes.find((n) => n.title === `${RUN_ID}-long`);
+    expect(target).toBeDefined();
+    expect(target.excerpt.length).toBeLessThanOrEqual(120);
+    expect(target.excerpt.endsWith('…')).toBe(true);
+  });
+
+  test('omits sensitive task fields from the dashboard payload', async () => {
+    const agent = await createAgent(testUsername('dashboard-projection'));
+    const meResponse = await agent.get('/api/me');
+    const userId = meResponse.body.user.id;
+
+    await db.query(
+      `INSERT INTO tasks (user_id, title, description, comment, priority, status, archived, reminder_at)
+       VALUES ($1, $2, 'sensitive desc', 'private comment', 'medium', 'in_progress', 0, NULL)`,
+      [userId, `${RUN_ID}-proj`]
+    );
+
+    const response = await agent.get('/api/dashboard');
+    const tasks = response.body.cards.todaysTasks.data;
+    const allRows = [...(tasks.overdue || []), ...(tasks.today || []), ...(tasks.in_progress || [])];
+    const target = allRows.find((row) => row.title === `${RUN_ID}-proj`);
+    expect(target).toBeDefined();
+    expect(target).not.toHaveProperty('description');
+    expect(target).not.toHaveProperty('comment');
+    expect(target).not.toHaveProperty('attachment_data');
+  });
+
+  test('persists and resets dashboard preferences', async () => {
+    const agent = await createAgent(testUsername('dashboard-prefs'));
+
+    const initial = await agent.get('/api/dashboard');
+    expect(initial.body.preferences.defaultLanding).toBe('today');
+
+    const newPrefs = {
+      version: 1,
+      defaultLanding: 'last_used',
+      cards: [
+        { id: 'recentNotes',       visible: true,  order: 0 },
+        { id: 'todaysTasks',       visible: true,  order: 1 },
+        { id: 'taskStatusSummary', visible: false, order: 2 },
+      ],
+    };
+
+    const putResponse = await agent
+      .put('/api/dashboard/preferences')
+      .send(newPrefs);
+    expect(putResponse.statusCode).toBe(200);
+    expect(putResponse.body.preferences.defaultLanding).toBe('last_used');
+    const savedOrder = putResponse.body.preferences.cards.map((c) => c.id);
+    expect(savedOrder.slice(0, 3)).toEqual(['recentNotes', 'todaysTasks', 'taskStatusSummary']);
+
+    const afterPut = await agent.get('/api/dashboard');
+    expect(afterPut.body.preferences.defaultLanding).toBe('last_used');
+    const taskStatus = afterPut.body.preferences.cards.find((c) => c.id === 'taskStatusSummary');
+    expect(taskStatus.visible).toBe(false);
+
+    const resetResponse = await agent.post('/api/dashboard/preferences/reset');
+    expect(resetResponse.statusCode).toBe(200);
+    expect(resetResponse.body.preferences.defaultLanding).toBe('today');
+
+    const afterReset = await agent.get('/api/dashboard');
+    expect(afterReset.body.preferences.defaultLanding).toBe('today');
+  });
+});

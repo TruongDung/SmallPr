@@ -4445,3 +4445,421 @@ body.theme-dark .status-in_progress {
     min-height: 44dvh;
   }
 }
+
+
+/* =========================================================================
+   Dashboard / Today View
+   Single landing view that aggregates Tasks, Notes, Bills, Credit Cards,
+   Weather, and the Daily Quote. Uses only existing theme tokens so it
+   tracks dark mode for free.
+   ========================================================================= */
+
+#dashboard-section {
+  padding: clamp(14px, 3vw, 24px);
+  padding-top: max(clamp(14px, 3vw, 24px), env(safe-area-inset-top));
+  padding-bottom: max(clamp(18px, 4vw, 32px), env(safe-area-inset-bottom));
+  padding-left: max(clamp(14px, 3vw, 24px), env(safe-area-inset-left));
+  padding-right: max(clamp(14px, 3vw, 24px), env(safe-area-inset-right));
+}
+
+.dashboard-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin: -16px -16px 16px;
+  padding: 14px 16px 12px;
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+.dashboard-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+#dashboard-title {
+  margin: 0;
+  font-size: clamp(1.1rem, 2.4vw, 1.4rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.dashboard-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-live-region {
+  margin: 6px 0 0;
+  min-height: 1.1em;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.dashboard-banner-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border: 1px solid var(--error-border);
+  border-radius: 10px;
+  background: var(--error-bg);
+  color: var(--error-text);
+  font-weight: 600;
+}
+.dashboard-banner-error.hidden { display: none; }
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  min-height: calc(100dvh - 220px);
+}
+@media (min-width: 768px) {
+  .dashboard-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1200px) {
+  .dashboard-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.dashboard-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 4px 14px var(--card-shadow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.dashboard-card:hover {
+  box-shadow: 0 8px 22px var(--card-shadow);
+}
+
+.dashboard-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.dashboard-card-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.dashboard-link {
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 6px 8px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.dashboard-link:hover, .dashboard-link:focus-visible {
+  background: var(--surface-tint);
+  color: var(--primary-strong);
+  outline: none;
+}
+
+.dashboard-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Skeleton -------------------------------------------------------------- */
+
+.dashboard-skeleton {
+  background: linear-gradient(90deg, var(--surface-soft) 0%, var(--surface-tint) 50%, var(--surface-soft) 100%);
+  background-size: 200% 100%;
+  animation: dashboardSkeleton 1.4s linear infinite;
+  border-radius: 6px;
+  min-height: 14px;
+}
+@keyframes dashboardSkeleton {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+.dashboard-card-skeleton {
+  pointer-events: none;
+}
+
+/* Empty / error states -------------------------------------------------- */
+
+.dashboard-empty,
+.dashboard-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 8px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+.dashboard-error {
+  flex-direction: row;
+  align-items: center;
+  color: var(--error-text);
+}
+.dashboard-quick-action {
+  align-self: flex-start;
+  padding: 8px 14px;
+  border: 1px solid var(--primary);
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 36px;
+}
+.dashboard-quick-action:hover { background: var(--primary-strong); border-color: var(--primary-strong); }
+
+/* Today's Tasks --------------------------------------------------------- */
+
+.dashboard-task-subsection,
+.dashboard-bill-subsection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dashboard-subsection-title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.dashboard-task-list,
+.dashboard-bill-list,
+.dashboard-note-list,
+.dashboard-cc-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dashboard-task-row,
+.dashboard-bill-row,
+.dashboard-note-row,
+.dashboard-cc-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  cursor: pointer;
+}
+.dashboard-task-row:hover,
+.dashboard-bill-row:hover,
+.dashboard-note-row:hover,
+.dashboard-cc-row:hover {
+  border-color: var(--primary);
+  background: var(--surface-tint);
+}
+
+.dashboard-task-row { grid-template-columns: 1fr auto auto; }
+
+.dashboard-task-row[data-status="todo"]        { box-shadow: inset 4px 0 0 var(--status-todo-accent, var(--primary)); }
+.dashboard-task-row[data-status="in_progress"] { box-shadow: inset 4px 0 0 var(--status-in_progress-accent, var(--primary)); }
+.dashboard-task-row[data-status="done"]        { box-shadow: inset 4px 0 0 var(--status-done-accent, var(--primary)); }
+
+.dashboard-task-title { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dashboard-task-meta  { font-size: 0.78rem; color: var(--muted); }
+.dashboard-task-done  { min-width: 36px; }
+
+/* Status Summary -------------------------------------------------------- */
+
+.dashboard-status-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.dashboard-status-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 14px 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  cursor: pointer;
+  min-height: 88px;
+}
+.dashboard-status-cell:hover {
+  border-color: var(--primary);
+  background: var(--surface-tint);
+}
+.dashboard-status-cell[data-status="todo"]        { border-left: 4px solid var(--status-todo-accent, var(--primary)); }
+.dashboard-status-cell[data-status="in_progress"] { border-left: 4px solid var(--status-in_progress-accent, var(--primary)); }
+.dashboard-status-cell[data-status="done"]        { border-left: 4px solid var(--status-done-accent, var(--primary)); }
+.dashboard-status-count {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--text);
+}
+.dashboard-status-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Recent Notes ---------------------------------------------------------- */
+
+.dashboard-note-row {
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  row-gap: 4px;
+}
+.dashboard-note-title { font-weight: 600; color: var(--text); grid-column: 1; }
+.dashboard-note-time  { font-size: 0.78rem; color: var(--muted); grid-column: 2; align-self: start; }
+.dashboard-note-excerpt { grid-column: 1 / -1; font-size: 0.86rem; color: var(--muted); }
+
+/* Bills ----------------------------------------------------------------- */
+
+.dashboard-bill-row {
+  grid-template-columns: 1fr auto auto auto;
+  align-items: center;
+}
+.dashboard-bill-item   { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dashboard-bill-amount { font-weight: 700; color: var(--text); }
+.dashboard-bill-meta   { font-size: 0.78rem; color: var(--muted); }
+
+/* Credit Cards ---------------------------------------------------------- */
+
+.dashboard-cc-totals {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border: 1px solid var(--primary);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface-tint) 60%, var(--surface));
+  cursor: pointer;
+}
+.dashboard-cc-totals:hover { box-shadow: 0 4px 14px var(--card-shadow); }
+.dashboard-cc-total-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+}
+.dashboard-cc-total-row strong { color: var(--primary-strong); }
+.dashboard-cc-empty { margin: 4px 0 0; font-size: 0.86rem; color: var(--muted); }
+.dashboard-cc-row { grid-template-columns: 1fr auto auto; }
+.dashboard-cc-name   { font-weight: 600; color: var(--text); }
+.dashboard-cc-amount { font-weight: 700; color: var(--text); }
+.dashboard-cc-closes { font-size: 0.78rem; color: var(--muted); }
+
+/* Weather --------------------------------------------------------------- */
+
+.dashboard-weather-body { gap: 6px; }
+.dashboard-weather-city strong { font-size: 1.1rem; color: var(--text); }
+.dashboard-weather-meta  { margin: 0; font-size: 0.86rem; color: var(--muted); }
+
+/* Daily Quote ----------------------------------------------------------- */
+
+.dashboard-quote-text {
+  margin: 0;
+  padding: 0;
+  font-size: 1rem;
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--text);
+}
+.dashboard-quote-author {
+  margin: 6px 0 0;
+  font-size: 0.86rem;
+  color: var(--muted);
+}
+
+/* Customize modal ------------------------------------------------------- */
+
+.dashboard-customize-card {
+  width: min(420px, calc(100vw - 32px));
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.dashboard-customize-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.dashboard-customize-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.dashboard-customize-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.dashboard-customize-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+.dashboard-customize-row-label { font-weight: 600; }
+.dashboard-customize-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dashboard-customize-footer-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Mobile tightening ----------------------------------------------------- */
+
+@media (max-width: 640px) {
+  .dashboard-status-grid { gap: 8px; }
+  .dashboard-status-count { font-size: 1.3rem; }
+  .dashboard-task-row,
+  .dashboard-bill-row,
+  .dashboard-note-row,
+  .dashboard-cc-row {
+    padding: 12px;
+  }
+  .dashboard-card { padding: 14px; }
+}

@@ -3,6 +3,7 @@ const taskSection = document.getElementById('task-section');
 const adminSection = document.getElementById('admin-section');
 const creditCardSection = document.getElementById('credit-card-section');
 const notesSection = document.getElementById('notes-section');
+const dashboardSection = document.getElementById('dashboard-section');
 const appContainer = document.querySelector('.container');
 const userArea = document.getElementById('user-area');
 const floatingAddTask = document.getElementById('floating-add-task');
@@ -122,10 +123,10 @@ const SAVED_VIEW_KEY = 'task-manager-current-view';
 const REMEMBER_ME_KEY = 'task-manager-remember-me';
 const rememberMeCheckbox = document.getElementById('remember-me');
 const rememberMeText = document.getElementById('remember-me-text');
-const VIEW_NAMES = new Set(['notes', 'tasks', 'archived', 'tags', 'weather', 'credit-cards', 'admin']);
+const VIEW_NAMES = new Set(['dashboard', 'notes', 'tasks', 'archived', 'tags', 'weather', 'credit-cards', 'admin']);
 const getSavedView = () => {
   const savedView = localStorage.getItem(SAVED_VIEW_KEY);
-  return VIEW_NAMES.has(savedView) ? savedView : 'tasks';
+  return VIEW_NAMES.has(savedView) ? savedView : 'dashboard';
 };
 let currentView = getSavedView();
 let currentLanguage = localStorage.getItem('task-manager-language') || 'en';
@@ -371,6 +372,60 @@ const translations = {
     exportDate: 'Export Date',
     myTasks: 'My Tasks',
     notAvailable: 'N/A',
+    dashboardTab: 'Today',
+    dashboardTitle: 'Today',
+    dashboardCustomize: 'Customize',
+    dashboardCustomizeReset: 'Reset to default',
+    dashboardDefaultLanding: 'Default landing view',
+    dashboardDefaultLandingToday: 'Today',
+    dashboardDefaultLandingLastUsed: 'Last used',
+    dashboardLiveResumed: 'Live updates resumed',
+    dashboardLivePaused: 'Live updates paused',
+    dashboardErrorTitle: 'Dashboard could not be loaded',
+    dashboardRetry: 'Retry',
+    dashboardUpdated: 'Dashboard updated',
+    dashboardPreferencesSaved: 'Dashboard preferences saved.',
+    dashboardPreferencesReset: 'Dashboard reset to defaults.',
+    dashboardPreferencesError: 'Could not save preferences.',
+    cardTodaysTasks: 'Today\'s tasks',
+    cardTaskStatusSummary: 'Task status',
+    cardRecentNotes: 'Recent notes',
+    cardBills: 'Bills',
+    cardCreditCards: 'Credit cards',
+    cardWeather: 'Weather',
+    cardDailyQuote: 'Daily quote',
+    cardErrorRetry: 'Couldn\'t load this card',
+    viewAllTasks: 'View all tasks',
+    viewAllNotes: 'View all notes',
+    viewAllBills: 'View all bills',
+    subOverdue: 'Overdue',
+    subToday: 'Today',
+    subInProgress: 'In progress',
+    subDueSoon: 'Due soon',
+    subUndated: 'Undated',
+    closesInDays: 'Closes in {n} days',
+    markPaid: 'Mark paid',
+    markDone: 'Mark done',
+    taskMarkedDone: 'Task marked done.',
+    billMarkedPaid: 'Bill marked paid.',
+    quickAddTask: 'Add task',
+    quickNewNote: 'New note',
+    untitledNote: 'Untitled note',
+    dashboardEmptyTasks: 'No tasks for today',
+    dashboardEmptyNotes: 'No notes yet',
+    dashboardEmptyBills: 'No bills need attention',
+    dashboardEmptyCards: 'No credit cards added',
+    dashboardNoApproachingClose: 'No closing dates approaching',
+    dashboardEmptyWeather: 'Add a city in Weather',
+    dashboardWeatherUnavailable: 'Weather unavailable',
+    dashboardQuoteUnavailable: 'Quote unavailable',
+    weatherOpenInTab: 'Open the Weather tab to see current conditions.',
+    totalBalance: 'Total balance',
+    totalInterest: 'Total interest',
+    moveUp: 'Move up',
+    moveDown: 'Move down',
+    save: 'Save',
+    cancel: 'Cancel',
   },
   vi: {
     appTitle: 'Quản lý công việc',
@@ -582,6 +637,60 @@ const translations = {
     exportDate: 'Ngày xuất',
     myTasks: 'Công việc của tôi',
     notAvailable: 'Không có',
+    dashboardTab: 'Hôm nay',
+    dashboardTitle: 'Hôm nay',
+    dashboardCustomize: 'Tuỳ chỉnh',
+    dashboardCustomizeReset: 'Khôi phục mặc định',
+    dashboardDefaultLanding: 'Trang mặc định khi mở app',
+    dashboardDefaultLandingToday: 'Hôm nay',
+    dashboardDefaultLandingLastUsed: 'Trang gần nhất',
+    dashboardLiveResumed: 'Đã kết nối lại',
+    dashboardLivePaused: 'Tạm dừng cập nhật trực tiếp',
+    dashboardErrorTitle: 'Không thể tải Dashboard',
+    dashboardRetry: 'Thử lại',
+    dashboardUpdated: 'Dashboard đã cập nhật',
+    dashboardPreferencesSaved: 'Đã lưu tuỳ chỉnh Dashboard.',
+    dashboardPreferencesReset: 'Đã khôi phục Dashboard mặc định.',
+    dashboardPreferencesError: 'Không thể lưu tuỳ chỉnh.',
+    cardTodaysTasks: 'Việc hôm nay',
+    cardTaskStatusSummary: 'Trạng thái công việc',
+    cardRecentNotes: 'Ghi chú gần đây',
+    cardBills: 'Hóa đơn',
+    cardCreditCards: 'Thẻ tín dụng',
+    cardWeather: 'Thời tiết',
+    cardDailyQuote: 'Câu nói hôm nay',
+    cardErrorRetry: 'Không thể tải thẻ này',
+    viewAllTasks: 'Xem tất cả công việc',
+    viewAllNotes: 'Xem tất cả ghi chú',
+    viewAllBills: 'Xem tất cả hóa đơn',
+    subOverdue: 'Quá hạn',
+    subToday: 'Hôm nay',
+    subInProgress: 'Đang làm',
+    subDueSoon: 'Sắp đến hạn',
+    subUndated: 'Chưa có ngày',
+    closesInDays: 'Còn {n} ngày đến hạn chốt',
+    markPaid: 'Đánh dấu đã trả',
+    markDone: 'Đánh dấu hoàn thành',
+    taskMarkedDone: 'Đã đánh dấu hoàn thành.',
+    billMarkedPaid: 'Đã đánh dấu đã trả.',
+    quickAddTask: 'Thêm việc',
+    quickNewNote: 'Ghi chú mới',
+    untitledNote: 'Ghi chú không tên',
+    dashboardEmptyTasks: 'Hôm nay không có việc',
+    dashboardEmptyNotes: 'Chưa có ghi chú',
+    dashboardEmptyBills: 'Không có hóa đơn cần xử lý',
+    dashboardEmptyCards: 'Chưa thêm thẻ tín dụng',
+    dashboardNoApproachingClose: 'Không có thẻ nào sắp đến ngày chốt',
+    dashboardEmptyWeather: 'Thêm thành phố trong tab Thời tiết',
+    dashboardWeatherUnavailable: 'Không tải được thời tiết',
+    dashboardQuoteUnavailable: 'Không tải được câu nói',
+    weatherOpenInTab: 'Mở tab Thời tiết để xem chi tiết.',
+    totalBalance: 'Tổng dư nợ',
+    totalInterest: 'Tổng lãi',
+    moveUp: 'Di chuyển lên',
+    moveDown: 'Di chuyển xuống',
+    save: 'Lưu',
+    cancel: 'Huỷ',
   },
 };
 
@@ -702,6 +811,7 @@ const applyTranslations = () => {
   setText('#weather-form button[type="submit"]', t('addCity'));
   creditCardModule.applyTranslations();
   notesModule.applyTranslations();
+  dashboardModule.applyTranslations();
   setText('label[for="task-search-input"]', t('searchTasks'));
   taskSearchInput.placeholder = t('searchTasksPlaceholder');
   clearTaskSearch.setAttribute('aria-label', t('clearSearch'));
@@ -1496,6 +1606,7 @@ const showSection = () => {
     adminSection.classList.add('hidden');
     creditCardSection.classList.add('hidden');
     notesSection.classList.add('hidden');
+    if (dashboardSection) dashboardSection.classList.add('hidden');
     floatingAddTask.classList.add('hidden');
     userArea.textContent = '';
     return;
@@ -1508,15 +1619,25 @@ const showSection = () => {
   authSection.classList.add('hidden');
   renderUserArea();
 
+  const showDashboard = currentView === 'dashboard';
   const showAdmin = currentView === 'admin' && currentUser.username === 'admin';
   const showCreditCards = currentView === 'credit-cards';
   const showNotes = currentView === 'notes';
   const showTaskWorkspace = isTaskWorkspaceView();
-  taskSection.classList.toggle('hidden', showAdmin || showCreditCards || showNotes);
+  taskSection.classList.toggle('hidden', showDashboard || showAdmin || showCreditCards || showNotes);
   adminSection.classList.toggle('hidden', !showAdmin);
   creditCardSection.classList.toggle('hidden', !showCreditCards);
   notesSection.classList.toggle('hidden', !showNotes);
-  floatingAddTask.classList.toggle('hidden', showAdmin || showCreditCards || showNotes || currentView === 'weather' || currentView === 'tags');
+  if (dashboardSection) dashboardSection.classList.toggle('hidden', !showDashboard);
+  floatingAddTask.classList.toggle('hidden', showDashboard || showAdmin || showCreditCards || showNotes || currentView === 'weather' || currentView === 'tags');
+
+  if (showDashboard) {
+    if (window.dashboardModule) {
+      window.dashboardModule.load({ silent: false });
+      window.dashboardModule.attachRealtime?.();
+    }
+    return;
+  }
 
   if (showAdmin) {
     loadUsers();
@@ -1632,7 +1753,16 @@ const renderUserArea = () => {
   addTaskButton.title = t('addTaskShortcut');
   addTaskButton.addEventListener('click', openAddTaskFlow);
 
-  userArea.append(addTaskButton, notesButton, tasksButton, weatherButton, creditCardsButton);
+  const dashboardButton = document.createElement('button');
+  dashboardButton.type = 'button';
+  dashboardButton.className = `secondary nav-button ${currentView === 'dashboard' ? 'active-nav' : ''}`;
+  setNavButtonContent(dashboardButton, t('dashboardTab'), '◎');
+  dashboardButton.addEventListener('click', () => {
+    setCurrentView('dashboard');
+    showSection();
+  });
+
+  userArea.append(addTaskButton, dashboardButton, notesButton, tasksButton, weatherButton, creditCardsButton);
 
   if (currentUser.username === 'admin') {
     const adminButton = document.createElement('button');
@@ -1751,6 +1881,9 @@ const connectRealtime = () => {
     reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
   });
+  // Expose the socket so feature modules (dashboard) can attach their own
+  // listeners without going through this file.
+  window.realtimeSocket = realtimeSocket;
 
   ['task:created', 'task:updated', 'task:deleted'].forEach((event) => {
     realtimeSocket.on(event, scheduleTaskRefresh);
@@ -1759,13 +1892,23 @@ const connectRealtime = () => {
   ['note:created', 'note:updated', 'note:deleted'].forEach((event) => {
     realtimeSocket.on(event, scheduleNoteRefresh);
   });
+
+  // Dashboard listens for tasks, notes, bills, and credit cards via its own
+  // helper so the same socket drives every visible view.
+  if (typeof dashboardModule !== 'undefined' && dashboardModule.attachRealtime) {
+    dashboardModule.attachRealtime();
+  }
 };
 
 const disconnectRealtime = () => {
   if (!realtimeSocket) return;
+  if (typeof dashboardModule !== 'undefined' && dashboardModule.detachRealtime) {
+    dashboardModule.detachRealtime();
+  }
   realtimeSocket.removeAllListeners();
   realtimeSocket.disconnect();
   realtimeSocket = null;
+  window.realtimeSocket = null;
 };
 
 const handleAuthSubmit = async (event) => {
@@ -3413,6 +3556,29 @@ const notesModule = window.NotesModule.create({
   confirmDelete: showNoteDeleteConfirm,
 });
 
+const dashboardModule = window.DashboardModule.create({
+  request,
+  t,
+  getLanguage: () => currentLanguage,
+  showStatusToast,
+  openAddTask: () => {
+    setCurrentView('tasks');
+    showSection();
+    showAddTaskModal();
+  },
+  openNewNote: () => {
+    setCurrentView('notes');
+    showSection();
+    if (typeof notesModule.addNote === 'function') notesModule.addNote();
+  },
+  navigateTo: ({ view }) => {
+    if (!view) return;
+    setCurrentView(view);
+    showSection();
+  },
+});
+window.dashboardModule = dashboardModule;
+
 showLogin.addEventListener('click', () => setMode('login'));
 showSignup.addEventListener('click', () => setMode('signup'));
 languageSelect.addEventListener('change', (event) => setLanguage(event.target.value));
@@ -3448,6 +3614,7 @@ taskSubtabs.forEach((tab) => {
 });
 creditCardModule.bind();
 notesModule.bind();
+dashboardModule.bind();
 editTaskForm.addEventListener('submit', handleEditTaskSubmit);
 adminUserForm.addEventListener('submit', handleAdminUserSubmit);
 openAddUserModalButton.addEventListener('click', () => showAdminUserModal());
