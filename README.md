@@ -31,6 +31,15 @@ DATABASE_URL=postgresql://postgres:<url-encoded-password>@db.your-project-ref.su
 
 If your password contains special characters like `#` or `@`, URL-encode them before putting the password in `DATABASE_URL`.
 
+Optional Redis caching can be enabled with:
+
+```bash
+REDIS_URL=redis://localhost:6379
+CACHE_TTL_SECONDS=30
+```
+
+Redis is used for short-lived server-side dashboard cache entries. If Redis is not configured or temporarily unavailable, the app falls back to Postgres reads and keeps running.
+
 4. To send an email alert when a task is added, set these environment variables before starting the app:
 
 ```bash

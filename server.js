@@ -16,6 +16,7 @@ const createTasksRouter = require('./src/server/routes/tasks.routes');
 const createDashboardRouter = require('./src/server/routes/dashboard.routes');
 const createTransactionsRouter = require('./src/server/routes/transactions.routes');
 const { fetchDailyQuote, DEFAULT_DAILY_QUOTE } = require('./src/server/services/dailyQuote.service');
+const redisCache = require('./src/server/cache/redis');
 
 const app = express();
 const MAX_WEATHER_CITY_LENGTH = 120;
@@ -221,6 +222,7 @@ const initializeDatabase = async () => {
   }
 };
 
+const cacheReady = redisCache.connectRedis();
 const dbReady = initializeDatabase();
 
 const EMAIL_TRANSLATIONS = {
@@ -709,6 +711,21 @@ const sessionMiddleware = session({
 
 app.use(sessionMiddleware);
 
+app.use((req, res, next) => {
+  const shouldInvalidate = req.path.startsWith('/api/')
+    && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
+
+  if (shouldInvalidate) {
+    res.on('finish', () => {
+      if (res.statusCode >= 200 && res.statusCode < 400 && req.session?.userId) {
+        redisCache.clearUserCache(req.session.userId);
+      }
+    });
+  }
+
+  next();
+});
+
 // HTTP server + Socket.IO so the web app and iOS WebView stay in sync.
 // Socket.IO needs a persistent connection — works locally and on any
 // long-running Node host (Render, Railway, Fly.io). Vercel's serverless
@@ -802,6 +819,7 @@ app.use('/api', createTasksRouter({
 app.use('/api', createDashboardRouter({
   authRequired,
   allAsync,
+  cache: redisCache,
   getAsync,
   runAsync,
 }));
@@ -1183,6 +1201,7 @@ if (require.main === module) {
 
 module.exports = app;
 module.exports.app = app;
+module.exports.cacheReady = cacheReady;
 module.exports.db = pool;
 module.exports.dbReady = dbReady;
 module.exports.httpServer = httpServer;

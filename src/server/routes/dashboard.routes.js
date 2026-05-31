@@ -109,7 +109,7 @@ const loadPreferences = async ({ getAsync, userId }) => {
   return mergeWithDefaults(row?.prefs);
 };
 
-const createDashboardRouter = ({ authRequired, allAsync, getAsync, runAsync }) => {
+const createDashboardRouter = ({ authRequired, allAsync, getAsync, runAsync, cache = null }) => {
   const router = express.Router();
   const dashboardService = createDashboardService({ allAsync });
 
@@ -118,14 +118,25 @@ const createDashboardRouter = ({ authRequired, allAsync, getAsync, runAsync }) =
   router.get('/dashboard', async (req, res) => {
     const tz = typeof req.query.tz === 'string' ? req.query.tz : '';
     const dueSoonDays = req.query.dueSoonDays;
+    const cacheKey = `user:${req.session.userId}:dashboard:${encodeURIComponent(tz)}:${encodeURIComponent(String(dueSoonDays || ''))}`;
 
     try {
+      const cached = await cache?.getJson?.(cacheKey);
+      if (cached) {
+        res.set('Cache-Control', 'no-store');
+        res.set('X-Redis-Cache', 'HIT');
+        return res.json(cached);
+      }
+
       const [payload, preferences] = await Promise.all([
         dashboardService.loadDashboard(req.session.userId, { tz, dueSoonDays }),
         loadPreferences({ getAsync, userId: req.session.userId }),
       ]);
+      const response = { ...payload, preferences };
+      await cache?.setJson?.(cacheKey, response);
       res.set('Cache-Control', 'no-store');
-      res.json({ ...payload, preferences });
+      res.set('X-Redis-Cache', cache?.isReady?.() ? 'MISS' : 'BYPASS');
+      res.json(response);
     } catch (error) {
       console.error('Dashboard load failed:', error);
       res.status(500).json({ error: 'Failed to load dashboard' });
@@ -143,6 +154,7 @@ const createDashboardRouter = ({ authRequired, allAsync, getAsync, runAsync }) =
         'UPDATE users SET dashboard_preferences = ? WHERE id = ?',
         [JSON.stringify(sanitized.value), req.session.userId]
       );
+      await cache?.clearUserCache?.(req.session.userId);
       res.json({
         preferences: sanitized.value,
         updated_at: new Date().toISOString(),
@@ -159,6 +171,7 @@ const createDashboardRouter = ({ authRequired, allAsync, getAsync, runAsync }) =
         'UPDATE users SET dashboard_preferences = NULL WHERE id = ?',
         [req.session.userId]
       );
+      await cache?.clearUserCache?.(req.session.userId);
       res.json({ preferences: buildDefaultPreferences() });
     } catch (error) {
       console.error('Dashboard preferences reset failed:', error);
