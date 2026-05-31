@@ -60,6 +60,9 @@
       titleInput.value = note.title || '';
       bodyInput.value = note.body || '';
       savedIndicator.textContent = '';
+      if (showPreview) {
+        updatePreview();
+      }
     };
 
     const renderList = () => {

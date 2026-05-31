@@ -5217,6 +5217,8 @@ body.theme-dark .status-in_progress {
   color: inherit;
   background: none;
   padding: 0;
+  white-space: pre;
+  tab-size: 2;
 }
 
 .note-preview .inline-code {
@@ -5232,6 +5234,10 @@ body.theme-dark .status-in_progress {
 .note-preview .keyword {
   color: #c678dd;
   font-weight: 600;
+}
+
+.note-preview .attribute {
+  color: #e5c07b;
 }
 
 .note-preview .string {
