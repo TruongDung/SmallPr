@@ -63,6 +63,12 @@ const taskRecurrencePattern = document.getElementById('task-recurrence-pattern')
 const taskRecurrenceInterval = document.getElementById('task-recurrence-interval');
 const dailyOptions = document.getElementById('daily-options');
 const weeklyOptions = document.getElementById('weekly-options');
+const editTaskRecurringCheckbox = document.getElementById('edit-task-recurring');
+const editRecurrenceOptions = document.getElementById('edit-recurrence-options');
+const editTaskRecurrencePattern = document.getElementById('edit-task-recurrence-pattern');
+const editTaskRecurrenceInterval = document.getElementById('edit-task-recurrence-interval');
+const editDailyOptions = document.getElementById('edit-daily-options');
+const editWeeklyOptions = document.getElementById('edit-weekly-options');
 const taskAttachmentInput = document.getElementById('task-attachment');
 const passwordInput = document.getElementById('password');
 const togglePasswordButton = document.getElementById('toggle-password');
@@ -879,12 +885,18 @@ const applyTranslations = () => {
   setText('label[for="task-reminder"]', t('dateTimeAlert'));
   setText('label[for="task-attachment"]', t('uploadFile'));
   setText('#add-task-title', t('addTask'));
-  setActionIconButton(cancelAddTask, t('cancel'), '×');
-  setActionIconButton(saveAddTask, t('addTask'), '✓');
+  cancelAddTask.className = 'secondary modal-text-action';
+  cancelAddTask.textContent = t('cancel');
+  cancelAddTask.setAttribute('aria-label', t('cancel'));
+  cancelAddTask.title = t('cancel');
+  saveAddTask.className = 'modal-text-action modal-text-action-primary';
+  saveAddTask.textContent = t('addTask');
+  saveAddTask.setAttribute('aria-label', t('addTask'));
+  saveAddTask.title = t('addTask');
   editTaskTitle.textContent = t('editTaskTitle');
   previewTaskTitle.textContent = t('previewTaskTitle');
   setText('label[for="preview-task-comment-input"]', t('comment'));
-  previewTaskCommentInput.placeholder = t('commentPlaceholder');
+  previewTaskCommentInput.setAttribute('data-placeholder', t('commentPlaceholder'));
   setActionIconButton(sendPreviewTaskEmail, t('sendEmail'), '✉');
   setActionIconButton(editPreviewTask, t('edit'), '✎');
   setActionIconButton(savePreviewComment, t('save'), '✓');
@@ -902,7 +914,7 @@ const applyTranslations = () => {
   setText('label[for="edit-task-description-input"]', `${t('description')} ${t('max500')}`);
   editTaskDescriptionInput.setAttribute('data-placeholder', t('descriptionPlaceholder'));
   setText('label[for="edit-task-comment-input"]', t('addComment'));
-  editTaskCommentInput.placeholder = t('commentPlaceholder');
+  editTaskCommentInput.setAttribute('data-placeholder', t('commentPlaceholder'));
   setText('label[for="edit-task-reminder-input"]', t('dateTimeAlert'));
   setText('label[for="edit-task-attachment-input"]', t('uploadFile'));
   renderEditAttachmentState();
@@ -991,9 +1003,9 @@ const closePickerAfterTodaySelection = (input) => {
   input.addEventListener('change', dismissIfToday);
 };
 
-const richTextAllowedTags = new Set(['A', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL', 'UL', 'OL', 'LI', 'P', 'DIV', 'BR']);
+const richTextAllowedTags = new Set(['A', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL', 'UL', 'OL', 'LI', 'P', 'DIV', 'BR', 'LABEL', 'INPUT', 'SPAN']);
 
-const hasRichTextMarkup = (value = '') => /<\/?(a|b|strong|i|em|u|s|strike|del|ul|ol|li|p|div|br)\b/i.test(value);
+const hasRichTextMarkup = (value = '') => /<\/?(a|b|strong|i|em|u|s|strike|del|ul|ol|li|p|div|br|label|input|span)\b/i.test(value);
 
 const isSafeLinkHref = (href = '') => /^(https?:|mailto:)/i.test(href);
 
@@ -1003,6 +1015,10 @@ const autolinkPlainUrls = (html = '') => html.replace(
 );
 
 const linkifyPlainText = (value = '') => autolinkPlainUrls(escapeHtml(value)).replace(/\n/g, '<br>');
+
+const renderStoredRichText = (value = '') => (
+  hasRichTextMarkup(value) ? sanitizeRichText(value) : linkifyPlainText(value)
+);
 
 const sanitizeRichText = (html = '') => {
   const template = document.createElement('template');
@@ -1018,6 +1034,9 @@ const sanitizeRichText = (html = '') => {
     }
 
     const href = element.tagName === 'A' ? element.getAttribute('href') || '' : '';
+    const inputType = element.tagName === 'INPUT' ? (element.getAttribute('type') || '').toLowerCase() : '';
+    const isChecked = element.tagName === 'INPUT' && (element.checked || element.hasAttribute('checked'));
+    const className = element.getAttribute('class') || '';
     [...element.attributes].forEach((attribute) => element.removeAttribute(attribute.name));
 
     if (!richTextAllowedTags.has(element.tagName)) {
@@ -1034,12 +1053,34 @@ const sanitizeRichText = (html = '') => {
       element.target = '_blank';
       element.rel = 'noopener noreferrer';
     }
+
+    if (element.tagName === 'INPUT') {
+      if (inputType !== 'checkbox') {
+        element.remove();
+        return;
+      }
+      element.type = 'checkbox';
+      element.className = 'rich-check-input';
+      element.setAttribute('data-rich-checklist', 'true');
+      if (isChecked) element.setAttribute('checked', '');
+      return;
+    }
+
+    if (element.tagName === 'LABEL' && className.includes('rich-check-item')) {
+      element.className = `rich-check-item${element.querySelector('input[type="checkbox"]:checked') ? ' checked' : ''}`;
+      return;
+    }
+
+    if (element.tagName === 'SPAN' && className.includes('rich-check-text')) {
+      element.className = 'rich-check-text';
+    }
   });
 
   return template.innerHTML.trim();
 };
 
 const getRichTextPlainText = (html = '') => {
+  if (!hasRichTextMarkup(html)) return String(html || '').trim();
   const container = document.createElement('div');
   container.innerHTML = sanitizeRichText(html);
   return container.textContent.trim();
@@ -1050,7 +1091,7 @@ const taskMatchesSearch = (task, query) => {
   const haystack = [
     task.title,
     getRichTextPlainText(task.description || ''),
-    task.comment,
+    getRichTextPlainText(task.comment || ''),
   ].join(' ').toLowerCase();
   return haystack.includes(query);
 };
@@ -1074,6 +1115,35 @@ const getRichEditorValue = (editor) => {
 };
 
 const getRichEditorLength = (editor) => getRichTextPlainText(editor.innerHTML).length;
+
+const syncChecklistItem = (checkbox) => {
+  const item = checkbox.closest('.rich-check-item');
+  checkbox.toggleAttribute('checked', checkbox.checked);
+  if (item) item.classList.toggle('checked', checkbox.checked);
+};
+
+const savePreviewChecklistField = async (field, container) => {
+  if (!pendingPreviewTask) return;
+  const value = sanitizeRichText(container.innerHTML);
+  pendingPreviewTask[field] = value;
+  const result = await updateTask(pendingPreviewTask.id, { [field]: value });
+  if (!result?.error && result?.task) {
+    pendingPreviewTask = result.task;
+  }
+};
+
+const insertChecklistItem = (editor) => {
+  editor.focus();
+  restoreRichEditorSelection(editor);
+  const id = `check-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  document.execCommand(
+    'insertHTML',
+    false,
+    `<div><label class="rich-check-item"><input id="${id}" class="rich-check-input" data-rich-checklist="true" type="checkbox"> <span class="rich-check-text">Checklist item</span></label></div>`
+  );
+  editor.innerHTML = sanitizeRichText(editor.innerHTML);
+  saveRichEditorSelection(editor);
+};
 
 const isPdfAttachment = (task) => {
   const type = String(task?.attachment_type || '').toLowerCase();
@@ -1145,6 +1215,10 @@ const setupRichTextEditors = () => {
 
       editor.focus();
       restoreRichEditorSelection(editor);
+      if (button.dataset.command === 'insertChecklist') {
+        insertChecklistItem(editor);
+        return;
+      }
       document.execCommand(button.dataset.command, false, null);
       saveRichEditorSelection(editor);
     });
@@ -1154,6 +1228,13 @@ const setupRichTextEditors = () => {
     editor.addEventListener('keyup', () => saveRichEditorSelection(editor));
     editor.addEventListener('mouseup', () => saveRichEditorSelection(editor));
     editor.addEventListener('input', () => saveRichEditorSelection(editor));
+
+    editor.addEventListener('change', (event) => {
+      if (event.target.matches('input[data-rich-checklist]')) {
+        syncChecklistItem(event.target);
+        saveRichEditorSelection(editor);
+      }
+    });
 
     editor.addEventListener('blur', () => {
       saveRichEditorSelection(editor);
@@ -1852,9 +1933,24 @@ const request = async (url, options = {}) => {
   }
 };
 
-const getSelectedWeekdays = () => {
-  const checkboxes = document.querySelectorAll('#weekly-options input[type="checkbox"]:checked');
+const getSelectedWeekdays = (container = weeklyOptions) => {
+  const checkboxes = container.querySelectorAll('input[type="checkbox"]:checked');
   return Array.from(checkboxes).map(cb => cb.value).join(',');
+};
+
+const setSelectedWeekdays = (container, days = '') => {
+  const selectedDays = new Set(String(days || '').split(',').filter(Boolean));
+  container.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+    checkbox.checked = selectedDays.has(checkbox.value);
+  });
+};
+
+const syncRecurrenceOptions = ({ checkbox, options, pattern, daily, weekly }) => {
+  const isRecurring = checkbox.checked;
+  const currentPattern = pattern.value;
+  options.classList.toggle('hidden', !isRecurring);
+  daily.classList.toggle('hidden', !isRecurring || currentPattern !== 'daily');
+  weekly.classList.toggle('hidden', !isRecurring || currentPattern !== 'weekly');
 };
 
 const prefillRememberedCredentials = () => {
@@ -2676,16 +2772,15 @@ const createTaskCard = (task) => {
     const description = document.createElement('div');
     description.className = 'task-description';
     if (task.description) {
-      description.innerHTML = sanitizeRichText(task.description);
+      description.innerHTML = renderStoredRichText(task.description);
       openRichTextLinksWithModifier(description);
     } else {
       description.textContent = t('noDescription');
     }
 
-    const comment = document.createElement('p');
+    const comment = document.createElement('div');
     comment.className = 'task-comment';
-    const commentText = `${t('comment')}: ${task.comment}`;
-    comment.innerHTML = linkifyPlainText(commentText);
+    comment.innerHTML = `<strong>${escapeHtml(t('comment'))}:</strong> ${renderStoredRichText(task.comment)}`;
     openRichTextLinksWithModifier(comment);
 
     const reminder = document.createElement('p');
@@ -3083,8 +3178,19 @@ const showEditTaskModal = (task) => {
   editTaskStatusInput.value = taskStatus(task);
   editTaskTagInput.value = task.tag || '';
   setRichEditorValue(editTaskDescriptionInput, task.description || '');
-  editTaskCommentInput.value = task.comment || '';
+  setRichEditorValue(editTaskCommentInput, task.comment || '');
   editTaskReminderInput.value = formatDateTimeLocalValue(task.reminder_at);
+  editTaskRecurringCheckbox.checked = Boolean(task.is_recurring);
+  editTaskRecurrencePattern.value = task.recurrence_pattern || 'daily';
+  editTaskRecurrenceInterval.value = task.recurrence_interval || 1;
+  setSelectedWeekdays(editWeeklyOptions, task.recurrence_days);
+  syncRecurrenceOptions({
+    checkbox: editTaskRecurringCheckbox,
+    options: editRecurrenceOptions,
+    pattern: editTaskRecurrencePattern,
+    daily: editDailyOptions,
+    weekly: editWeeklyOptions,
+  });
   editTaskAttachmentInput.value = '';
   renderEditAttachmentState();
 
@@ -3099,7 +3205,11 @@ const hideEditTaskModal = () => {
   removeEditAttachment = false;
   editTaskForm.reset();
   editTaskDescriptionInput.innerHTML = '';
-  editTaskCommentInput.value = '';
+  editTaskCommentInput.innerHTML = '';
+  editRecurrenceOptions.classList.add('hidden');
+  editDailyOptions.classList.remove('hidden');
+  editWeeklyOptions.classList.add('hidden');
+  setSelectedWeekdays(editWeeklyOptions);
   editCurrentAttachment.innerHTML = '';
   editCurrentAttachment.classList.add('hidden');
   clearEditTaskErrors();
@@ -3117,9 +3227,17 @@ const handleEditTaskSubmit = async (event) => {
   const status = editTaskStatusInput.value;
   const tag = editTaskTagInput.value.trim();
   const description = getRichEditorValue(editTaskDescriptionInput);
-  const comment = editTaskCommentInput.value.trim();
+  const comment = getRichEditorValue(editTaskCommentInput);
   const reminderAt = editTaskReminderInput.value || null;
   const attachmentFile = editTaskAttachmentInput.files[0] || null;
+  const isRecurring = editTaskRecurringCheckbox.checked;
+  const recurrencePattern = isRecurring ? editTaskRecurrencePattern.value : null;
+  const recurrenceInterval = isRecurring && recurrencePattern === 'daily'
+    ? parseInt(editTaskRecurrenceInterval.value, 10)
+    : null;
+  const recurrenceDays = isRecurring && recurrencePattern === 'weekly'
+    ? getSelectedWeekdays(editWeeklyOptions)
+    : null;
 
   if (!title.trim()) {
     editFormError.textContent = t('titleEmpty');
@@ -3139,7 +3257,7 @@ const handleEditTaskSubmit = async (event) => {
     return;
   }
 
-  if (comment.length > MAX_TASK_TEXT_LENGTH) {
+  if (getRichTextPlainText(comment).length > MAX_TASK_TEXT_LENGTH) {
     editFormError.textContent = t('commentTooLong');
     editFormError.classList.remove('hidden');
     return;
@@ -3157,6 +3275,12 @@ const handleEditTaskSubmit = async (event) => {
     return;
   }
 
+  if (isRecurring && recurrencePattern === 'weekly' && !recurrenceDays) {
+    editFormError.textContent = t('weeklyRecurrenceNeedsDays') || 'Please select at least one day for weekly recurrence';
+    editFormError.classList.remove('hidden');
+    return;
+  }
+
   const task = pendingEditTask;
   const updates = {
     title,
@@ -3165,7 +3289,11 @@ const handleEditTaskSubmit = async (event) => {
     status,
     description,
     comment,
-    reminder_at: reminderAt
+    reminder_at: reminderAt,
+    is_recurring: isRecurring,
+    recurrence_pattern: recurrencePattern,
+    recurrence_interval: recurrenceInterval,
+    recurrence_days: recurrenceDays
   };
 
   if (preparedEditAttachment) {
@@ -3183,17 +3311,31 @@ const handleEditTaskSubmit = async (event) => {
 
 cancelEditTask.addEventListener('click', hideEditTaskModal);
 
+previewTaskDescription.addEventListener('change', (event) => {
+  if (!event.target.matches('input[data-rich-checklist]')) return;
+  syncChecklistItem(event.target);
+  savePreviewChecklistField('description', previewTaskDescription);
+});
+
+previewTaskCommentDisplay.addEventListener('change', (event) => {
+  if (!event.target.matches('input[data-rich-checklist]')) return;
+  syncChecklistItem(event.target);
+  savePreviewChecklistField('comment', previewTaskCommentDisplay);
+});
+
 const showPreviewTaskModal = (task) => {
   pendingPreviewTask = task;
   previewTaskDescription.innerHTML = task.description
-    ? sanitizeRichText(task.description)
+    ? renderStoredRichText(task.description)
     : t('noDescription');
   openRichTextLinksWithModifier(previewTaskDescription);
-  previewTaskCommentInput.value = task.comment || '';
-  previewTaskCommentInput.readOnly = true;
-  previewTaskCommentDisplay.innerHTML = task.comment ? linkifyPlainText(task.comment) : t('noComment');
+  setRichEditorValue(previewTaskCommentInput, task.comment || '');
+  previewTaskCommentInput.contentEditable = 'false';
+  previewTaskCommentDisplay.innerHTML = task.comment
+    ? renderStoredRichText(task.comment)
+    : t('noComment');
   previewTaskCommentDisplay.classList.remove('hidden');
-  previewTaskCommentInput.classList.add('hidden');
+  previewTaskCommentInput.closest('.rich-editor')?.classList.add('hidden');
   openRichTextLinksWithModifier(previewTaskCommentDisplay);
   savePreviewComment.classList.add('hidden');
   previewTaskModal.classList.remove('hidden');
@@ -3205,9 +3347,9 @@ const hidePreviewTaskModal = () => {
   previewTaskDescription.textContent = '';
   previewTaskCommentDisplay.textContent = '';
   previewTaskCommentDisplay.classList.add('hidden');
-  previewTaskCommentInput.classList.remove('hidden');
-  previewTaskCommentInput.value = '';
-  previewTaskCommentInput.readOnly = false;
+  previewTaskCommentInput.closest('.rich-editor')?.classList.remove('hidden');
+  previewTaskCommentInput.innerHTML = '';
+  previewTaskCommentInput.contentEditable = 'true';
   savePreviewComment.classList.remove('hidden');
 };
 
@@ -3253,8 +3395,8 @@ deletePreviewTask.addEventListener('click', () => {
 savePreviewComment.addEventListener('click', async () => {
   if (!pendingPreviewTask) return;
   const task = pendingPreviewTask;
-  const comment = previewTaskCommentInput.value.trim();
-  if (comment.length > MAX_TASK_TEXT_LENGTH) {
+  const comment = getRichEditorValue(previewTaskCommentInput);
+  if (getRichTextPlainText(comment).length > MAX_TASK_TEXT_LENGTH) {
     showStatusToast(t('commentTooLong'), 'error');
     return;
   }
@@ -3685,13 +3827,43 @@ setupTagSuggestions(editTaskTagInput, editTaskTagSuggestions);
 
 // Recurring task UI toggles
 taskRecurringCheckbox.addEventListener('change', () => {
-  recurrenceOptions.classList.toggle('hidden', !taskRecurringCheckbox.checked);
+  syncRecurrenceOptions({
+    checkbox: taskRecurringCheckbox,
+    options: recurrenceOptions,
+    pattern: taskRecurrencePattern,
+    daily: dailyOptions,
+    weekly: weeklyOptions,
+  });
 });
 
 taskRecurrencePattern.addEventListener('change', () => {
-  const pattern = taskRecurrencePattern.value;
-  dailyOptions.classList.toggle('hidden', pattern !== 'daily');
-  weeklyOptions.classList.toggle('hidden', pattern !== 'weekly');
+  syncRecurrenceOptions({
+    checkbox: taskRecurringCheckbox,
+    options: recurrenceOptions,
+    pattern: taskRecurrencePattern,
+    daily: dailyOptions,
+    weekly: weeklyOptions,
+  });
+});
+
+editTaskRecurringCheckbox.addEventListener('change', () => {
+  syncRecurrenceOptions({
+    checkbox: editTaskRecurringCheckbox,
+    options: editRecurrenceOptions,
+    pattern: editTaskRecurrencePattern,
+    daily: editDailyOptions,
+    weekly: editWeeklyOptions,
+  });
+});
+
+editTaskRecurrencePattern.addEventListener('change', () => {
+  syncRecurrenceOptions({
+    checkbox: editTaskRecurringCheckbox,
+    options: editRecurrenceOptions,
+    pattern: editTaskRecurrencePattern,
+    daily: editDailyOptions,
+    weekly: editWeeklyOptions,
+  });
 });
 
 authForm.addEventListener('submit', handleAuthSubmit);

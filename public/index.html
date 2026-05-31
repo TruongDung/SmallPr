@@ -81,7 +81,6 @@
           <div class="dashboard-header-row">
             <h2 id="dashboard-title">Today</h2>
             <div class="dashboard-header-actions">
-              <button id="dashboard-add-task" type="button" class="task-action-icon" aria-label="Add task" title="Add task">+</button>
               <button id="dashboard-new-note" type="button" class="task-action-icon secondary" aria-label="New note" title="New note">✎</button>
               <button id="dashboard-customize" type="button" class="task-action-icon secondary" aria-label="Customize dashboard" title="Customize">⚙</button>
             </div>
@@ -244,6 +243,7 @@
                 <button type="button" data-editor="task-description" data-command="italic"><em>I</em></button>
                 <button type="button" data-editor="task-description" data-command="underline"><u>U</u></button>
                 <button type="button" data-editor="task-description" data-command="strikeThrough"><s>S</s></button>
+                <button type="button" data-editor="task-description" data-command="insertChecklist">☐ Check</button>
                 <button type="button" data-editor="task-description" data-command="insertUnorderedList">• List</button>
                 <button type="button" data-editor="task-description" data-command="insertOrderedList">1. List</button>
               </div>
@@ -256,9 +256,12 @@
             <input id="task-reminder" type="datetime-local" />
           </div>
           <div class="field">
-            <label class="checkbox-label">
+            <label class="checkbox-label recurring-toggle">
               <input type="checkbox" id="task-recurring" />
-              <span>Recurring task</span>
+              <span class="recurring-toggle-copy">
+                <span class="recurring-toggle-title">Recurring task</span>
+                <span class="recurring-toggle-hint">Repeat this task on a schedule</span>
+              </span>
             </label>
           </div>
           <div id="recurrence-options" class="recurrence-options hidden">
@@ -296,12 +299,8 @@
           </div>
               <p id="form-error" class="field-error hidden"></p>
               <div class="modal-actions">
-                <button id="cancel-add-task" type="button" class="secondary modal-icon-action" aria-label="Cancel" title="Cancel">
-                  <span aria-hidden="true">×</span>
-                </button>
-                <button type="submit" class="modal-icon-action modal-icon-action-primary" aria-label="Add Task" title="Add Task">
-                  <span aria-hidden="true">✓</span>
-                </button>
+                <button id="cancel-add-task" type="button" class="secondary modal-text-action" aria-label="Cancel" title="Cancel">Cancel</button>
+                <button type="submit" class="modal-text-action modal-text-action-primary" aria-label="Add Task" title="Add Task">Add Task</button>
               </div>
             </form>
           </div>
@@ -757,6 +756,7 @@
               <button type="button" data-editor="edit-task-description-input" data-command="italic"><em>I</em></button>
               <button type="button" data-editor="edit-task-description-input" data-command="underline"><u>U</u></button>
               <button type="button" data-editor="edit-task-description-input" data-command="strikeThrough"><s>S</s></button>
+              <button type="button" data-editor="edit-task-description-input" data-command="insertChecklist">☐ Check</button>
               <button type="button" data-editor="edit-task-description-input" data-command="insertUnorderedList">• List</button>
               <button type="button" data-editor="edit-task-description-input" data-command="insertOrderedList">1. List</button>
             </div>
@@ -766,11 +766,59 @@
         </div>
         <div class="field">
           <label for="edit-task-comment-input">Add comment</label>
-          <textarea id="edit-task-comment-input" rows="4" maxlength="10000" placeholder="Add a comment about this task..."></textarea>
+          <div class="rich-editor">
+            <div class="rich-editor-toolbar" aria-label="Comment formatting">
+              <button type="button" data-editor="edit-task-comment-input" data-command="bold"><strong>B</strong></button>
+              <button type="button" data-editor="edit-task-comment-input" data-command="italic"><em>I</em></button>
+              <button type="button" data-editor="edit-task-comment-input" data-command="underline"><u>U</u></button>
+              <button type="button" data-editor="edit-task-comment-input" data-command="strikeThrough"><s>S</s></button>
+              <button type="button" data-editor="edit-task-comment-input" data-command="insertChecklist">☐ Check</button>
+              <button type="button" data-editor="edit-task-comment-input" data-command="insertUnorderedList">• List</button>
+              <button type="button" data-editor="edit-task-comment-input" data-command="insertOrderedList">1. List</button>
+            </div>
+            <div id="edit-task-comment-input" class="rich-editor-surface" contenteditable="true" role="textbox" aria-multiline="true"></div>
+          </div>
         </div>
         <div class="field">
           <label for="edit-task-reminder-input">Date Time Alert</label>
           <input id="edit-task-reminder-input" type="datetime-local" />
+        </div>
+        <div class="field">
+          <label class="checkbox-label recurring-toggle">
+            <input type="checkbox" id="edit-task-recurring" />
+            <span class="recurring-toggle-copy">
+              <span class="recurring-toggle-title">Recurring task</span>
+              <span class="recurring-toggle-hint">Repeat this task on a schedule</span>
+            </span>
+          </label>
+        </div>
+        <div id="edit-recurrence-options" class="recurrence-options hidden">
+          <div class="field">
+            <label for="edit-task-recurrence-pattern">Repeat</label>
+            <select id="edit-task-recurrence-pattern">
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+            </select>
+          </div>
+          <div id="edit-daily-options" class="field">
+            <label for="edit-task-recurrence-interval">Every</label>
+            <div class="inline-field">
+              <input type="number" id="edit-task-recurrence-interval" min="1" max="365" value="1" />
+              <span>day(s)</span>
+            </div>
+          </div>
+          <div id="edit-weekly-options" class="field hidden">
+            <label>On days</label>
+            <div class="weekday-selector">
+              <label><input type="checkbox" name="edit-weekday" value="0" /> Sun</label>
+              <label><input type="checkbox" name="edit-weekday" value="1" /> Mon</label>
+              <label><input type="checkbox" name="edit-weekday" value="2" /> Tue</label>
+              <label><input type="checkbox" name="edit-weekday" value="3" /> Wed</label>
+              <label><input type="checkbox" name="edit-weekday" value="4" /> Thu</label>
+              <label><input type="checkbox" name="edit-weekday" value="5" /> Fri</label>
+              <label><input type="checkbox" name="edit-weekday" value="6" /> Sat</label>
+            </div>
+          </div>
         </div>
         <div class="field">
           <label for="edit-task-attachment-input">Upload File</label>
@@ -798,7 +846,18 @@
       <div class="field preview-task-comment-field">
         <label for="preview-task-comment-input">Add comment</label>
         <div id="preview-task-comment-display" class="preview-task-comment-display hidden"></div>
-        <textarea id="preview-task-comment-input" rows="5" maxlength="10000" placeholder="Add a comment about this task..."></textarea>
+        <div class="rich-editor">
+          <div class="rich-editor-toolbar" aria-label="Comment formatting">
+            <button type="button" data-editor="preview-task-comment-input" data-command="bold"><strong>B</strong></button>
+            <button type="button" data-editor="preview-task-comment-input" data-command="italic"><em>I</em></button>
+            <button type="button" data-editor="preview-task-comment-input" data-command="underline"><u>U</u></button>
+            <button type="button" data-editor="preview-task-comment-input" data-command="strikeThrough"><s>S</s></button>
+            <button type="button" data-editor="preview-task-comment-input" data-command="insertChecklist">☐ Check</button>
+            <button type="button" data-editor="preview-task-comment-input" data-command="insertUnorderedList">• List</button>
+            <button type="button" data-editor="preview-task-comment-input" data-command="insertOrderedList">1. List</button>
+          </div>
+          <div id="preview-task-comment-input" class="rich-editor-surface" contenteditable="true" role="textbox" aria-multiline="true"></div>
+        </div>
       </div>
       <div class="modal-actions">
         <button id="send-preview-task-email" type="button" class="secondary task-action-icon" aria-label="Send Email" title="Send Email">✉</button>

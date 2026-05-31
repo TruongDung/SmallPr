@@ -460,18 +460,15 @@ label {
 
 #edit-task-comment-input {
   min-height: 96px;
-  resize: vertical;
 }
 
 #preview-task-comment-input {
-  height: min(30vh, 260px);
   min-height: 140px;
   max-height: min(30vh, 260px);
-  resize: vertical;
   overflow-y: auto;
 }
 
-#preview-task-comment-input[readonly] {
+#preview-task-comment-input[contenteditable="false"] {
   cursor: default;
 }
 
@@ -700,6 +697,38 @@ textarea {
 .rich-editor-surface:empty::before {
   content: attr(data-placeholder);
   color: var(--muted);
+}
+
+.rich-check-item {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+  max-width: 100%;
+  margin: 2px 0;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.rich-check-input {
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  margin: 2px 0 0;
+  padding: 0;
+  flex: 0 0 auto;
+  border-radius: 4px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.rich-check-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.rich-check-item.checked .rich-check-text {
+  color: var(--muted);
+  text-decoration: line-through;
 }
 
 .field-error {
@@ -3112,25 +3141,163 @@ body.theme-dark .status-in_progress {
 }
 
 .modal.add-task-modal {
-  width: min(100%, 560px);
+  width: min(100%, 640px);
   padding: 0;
   max-height: calc(100dvh - 40px);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-color: var(--border) transparent;
   scrollbar-width: thin;
+  border-radius: 16px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
 }
 
 .modal.add-task-modal h3 {
   margin: 0;
-  padding: 18px 20px 14px;
+  padding: 20px 24px 16px;
   border-bottom: 1px solid var(--border);
-  background: var(--surface-soft);
+  background:
+    linear-gradient(180deg, var(--surface) 0%, var(--surface-soft) 100%);
+  color: var(--text);
+  font-size: 1.15rem;
+  letter-spacing: 0;
 }
 
 .modal.add-task-modal .task-form {
   margin-top: 0;
-  padding: 18px 20px 20px;
+  padding: 22px 24px 24px;
+  column-gap: 16px;
+  row-gap: 18px;
+}
+
+.add-task-modal .field > label,
+.add-task-modal .recurrence-options > .field > label {
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.add-task-modal input,
+.add-task-modal select,
+.add-task-modal .rich-editor {
+  border-radius: 10px;
+}
+
+.add-task-modal input:not([type="checkbox"]):focus,
+.add-task-modal select:focus,
+.add-task-modal .rich-editor:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(47, 112, 255, 0.14);
+}
+
+.add-task-modal .rich-editor-toolbar {
+  padding: 7px;
+}
+
+.add-task-modal .rich-editor-surface {
+  min-height: 118px;
+}
+
+.add-task-modal .checkbox-label,
+.edit-task-modal .recurring-toggle {
+  width: 100%;
+  min-height: 58px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.add-task-modal .recurring-toggle,
+.edit-task-modal .recurring-toggle {
+  gap: 12px;
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.add-task-modal .recurring-toggle:hover,
+.add-task-modal .recurring-toggle:has(input:focus-visible),
+.edit-task-modal .recurring-toggle:hover,
+.edit-task-modal .recurring-toggle:has(input:focus-visible) {
+  border-color: var(--primary);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px rgba(47, 112, 255, 0.12);
+}
+
+.add-task-modal .checkbox-label input[type="checkbox"],
+.edit-task-modal .recurring-toggle input[type="checkbox"] {
+  width: 38px;
+  height: 22px;
+  margin: 0;
+  flex: 0 0 auto;
+  appearance: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  accent-color: var(--primary);
+  position: relative;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.add-task-modal .checkbox-label input[type="checkbox"]::after,
+.edit-task-modal .recurring-toggle input[type="checkbox"]::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.18s ease, background 0.18s ease;
+}
+
+.add-task-modal .checkbox-label input[type="checkbox"]:checked,
+.edit-task-modal .recurring-toggle input[type="checkbox"]:checked {
+  border-color: var(--primary);
+  background: var(--primary);
+}
+
+.add-task-modal .checkbox-label input[type="checkbox"]:checked::after,
+.edit-task-modal .recurring-toggle input[type="checkbox"]:checked::after {
+  transform: translateX(16px);
+  background: #ffffff;
+}
+
+.recurring-toggle-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.recurring-toggle-title {
+  color: var(--text);
+  font-size: 0.95rem;
+  line-height: 1.2;
+}
+
+.recurring-toggle-hint {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.add-task-modal .recurrence-options,
+.edit-task-modal .recurrence-options {
+  margin-top: 0;
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.add-task-modal .field-error:not(.hidden) {
+  margin: 2px 0 0;
 }
 
 .modal.preview-task-modal {
@@ -3306,6 +3473,11 @@ body.theme-dark .status-in_progress {
   overflow-y: auto;
 }
 
+#edit-task-comment-input {
+  max-height: min(28dvh, 220px);
+  overflow-y: auto;
+}
+
 .modal h3 {
   margin: 0 0 10px;
 }
@@ -3394,10 +3566,27 @@ body.theme-dark .status-in_progress {
 
 .add-task-modal .modal-actions {
   align-items: center;
-  gap: 8px;
-  margin-top: 6px;
-  padding-top: 14px;
+  gap: 10px;
+  margin-top: 2px;
+  padding-top: 16px;
   border-top: 1px solid var(--border);
+}
+
+.add-task-modal .modal-text-action {
+  min-width: 116px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+
+.add-task-modal .modal-text-action.secondary {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.add-task-modal .modal-text-action-primary {
+  box-shadow: 0 12px 24px rgba(47, 112, 255, 0.22);
 }
 
 .modal-icon-action {
@@ -3934,6 +4123,30 @@ body.theme-dark .status-in_progress {
 
   .modal-actions button {
     min-height: 42px;
+  }
+
+  .modal.add-task-modal {
+    width: 100%;
+    max-height: calc(100dvh - 24px);
+    border-radius: 14px;
+  }
+
+  .modal.add-task-modal h3 {
+    padding: 18px 18px 14px;
+  }
+
+  .modal.add-task-modal .task-form {
+    padding: 18px;
+    row-gap: 15px;
+  }
+
+  .add-task-modal .modal-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .add-task-modal .modal-text-action {
+    width: 100%;
   }
 
   #user-area .add-task-shortcut {
@@ -5057,6 +5270,108 @@ body.theme-dark .status-in_progress {
   font-size: 0.95rem;
 }
 
+.credit-card-table-wrap,
+.fast-access-bills-table-wrap,
+.transactions-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.credit-card-table,
+.fast-access-bills-table,
+.transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  background: var(--surface);
+}
+
+.credit-card-table {
+  table-layout: auto;
+}
+
+.credit-card-table th,
+.credit-card-table td,
+.fast-access-bills-table th,
+.fast-access-bills-table td,
+.transactions-table th,
+.transactions-table td {
+  padding: 12px 16px;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border);
+}
+
+.credit-card-table thead,
+.fast-access-bills-table thead,
+.transactions-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-soft);
+}
+
+.credit-card-table th,
+.fast-access-bills-table th,
+.transactions-table th {
+  color: var(--text);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.credit-card-table tbody tr,
+.fast-access-bills-table tbody tr,
+.transactions-table tbody tr {
+  transition: background-color 0.2s ease;
+}
+
+.credit-card-table tbody tr:hover,
+.fast-access-bills-table tbody tr:hover,
+.transactions-table tbody tr:hover {
+  background: var(--surface-soft);
+  transform: none;
+}
+
+.credit-card-table tbody tr:hover td,
+.fast-access-bills-table tbody tr:hover td {
+  background: transparent;
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+.credit-card-table td,
+.fast-access-bills-table td,
+.transactions-table td {
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.credit-card-table td,
+.fast-access-bills-table td {
+  border-top: 0;
+  border-right: 0;
+  border-left: 0;
+}
+
+.credit-card-table td:first-child,
+.fast-access-bills-table td:first-child,
+.credit-card-table td:last-child,
+.fast-access-bills-table td:last-child,
+.credit-card-table td:only-child,
+.fast-access-bills-table td:only-child {
+  border-radius: 0;
+}
+
+.credit-card-table tbody tr:last-child td,
+.fast-access-bills-table tbody tr:last-child td,
+.transactions-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
 .transaction-kind-badge {
   display: inline-block;
   padding: 4px 10px;
@@ -5153,7 +5468,7 @@ body.theme-dark .status-in_progress {
 }
 
 .task-form #recurrence-options,
-#edit-task-form #recurrence-options {
+#edit-task-form #edit-recurrence-options {
   grid-column: 1 / -1;
 }
 
