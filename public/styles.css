@@ -2750,7 +2750,7 @@ body.theme-dark .status-in_progress {
 
 .credit-card-table {
   width: 100%;
-  min-width: 0;
+  min-width: 720px;
   border-collapse: separate;
   border-spacing: 0 12px;
   table-layout: fixed;
@@ -2761,7 +2761,11 @@ body.theme-dark .status-in_progress {
   padding: 16px 18px;
   text-align: left;
   vertical-align: middle;
-  overflow-wrap: anywhere;
+  /* Wrap only at spaces — never mid-word. Without this, narrow columns on
+     small screens shatter card names like "Freedom Unlimited" into one letter
+     per line. Long single words overflow instead, and the wrapper scrolls. */
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 .credit-card-table thead {
@@ -4300,10 +4304,11 @@ body.theme-dark .status-in_progress {
 
   /* Credit card table keeps the real table layout (header + tr/td) to match
      the Transactions and Monthly Bills tables instead of stacking into cards.
-     Sizing mirrors the transactions table; min-width:0 lets it compress to fit
-     the viewport rather than forcing a wide horizontal scroll. */
+     It keeps a min-width so the overflow-x:auto wrapper scrolls horizontally on
+     narrow screens (like iOS) — without it, six columns get crushed to slivers
+     and the uppercase headers break one letter per line. */
   .credit-card-table {
-    min-width: 0;
+    min-width: 640px;
     font-size: 0.85rem;
   }
 
