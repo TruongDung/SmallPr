@@ -435,7 +435,11 @@
         <section id="transactions-panel" class="financial-panel hidden" role="tabpanel" aria-labelledby="transactions-tab">
           <div class="transactions-toolbar">
             <div class="transactions-filters">
-              <input type="month" id="transaction-month-filter" aria-label="Filter by month" />
+              <div class="transaction-month-nav">
+                <button id="transaction-prev-month" type="button" class="secondary month-nav-button" aria-label="Previous month" title="Previous month">‹</button>
+                <input type="month" id="transaction-month-filter" aria-label="Filter by month" />
+                <button id="transaction-next-month" type="button" class="secondary month-nav-button" aria-label="Next month" title="Next month">›</button>
+              </div>
               <select id="transaction-kind-filter" aria-label="Filter by type">
                 <option value="">All Types</option>
                 <option value="income">Income</option>

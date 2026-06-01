@@ -15,6 +15,8 @@
     const formError = document.getElementById('transaction-form-error');
     const cancelButton = document.getElementById('cancel-transaction');
     const monthFilter = document.getElementById('transaction-month-filter');
+    const prevMonthButton = document.getElementById('transaction-prev-month');
+    const nextMonthButton = document.getElementById('transaction-next-month');
     const kindFilter = document.getElementById('transaction-kind-filter');
     const categoryFilter = document.getElementById('transaction-category-filter');
     const categorySuggestions = document.getElementById('transaction-category-suggestions');
@@ -58,13 +60,19 @@
 
     const formatDate = (dateString) => {
       if (!dateString) return '';
-      const date = new Date(`${dateString}T00:00:00`);
+      const match = String(dateString).match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+        const [, year, month, day] = match;
+        return `${month}-${day}-${year.slice(-2)}`;
+      }
+
+      const date = new Date(dateString);
       if (Number.isNaN(date.getTime())) return dateString;
-      return date.toLocaleDateString(getLanguage() === 'vi' ? 'vi-VN' : 'en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
+
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const year = String(date.getFullYear()).slice(-2);
+      return `${month}-${day}-${year}`;
     };
 
     const showFormError = (text) => {
@@ -314,6 +322,14 @@
       loadTransactions();
     };
 
+    const shiftMonthFilter = (monthDelta) => {
+      const baseValue = monthFilter.value || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+      const [year, month] = baseValue.split('-').map(Number);
+      const nextDate = new Date(year, month - 1 + monthDelta, 1);
+      monthFilter.value = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
+      applyFilters();
+    };
+
     const initializeFilters = () => {
       // Set default to current month
       const now = new Date();
@@ -556,6 +572,12 @@
       });
 
       monthFilter.addEventListener('change', applyFilters);
+      if (prevMonthButton) {
+        prevMonthButton.addEventListener('click', () => shiftMonthFilter(-1));
+      }
+      if (nextMonthButton) {
+        nextMonthButton.addEventListener('click', () => shiftMonthFilter(1));
+      }
       kindFilter.addEventListener('change', applyFilters);
       categoryFilter.addEventListener('change', applyFilters);
 
