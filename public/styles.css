@@ -5039,6 +5039,56 @@ body.theme-dark .status-in_progress {
   flex-wrap: wrap;
 }
 
+.transactions-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Statement import preview modal */
+.import-statement-modal {
+  width: min(100%, 640px);
+  max-height: calc(100dvh - 48px);
+  display: flex;
+  flex-direction: column;
+}
+
+.import-statement-status {
+  padding: 24px 8px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.import-statement-hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin: 4px 0 12px;
+}
+
+.import-statement-table-wrap {
+  overflow: auto;
+  max-height: 50vh;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.import-statement-table th,
+.import-statement-table td {
+  padding: 8px 10px;
+}
+
+.import-statement-table input[type="text"],
+.import-statement-table input[type="date"],
+.import-statement-table input[type="number"] {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
 .transactions-filters input,
 .transactions-filters select {
   padding: 8px 12px;

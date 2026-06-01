@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=cache-clear-20260601-4" />
+  <link rel="stylesheet" href="styles.css?v=cache-clear-20260601-5" />
 </head>
 <body>
   <div class="container">
@@ -437,7 +437,11 @@
                 <option value="">All Categories</option>
               </select>
             </div>
-            <button id="open-add-transaction" type="button" class="primary task-action-icon" aria-label="Add Transaction" title="Add Transaction">+</button>
+            <div class="transactions-toolbar-actions">
+              <button id="import-statement" type="button" class="secondary task-action-icon" aria-label="Import statement PDF" title="Import statement PDF">⤓</button>
+              <button id="open-add-transaction" type="button" class="primary task-action-icon" aria-label="Add Transaction" title="Add Transaction">+</button>
+            </div>
+            <input id="import-statement-file" type="file" accept="application/pdf" class="hidden" aria-hidden="true" />
           </div>
 
           <div class="transactions-summary">
@@ -566,6 +570,45 @@
           <button id="save-transaction" type="submit" class="task-action-icon" aria-label="Save" title="Save">✓</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div id="import-statement-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="import-statement-title">
+    <div class="modal import-statement-modal">
+      <h3 id="import-statement-title">Import statement</h3>
+
+      <div id="import-statement-status" class="import-statement-status">
+        <p id="import-statement-status-text"></p>
+      </div>
+
+      <div id="import-statement-result" class="import-statement-result hidden">
+        <div class="field">
+          <label for="import-statement-card">Link to Credit Card</label>
+          <select id="import-statement-card">
+            <option value="">None</option>
+          </select>
+        </div>
+        <p class="import-statement-hint">Review the parsed charges, then import the selected rows as expenses.</p>
+        <div class="import-statement-table-wrap">
+          <table class="transactions-table import-statement-table">
+            <thead>
+              <tr>
+                <th><input id="import-statement-select-all" type="checkbox" checked aria-label="Select all" /></th>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody id="import-statement-rows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <p id="import-statement-error" class="field-error hidden"></p>
+      <div class="modal-actions">
+        <button id="cancel-import-statement" type="button" class="task-action-icon secondary" aria-label="Cancel" title="Cancel">×</button>
+        <button id="confirm-import-statement" type="button" class="task-action-icon" aria-label="Import selected" title="Import selected" disabled>✓</button>
+      </div>
     </div>
   </div>
 
@@ -922,18 +965,18 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.min.js"></script>
-  <script src="js/features/creditCards/creditCards.dom.js?v=cache-clear-20260601-4"></script>
-  <script src="js/features/creditCards/creditCards.formatters.js?v=cache-clear-20260601-4"></script>
-  <script src="js/features/creditCards/creditCards.users.js?v=cache-clear-20260601-4"></script>
-  <script src="js/features/creditCards/creditCards.table.js?v=cache-clear-20260601-4"></script>
-  <script src="js/features/creditCards/creditCards.bills.js?v=cache-clear-20260601-4"></script>
-  <script src="js/features/creditCards/creditCards.translations.js?v=cache-clear-20260601-4"></script>
-  <script src="js/features/creditCards/creditCards.module.js?v=cache-clear-20260601-4"></script>
-  <script src="js/features/notes/notes.module.js?v=cache-clear-20260601-4"></script>
-  <script src="js/features/dashboard/dashboard.module.js?v=cache-clear-20260601-4"></script>
-  <script src="js/transactions.module.js?v=cache-clear-20260601-4"></script>
-  <script src="js/notes-code-highlighter.js?v=cache-clear-20260601-4"></script>
+  <script src="js/features/creditCards/creditCards.dom.js?v=cache-clear-20260601-5"></script>
+  <script src="js/features/creditCards/creditCards.formatters.js?v=cache-clear-20260601-5"></script>
+  <script src="js/features/creditCards/creditCards.users.js?v=cache-clear-20260601-5"></script>
+  <script src="js/features/creditCards/creditCards.table.js?v=cache-clear-20260601-5"></script>
+  <script src="js/features/creditCards/creditCards.bills.js?v=cache-clear-20260601-5"></script>
+  <script src="js/features/creditCards/creditCards.translations.js?v=cache-clear-20260601-5"></script>
+  <script src="js/features/creditCards/creditCards.module.js?v=cache-clear-20260601-5"></script>
+  <script src="js/features/notes/notes.module.js?v=cache-clear-20260601-5"></script>
+  <script src="js/features/dashboard/dashboard.module.js?v=cache-clear-20260601-5"></script>
+  <script src="js/transactions.module.js?v=cache-clear-20260601-5"></script>
+  <script src="js/notes-code-highlighter.js?v=cache-clear-20260601-5"></script>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="app.js?v=cache-clear-20260601-4"></script>
+  <script src="app.js?v=cache-clear-20260601-5"></script>
 </body>
 </html>

@@ -7,6 +7,7 @@ const {
   MAX_TRANSACTION_NOTE_LENGTH,
 } = require('../constants/transactions');
 const { createTransactionsService } = require('../services/transactions.service');
+const { createStatementImportService } = require('../services/statementImport.service');
 const { emitToUser } = require('../realtime');
 
 const normalizeText = (value) => String(value || '').trim();
@@ -84,9 +85,10 @@ const validateTransactionDetails = ({ occurred_on, kind, amount, category, accou
   };
 };
 
-const createTransactionsRouter = ({ authRequired, allAsync, getAsync, runAsync }) => {
+const createTransactionsRouter = ({ authRequired, allAsync, getAsync, runAsync, anthropicApiKey }) => {
   const router = express.Router();
   const transactions = createTransactionsService({ allAsync, getAsync, runAsync });
+  const statementImport = createStatementImportService({ apiKey: anthropicApiKey });
 
   router.use(authRequired);
 
@@ -130,6 +132,30 @@ const createTransactionsRouter = ({ authRequired, allAsync, getAsync, runAsync }
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Failed to load categories' });
+    }
+  });
+
+  // Parse an uploaded credit-card statement PDF into purchase line items and
+  // return them for review. Nothing is saved here — the client previews the
+  // rows and re-submits the confirmed ones through POST / (reusing validation).
+  // A route-scoped body parser allows a larger payload than the global 8mb
+  // limit since the PDF arrives base64-encoded in JSON.
+  router.post('/import-statement', express.json({ limit: '20mb' }), async (req, res) => {
+    const base64Pdf = String(req.body?.pdf || '');
+    if (!base64Pdf) {
+      return res.status(400).json({ error: 'No PDF provided.' });
+    }
+
+    try {
+      const result = await statementImport.parseStatement({ base64Pdf });
+      if (result.error) {
+        const status = statementImport.isConfigured() ? 422 : 503;
+        return res.status(status).json({ error: result.error });
+      }
+      res.json({ items: result.items });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to import statement' });
     }
   });
 

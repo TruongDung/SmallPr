@@ -23,6 +23,20 @@
     const summaryBalance = document.getElementById('summary-balance');
     const addButton = document.getElementById('open-add-transaction');
 
+    // Statement import (PDF → expenses) elements.
+    const importButton = document.getElementById('import-statement');
+    const importFileInput = document.getElementById('import-statement-file');
+    const importModal = document.getElementById('import-statement-modal');
+    const importStatusBox = document.getElementById('import-statement-status');
+    const importStatusText = document.getElementById('import-statement-status-text');
+    const importResultBox = document.getElementById('import-statement-result');
+    const importCardInput = document.getElementById('import-statement-card');
+    const importRows = document.getElementById('import-statement-rows');
+    const importSelectAll = document.getElementById('import-statement-select-all');
+    const importError = document.getElementById('import-statement-error');
+    const cancelImportButton = document.getElementById('cancel-import-statement');
+    const confirmImportButton = document.getElementById('confirm-import-statement');
+
     let transactions = [];
     let categories = [];
     let creditCards = [];
@@ -309,10 +323,233 @@
       currentFilters.month = (now.getMonth() + 1).toString();
     };
 
+    // ---- Statement import (PDF → expenses) ----------------------------------
+
+    const renderImportCardOptions = () => {
+      const currentValue = importCardInput.value;
+      importCardInput.innerHTML = '<option value="">None</option>';
+      creditCards.forEach(card => {
+        const option = document.createElement('option');
+        option.value = card.id;
+        option.textContent = card.name;
+        importCardInput.appendChild(option);
+      });
+      importCardInput.value = currentValue;
+    };
+
+    const setImportError = (text) => {
+      if (!text) {
+        importError.textContent = '';
+        importError.classList.add('hidden');
+        return;
+      }
+      importError.textContent = text;
+      importError.classList.remove('hidden');
+    };
+
+    const closeImportModal = () => {
+      importModal.classList.add('hidden');
+      importRows.innerHTML = '';
+      importResultBox.classList.add('hidden');
+      setImportError('');
+      confirmImportButton.disabled = true;
+      importFileInput.value = '';
+    };
+
+    const updateImportConfirmState = () => {
+      const checked = importRows.querySelectorAll('input.import-row-select:checked').length;
+      confirmImportButton.disabled = checked === 0;
+    };
+
+    const renderImportRows = (items) => {
+      importRows.innerHTML = '';
+      items.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.dataset.index = String(index);
+
+        const selectCell = document.createElement('td');
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.className = 'import-row-select';
+        checkbox.checked = true;
+        checkbox.addEventListener('change', () => {
+          updateImportConfirmState();
+          if (!checkbox.checked) importSelectAll.checked = false;
+        });
+        selectCell.appendChild(checkbox);
+
+        const dateCell = document.createElement('td');
+        const dateField = document.createElement('input');
+        dateField.type = 'date';
+        dateField.className = 'import-row-date';
+        dateField.value = item.date;
+        dateCell.appendChild(dateField);
+
+        const descCell = document.createElement('td');
+        const descField = document.createElement('input');
+        descField.type = 'text';
+        descField.maxLength = 100;
+        descField.className = 'import-row-desc';
+        descField.value = item.category || '';
+        descCell.appendChild(descField);
+
+        const amountCell = document.createElement('td');
+        const amountField = document.createElement('input');
+        amountField.type = 'number';
+        amountField.min = '0.01';
+        amountField.step = '0.01';
+        amountField.className = 'import-row-amount';
+        amountField.value = item.amount;
+        amountCell.appendChild(amountField);
+
+        row.append(selectCell, dateCell, descCell, amountCell);
+        importRows.appendChild(row);
+      });
+      importSelectAll.checked = items.length > 0;
+      updateImportConfirmState();
+    };
+
+    const openImport = () => {
+      setImportError('');
+      importResultBox.classList.add('hidden');
+      importRows.innerHTML = '';
+      confirmImportButton.disabled = true;
+      importFileInput.value = '';
+      importFileInput.click();
+    };
+
+    const readFileAsBase64 = (file) => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        // readAsDataURL yields "data:application/pdf;base64,XXXX" — strip the prefix.
+        const result = String(reader.result || '');
+        resolve(result.slice(result.indexOf(',') + 1));
+      };
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+
+    const handleImportFile = async (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      // Show the modal in a "parsing" state while Claude reads the PDF.
+      renderImportCardOptions();
+      setImportError('');
+      importResultBox.classList.add('hidden');
+      importStatusBox.classList.remove('hidden');
+      importStatusText.textContent = t('importParsing') || 'Reading your statement…';
+      importModal.classList.remove('hidden');
+
+      try {
+        const base64Pdf = await readFileAsBase64(file);
+        const response = await request('/api/transactions/import-statement', {
+          method: 'POST',
+          body: JSON.stringify({ pdf: base64Pdf }),
+        });
+
+        importStatusBox.classList.add('hidden');
+
+        if (response.error) {
+          importResultBox.classList.add('hidden');
+          setImportError(response.error);
+          return;
+        }
+
+        const items = response.items || [];
+        if (items.length === 0) {
+          setImportError(t('importNoItems') || 'No purchases were found in this statement.');
+          return;
+        }
+
+        importResultBox.classList.remove('hidden');
+        renderImportRows(items);
+      } catch (error) {
+        console.error('Failed to import statement:', error);
+        importStatusBox.classList.add('hidden');
+        setImportError(t('importFailed') || 'Failed to import statement.');
+      } finally {
+        // Allow re-selecting the same file later.
+        importFileInput.value = '';
+      }
+    };
+
+    const confirmImport = async () => {
+      const rows = Array.from(importRows.querySelectorAll('tr'));
+      const selected = rows.filter(row => row.querySelector('input.import-row-select')?.checked);
+      if (selected.length === 0) return;
+
+      const creditCardId = importCardInput.value || null;
+      confirmImportButton.disabled = true;
+      setImportError('');
+
+      let created = 0;
+      let lastDate = null;
+      for (const row of selected) {
+        const date = row.querySelector('.import-row-date')?.value;
+        const description = (row.querySelector('.import-row-desc')?.value || '').trim();
+        const amount = parseFloat(row.querySelector('.import-row-amount')?.value);
+        if (!date || !Number.isFinite(amount) || amount <= 0) continue;
+
+        const response = await request('/api/transactions', {
+          method: 'POST',
+          body: JSON.stringify({
+            occurred_on: date,
+            kind: 'expense',
+            amount,
+            category: description,
+            note: description,
+            credit_card_id: creditCardId,
+          }),
+        });
+        if (!response.error) {
+          created += 1;
+          lastDate = date;
+        }
+      }
+
+      if (created === 0) {
+        confirmImportButton.disabled = false;
+        setImportError(t('importFailed') || 'Failed to import statement.');
+        return;
+      }
+
+      // Jump the month filter to the imported statement's month so the new
+      // expenses are visible immediately.
+      if (lastDate) {
+        const d = new Date(`${lastDate}T00:00:00`);
+        monthFilter.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        currentFilters.year = d.getFullYear().toString();
+        currentFilters.month = (d.getMonth() + 1).toString();
+      }
+
+      closeImportModal();
+      await load();
+      const successMsg = (t('importSuccess') || 'Imported {count} transactions').replace('{count}', created);
+      showStatusToast(successMsg, 'success');
+    };
+
     const bind = () => {
       form.addEventListener('submit', handleSubmit);
       cancelButton.addEventListener('click', closeModal);
       addButton.addEventListener('click', () => openModal());
+
+      // Statement import wiring.
+      if (importButton) {
+        importButton.addEventListener('click', openImport);
+        importFileInput.addEventListener('change', handleImportFile);
+        cancelImportButton.addEventListener('click', closeImportModal);
+        confirmImportButton.addEventListener('click', confirmImport);
+        importSelectAll.addEventListener('change', () => {
+          importRows.querySelectorAll('input.import-row-select').forEach((cb) => {
+            cb.checked = importSelectAll.checked;
+          });
+          updateImportConfirmState();
+        });
+        importModal.addEventListener('click', (event) => {
+          if (event.target === importModal) closeImportModal();
+        });
+      }
 
       modal.addEventListener('click', (event) => {
         if (event.target === modal) closeModal();
@@ -325,6 +562,9 @@
       document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
           closeModal();
+        }
+        if (event.key === 'Escape' && !importModal.classList.contains('hidden')) {
+          closeImportModal();
         }
       });
     };
