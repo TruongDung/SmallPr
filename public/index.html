@@ -341,6 +341,7 @@
                 <th>Username</th>
                 <th>Name</th>
                 <th>Email</th>
+                <th>Status</th>
                 <th>Tasks</th>
                 <th>Actions</th>
               </tr>
@@ -497,6 +498,13 @@
         <div class="field">
           <label for="admin-email">Email</label>
           <input id="admin-email" type="text" inputmode="email" autocomplete="email" />
+        </div>
+        <div class="field">
+          <label for="admin-status">Status</label>
+          <select id="admin-status">
+            <option value="enabled">Enabled</option>
+            <option value="disabled">Disabled</option>
+          </select>
         </div>
         <div id="admin-password-field" class="field">
           <label for="admin-password">Password</label>

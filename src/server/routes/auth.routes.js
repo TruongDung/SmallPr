@@ -37,7 +37,7 @@ const createAuthRouter = ({ bcrypt, getAsync, getUserById, runAsync }) => {
 
     try {
       const user = await getAsync(
-        'SELECT id, username, name, email, password FROM users WHERE username = ?',
+        'SELECT id, username, name, email, password, account_status FROM users WHERE username = ?',
         [username]
       );
       if (!user) {
@@ -49,8 +49,20 @@ const createAuthRouter = ({ bcrypt, getAsync, getUserById, runAsync }) => {
         return res.status(401).json({ error: 'Invalid credentials' });
       }
 
+      if (user.account_status === 'disabled') {
+        return res.status(403).json({ error: 'Account is disabled' });
+      }
+
       req.session.userId = user.id;
-      res.json({ user: { id: user.id, username: user.username, name: user.name, email: user.email } });
+      res.json({
+        user: {
+          id: user.id,
+          username: user.username,
+          name: user.name,
+          email: user.email,
+          account_status: user.account_status,
+        },
+      });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Login failed' });
@@ -74,6 +86,14 @@ const createAuthRouter = ({ bcrypt, getAsync, getUserById, runAsync }) => {
 
     try {
       const user = await getUserById(req.session.userId);
+      if (!user) {
+        req.session.destroy(() => {});
+        return res.json({ user: null });
+      }
+      if (user.account_status === 'disabled') {
+        req.session.destroy(() => {});
+        return res.status(403).json({ error: 'Account is disabled', user: null });
+      }
       res.json({ user });
     } catch (error) {
       console.error(error);

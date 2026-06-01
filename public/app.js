@@ -32,6 +32,7 @@ const adminUserForm = document.getElementById('admin-user-form');
 const adminNameInput = document.getElementById('admin-name');
 const adminUsernameInput = document.getElementById('admin-username');
 const adminEmailInput = document.getElementById('admin-email');
+const adminStatusInput = document.getElementById('admin-status');
 const adminPasswordField = document.getElementById('admin-password-field');
 const adminPasswordInput = document.getElementById('admin-password');
 const adminUserFormError = document.getElementById('admin-user-form-error');
@@ -391,6 +392,13 @@ const translations = {
     no: 'No',
     yes: 'Yes',
     userAdded: 'User added.',
+    userStatus: 'Status',
+    userEnabledStatus: 'Enabled',
+    userDisabledStatus: 'Disabled',
+    enableUser: 'Enable user',
+    disableUser: 'Disable user',
+    userEnabled: 'User enabled.',
+    userDisabled: 'User disabled.',
     taskTitlePrompt: 'Task title (max 20 characters)',
     titleEmpty: 'Title cannot be empty',
     taskDescriptionPrompt: 'Task description (max 10000 characters)',
@@ -680,6 +688,13 @@ const translations = {
     no: 'Không',
     yes: 'Có',
     userAdded: 'Đã thêm người dùng.',
+    userStatus: 'Trạng thái',
+    userEnabledStatus: 'Đang bật',
+    userDisabledStatus: 'Đã tắt',
+    enableUser: 'Bật người dùng',
+    disableUser: 'Tắt người dùng',
+    userEnabled: 'Đã bật người dùng.',
+    userDisabled: 'Đã tắt người dùng.',
     taskTitlePrompt: 'Tiêu đề công việc (tối đa 20 ký tự)',
     titleEmpty: 'Tiêu đề không được để trống.',
     taskDescriptionPrompt: 'Mô tả công việc (tối đa 10000 ký tự)',
@@ -950,6 +965,11 @@ const applyTranslations = () => {
   setText('label[for="admin-name"]', t('name'));
   setText('label[for="admin-username"]', t('username'));
   setText('label[for="admin-email"]', t('email'));
+  setText('label[for="admin-status"]', t('userStatus'));
+  const enabledOption = adminStatusInput?.querySelector('option[value="enabled"]');
+  const disabledOption = adminStatusInput?.querySelector('option[value="disabled"]');
+  if (enabledOption) enabledOption.textContent = t('userEnabledStatus');
+  if (disabledOption) disabledOption.textContent = t('userDisabledStatus');
   setText('label[for="admin-password"]', t('password'));
   cancelAdminUser.setAttribute('aria-label', t('cancel'));
   cancelAdminUser.title = t('cancel');
@@ -958,8 +978,9 @@ const applyTranslations = () => {
   setText('.user-table th:nth-child(1)', t('username'));
   setText('.user-table th:nth-child(2)', t('name'));
   setText('.user-table th:nth-child(3)', t('email'));
-  setText('.user-table th:nth-child(4)', t('tasks'));
-  setText('.user-table th:nth-child(5)', t('actions'));
+  setText('.user-table th:nth-child(4)', t('userStatus'));
+  setText('.user-table th:nth-child(5)', t('tasks'));
+  setText('.user-table th:nth-child(6)', t('actions'));
   confirmDeleteNo.className = 'task-action-icon secondary';
   confirmDeleteNo.textContent = '×';
   confirmDeleteNo.setAttribute('aria-label', t('no'));
@@ -2364,6 +2385,14 @@ const renderUsers = (users) => {
     emailCell.dataset.label = t('email');
     emailCell.textContent = user.email || '';
 
+    const statusCell = document.createElement('td');
+    statusCell.dataset.label = t('userStatus');
+    const statusBadge = document.createElement('span');
+    const isDisabled = user.account_status === 'disabled';
+    statusBadge.className = `user-status-badge ${isDisabled ? 'disabled' : 'enabled'}`;
+    statusBadge.textContent = isDisabled ? t('userDisabledStatus') : t('userEnabledStatus');
+    statusCell.append(statusBadge);
+
     const taskCountCell = document.createElement('td');
     taskCountCell.dataset.label = t('tasks');
     const taskBadge = document.createElement('span');
@@ -2395,6 +2424,17 @@ const renderUsers = (users) => {
     actions.append(editButton, resetButton);
 
     if (user.username !== 'admin' && user.id !== currentUser.id) {
+      const statusButton = document.createElement('button');
+      statusButton.type = 'button';
+      statusButton.className = `task-action-icon ${isDisabled ? '' : 'secondary'}`;
+      statusButton.textContent = isDisabled ? '+' : '-';
+      statusButton.setAttribute('aria-label', isDisabled ? t('enableUser') : t('disableUser'));
+      statusButton.title = isDisabled ? t('enableUser') : t('disableUser');
+      statusButton.addEventListener('click', () => toggleUserStatus(user));
+      actions.append(statusButton);
+    }
+
+    if (user.username !== 'admin' && user.id !== currentUser.id) {
       const deleteButton = document.createElement('button');
       deleteButton.type = 'button';
       deleteButton.className = 'task-action-icon danger';
@@ -2406,7 +2446,7 @@ const renderUsers = (users) => {
     }
 
     actionsCell.append(actions);
-    row.append(usernameCell, nameCell, emailCell, taskCountCell, actionsCell);
+    row.append(usernameCell, nameCell, emailCell, statusCell, taskCountCell, actionsCell);
     userList.append(row);
   });
 };
@@ -2431,6 +2471,9 @@ const showAdminUserModal = (user = null) => {
     adminNameInput.value = user.name || '';
     adminUsernameInput.value = user.username || '';
     adminEmailInput.value = user.email || '';
+    adminStatusInput.value = user.account_status || 'enabled';
+  } else {
+    adminStatusInput.value = 'enabled';
   }
 
   adminUserModal.classList.remove('hidden');
@@ -2455,6 +2498,7 @@ const handleAdminUserSubmit = async (event) => {
   const username = adminUsernameInput.value.trim();
   const name = adminNameInput.value.trim();
   const email = adminEmailInput.value.trim();
+  const accountStatus = adminStatusInput.value;
   const password = adminPasswordInput.value.trim();
   const isEditing = Boolean(pendingAdminUser);
 
@@ -2466,7 +2510,9 @@ const handleAdminUserSubmit = async (event) => {
 
   const result = await request(isEditing ? `/api/admin/users/${pendingAdminUser.id}` : '/api/admin/users', {
     method: isEditing ? 'PUT' : 'POST',
-    body: JSON.stringify(isEditing ? { username, name, email } : { username, name, email, password }),
+    body: JSON.stringify(isEditing
+      ? { username, name, email, account_status: accountStatus }
+      : { username, name, email, password, account_status: accountStatus }),
   });
 
   if (result.error) {
@@ -2499,6 +2545,22 @@ const resetUserPassword = async (user) => {
   }
 
   alert(t('passwordUpdated'));
+};
+
+const toggleUserStatus = async (user) => {
+  const nextStatus = user.account_status === 'disabled' ? 'enabled' : 'disabled';
+  const result = await request(`/api/admin/users/${user.id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ account_status: nextStatus }),
+  });
+
+  if (result.error) {
+    alert(result.error);
+    return;
+  }
+
+  showStatusToast(nextStatus === 'disabled' ? t('userDisabled') : t('userEnabled'));
+  loadUsers();
 };
 
 const deleteUser = async (user) => {

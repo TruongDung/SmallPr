@@ -20,6 +20,7 @@ const { app, db, dbReady } = require('./server');
 const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 jest.setTimeout(30000);
 let originalAdminPasswordHash = null;
+let originalAdminStatus = null;
 
 const createAgent = async (username = testUsername(`user-${Math.random()}`)) => {
   const agent = request.agent(app);
@@ -43,11 +44,15 @@ const attachment = (name = 'notes.txt', data = 'hello') => ({
 
 beforeAll(async () => {
   await dbReady;
-  const admin = await db.query("SELECT password FROM users WHERE username = 'admin'");
+  const admin = await db.query("SELECT password, account_status FROM users WHERE username = 'admin'");
   originalAdminPasswordHash = admin.rows[0]?.password || null;
+  originalAdminStatus = admin.rows[0]?.account_status || null;
   if (originalAdminPasswordHash) {
     const hashedPassword = await bcrypt.hash(TEST_ADMIN_PASSWORD, 10);
-    await db.query("UPDATE users SET password = $1 WHERE username = 'admin'", [hashedPassword]);
+    await db.query(
+      "UPDATE users SET password = $1, account_status = 'enabled' WHERE username = 'admin'",
+      [hashedPassword]
+    );
   }
 });
 
@@ -55,7 +60,10 @@ afterAll(async () => {
   warnSpy.mockRestore();
   try {
     if (originalAdminPasswordHash) {
-      await db.query("UPDATE users SET password = $1 WHERE username = 'admin'", [originalAdminPasswordHash]);
+      await db.query(
+        'UPDATE users SET password = $1, account_status = COALESCE($2, account_status) WHERE username = $3',
+        [originalAdminPasswordHash, originalAdminStatus, 'admin']
+      );
     }
     await db.query('DELETE FROM users WHERE username LIKE $1', [`${RUN_ID}%`]);
   } catch (error) {
@@ -1281,6 +1289,7 @@ describe('Admin API', () => {
     expect(createUserResponse.body.user).toMatchObject({
       username: managedUsername,
       email: `${managedUsername}@example.com`,
+      account_status: 'enabled',
       task_count: 0,
     });
 
@@ -1306,6 +1315,7 @@ describe('Admin API', () => {
     expect(listedUser).toMatchObject({
       username: managedUsername,
       email: `${managedUsername}@example.com`,
+      account_status: 'enabled',
       task_count: 1,
     });
 
@@ -1317,7 +1327,32 @@ describe('Admin API', () => {
     expect(updateUserResponse.body.user).toMatchObject({
       username: managedUsername,
       email: updatedEmail,
+      account_status: 'enabled',
       task_count: 1,
+    });
+
+    const disableResponse = await admin
+      .patch(`/api/admin/users/${createUserResponse.body.user.id}/status`)
+      .send({ account_status: 'disabled' });
+    expect(disableResponse.statusCode).toBe(200);
+    expect(disableResponse.body.user).toMatchObject({
+      username: managedUsername,
+      account_status: 'disabled',
+    });
+
+    const disabledLoginResponse = await request(app)
+      .post('/api/login')
+      .send({ username: managedUsername, password: 'Initial123!' });
+    expect(disabledLoginResponse.statusCode).toBe(403);
+    expect(disabledLoginResponse.body).toHaveProperty('error', 'Account is disabled');
+
+    const enableResponse = await admin
+      .patch(`/api/admin/users/${createUserResponse.body.user.id}/status`)
+      .send({ account_status: 'enabled' });
+    expect(enableResponse.statusCode).toBe(200);
+    expect(enableResponse.body.user).toMatchObject({
+      username: managedUsername,
+      account_status: 'enabled',
     });
 
     const resetResponse = await admin

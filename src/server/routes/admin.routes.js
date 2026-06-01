@@ -2,16 +2,30 @@ const express = require('express');
 
 const { normalizeEmail, normalizeName } = require('../utils/users');
 
+const ACCOUNT_STATUSES = new Set(['enabled', 'disabled']);
+
+const normalizeAccountStatus = (status, fallback = 'enabled') => {
+  const normalized = String(status || fallback).trim().toLowerCase();
+  return ACCOUNT_STATUSES.has(normalized) ? normalized : null;
+};
+
+const USER_LIST_SELECT = `SELECT users.id, users.username, users.name, users.email,
+       users.account_status, users.account_status_changed_at,
+       COUNT(tasks.id)::int AS task_count
+       FROM users
+       LEFT JOIN tasks ON tasks.user_id = users.id`;
+
+const USER_LIST_GROUP = `GROUP BY users.id, users.username, users.name, users.email,
+       users.account_status, users.account_status_changed_at`;
+
 const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync }) => {
   const router = express.Router();
 
   router.get('/admin/users', adminRequired, async (req, res) => {
     try {
       const users = await allAsync(
-        `SELECT users.id, users.username, users.name, users.email, COUNT(tasks.id)::int AS task_count
-         FROM users
-         LEFT JOIN tasks ON tasks.user_id = users.id
-         GROUP BY users.id, users.username, users.name, users.email
+        `${USER_LIST_SELECT}
+         ${USER_LIST_GROUP}
          ORDER BY users.id ASC`
       );
       res.json({ users });
@@ -25,8 +39,12 @@ const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync
     const { username, password } = req.body;
     const email = normalizeEmail(req.body.email);
     const name = normalizeName(req.body.name);
+    const accountStatus = normalizeAccountStatus(req.body.account_status);
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password are required' });
+    }
+    if (!accountStatus) {
+      return res.status(400).json({ error: 'Account status is invalid' });
     }
 
     try {
@@ -37,15 +55,14 @@ const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync
 
       const hashedPassword = await bcrypt.hash(password, 10);
       const result = await runAsync(
-        'INSERT INTO users (username, name, email, password) VALUES (?, ?, ?, ?) RETURNING id',
-        [username, name, email, hashedPassword]
+        `INSERT INTO users (username, name, email, password, account_status, account_status_changed_at)
+         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP) RETURNING id`,
+        [username, name, email, hashedPassword, accountStatus]
       );
       const user = await getAsync(
-        `SELECT users.id, users.username, users.name, users.email, COUNT(tasks.id)::int AS task_count
-         FROM users
-         LEFT JOIN tasks ON tasks.user_id = users.id
+        `${USER_LIST_SELECT}
          WHERE users.id = ?
-         GROUP BY users.id, users.username, users.name, users.email`,
+         ${USER_LIST_GROUP}`,
         [result.lastID]
       );
       res.json({ user });
@@ -65,9 +82,19 @@ const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync
     }
 
     try {
-      const user = await getAsync('SELECT id, username FROM users WHERE id = ?', [id]);
+      const user = await getAsync('SELECT id, username, account_status FROM users WHERE id = ?', [id]);
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
+      }
+      const accountStatus = normalizeAccountStatus(req.body.account_status, user.account_status);
+      if (!accountStatus) {
+        return res.status(400).json({ error: 'Account status is invalid' });
+      }
+      if (accountStatus === 'disabled' && Number(id) === req.session.userId) {
+        return res.status(400).json({ error: 'You cannot disable your own account' });
+      }
+      if (accountStatus === 'disabled' && user.username === 'admin') {
+        return res.status(400).json({ error: 'The admin account cannot be disabled' });
       }
 
       const existingUser = await getAsync('SELECT id FROM users WHERE username = ? AND id <> ?', [username, id]);
@@ -75,19 +102,63 @@ const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync
         return res.status(409).json({ error: 'Username already exists' });
       }
 
-      await runAsync('UPDATE users SET username = ?, name = ?, email = ? WHERE id = ?', [username, name, email, id]);
+      await runAsync(
+        `UPDATE users
+         SET username = ?, name = ?, email = ?, account_status = ?,
+             account_status_changed_at = CASE WHEN account_status <> ? THEN CURRENT_TIMESTAMP ELSE account_status_changed_at END
+         WHERE id = ?`,
+        [username, name, email, accountStatus, accountStatus, id]
+      );
       const updatedUser = await getAsync(
-        `SELECT users.id, users.username, users.name, users.email, COUNT(tasks.id)::int AS task_count
-         FROM users
-         LEFT JOIN tasks ON tasks.user_id = users.id
+        `${USER_LIST_SELECT}
          WHERE users.id = ?
-         GROUP BY users.id, users.username, users.name, users.email`,
+         ${USER_LIST_GROUP}`,
         [id]
       );
       res.json({ user: updatedUser });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Failed to update user' });
+    }
+  });
+
+  router.patch('/admin/users/:id/status', adminRequired, async (req, res) => {
+    const { id } = req.params;
+    const accountStatus = normalizeAccountStatus(req.body.account_status);
+    if (!accountStatus) {
+      return res.status(400).json({ error: 'Account status is invalid' });
+    }
+
+    if (accountStatus === 'disabled' && Number(id) === req.session.userId) {
+      return res.status(400).json({ error: 'You cannot disable your own account' });
+    }
+
+    try {
+      const user = await getAsync('SELECT id, username, account_status FROM users WHERE id = ?', [id]);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      if (accountStatus === 'disabled' && user.username === 'admin') {
+        return res.status(400).json({ error: 'The admin account cannot be disabled' });
+      }
+
+      await runAsync(
+        `UPDATE users
+         SET account_status = ?,
+             account_status_changed_at = CASE WHEN account_status <> ? THEN CURRENT_TIMESTAMP ELSE account_status_changed_at END
+         WHERE id = ?`,
+        [accountStatus, accountStatus, id]
+      );
+      const updatedUser = await getAsync(
+        `${USER_LIST_SELECT}
+         WHERE users.id = ?
+         ${USER_LIST_GROUP}`,
+        [id]
+      );
+      res.json({ user: updatedUser });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to update user status' });
     }
   });
 

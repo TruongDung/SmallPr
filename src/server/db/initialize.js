@@ -138,6 +138,8 @@ const initializeDatabase = async () => {
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS next_occurrence_date DATE');
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT');
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT');
+  await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status TEXT NOT NULL DEFAULT 'enabled'");
+  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status_changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS tag TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS comment TEXT');
   await pool.query("ALTER TABLE tasks ADD COLUMN IF NOT EXISTS priority TEXT NOT NULL DEFAULT 'medium'");
