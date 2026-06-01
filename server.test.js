@@ -1413,6 +1413,18 @@ describe('Admin API', () => {
     expect(deleteSelfResponse.statusCode).toBe(400);
     expect(deleteSelfResponse.body).toHaveProperty('error', 'You cannot delete your own account');
 
+    const disableAdminResponse = await admin
+      .patch(`/api/admin/users/${meResponse.body.user.id}/status`)
+      .send({ account_status: 'disabled' });
+    expect(disableAdminResponse.statusCode).toBe(400);
+    expect(disableAdminResponse.body).toHaveProperty('error', 'You cannot disable your own account');
+
+    const updateAdminStatusResponse = await admin
+      .put(`/api/admin/users/${meResponse.body.user.id}`)
+      .send({ username: 'admin', account_status: 'disabled' });
+    expect(updateAdminStatusResponse.statusCode).toBe(400);
+    expect(updateAdminStatusResponse.body).toHaveProperty('error', 'The admin account status cannot be changed');
+
     const deleteMissingResponse = await admin.delete('/api/admin/users/999999');
     expect(deleteMissingResponse.statusCode).toBe(404);
     expect(deleteMissingResponse.body).toHaveProperty('error', 'User not found');

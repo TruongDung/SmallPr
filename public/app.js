@@ -2466,6 +2466,7 @@ const showAdminUserModal = (user = null) => {
   saveAdminUser.title = user ? t('save') : t('addUser');
   adminPasswordField.classList.toggle('hidden', Boolean(user));
   adminPasswordInput.required = !user;
+  adminStatusInput.disabled = user?.username === 'admin';
 
   if (user) {
     adminNameInput.value = user.name || '';
@@ -2486,6 +2487,7 @@ const hideAdminUserModal = () => {
   adminUserForm.reset();
   adminPasswordField.classList.remove('hidden');
   adminPasswordInput.required = true;
+  adminStatusInput.disabled = false;
   clearAdminUserFormError();
   adminUserModal.classList.add('hidden');
 };

@@ -90,11 +90,11 @@ const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync
       if (!accountStatus) {
         return res.status(400).json({ error: 'Account status is invalid' });
       }
+      if (user.username === 'admin' && accountStatus !== user.account_status) {
+        return res.status(400).json({ error: 'The admin account status cannot be changed' });
+      }
       if (accountStatus === 'disabled' && Number(id) === req.session.userId) {
         return res.status(400).json({ error: 'You cannot disable your own account' });
-      }
-      if (accountStatus === 'disabled' && user.username === 'admin') {
-        return res.status(400).json({ error: 'The admin account cannot be disabled' });
       }
 
       const existingUser = await getAsync('SELECT id FROM users WHERE username = ? AND id <> ?', [username, id]);
@@ -138,8 +138,8 @@ const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
-      if (accountStatus === 'disabled' && user.username === 'admin') {
-        return res.status(400).json({ error: 'The admin account cannot be disabled' });
+      if (user.username === 'admin') {
+        return res.status(400).json({ error: 'The admin account status cannot be changed' });
       }
 
       await runAsync(
