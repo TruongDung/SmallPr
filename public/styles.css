@@ -4230,11 +4230,9 @@ body.theme-dark .status-in_progress {
 
 /* ============================================================
    Credit Cards — narrow viewport (<=640px)
-   The credit-card table flips from row-layout to card-layout: each
-   <tr> becomes a bordered card, each <td> a label/value row showing
-   its data-label. The Monthly Bills table keeps the real table
-   layout (header + tr/td) to match the Transactions table — see the
-   shared rule near the transactions block below.
+   The Credit card, Monthly Bills, and Transactions tables all keep
+   the real table layout (header + tr/td) on phones — just with
+   tighter font/padding — so the three Financial tables look alike.
    ============================================================ */
 @media (max-width: 640px) {
 
@@ -4300,123 +4298,18 @@ body.theme-dark .status-in_progress {
     width: 100%;
   }
 
-  /* Table wrappers no longer need horizontal scroll — cells stack */
-  .credit-card-table-wrap {
-    overflow-x: visible;
-  }
-
+  /* Credit card table keeps the real table layout (header + tr/td) to match
+     the Transactions and Monthly Bills tables instead of stacking into cards.
+     Sizing mirrors the transactions table; min-width:0 lets it compress to fit
+     the viewport rather than forcing a wide horizontal scroll. */
   .credit-card-table {
     min-width: 0;
-    border-collapse: separate;
-    border-spacing: 0 14px;
+    font-size: 0.85rem;
   }
 
-  /* Hide the table header — labels move into each cell via data-label */
-  .credit-card-table thead {
-    display: none;
-  }
-
-  /* Each row becomes a bordered card; each cell a stacked block */
-  .credit-card-table tbody,
-  .credit-card-table tr,
+  .credit-card-table th,
   .credit-card-table td {
-    display: block;
-    width: 100%;
-  }
-
-  .credit-card-table tr {
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    background: var(--surface);
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
-    overflow: hidden;
-  }
-
-  /* Cell renders label (left) + value (right) on one line */
-  .credit-card-table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-    padding: 14px 16px;
-    border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
-    text-align: right;
-    overflow-wrap: anywhere;
-  }
-
-  .credit-card-table td:last-child {
-    border-bottom: 0;
-    padding-top: 12px;
-    padding-bottom: 14px;
-  }
-
-  /* Inject column header into each cell via data-label */
-  .credit-card-table td::before {
-    content: attr(data-label);
-    flex: 0 0 42%;
-    color: var(--muted);
-    font-size: 0.78rem;
-    font-weight: 800;
-    text-align: left;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-
-  /* Actions cell: full-width buttons stacked to the right */
-  .credit-card-table td[data-label="Actions"] {
-    align-items: stretch;
-  }
-
-  .credit-card-table td[data-label="Actions"]::before {
-    align-self: center;
-  }
-
-  .credit-card-actions {
-    justify-content: flex-end;
-    width: 100%;
-    gap: 8px;
-  }
-
-  .credit-card-actions button {
-    width: auto;
-  }
-
-  .credit-card-actions .task-action-icon {
-    width: 42px;
-    height: 42px;
-    flex: 0 0 auto;
-    padding: 0;
-  }
-
-  /* Summary rows render as standalone cards without a data-label prefix */
-  .credit-card-user-summary,
-  .credit-card-grand-total {
-    border: 0;
-    background: transparent;
-  }
-
-  .credit-card-user-summary td,
-  .credit-card-grand-total td {
-    border-radius: 14px;
-    border: 1px solid var(--border);
-    padding: 16px 18px;
-  }
-
-  .credit-card-user-summary td {
-    background: var(--surface-soft);
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.05);
-  }
-
-  .credit-card-grand-total td {
-    margin-bottom: 22px;
-    background: var(--surface-tint);
-    border: 2px solid var(--primary);
-    box-shadow: 0 6px 18px rgba(47, 112, 255, 0.18);
-  }
-
-  .credit-card-user-summary td::before,
-  .credit-card-grand-total td::before {
-    content: none;
+    padding: 8px 10px;
   }
 
   /* Edit modal sizing */
@@ -5409,12 +5302,24 @@ body.theme-dark .status-in_progress {
 
   .transactions-filters {
     flex-direction: column;
+    align-items: stretch;
     width: 100%;
   }
 
   .transactions-filters input,
   .transactions-filters select {
     width: 100%;
+    /* Allow these flex children to shrink below their intrinsic/native
+       min-width instead of overflowing the card on the right. */
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* iOS Safari ignores `width` on date/month inputs unless their native
+     appearance is removed, so the month filter would overflow otherwise. */
+  .transactions-filters input[type="month"] {
+    -webkit-appearance: none;
+    appearance: none;
   }
 
   .transactions-summary {
