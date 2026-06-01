@@ -2530,19 +2530,11 @@ body.theme-dark .status-in_progress {
 }
 
 .fast-access-bills {
-  padding: 22px;
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
-}
-
-.fast-access-bills h3 {
-  margin: 0 0 16px;
-  font-size: 1.05rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--text);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .fast-access-bills-table-wrap {

@@ -18,6 +18,7 @@
     financialPanels: {
       cards: document.getElementById('credit-card-panel'),
       info: document.getElementById('credit-card-info-panel'),
+      links: document.getElementById('credit-card-links-panel'),
       transactions: document.getElementById('transactions-panel'),
     },
     fastAccessBillsList: document.getElementById('fast-access-bills-list'),

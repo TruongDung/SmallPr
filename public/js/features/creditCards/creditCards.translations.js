@@ -11,6 +11,7 @@
     setText('#credit-card-title', t('creditCardAccounts'));
     setText('#credit-card-tab', t('creditCardSubTab'));
     setText('#credit-card-info-tab', t('creditCardInfoSubTab'));
+    setText('#credit-card-links-tab', t('fastAccessLinks'));
     setText('#credit-card-quick-links-title', t('fastAccessLinks'));
     setText('#fast-access-bills-title', t('monthlyBills'));
     renderBillsHeaders();

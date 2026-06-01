@@ -369,6 +369,7 @@
         <div class="financial-tabs" role="tablist" aria-label="Financial">
           <button id="credit-card-tab" class="financial-tab active" type="button" role="tab" aria-selected="true" aria-controls="credit-card-panel" data-financial-tab="cards" data-i18n-key="creditCardSubTab">Credit card</button>
           <button id="credit-card-info-tab" class="financial-tab" type="button" role="tab" aria-selected="false" aria-controls="credit-card-info-panel" data-financial-tab="info" data-i18n-key="creditCardInfoSubTab">Expense</button>
+          <button id="credit-card-links-tab" class="financial-tab" type="button" role="tab" aria-selected="false" aria-controls="credit-card-links-panel" data-financial-tab="links" data-i18n-key="fastAccessLinks">Fast Access</button>
           <button id="transactions-tab" class="financial-tab" type="button" role="tab" aria-selected="false" aria-controls="transactions-panel" data-financial-tab="transactions" data-i18n-key="transactionsSubTab">Transactions</button>
         </div>
 
@@ -395,19 +396,7 @@
         </section>
 
         <section id="credit-card-info-panel" class="financial-panel hidden" role="tabpanel" aria-labelledby="credit-card-info-tab">
-          <section class="credit-card-quick-links" aria-labelledby="credit-card-quick-links-title">
-            <h3 id="credit-card-quick-links-title">Fast Access</h3>
-            <div class="credit-card-link-grid">
-              <a class="credit-card-link" data-i18n-key="mortgageLink" href="https://rocket.com/mortgage/" target="_blank" rel="noopener noreferrer">Mortgage</a>
-              <a class="credit-card-link" data-i18n-key="electricLink" href="https://wemc.smarthub.coop/Login.html" target="_blank" rel="noopener noreferrer">Electric</a>
-              <a class="credit-card-link" data-i18n-key="waterLink" href="https://ubwss.raleighnc.gov/wss/login" target="_blank" rel="noopener noreferrer">Water</a>
-              <a class="credit-card-link" data-i18n-key="gasLink" href="https://account.psncenergy.com/#account-summary" target="_blank" rel="noopener noreferrer">Gas</a>
-              <a class="credit-card-link" data-i18n-key="internetLink" href="https://www.spectrum.net/account-summary" target="_blank" rel="noopener noreferrer">Internet</a>
-              <a class="credit-card-link" data-i18n-key="phoneLink" href="https://www.att.com/acctmgmt/overview" target="_blank" rel="noopener noreferrer">Phone</a>
-            </div>
-          </section>
-          <section class="fast-access-bills" aria-labelledby="fast-access-bills-title">
-            <h3 id="fast-access-bills-title">Monthly Bills</h3>
+          <section class="fast-access-bills" aria-label="Monthly bills">
             <div class="fast-access-bills-table-wrap">
               <table class="fast-access-bills-table">
                 <thead>
@@ -428,6 +417,20 @@
                 <span id="fast-access-grand-total-label">Grand total</span>
                 <strong id="fast-access-grand-total">$0.00</strong>
               </div>
+            </div>
+          </section>
+        </section>
+
+        <section id="credit-card-links-panel" class="financial-panel hidden" role="tabpanel" aria-labelledby="credit-card-links-tab">
+          <section class="credit-card-quick-links" aria-labelledby="credit-card-quick-links-title">
+            <h3 id="credit-card-quick-links-title">Fast Access</h3>
+            <div class="credit-card-link-grid">
+              <a class="credit-card-link" data-i18n-key="mortgageLink" href="https://rocket.com/mortgage/" target="_blank" rel="noopener noreferrer">Mortgage</a>
+              <a class="credit-card-link" data-i18n-key="electricLink" href="https://wemc.smarthub.coop/Login.html" target="_blank" rel="noopener noreferrer">Electric</a>
+              <a class="credit-card-link" data-i18n-key="waterLink" href="https://ubwss.raleighnc.gov/wss/login" target="_blank" rel="noopener noreferrer">Water</a>
+              <a class="credit-card-link" data-i18n-key="gasLink" href="https://account.psncenergy.com/#account-summary" target="_blank" rel="noopener noreferrer">Gas</a>
+              <a class="credit-card-link" data-i18n-key="internetLink" href="https://www.spectrum.net/account-summary" target="_blank" rel="noopener noreferrer">Internet</a>
+              <a class="credit-card-link" data-i18n-key="phoneLink" href="https://www.att.com/acctmgmt/overview" target="_blank" rel="noopener noreferrer">Phone</a>
             </div>
           </section>
         </section>
