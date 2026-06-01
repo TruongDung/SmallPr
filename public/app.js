@@ -395,6 +395,7 @@ const translations = {
     userStatus: 'Status',
     userEnabledStatus: 'Enabled',
     userDisabledStatus: 'Disabled',
+    notes: 'Notes',
     enableUser: 'Enable user',
     disableUser: 'Disable user',
     userEnabled: 'User enabled.',
@@ -691,6 +692,7 @@ const translations = {
     userStatus: 'Trạng thái',
     userEnabledStatus: 'Đang bật',
     userDisabledStatus: 'Đã tắt',
+    notes: 'Ghi chú',
     enableUser: 'Bật người dùng',
     disableUser: 'Tắt người dùng',
     userEnabled: 'Đã bật người dùng.',
@@ -980,7 +982,8 @@ const applyTranslations = () => {
   setText('.user-table th:nth-child(3)', t('email'));
   setText('.user-table th:nth-child(4)', t('userStatus'));
   setText('.user-table th:nth-child(5)', t('tasks'));
-  setText('.user-table th:nth-child(6)', t('actions'));
+  setText('.user-table th:nth-child(6)', t('notes'));
+  setText('.user-table th:nth-child(7)', t('actions'));
   confirmDeleteNo.className = 'task-action-icon secondary';
   confirmDeleteNo.textContent = '×';
   confirmDeleteNo.setAttribute('aria-label', t('no'));
@@ -2400,6 +2403,13 @@ const renderUsers = (users) => {
     taskBadge.textContent = user.task_count;
     taskCountCell.append(taskBadge);
 
+    const noteCountCell = document.createElement('td');
+    noteCountCell.dataset.label = t('notes');
+    const noteBadge = document.createElement('span');
+    noteBadge.className = 'user-task-badge';
+    noteBadge.textContent = user.note_count;
+    noteCountCell.append(noteBadge);
+
     const actionsCell = document.createElement('td');
     actionsCell.dataset.label = t('actions');
     const actions = document.createElement('div');
@@ -2446,7 +2456,7 @@ const renderUsers = (users) => {
     }
 
     actionsCell.append(actions);
-    row.append(usernameCell, nameCell, emailCell, statusCell, taskCountCell, actionsCell);
+    row.append(usernameCell, nameCell, emailCell, statusCell, taskCountCell, noteCountCell, actionsCell);
     userList.append(row);
   });
 };

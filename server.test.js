@@ -1291,6 +1291,7 @@ describe('Admin API', () => {
       email: `${managedUsername}@example.com`,
       account_status: 'enabled',
       task_count: 0,
+      note_count: 0,
     });
 
     const duplicateResponse = await admin
@@ -1309,6 +1310,10 @@ describe('Admin API', () => {
       .post('/api/tasks')
       .send({ title: 'Owned task' });
 
+    await managedAgent
+      .post('/api/notes')
+      .send({ title: 'Owned note', body: 'hello' });
+
     const listResponse = await admin.get('/api/admin/users');
     expect(listResponse.statusCode).toBe(200);
     const listedUser = listResponse.body.users.find((user) => user.username === managedUsername);
@@ -1317,6 +1322,7 @@ describe('Admin API', () => {
       email: `${managedUsername}@example.com`,
       account_status: 'enabled',
       task_count: 1,
+      note_count: 1,
     });
 
     const updatedEmail = `updated-${managedUsername}@example.com`;
@@ -1329,6 +1335,7 @@ describe('Admin API', () => {
       email: updatedEmail,
       account_status: 'enabled',
       task_count: 1,
+      note_count: 1,
     });
 
     const disableResponse = await admin

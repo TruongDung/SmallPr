@@ -11,9 +11,11 @@ const normalizeAccountStatus = (status, fallback = 'enabled') => {
 
 const USER_LIST_SELECT = `SELECT users.id, users.username, users.name, users.email,
        users.account_status, users.account_status_changed_at,
-       COUNT(tasks.id)::int AS task_count
+       COUNT(DISTINCT tasks.id)::int AS task_count,
+       COUNT(DISTINCT notes.id)::int AS note_count
        FROM users
-       LEFT JOIN tasks ON tasks.user_id = users.id`;
+       LEFT JOIN tasks ON tasks.user_id = users.id
+       LEFT JOIN notes ON notes.user_id = users.id`;
 
 const USER_LIST_GROUP = `GROUP BY users.id, users.username, users.name, users.email,
        users.account_status, users.account_status_changed_at`;
