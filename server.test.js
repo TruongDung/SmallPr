@@ -1106,14 +1106,14 @@ describe('Credit Card API', () => {
       .send({ name: 'Bad balance', total_balance: '-1', closing_date: '2026-06-15' });
 
     expect(invalidBalanceResponse.statusCode).toBe(400);
-    expect(invalidBalanceResponse.body).toHaveProperty('error', 'Total balance must be a valid amount');
+    expect(invalidBalanceResponse.body).toHaveProperty('error', 'Balance must be a valid amount');
 
     const invalidDateResponse = await agent
       .post('/api/credit-cards')
       .send({ name: 'Bad date', total_balance: '10.00', closing_date: 'not-a-date' });
 
     expect(invalidDateResponse.statusCode).toBe(400);
-    expect(invalidDateResponse.body).toHaveProperty('error', 'Closing date must be a valid date');
+    expect(invalidDateResponse.body).toHaveProperty('error', 'Close must be a valid date');
 
     const invalidIssuerResponse = await agent
       .post('/api/credit-cards')

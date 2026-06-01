@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=cc-table-scroll-2" />
+  <link rel="stylesheet" href="styles.css?v=cache-clear-20260601-3" />
 </head>
 <body>
   <div class="container">
@@ -328,7 +328,7 @@
       <section id="admin-section" class="card hidden">
         <div class="admin-header">
           <div>
-            <h2>User</h2>
+            <h2>Users</h2>
             <p id="admin-message" class="message"></p>
           </div>
           <button id="open-add-user-modal" type="button">Add User</button>
@@ -376,8 +376,8 @@
                   <th>Card No</th>
                   <th>Type</th>
                   <th>Balance</th>
-                  <th>Interest charge</th>
-                  <th>Closing Date</th>
+                  <th>Interest</th>
+                  <th>Close</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -619,11 +619,11 @@
           <input id="credit-card-balance" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
         </div>
         <div class="field">
-          <label for="credit-card-interest-charge">Interest charge</label>
+          <label for="credit-card-interest-charge">Interest</label>
           <input id="credit-card-interest-charge" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
         </div>
         <div class="field">
-          <label for="credit-card-closing-date">Closing date</label>
+          <label for="credit-card-closing-date">Close</label>
           <input id="credit-card-closing-date" type="date" />
         </div>
         <div class="modal-actions">
@@ -667,11 +667,11 @@
           <input id="edit-credit-card-balance" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
         </div>
         <div class="field">
-          <label for="edit-credit-card-interest-charge">Interest charge</label>
+          <label for="edit-credit-card-interest-charge">Interest</label>
           <input id="edit-credit-card-interest-charge" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" />
         </div>
         <div class="field">
-          <label for="edit-credit-card-closing-date">Closing date</label>
+          <label for="edit-credit-card-closing-date">Close</label>
           <input id="edit-credit-card-closing-date" type="date" />
         </div>
         <p id="edit-credit-card-error" class="field-error hidden"></p>
@@ -922,18 +922,18 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.min.js"></script>
-  <script src="js/features/creditCards/creditCards.dom.js?v=credit-card-icons-6"></script>
-  <script src="js/features/creditCards/creditCards.formatters.js?v=credit-card-icons-6"></script>
-  <script src="js/features/creditCards/creditCards.users.js?v=credit-card-icons-6"></script>
-  <script src="js/features/creditCards/creditCards.table.js?v=credit-card-icons-6"></script>
-  <script src="js/features/creditCards/creditCards.bills.js?v=credit-card-icons-6"></script>
-  <script src="js/features/creditCards/creditCards.translations.js?v=credit-card-icons-6"></script>
-  <script src="js/features/creditCards/creditCards.module.js?v=credit-card-icons-6"></script>
-  <script src="js/features/notes/notes.module.js?v=notes-3"></script>
-  <script src="js/features/dashboard/dashboard.module.js?v=dashboard-1"></script>
-  <script src="js/transactions.module.js?v=transactions-1"></script>
-  <script src="js/notes-code-highlighter.js?v=code-highlight-1"></script>
+  <script src="js/features/creditCards/creditCards.dom.js?v=cache-clear-20260601-3"></script>
+  <script src="js/features/creditCards/creditCards.formatters.js?v=cache-clear-20260601-3"></script>
+  <script src="js/features/creditCards/creditCards.users.js?v=cache-clear-20260601-3"></script>
+  <script src="js/features/creditCards/creditCards.table.js?v=cache-clear-20260601-3"></script>
+  <script src="js/features/creditCards/creditCards.bills.js?v=cache-clear-20260601-3"></script>
+  <script src="js/features/creditCards/creditCards.translations.js?v=cache-clear-20260601-3"></script>
+  <script src="js/features/creditCards/creditCards.module.js?v=cache-clear-20260601-3"></script>
+  <script src="js/features/notes/notes.module.js?v=cache-clear-20260601-3"></script>
+  <script src="js/features/dashboard/dashboard.module.js?v=cache-clear-20260601-3"></script>
+  <script src="js/transactions.module.js?v=cache-clear-20260601-3"></script>
+  <script src="js/notes-code-highlighter.js?v=cache-clear-20260601-3"></script>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="app.js?v=notes-paste-1"></script>
+  <script src="app.js?v=cache-clear-20260601-3"></script>
 </body>
 </html>

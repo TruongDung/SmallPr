@@ -2324,8 +2324,7 @@ body.theme-dark .status-in_progress {
   overflow-x: auto;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: var(--card-bg);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background: var(--surface);
 }
 
 /* ============================================================
@@ -2928,22 +2927,27 @@ body.theme-dark .status-in_progress {
 .user-table {
   width: 100%;
   border-collapse: collapse;
+  border-spacing: 0;
+  background: var(--surface);
 }
 
 .user-table th,
 .user-table td {
-  padding: 16px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border);
   text-align: left;
   vertical-align: middle;
 }
 
 .user-table thead {
-  background: var(--bg);
+  background: var(--surface-soft);
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .user-table th {
-  color: var(--muted);
+  color: var(--text);
   font-size: 0.875rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -2951,11 +2955,11 @@ body.theme-dark .status-in_progress {
 }
 
 .user-table tbody tr {
-  transition: background-color 0.15s ease;
+  transition: background-color 0.2s ease;
 }
 
 .user-table tbody tr:hover {
-  background: var(--hover-bg);
+  background: var(--surface-soft);
 }
 
 .user-table tbody tr:last-child td {
@@ -2963,7 +2967,7 @@ body.theme-dark .status-in_progress {
 }
 
 .user-table td:first-child {
-  font-weight: 500;
+  font-weight: 400;
   color: var(--text);
 }
 
@@ -4030,62 +4034,6 @@ body.theme-dark .status-in_progress {
 
   .task-hover-popover {
     display: none;
-  }
-
-  .user-table-wrap {
-    overflow-x: visible;
-  }
-
-  .user-table {
-    min-width: 0;
-    border-collapse: separate;
-    border-spacing: 0 14px;
-  }
-
-  .user-table thead {
-    display: none;
-  }
-
-  .user-table tbody,
-  .user-table tr,
-  .user-table td {
-    display: block;
-    width: 100%;
-  }
-
-  .user-table tr {
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    background: var(--surface);
-    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.06);
-    overflow: hidden;
-  }
-
-  .user-table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
-    padding: 14px 16px;
-    border-bottom: 1px solid color-mix(in srgb, var(--border) 65%, transparent);
-    text-align: right;
-    overflow-wrap: anywhere;
-  }
-
-  .user-table td:last-child {
-    border-bottom: 0;
-    padding-top: 12px;
-    padding-bottom: 14px;
-  }
-
-  .user-table td::before {
-    content: attr(data-label);
-    flex: 0 0 38%;
-    color: var(--muted);
-    font-size: 0.78rem;
-    font-weight: 800;
-    text-align: left;
-    text-transform: uppercase;
   }
 
   .user-actions {
@@ -5161,6 +5109,7 @@ body.theme-dark .status-in_progress {
 
 .credit-card-table-wrap,
 .fast-access-bills-table-wrap,
+.user-table-wrap,
 .transactions-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--border);
@@ -5170,6 +5119,7 @@ body.theme-dark .status-in_progress {
 
 .credit-card-table,
 .fast-access-bills-table,
+.user-table,
 .transactions-table {
   width: 100%;
   border-collapse: collapse;
@@ -5185,6 +5135,8 @@ body.theme-dark .status-in_progress {
 .credit-card-table td,
 .fast-access-bills-table th,
 .fast-access-bills-table td,
+.user-table th,
+.user-table td,
 .transactions-table th,
 .transactions-table td {
   padding: 12px 16px;
@@ -5195,6 +5147,7 @@ body.theme-dark .status-in_progress {
 
 .credit-card-table thead,
 .fast-access-bills-table thead,
+.user-table thead,
 .transactions-table thead {
   position: sticky;
   top: 0;
@@ -5204,6 +5157,7 @@ body.theme-dark .status-in_progress {
 
 .credit-card-table th,
 .fast-access-bills-table th,
+.user-table th,
 .transactions-table th {
   color: var(--text);
   font-size: 0.875rem;
@@ -5214,12 +5168,14 @@ body.theme-dark .status-in_progress {
 
 .credit-card-table tbody tr,
 .fast-access-bills-table tbody tr,
+.user-table tbody tr,
 .transactions-table tbody tr {
   transition: background-color 0.2s ease;
 }
 
 .credit-card-table tbody tr:hover,
 .fast-access-bills-table tbody tr:hover,
+.user-table tbody tr:hover,
 .transactions-table tbody tr:hover {
   background: var(--surface-soft);
   transform: none;
@@ -5234,6 +5190,7 @@ body.theme-dark .status-in_progress {
 
 .credit-card-table td,
 .fast-access-bills-table td,
+.user-table td,
 .transactions-table td {
   color: var(--text);
   font-size: 0.95rem;
@@ -5257,6 +5214,7 @@ body.theme-dark .status-in_progress {
 
 .credit-card-table tbody tr:last-child td,
 .fast-access-bills-table tbody tr:last-child td,
+.user-table tbody tr:last-child td,
 .transactions-table tbody tr:last-child td {
   border-bottom: 0;
 }
@@ -5336,6 +5294,7 @@ body.theme-dark .status-in_progress {
   }
 
   .transactions-table,
+  .user-table,
   .fast-access-bills-table {
     font-size: 0.85rem;
   }
@@ -5348,6 +5307,8 @@ body.theme-dark .status-in_progress {
 
   .transactions-table th,
   .transactions-table td,
+  .user-table th,
+  .user-table td,
   .fast-access-bills-table th,
   .fast-access-bills-table td {
     padding: 8px 10px;
@@ -5562,6 +5523,19 @@ body.theme-dark .status-in_progress {
 .notes-editor-actions button {
   padding: 6px 12px;
   font-size: 0.9rem;
+}
+
+body:not(.theme-dark) .notes-editor-actions button.secondary {
+  background: var(--surface);
+  color: var(--text);
+  border-color: #cbd5e1;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+body:not(.theme-dark) .notes-editor-actions button.secondary:hover {
+  background: var(--surface-tint);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 @media (max-width: 640px) {

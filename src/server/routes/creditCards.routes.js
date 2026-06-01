@@ -104,21 +104,21 @@ const validateCreditCardDetails = ({ name, card_user, issuer, total_balance, int
     ? Number(existingCard.total_balance || 0)
     : normalizeCreditCardBalance(total_balance);
   if (normalizedBalance === null) {
-    return { error: 'Total balance must be a valid amount' };
+    return { error: 'Balance must be a valid amount' };
   }
 
   const normalizedInterestCharge = interest_charge === undefined
     ? Number(existingCard.interest_charge || 0)
     : normalizeCreditCardInterestCharge(interest_charge);
   if (normalizedInterestCharge === null) {
-    return { error: 'Interest charge must be a valid amount' };
+    return { error: 'Interest must be a valid amount' };
   }
 
   const normalizedClosingDate = normalizeClosingDate(
     closing_date === undefined ? existingCard.closing_date : closing_date
   );
   if (normalizedClosingDate === null) {
-    return { error: 'Closing date must be a valid date' };
+    return { error: 'Close must be a valid date' };
   }
 
   return {

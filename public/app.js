@@ -279,7 +279,7 @@ const translations = {
     income: 'Income',
     expense: 'Expense',
     fastAccessLinks: 'Fast Access',
-    monthlyBills: 'Monthly bill house',
+    monthlyBills: 'Bill',
     otherSubTab: 'Other',
     editBill: 'Edit bill',
     billItem: 'Item',
@@ -302,9 +302,9 @@ const translations = {
     creditCardIssuer: 'Type',
     creditCardIssuerPlaceholder: 'Select type',
     totalBalance: 'Balance',
-    interestCharge: 'Interest charge',
+    interestCharge: 'Interest',
     invalidCreditCardIssuer: 'Card type must be one of the available options',
-    closingDate: 'Closing Date',
+    closingDate: 'Close',
     addCard: 'Add Card',
     addCreditCard: 'Add card',
     noCreditCards: 'No credit cards yet.',
@@ -314,10 +314,10 @@ const translations = {
     deleteCreditCardTitle: 'Delete card?',
     deleteCreditCardMessage: 'Card {name} will be permanently removed.',
     editCreditCard: 'Edit card',
-    closingDateSaved: 'Closing date saved.',
+    closingDateSaved: 'Close saved.',
     creditCardNameRequired: 'Card No is required',
     invalidCreditCardBalance: 'Balance must be a valid amount',
-    invalidClosingDate: 'Closing date must be a valid date',
+    invalidClosingDate: 'Close must be a valid date',
     addCity: 'Add City',
     cityPlaceholder: 'Search city',
     cityNotFound: 'City was not found.',
@@ -446,7 +446,7 @@ const translations = {
     dashboardWeatherUnavailable: 'Weather unavailable',
     dashboardQuoteUnavailable: 'Quote unavailable',
     weatherOpenInTab: 'Open the Weather tab to see current conditions.',
-    totalBalance: 'Total balance',
+    totalBalance: 'Balance',
     totalInterest: 'Total interest',
     moveUp: 'Move up',
     moveDown: 'Move down',
@@ -2378,7 +2378,7 @@ const renderUsers = (users) => {
       const deleteButton = document.createElement('button');
       deleteButton.type = 'button';
       deleteButton.className = 'task-action-icon danger';
-      deleteButton.textContent = '🗑';
+      deleteButton.textContent = '×';
       deleteButton.setAttribute('aria-label', t('delete'));
       deleteButton.title = t('delete');
       deleteButton.addEventListener('click', () => showUserDeleteConfirm(user));

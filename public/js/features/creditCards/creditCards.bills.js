@@ -5,7 +5,7 @@
     let billSort = { field: null, direction: null };
 
     const otherBills = [
-      { id: 'other-study-dsa', item: 'Study DSA', amount: 1760, due_date: '', pay_before: '', status: '', readOnly: true },
+      { id: 'other-study-dsa', item: 'Study DSA', amount: 1760, due_date: '', pay_before: '', status: '' },
     ];
 
     const showEditBillError = (text) => window.CreditCardFeature.dom.setFieldError(elements.editBillError, text);
