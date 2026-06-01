@@ -1436,6 +1436,59 @@ describe('Admin API', () => {
     expect(deleteMissingResponse.statusCode).toBe(404);
     expect(deleteMissingResponse.body).toHaveProperty('error', 'User not found');
   });
+
+  test('allows admin to impersonate a user and return to admin', async () => {
+    const admin = await loginAdmin();
+    const managedUsername = testUsername('impersonated-user');
+    const createUserResponse = await admin
+      .post('/api/admin/users')
+      .send({ username: managedUsername, password: 'Initial123!' });
+
+    expect(createUserResponse.statusCode).toBe(200);
+    const targetUserId = createUserResponse.body.user.id;
+
+    const impersonateResponse = await admin
+      .post('/api/admin/impersonate')
+      .send({ user_id: targetUserId });
+    expect(impersonateResponse.statusCode).toBe(200);
+    expect(impersonateResponse.body.user).toMatchObject({
+      id: targetUserId,
+      username: managedUsername,
+      impersonator: { username: 'admin' },
+    });
+
+    const meAsTargetResponse = await admin.get('/api/me');
+    expect(meAsTargetResponse.statusCode).toBe(200);
+    expect(meAsTargetResponse.body.user).toMatchObject({
+      id: targetUserId,
+      username: managedUsername,
+      impersonator: { username: 'admin' },
+    });
+
+    const adminWhileImpersonatingResponse = await admin.get('/api/admin/users');
+    expect(adminWhileImpersonatingResponse.statusCode).toBe(403);
+    expect(adminWhileImpersonatingResponse.body).toHaveProperty('error', 'Admin access required');
+
+    const taskResponse = await admin
+      .post('/api/tasks')
+      .send({ title: 'Impersonated task' });
+    expect(taskResponse.statusCode).toBe(200);
+
+    const stopResponse = await admin.post('/api/impersonation/stop');
+    expect(stopResponse.statusCode).toBe(200);
+    expect(stopResponse.body.user).toMatchObject({
+      username: 'admin',
+      impersonator: null,
+    });
+
+    const adminAgainResponse = await admin.get('/api/admin/users');
+    expect(adminAgainResponse.statusCode).toBe(200);
+    const listedUser = adminAgainResponse.body.users.find((user) => user.id === targetUserId);
+    expect(listedUser).toMatchObject({
+      username: managedUsername,
+      task_count: 1,
+    });
+  });
 });
 
 

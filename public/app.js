@@ -26,6 +26,7 @@ const weatherCityInput = document.getElementById('weather-city-input');
 const weatherList = document.getElementById('weather-list');
 const weatherMessage = document.getElementById('weather-message');
 const openAddUserModalButton = document.getElementById('open-add-user-modal');
+const impersonateUserSelect = document.getElementById('impersonate-user-select');
 const adminUserModal = document.getElementById('admin-user-modal');
 const adminUserModalTitle = document.getElementById('admin-user-modal-title');
 const adminUserForm = document.getElementById('admin-user-form');
@@ -137,6 +138,8 @@ const REMEMBER_ME_KEY = 'task-manager-remember-me';
 const rememberMeCheckbox = document.getElementById('remember-me');
 const rememberMeText = document.getElementById('remember-me-text');
 const VIEW_NAMES = new Set(['dashboard', 'notes', 'tasks', 'archived', 'tags', 'weather', 'credit-cards', 'admin']);
+const isAdminUser = () => currentUser?.username === 'admin';
+const isImpersonating = () => Boolean(currentUser?.impersonator);
 const getSavedView = () => {
   const savedView = localStorage.getItem(SAVED_VIEW_KEY);
   return VIEW_NAMES.has(savedView) ? savedView : 'dashboard';
@@ -240,6 +243,12 @@ const translations = {
     manageUsers: 'User',
     addUser: 'Add User',
     editUser: 'Edit User',
+    impersonate: 'Impersonate...',
+    impersonateUser: 'Impersonate user',
+    backToAdmin: 'Back to Admin',
+    impersonatingAs: 'Acting as {username}',
+    impersonationStarted: 'Now viewing as {username}.',
+    impersonationStopped: 'Back to admin.',
     userUpdated: 'User updated.',
     id: 'ID',
     tasks: 'Tasks',
@@ -537,6 +546,12 @@ const translations = {
     manageUsers: 'Người dùng',
     addUser: 'Thêm người dùng',
     editUser: 'Chỉnh sửa người dùng',
+    impersonate: 'Đóng vai...',
+    impersonateUser: 'Đóng vai người dùng',
+    backToAdmin: 'Về Admin',
+    impersonatingAs: 'Đang dùng như {username}',
+    impersonationStarted: 'Đang xem như {username}.',
+    impersonationStopped: 'Đã về admin.',
     userUpdated: 'Đã cập nhật người dùng.',
     id: 'ID',
     tasks: 'Công việc',
@@ -963,6 +978,11 @@ const applyTranslations = () => {
   setActionIconButton(document.getElementById('save-edit-task'), t('save'), '✓');
   setText('#admin-section h2', t('manageUsers'));
   setText('#open-add-user-modal', t('addUser'));
+  if (impersonateUserSelect) {
+    impersonateUserSelect.setAttribute('aria-label', t('impersonateUser'));
+    const placeholder = impersonateUserSelect.querySelector('option[value=""]');
+    if (placeholder) placeholder.textContent = t('impersonate');
+  }
   adminUserModalTitle.textContent = pendingAdminUser ? t('editUser') : t('addUser');
   setText('label[for="admin-name"]', t('name'));
   setText('label[for="admin-username"]', t('username'));
@@ -1771,7 +1791,7 @@ const showSection = () => {
     return;
   }
 
-  if (currentView === 'admin' && currentUser.username !== 'admin') {
+  if (currentView === 'admin' && !isAdminUser()) {
     setCurrentView('tasks');
   }
 
@@ -1779,7 +1799,7 @@ const showSection = () => {
   renderUserArea();
 
   const showDashboard = currentView === 'dashboard';
-  const showAdmin = currentView === 'admin' && currentUser.username === 'admin';
+  const showAdmin = currentView === 'admin' && isAdminUser();
   const showCreditCards = currentView === 'credit-cards';
   const showNotes = currentView === 'notes';
   const showTaskWorkspace = isTaskWorkspaceView();
@@ -1861,7 +1881,9 @@ const hideAddTaskModal = () => {
 const renderUserArea = () => {
   userArea.innerHTML = '';
   const welcome = document.createElement('span');
-  welcome.textContent = t('welcome', { name: currentUser.name || currentUser.username });
+  welcome.textContent = isImpersonating()
+    ? t('impersonatingAs', { username: currentUser.name || currentUser.username })
+    : t('welcome', { name: currentUser.name || currentUser.username });
   userArea.append(welcome);
   logoutButton.className = 'secondary nav-button';
   setNavButtonContent(logoutButton, t('logout'), '⎋');
@@ -1923,7 +1945,7 @@ const renderUserArea = () => {
 
   userArea.append(addTaskButton, dashboardButton, notesButton, tasksButton, weatherButton, creditCardsButton);
 
-  if (currentUser.username === 'admin') {
+  if (isAdminUser()) {
     const adminButton = document.createElement('button');
     adminButton.type = 'button';
     adminButton.className = `secondary nav-button ${currentView === 'admin' ? 'active-nav' : ''}`;
@@ -1934,6 +1956,15 @@ const renderUserArea = () => {
     });
 
     userArea.append(adminButton);
+  }
+
+  if (isImpersonating()) {
+    const returnButton = document.createElement('button');
+    returnButton.type = 'button';
+    returnButton.className = 'secondary nav-button impersonation-return';
+    setNavButtonContent(returnButton, t('backToAdmin'), 'A');
+    returnButton.addEventListener('click', stopImpersonation);
+    userArea.append(returnButton);
   }
 
   userArea.append(logoutButton);
@@ -2367,7 +2398,31 @@ const loadUsers = async () => {
     return;
   }
   users = result.users || [];
+  renderImpersonateOptions(users);
   renderUsers(users);
+};
+
+const renderImpersonateOptions = (users) => {
+  if (!impersonateUserSelect) return;
+  impersonateUserSelect.innerHTML = '';
+
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = t('impersonate');
+  impersonateUserSelect.append(placeholder);
+
+  users
+    .filter((user) => user.username !== 'admin')
+    .forEach((user) => {
+      const option = document.createElement('option');
+      option.value = String(user.id);
+      option.textContent = user.name ? `${user.username} (${user.name})` : user.username;
+      option.disabled = user.account_status === 'disabled';
+      impersonateUserSelect.append(option);
+    });
+
+  impersonateUserSelect.value = '';
+  impersonateUserSelect.disabled = impersonateUserSelect.options.length <= 1;
 };
 
 const renderUsers = (users) => {
@@ -2557,6 +2612,42 @@ const resetUserPassword = async (user) => {
   }
 
   alert(t('passwordUpdated'));
+};
+
+const startImpersonation = async (userId) => {
+  const result = await request('/api/admin/impersonate', {
+    method: 'POST',
+    body: JSON.stringify({ user_id: Number(userId) }),
+  });
+
+  if (result.error) {
+    adminMessage.textContent = result.error;
+    if (impersonateUserSelect) impersonateUserSelect.value = '';
+    return;
+  }
+
+  currentUser = result.user;
+  disconnectRealtime();
+  connectRealtime();
+  setCurrentView('dashboard');
+  showStatusToast(t('impersonationStarted', { username: currentUser.username }));
+  showSection();
+};
+
+const stopImpersonation = async () => {
+  const result = await request('/api/impersonation/stop', { method: 'POST' });
+
+  if (result.error) {
+    alert(result.error);
+    return;
+  }
+
+  currentUser = result.user;
+  disconnectRealtime();
+  connectRealtime();
+  setCurrentView('admin');
+  showStatusToast(t('impersonationStopped'));
+  showSection();
 };
 
 const toggleUserStatus = async (user) => {
@@ -3983,6 +4074,11 @@ dashboardModule.bind();
 editTaskForm.addEventListener('submit', handleEditTaskSubmit);
 adminUserForm.addEventListener('submit', handleAdminUserSubmit);
 openAddUserModalButton.addEventListener('click', () => showAdminUserModal());
+if (impersonateUserSelect) {
+  impersonateUserSelect.addEventListener('change', (event) => {
+    if (event.target.value) startImpersonation(event.target.value);
+  });
+}
 cancelAdminUser.addEventListener('click', hideAdminUserModal);
 logoutButton.addEventListener('click', handleLogout);
 sendSummaryEmailButton.addEventListener('click', sendSummaryEmail);

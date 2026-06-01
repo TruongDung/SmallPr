@@ -1,5 +1,19 @@
 const express = require('express');
 
+const createSessionUser = (user, impersonator = null) => ({
+  id: user.id,
+  username: user.username,
+  name: user.name,
+  email: user.email,
+  account_status: user.account_status,
+  impersonator: impersonator ? {
+    id: impersonator.id,
+    username: impersonator.username,
+    name: impersonator.name,
+    email: impersonator.email,
+  } : null,
+});
+
 const createAuthRouter = ({ bcrypt, getAsync, getUserById, runAsync }) => {
   const router = express.Router();
 
@@ -21,8 +35,9 @@ const createAuthRouter = ({ bcrypt, getAsync, getUserById, runAsync }) => {
         [username, hashedPassword]
       );
       req.session.userId = result.lastID;
+      delete req.session.impersonatorUserId;
 
-      res.json({ user: { id: result.lastID, username } });
+      res.json({ user: { id: result.lastID, username, impersonator: null } });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Failed to create user' });
@@ -54,15 +69,8 @@ const createAuthRouter = ({ bcrypt, getAsync, getUserById, runAsync }) => {
       }
 
       req.session.userId = user.id;
-      res.json({
-        user: {
-          id: user.id,
-          username: user.username,
-          name: user.name,
-          email: user.email,
-          account_status: user.account_status,
-        },
-      });
+      delete req.session.impersonatorUserId;
+      res.json({ user: createSessionUser(user) });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Login failed' });
@@ -77,6 +85,31 @@ const createAuthRouter = ({ bcrypt, getAsync, getUserById, runAsync }) => {
       }
       res.json({ success: true });
     });
+  });
+
+  router.post('/impersonation/stop', async (req, res) => {
+    if (!req.session.impersonatorUserId) {
+      return res.status(400).json({ error: 'No active impersonation session' });
+    }
+
+    try {
+      const admin = await getUserById(req.session.impersonatorUserId);
+      if (!admin || admin.username !== 'admin') {
+        req.session.destroy(() => {});
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+      if (admin.account_status === 'disabled') {
+        req.session.destroy(() => {});
+        return res.status(403).json({ error: 'Account is disabled' });
+      }
+
+      req.session.userId = admin.id;
+      delete req.session.impersonatorUserId;
+      res.json({ user: createSessionUser(admin) });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to stop impersonation' });
+    }
   });
 
   router.get('/me', async (req, res) => {
@@ -94,7 +127,17 @@ const createAuthRouter = ({ bcrypt, getAsync, getUserById, runAsync }) => {
         req.session.destroy(() => {});
         return res.status(403).json({ error: 'Account is disabled', user: null });
       }
-      res.json({ user });
+
+      let impersonator = null;
+      if (req.session.impersonatorUserId) {
+        impersonator = await getUserById(req.session.impersonatorUserId);
+        if (!impersonator || impersonator.username !== 'admin' || impersonator.account_status === 'disabled') {
+          req.session.destroy(() => {});
+          return res.status(401).json({ error: 'Authentication required', user: null });
+        }
+      }
+
+      res.json({ user: createSessionUser(user, impersonator) });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Failed to retrieve user' });

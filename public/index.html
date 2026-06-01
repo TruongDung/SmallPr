@@ -331,7 +331,13 @@
             <h2>Users</h2>
             <p id="admin-message" class="message"></p>
           </div>
-          <button id="open-add-user-modal" type="button">Add User</button>
+          <div class="admin-header-actions">
+            <label class="sr-only" for="impersonate-user-select">Impersonate user</label>
+            <select id="impersonate-user-select">
+              <option value="">Impersonate...</option>
+            </select>
+            <button id="open-add-user-modal" type="button">Add User</button>
+          </div>
         </div>
 
         <div class="user-table-wrap">

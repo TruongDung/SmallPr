@@ -20,6 +20,20 @@ const USER_LIST_SELECT = `SELECT users.id, users.username, users.name, users.ema
 const USER_LIST_GROUP = `GROUP BY users.id, users.username, users.name, users.email,
        users.account_status, users.account_status_changed_at`;
 
+const createSessionUser = (user, impersonator = null) => ({
+  id: user.id,
+  username: user.username,
+  name: user.name,
+  email: user.email,
+  account_status: user.account_status,
+  impersonator: impersonator ? {
+    id: impersonator.id,
+    username: impersonator.username,
+    name: impersonator.name,
+    email: impersonator.email,
+  } : null,
+});
+
 const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync }) => {
   const router = express.Router();
 
@@ -34,6 +48,36 @@ const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Failed to load users' });
+    }
+  });
+
+  router.post('/admin/impersonate', adminRequired, async (req, res) => {
+    const targetUserId = Number(req.body?.user_id);
+    if (!Number.isInteger(targetUserId)) {
+      return res.status(400).json({ error: 'User is required' });
+    }
+
+    try {
+      const targetUser = await getAsync(
+        'SELECT id, username, name, email, account_status FROM users WHERE id = ?',
+        [targetUserId]
+      );
+      if (!targetUser) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+      if (targetUser.username === 'admin') {
+        return res.status(400).json({ error: 'The admin account cannot be impersonated' });
+      }
+      if (targetUser.account_status === 'disabled') {
+        return res.status(400).json({ error: 'Disabled users cannot be impersonated' });
+      }
+
+      req.session.impersonatorUserId = req.currentUser.id;
+      req.session.userId = targetUser.id;
+      res.json({ user: createSessionUser(targetUser, req.currentUser) });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to impersonate user' });
     }
   });
 
