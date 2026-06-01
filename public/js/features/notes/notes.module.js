@@ -21,6 +21,18 @@
     let pendingSave = false;
     let showPreview = false;
 
+    // Pinned notes float to the top; within each group the most recently
+    // updated comes first. Mirrors the server's ORDER BY so the optimistic
+    // client ordering matches what a reload returns.
+    const sortNotes = () => {
+      notes.sort((a, b) => {
+        if (Boolean(a.pinned) !== Boolean(b.pinned)) {
+          return a.pinned ? -1 : 1;
+        }
+        return String(b.updated_at).localeCompare(String(a.updated_at));
+      });
+    };
+
     const formatRelativeDate = (isoString) => {
       if (!isoString) return '';
       const date = new Date(isoString);
@@ -80,8 +92,11 @@
 
       visibleNotes.forEach((note) => {
         const item = document.createElement('li');
-        item.className = `notes-list-item ${note.id === activeNoteId ? 'active' : ''}`;
+        item.className = `notes-list-item ${note.id === activeNoteId ? 'active' : ''} ${note.pinned ? 'pinned' : ''}`;
         item.dataset.noteId = String(note.id);
+
+        const content = document.createElement('div');
+        content.className = 'notes-list-content';
 
         const title = document.createElement('strong');
         title.className = 'notes-list-title';
@@ -93,8 +108,23 @@
         const preview = previewBody(note.body);
         meta.textContent = preview ? `${dateText} · ${preview}` : dateText;
 
-        item.append(title, meta);
-        item.addEventListener('click', () => selectNote(note.id));
+        content.append(title, meta);
+        content.addEventListener('click', () => selectNote(note.id));
+
+        const pinButton = document.createElement('button');
+        pinButton.type = 'button';
+        pinButton.className = `notes-pin-button ${note.pinned ? 'pinned' : ''}`;
+        pinButton.textContent = '📌';
+        const pinLabel = note.pinned ? t('unpinNote') : t('pinNote');
+        pinButton.setAttribute('aria-label', pinLabel);
+        pinButton.setAttribute('aria-pressed', note.pinned ? 'true' : 'false');
+        pinButton.title = pinLabel;
+        pinButton.addEventListener('click', (event) => {
+          event.stopPropagation();
+          togglePin(note.id);
+        });
+
+        item.append(content, pinButton);
         list.append(item);
       });
     };
@@ -104,6 +134,35 @@
       if (!note) return;
       activeNoteId = id;
       showEditor(note);
+      renderList();
+    };
+
+    const togglePin = async (id) => {
+      const note = notes.find((entry) => entry.id === id);
+      if (!note) return;
+
+      const nextPinned = !note.pinned;
+      // Optimistically reorder so the note jumps to/from the top immediately.
+      note.pinned = nextPinned;
+      sortNotes();
+      renderList();
+
+      const result = await request(`/api/notes/${id}/pin`, {
+        method: 'PATCH',
+        body: JSON.stringify({ pinned: nextPinned }),
+      });
+
+      if (result.error) {
+        // Roll back the optimistic change on failure.
+        note.pinned = !nextPinned;
+        sortNotes();
+        renderList();
+        setMessage(result.error);
+        return;
+      }
+
+      notes = notes.map((entry) => (entry.id === result.note.id ? result.note : entry));
+      sortNotes();
       renderList();
     };
 
@@ -135,7 +194,7 @@
 
       const updated = result.note;
       notes = notes.map((entry) => (entry.id === updated.id ? updated : entry));
-      notes.sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
+      sortNotes();
       savedIndicator.textContent = t('noteSaved');
       renderList();
     };
@@ -211,7 +270,7 @@
 
         notes.unshift(result.note);
         activeNoteId = result.note.id;
-        notes.sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
+        sortNotes();
         renderList();
       })();
     };

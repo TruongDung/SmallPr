@@ -4360,14 +4360,23 @@ body.theme-dark .status-in_progress {
 
 .notes-list-item {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 8px;
   padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--surface-soft);
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.notes-list-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
 }
 
 .notes-list-item:hover {
@@ -4381,6 +4390,40 @@ body.theme-dark .status-in_progress {
   border-width: 2px;
   background: var(--surface-tint);
   box-shadow: 0 2px 8px rgba(47, 112, 255, 0.15);
+}
+
+.notes-list-item.pinned {
+  border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+  background: var(--surface);
+}
+
+/* Pin toggle on each note row. Dimmed and grayscale until the note is pinned
+   (or the row is hovered), so the list stays calm but pinning is discoverable. */
+.notes-pin-button {
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  padding: 2px 4px;
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.35;
+  filter: grayscale(1);
+  transition: opacity 0.2s ease, filter 0.2s ease, transform 0.2s ease;
+}
+
+.notes-list-item:hover .notes-pin-button {
+  opacity: 0.7;
+}
+
+.notes-pin-button:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.notes-pin-button.pinned {
+  opacity: 1;
+  filter: none;
 }
 
 .notes-list-title {

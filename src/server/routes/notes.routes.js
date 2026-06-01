@@ -6,10 +6,10 @@ const createNotesRouter = ({ allAsync, authRequired, emitToUser, queryAsync, run
   router.get('/notes', authRequired, async (req, res) => {
     try {
       const notes = await allAsync(
-        `SELECT id, title, body, created_at, updated_at
+        `SELECT id, title, body, pinned, created_at, updated_at
          FROM notes
          WHERE user_id = ?
-         ORDER BY updated_at DESC, id DESC`,
+         ORDER BY pinned DESC, updated_at DESC, id DESC`,
         [req.session.userId]
       );
       res.json({ notes });
@@ -27,7 +27,7 @@ const createNotesRouter = ({ allAsync, authRequired, emitToUser, queryAsync, run
       const result = await queryAsync(
         `INSERT INTO notes (user_id, title, body)
          VALUES (?, ?, ?)
-         RETURNING id, title, body, created_at, updated_at`,
+         RETURNING id, title, body, pinned, created_at, updated_at`,
         [req.session.userId, title, body]
       );
       emitToUser(req.session.userId, 'note:created', { note: result.rows[0] });
@@ -48,8 +48,33 @@ const createNotesRouter = ({ allAsync, authRequired, emitToUser, queryAsync, run
         `UPDATE notes
          SET title = ?, body = ?, updated_at = CURRENT_TIMESTAMP
          WHERE id = ? AND user_id = ?
-         RETURNING id, title, body, created_at, updated_at`,
+         RETURNING id, title, body, pinned, created_at, updated_at`,
         [title, body, id, req.session.userId]
+      );
+
+      if (!result.rows.length) {
+        return res.status(404).json({ error: 'Note not found' });
+      }
+
+      emitToUser(req.session.userId, 'note:updated', { note: result.rows[0] });
+      res.json({ note: result.rows[0] });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to update note' });
+    }
+  });
+
+  router.patch('/notes/:id/pin', authRequired, async (req, res) => {
+    const { id } = req.params;
+    const pinned = Boolean(req.body?.pinned);
+
+    try {
+      const result = await queryAsync(
+        `UPDATE notes
+         SET pinned = ?
+         WHERE id = ? AND user_id = ?
+         RETURNING id, title, body, pinned, created_at, updated_at`,
+        [pinned, id, req.session.userId]
       );
 
       if (!result.rows.length) {
