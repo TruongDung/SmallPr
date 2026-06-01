@@ -5631,6 +5631,19 @@ body:not(.theme-dark) .notes-editor-actions button.secondary:hover {
   color: var(--primary);
 }
 
+body.theme-dark .notes-editor-actions button.secondary {
+  background: var(--surface-soft);
+  color: var(--text);
+  border-color: var(--border);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+
+body.theme-dark .notes-editor-actions button.secondary:hover {
+  background: var(--surface-tint);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
 @media (max-width: 640px) {
   .note-preview {
     font-size: 0.9rem;

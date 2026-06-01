@@ -46,38 +46,79 @@
 
   const highlightCode = (code, language) => {
     let highlighted = escapeHtml(code);
+    const tokens = [];
 
-    const wrap = (pattern, replacement) => {
-      highlighted = highlighted.replace(pattern, replacement);
+    const placeholderName = (index) => {
+      let value = index;
+      let name = '';
+      do {
+        name = String.fromCharCode(65 + (value % 26)) + name;
+        value = Math.floor(value / 26) - 1;
+      } while (value >= 0);
+      return `\uE000${name}\uE001`;
+    };
+
+    const wrap = (pattern, className, getText = (match) => match) => {
+      highlighted = highlighted.replace(pattern, (...args) => {
+        const match = args[0];
+        const offset = args[args.length - 2];
+        const source = args[args.length - 1];
+        const previous = source[offset - 1] || '';
+        const next = source[offset + match.length] || '';
+
+        if (previous === '\uE000' || next === '\uE001') {
+          return match;
+        }
+
+        const token = placeholderName(tokens.length);
+        tokens.push(`<span class="${className}">${getText(match, args)}</span>`);
+        return token;
+      });
+    };
+
+    const restoreTokens = () => {
+      highlighted = highlighted.replace(/\uE000([A-Z]+)\uE001/g, (match) => {
+        const index = match.slice(1, -1).split('').reduce((total, char) => total * 26 + char.charCodeAt(0) - 64, 0) - 1;
+        return tokens[index] || match;
+      });
     };
 
     if (language === 'javascript' || language === 'java' || language === 'cpp' || language === 'python') {
-      wrap(/\b(function|const|let|var|if|else|for|while|switch|case|break|continue|return|async|await|class|extends|constructor|new|this|import|export|from|default|try|catch|finally|throw|public|private|protected|static|void|int|float|double|String|bool|boolean|def|class|self|None|True|False)\b/g, '<span class="keyword">$1</span>');
-      wrap(/(["'])(?:(?=(\\?))\2.)*?\1/g, '<span class="string">$&</span>');
-      wrap(/(\/\/.*$|#.*$|\/\*[\s\S]*?\*\/)/gm, '<span class="comment">$1</span>');
-      wrap(/\b(\d+(?:\.\d+)?)\b/g, '<span class="number">$1</span>');
-      wrap(/\b([a-zA-Z_][\w]*)\s*(?=\()/g, '<span class="function">$1</span>');
+      wrap(/(\/\/.*$|#.*$|\/\*[\s\S]*?\*\/)/gm, 'comment');
+      wrap(/(["'])(?:(?=(\\?))\2.)*?\1/g, 'string');
+      wrap(/\b(function|const|let|var|if|else|for|while|switch|case|break|continue|return|async|await|class|extends|constructor|new|this|import|export|from|default|try|catch|finally|throw|public|private|protected|static|void|int|float|double|String|bool|boolean|def|class|self|None|True|False)\b/g, 'keyword');
+      wrap(/\b(\d+(?:\.\d+)?)\b/g, 'number');
+      wrap(/\b([a-zA-Z_][\w]*)\s*(?=\()/g, 'function');
     } else if (language === 'html') {
-      wrap(/(&lt;!--[\s\S]*?--&gt;)/g, '<span class="comment">$1</span>');
-      wrap(/(&lt;\/?)([a-zA-Z][\w-]*)([^&]*?)(\/?&gt;)/g, '$1<span class="keyword">$2</span>$3$4');
-      wrap(/([a-zA-Z-:]+)(=)("[^"]*"|'[^']*')/g, '<span class="attribute">$1</span>$2<span class="string">$3</span>');
+      wrap(/(&lt;!--[\s\S]*?--&gt;)/g, 'comment');
+      highlighted = highlighted.replace(/(&lt;\/?)([a-zA-Z][\w-]*)([^&]*?)(\/?&gt;)/g, (match, open, tagName, attributes, close) => {
+        const token = placeholderName(tokens.length);
+        const highlightedAttributes = attributes.replace(/([a-zA-Z-:]+)(=)("[^"]*"|'[^']*')/g, '<span class="attribute">$1</span>$2<span class="string">$3</span>');
+        tokens.push(`${open}<span class="keyword">${tagName}</span>${highlightedAttributes}${close}`);
+        return token;
+      });
     } else if (language === 'css') {
-      wrap(/(\/\*[\s\S]*?\*\/)/g, '<span class="comment">$1</span>');
-      wrap(/([a-zA-Z0-9_.:#-]+)\s*(?=\{)/g, '<span class="function">$1</span>');
-      wrap(/([a-zA-Z-]+)(\s*:\s*)([^;\n]+)/g, '<span class="keyword">$1</span>$2<span class="string">$3</span>');
-      wrap(/\b(\d+(?:\.\d+)?)(px|em|rem|%|vh|vw)?\b/g, '<span class="number">$1$2</span>');
+      wrap(/(\/\*[\s\S]*?\*\/)/g, 'comment');
+      wrap(/([a-zA-Z0-9_.:#-]+)\s*(?=\{)/g, 'function');
+      highlighted = highlighted.replace(/([a-zA-Z-]+)(\s*:\s*)([^;\n]+)/g, (match, property, separator, value) => {
+        const token = placeholderName(tokens.length);
+        tokens.push(`<span class="keyword">${property}</span>${separator}<span class="string">${value}</span>`);
+        return token;
+      });
+      wrap(/\b(\d+(?:\.\d+)?)(px|em|rem|%|vh|vw)?\b/g, 'number');
     } else if (language === 'json') {
-      wrap(/"([^"]+)":/g, '<span class="keyword">"$1"</span>:');
-      wrap(/"([^"\\]*(?:\\.[^"\\]*)*)"/g, '<span class="string">"$1"</span>');
-      wrap(/\b(true|false|null)\b/g, '<span class="keyword">$1</span>');
-      wrap(/\b(-?\d+(?:\.\d+)?)\b/g, '<span class="number">$1</span>');
+      wrap(/"([^"]+)":/g, 'keyword');
+      wrap(/"([^"\\]*(?:\\.[^"\\]*)*)"/g, 'string');
+      wrap(/\b(true|false|null)\b/g, 'keyword');
+      wrap(/\b(-?\d+(?:\.\d+)?)\b/g, 'number');
     } else if (language === 'bash') {
-      wrap(/(#.*$)/gm, '<span class="comment">$1</span>');
-      wrap(/(["'])(?:(?=(\\?))\2.)*?\1/g, '<span class="string">$&</span>');
-      wrap(/\b(echo|cd|ls|mkdir|rm|grep|awk|sed|curl|wget|cat|sudo|ssh|scp|exit|if|then|else|fi|for|while|do|done)\b/g, '<span class="keyword">$1</span>');
-      wrap(/\$\w+/g, '<span class="function">$&</span>');
+      wrap(/(#.*$)/gm, 'comment');
+      wrap(/(["'])(?:(?=(\\?))\2.)*?\1/g, 'string');
+      wrap(/\b(echo|cd|ls|mkdir|rm|grep|awk|sed|curl|wget|cat|sudo|ssh|scp|exit|if|then|else|fi|for|while|do|done)\b/g, 'keyword');
+      wrap(/\$\w+/g, 'function');
     }
 
+    restoreTokens();
     return highlighted;
   };
 
@@ -104,13 +145,14 @@
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const isIndented = /^    /.test(line) || /^\t/.test(line);
+      const isBlank = line.trim() === '';
 
-      if (isIndented) {
+      if (isIndented || (inCodeBlock && isBlank)) {
         if (!inCodeBlock) {
           inCodeBlock = true;
           codeBlockLines = [];
         }
-        codeBlockLines.push(line.replace(/^    |^\t/, ''));
+        codeBlockLines.push(isBlank ? '' : line.replace(/^    |^\t/, ''));
       } else {
         if (inCodeBlock && codeBlockLines.length > 0) {
           // End of code block
