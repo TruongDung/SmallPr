@@ -4230,9 +4230,11 @@ body.theme-dark .status-in_progress {
 
 /* ============================================================
    Credit Cards — narrow viewport (<=640px)
-   Tables flip from row-layout to card-layout: each <tr> becomes
-   a bordered card, each <td> a label/value row showing its
-   data-label. .fast-access-bills-table shares the same treatment.
+   The credit-card table flips from row-layout to card-layout: each
+   <tr> becomes a bordered card, each <td> a label/value row showing
+   its data-label. The Monthly Bills table keeps the real table
+   layout (header + tr/td) to match the Transactions table — see the
+   shared rule near the transactions block below.
    ============================================================ */
 @media (max-width: 640px) {
 
@@ -4299,37 +4301,30 @@ body.theme-dark .status-in_progress {
   }
 
   /* Table wrappers no longer need horizontal scroll — cells stack */
-  .credit-card-table-wrap,
-  .fast-access-bills-table-wrap {
+  .credit-card-table-wrap {
     overflow-x: visible;
   }
 
-  .credit-card-table,
-  .fast-access-bills-table {
+  .credit-card-table {
     min-width: 0;
     border-collapse: separate;
     border-spacing: 0 14px;
   }
 
   /* Hide the table header — labels move into each cell via data-label */
-  .credit-card-table thead,
-  .fast-access-bills-table thead {
+  .credit-card-table thead {
     display: none;
   }
 
   /* Each row becomes a bordered card; each cell a stacked block */
   .credit-card-table tbody,
   .credit-card-table tr,
-  .credit-card-table td,
-  .fast-access-bills-table tbody,
-  .fast-access-bills-table tr,
-  .fast-access-bills-table td {
+  .credit-card-table td {
     display: block;
     width: 100%;
   }
 
-  .credit-card-table tr,
-  .fast-access-bills-table tr {
+  .credit-card-table tr {
     border: 1px solid var(--border);
     border-radius: 14px;
     background: var(--surface);
@@ -4338,8 +4333,7 @@ body.theme-dark .status-in_progress {
   }
 
   /* Cell renders label (left) + value (right) on one line */
-  .credit-card-table td,
-  .fast-access-bills-table td {
+  .credit-card-table td {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -4350,16 +4344,14 @@ body.theme-dark .status-in_progress {
     overflow-wrap: anywhere;
   }
 
-  .credit-card-table td:last-child,
-  .fast-access-bills-table td:last-child {
+  .credit-card-table td:last-child {
     border-bottom: 0;
     padding-top: 12px;
     padding-bottom: 14px;
   }
 
   /* Inject column header into each cell via data-label */
-  .credit-card-table td::before,
-  .fast-access-bills-table td::before {
+  .credit-card-table td::before {
     content: attr(data-label);
     flex: 0 0 42%;
     color: var(--muted);
@@ -4368,10 +4360,6 @@ body.theme-dark .status-in_progress {
     text-align: left;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-  }
-
-  .fast-access-bill-group-summary td::before {
-    display: none;
   }
 
   /* Actions cell: full-width buttons stacked to the right */
@@ -5437,12 +5425,21 @@ body.theme-dark .status-in_progress {
     font-size: 1.5rem;
   }
 
-  .transactions-table {
+  .transactions-table,
+  .fast-access-bills-table {
     font-size: 0.85rem;
   }
 
+  /* Match the transactions table: compress to fit the viewport instead of
+     forcing the 820px min-width (which would horizontally scroll on phones). */
+  .fast-access-bills-table {
+    min-width: 0;
+  }
+
   .transactions-table th,
-  .transactions-table td {
+  .transactions-table td,
+  .fast-access-bills-table th,
+  .fast-access-bills-table td {
     padding: 8px 10px;
   }
 }

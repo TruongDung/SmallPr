@@ -13,6 +13,7 @@
     const savedIndicator = document.getElementById('note-saved-indicator');
     const previewDiv = document.getElementById('note-preview');
     const togglePreviewButton = document.getElementById('toggle-preview-button');
+    const pasteButton = document.getElementById('note-paste-button');
 
     let notes = [];
     let activeNoteId = null;
@@ -281,6 +282,10 @@
       deleteButton.title = t('deleteNote');
       titleInput.placeholder = t('notePlaceholderTitle');
       bodyInput.placeholder = t('notePlaceholderBody');
+      if (pasteButton) {
+        pasteButton.textContent = t('notePaste');
+        pasteButton.title = t('notePaste');
+      }
       searchInput.placeholder = t('searchNotes');
       const editorEmptyText = section.querySelector('#notes-editor-empty p');
       if (editorEmptyText) editorEmptyText.textContent = t('notesEmpty');
@@ -311,6 +316,42 @@
           bodyInput.classList.toggle('hidden', showPreview);
           previewDiv.classList.toggle('hidden', !showPreview);
           togglePreviewButton.textContent = showPreview ? 'Edit' : 'Preview';
+          if (showPreview) {
+            updatePreview();
+          }
+        });
+      }
+
+      // Paste clipboard contents onto a new last line of the note body.
+      if (pasteButton) {
+        pasteButton.addEventListener('click', async () => {
+          // Nothing to paste into until a note is open in the editor.
+          if (editorForm.classList.contains('hidden')) return;
+
+          let text = '';
+          try {
+            text = await navigator.clipboard.readText();
+          } catch (_error) {
+            // Reads can be blocked by browser permissions or a non-secure
+            // context; surface a short hint rather than throwing.
+            savedIndicator.textContent = t('notePasteFailed');
+            return;
+          }
+          if (!text) return;
+
+          // Append on a fresh last line, adding a separating newline only when
+          // the body is non-empty and doesn't already end with one.
+          const current = bodyInput.value;
+          const needsNewline = current.length > 0 && !current.endsWith('\n');
+          bodyInput.value = current + (needsNewline ? '\n' : '') + text;
+
+          // Move the caret to the end so the user continues after the paste.
+          bodyInput.focus();
+          const end = bodyInput.value.length;
+          bodyInput.setSelectionRange(end, end);
+
+          // Persist and refresh the preview, mirroring the input handler.
+          scheduleSave();
           if (showPreview) {
             updatePreview();
           }

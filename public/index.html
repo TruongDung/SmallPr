@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=dashboard-2" />
+  <link rel="stylesheet" href="styles.css?v=bills-table-1" />
 </head>
 <body>
   <div class="container">
@@ -144,6 +144,7 @@
               <textarea id="note-body-input" class="notes-editor-body" placeholder="Start writing..." rows="14"></textarea>
               <div id="note-preview" class="note-preview hidden"></div>
               <div class="notes-editor-actions">
+                <button id="note-paste-button" type="button" class="secondary" title="Paste clipboard to the last line">Paste</button>
                 <button id="toggle-preview-button" type="button" class="secondary">Preview</button>
               </div>
               <p id="note-saved-indicator" class="notes-saved-indicator" aria-live="polite"></p>
@@ -928,11 +929,11 @@
   <script src="js/features/creditCards/creditCards.bills.js?v=credit-card-icons-6"></script>
   <script src="js/features/creditCards/creditCards.translations.js?v=credit-card-icons-6"></script>
   <script src="js/features/creditCards/creditCards.module.js?v=credit-card-icons-6"></script>
-  <script src="js/features/notes/notes.module.js?v=notes-2"></script>
+  <script src="js/features/notes/notes.module.js?v=notes-3"></script>
   <script src="js/features/dashboard/dashboard.module.js?v=dashboard-1"></script>
   <script src="js/transactions.module.js?v=transactions-1"></script>
   <script src="js/notes-code-highlighter.js?v=code-highlight-1"></script>
   <script src="/socket.io/socket.io.js"></script>
-  <script src="app.js?v=dashboard-1"></script>
+  <script src="app.js?v=notes-paste-1"></script>
 </body>
 </html>
