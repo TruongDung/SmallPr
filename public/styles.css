@@ -5160,6 +5160,15 @@ body.theme-dark .user-status-badge.disabled {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.finance-export-button {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 /* Statement import preview modal */
@@ -5268,6 +5277,116 @@ body.theme-dark .user-status-badge.disabled {
 
 .summary-amount.negative {
   color: #ef4444;
+}
+
+.finance-insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.finance-panel {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  padding: 16px;
+}
+
+.finance-panel h3 {
+  margin: 0 0 12px;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.finance-report-list {
+  display: grid;
+  gap: 10px;
+}
+
+.finance-report-list > div {
+  display: grid;
+  grid-template-columns: minmax(100px, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.finance-report-list > div:last-child {
+  border-bottom: 0;
+}
+
+.finance-report-list span,
+.finance-report-list small,
+.budget-category-row span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.finance-chart-bars,
+.budget-category-list {
+  display: grid;
+  gap: 12px;
+}
+
+.finance-chart-row {
+  display: grid;
+  grid-template-columns: minmax(88px, 0.9fr) minmax(120px, 2fr) auto;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.finance-chart-track,
+.budget-progress {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-soft);
+}
+
+.finance-chart-fill,
+.budget-progress > div {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary);
+}
+
+.finance-chart-fill.income {
+  background: #10b981;
+}
+
+.finance-chart-fill.expense {
+  background: #ef4444;
+}
+
+.budget-category-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  gap: 12px;
+  align-items: center;
+}
+
+.budget-category-row > div {
+  display: grid;
+  gap: 5px;
+}
+
+.budget-category-row input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.finance-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 
 .transactions-table-wrap {

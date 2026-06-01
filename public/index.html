@@ -454,6 +454,9 @@
             </div>
             <div class="transactions-toolbar-actions">
               <button id="import-statement" type="button" class="secondary task-action-icon" aria-label="Import statement PDF" title="Import statement PDF">⤓</button>
+              <button id="export-transactions-csv" type="button" class="secondary finance-export-button" aria-label="Export CSV" title="Export CSV">CSV</button>
+              <button id="export-transactions-pdf" type="button" class="secondary finance-export-button" aria-label="Export PDF" title="Export PDF">PDF</button>
+              <button id="export-transactions-excel" type="button" class="secondary finance-export-button" aria-label="Export Excel" title="Export Excel">Excel</button>
               <button id="open-add-transaction" type="button" class="primary task-action-icon" aria-label="Add Transaction" title="Add Transaction">+</button>
             </div>
             <input id="import-statement-file" type="file" accept="application/pdf" class="hidden" aria-hidden="true" />
@@ -472,6 +475,28 @@
               <span class="summary-label">Net</span>
               <span id="summary-balance" class="summary-amount">$0.00</span>
             </div>
+          </div>
+
+          <div class="finance-insights-grid">
+            <section class="finance-panel" aria-labelledby="monthly-report-title">
+              <h3 id="monthly-report-title">Monthly Report</h3>
+              <div id="monthly-report-list" class="finance-report-list"></div>
+            </section>
+            <section class="finance-panel" aria-labelledby="finance-charts-title">
+              <h3 id="finance-charts-title">Income &amp; Expense Charts</h3>
+              <div id="finance-chart-bars" class="finance-chart-bars"></div>
+            </section>
+          </div>
+
+          <div class="finance-insights-grid">
+            <section class="finance-panel" aria-labelledby="budget-category-title">
+              <h3 id="budget-category-title">Budget by Category</h3>
+              <div id="budget-category-list" class="budget-category-list"></div>
+            </section>
+            <section class="finance-panel" aria-labelledby="credit-card-payment-title">
+              <h3 id="credit-card-payment-title">Credit Card Payment Tracking</h3>
+              <div id="credit-card-payment-list" class="finance-report-list"></div>
+            </section>
           </div>
 
           <div class="transactions-table-wrap">

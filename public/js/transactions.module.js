@@ -24,6 +24,13 @@
     const summaryExpense = document.getElementById('summary-expense');
     const summaryBalance = document.getElementById('summary-balance');
     const addButton = document.getElementById('open-add-transaction');
+    const monthlyReportList = document.getElementById('monthly-report-list');
+    const financeChartBars = document.getElementById('finance-chart-bars');
+    const budgetCategoryList = document.getElementById('budget-category-list');
+    const creditCardPaymentList = document.getElementById('credit-card-payment-list');
+    const exportCsvButton = document.getElementById('export-transactions-csv');
+    const exportPdfButton = document.getElementById('export-transactions-pdf');
+    const exportExcelButton = document.getElementById('export-transactions-excel');
 
     // Statement import (PDF → expenses) elements.
     const importButton = document.getElementById('import-statement');
@@ -49,6 +56,7 @@
       kind: '',
       category: '',
     };
+    const budgetStorageKey = 'finance-category-budgets';
 
     const formatCurrency = (value) => {
       const amount = Number(value || 0);
@@ -73,6 +81,73 @@
       const day = String(date.getDate()).padStart(2, '0');
       const year = String(date.getFullYear()).slice(-2);
       return `${month}-${day}-${year}`;
+    };
+
+    const escapeHtml = (value) => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
+    const normalizeAmount = (value) => {
+      const amount = Number(value || 0);
+      return Number.isFinite(amount) ? amount : 0;
+    };
+
+    const getBudgetMap = () => {
+      try {
+        return JSON.parse(localStorage.getItem(budgetStorageKey) || '{}');
+      } catch {
+        return {};
+      }
+    };
+
+    const saveBudget = (category, amount) => {
+      const budgets = getBudgetMap();
+      const normalized = Math.max(0, normalizeAmount(amount));
+      if (normalized > 0) {
+        budgets[category] = normalized;
+      } else {
+        delete budgets[category];
+      }
+      localStorage.setItem(budgetStorageKey, JSON.stringify(budgets));
+      renderFinanceInsights();
+    };
+
+    const getMonthLabel = () => {
+      if (!currentFilters.year || !currentFilters.month) return 'All time';
+      const date = new Date(Number(currentFilters.year), Number(currentFilters.month) - 1, 1);
+      return date.toLocaleDateString(getLanguage() === 'vi' ? 'vi-VN' : 'en-US', {
+        month: 'long',
+        year: 'numeric',
+      });
+    };
+
+    const summarizeTransactions = () => {
+      const income = transactions
+        .filter(transaction => transaction.kind === 'income')
+        .reduce((sum, transaction) => sum + normalizeAmount(transaction.amount), 0);
+      const expense = transactions
+        .filter(transaction => transaction.kind === 'expense')
+        .reduce((sum, transaction) => sum + normalizeAmount(transaction.amount), 0);
+      const categoryTotals = new Map();
+
+      transactions
+        .filter(transaction => transaction.kind === 'expense')
+        .forEach((transaction) => {
+          const category = transaction.category || 'Uncategorized';
+          categoryTotals.set(category, (categoryTotals.get(category) || 0) + normalizeAmount(transaction.amount));
+        });
+
+      const sortedCategories = [...categoryTotals.entries()].sort((first, second) => second[1] - first[1]);
+      return {
+        income,
+        expense,
+        net: income - expense,
+        sortedCategories,
+        transactionCount: transactions.length,
+      };
     };
 
     const showFormError = (text) => {
@@ -213,6 +288,7 @@
     const renderTransactions = () => {
       if (transactions.length === 0) {
         list.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">No transactions found</td></tr>';
+        renderFinanceInsights();
         return;
       }
 
@@ -235,6 +311,122 @@
           </tr>
         `;
       }).join('');
+      renderFinanceInsights();
+    };
+
+    const renderMonthlyReport = ({ income, expense, net, sortedCategories, transactionCount }) => {
+      if (!monthlyReportList) return;
+      const topCategory = sortedCategories[0];
+      monthlyReportList.innerHTML = `
+        <div><span>Period</span><strong>${escapeHtml(getMonthLabel())}</strong></div>
+        <div><span>Transactions</span><strong>${transactionCount}</strong></div>
+        <div><span>Top expense</span><strong>${topCategory ? `${escapeHtml(topCategory[0])} - ${formatCurrency(topCategory[1])}` : 'None'}</strong></div>
+        <div><span>Net savings</span><strong class="${net >= 0 ? 'amount-income' : 'amount-expense'}">${formatCurrency(net)}</strong></div>
+        <div><span>Savings rate</span><strong>${income > 0 ? `${Math.round((net / income) * 100)}%` : 'N/A'}</strong></div>
+        <div><span>Expense total</span><strong>${formatCurrency(expense)}</strong></div>
+      `;
+    };
+
+    const renderCharts = ({ income, expense, sortedCategories }) => {
+      if (!financeChartBars) return;
+      const maxTotal = Math.max(income, expense, ...sortedCategories.map(([, total]) => total), 1);
+      const rows = [
+        ['Income', income, 'income'],
+        ['Expenses', expense, 'expense'],
+        ...sortedCategories.slice(0, 5).map(([category, total]) => [category, total, 'category']),
+      ];
+
+      financeChartBars.innerHTML = rows.map(([label, total, type]) => `
+        <div class="finance-chart-row">
+          <span>${escapeHtml(label)}</span>
+          <div class="finance-chart-track">
+            <div class="finance-chart-fill ${type}" style="width: ${Math.max(4, Math.round((total / maxTotal) * 100))}%"></div>
+          </div>
+          <strong>${formatCurrency(total)}</strong>
+        </div>
+      `).join('');
+    };
+
+    const renderBudgets = ({ sortedCategories }) => {
+      if (!budgetCategoryList) return;
+      const budgets = getBudgetMap();
+      const categoryNames = [...new Set([
+        ...sortedCategories.map(([category]) => category),
+        ...categories,
+        ...Object.keys(budgets),
+      ])].filter(Boolean).sort((first, second) => first.localeCompare(second));
+
+      if (categoryNames.length === 0) {
+        budgetCategoryList.innerHTML = '<p class="finance-empty">Add expense categories to start budgeting.</p>';
+        return;
+      }
+
+      budgetCategoryList.innerHTML = categoryNames.map((category) => {
+        const spent = sortedCategories.find(([name]) => name === category)?.[1] || 0;
+        const budget = budgets[category] || 0;
+        const percent = budget > 0 ? Math.min(100, Math.round((spent / budget) * 100)) : 0;
+        const status = budget > 0
+          ? `${formatCurrency(spent)} of ${formatCurrency(budget)}`
+          : `${formatCurrency(spent)} spent`;
+
+        return `
+          <div class="budget-category-row" data-category="${escapeHtml(category)}">
+            <div>
+              <strong>${escapeHtml(category)}</strong>
+              <span>${status}</span>
+              <div class="budget-progress"><div style="width: ${percent}%"></div></div>
+            </div>
+            <input type="number" min="0" step="1" inputmode="decimal" value="${budget || ''}" aria-label="Budget for ${escapeHtml(category)}" />
+          </div>
+        `;
+      }).join('');
+
+      budgetCategoryList.querySelectorAll('.budget-category-row input').forEach((input) => {
+        input.addEventListener('change', () => {
+          const row = input.closest('.budget-category-row');
+          saveBudget(row?.dataset.category || '', input.value);
+        });
+      });
+    };
+
+    const isCardPayment = (transaction) => {
+      const text = `${transaction.category || ''} ${transaction.account || ''} ${transaction.note || ''}`.toLowerCase();
+      return text.includes('payment') || text.includes('pay card') || text.includes('credit card payment');
+    };
+
+    const renderCreditCardPayments = () => {
+      if (!creditCardPaymentList) return;
+      if (creditCards.length === 0) {
+        creditCardPaymentList.innerHTML = '<p class="finance-empty">No credit cards to track yet.</p>';
+        return;
+      }
+
+      creditCardPaymentList.innerHTML = creditCards.map((card) => {
+        const linkedTransactions = transactions.filter(transaction => Number(transaction.credit_card_id) === Number(card.id));
+        const charges = linkedTransactions
+          .filter(transaction => transaction.kind === 'expense' && !isCardPayment(transaction))
+          .reduce((sum, transaction) => sum + normalizeAmount(transaction.amount), 0);
+        const payments = linkedTransactions
+          .filter(transaction => isCardPayment(transaction))
+          .reduce((sum, transaction) => sum + normalizeAmount(transaction.amount), 0);
+        const balance = normalizeAmount(card.total_balance);
+
+        return `
+          <div>
+            <span>${escapeHtml(card.name || 'Card')}</span>
+            <strong>${formatCurrency(balance)} balance</strong>
+            <small>${formatCurrency(charges)} charges - ${formatCurrency(payments)} payments this period</small>
+          </div>
+        `;
+      }).join('');
+    };
+
+    const renderFinanceInsights = () => {
+      const summary = summarizeTransactions();
+      renderMonthlyReport(summary);
+      renderCharts(summary);
+      renderBudgets(summary);
+      renderCreditCardPayments();
     };
 
     const handleSubmit = async (event) => {
@@ -340,6 +532,111 @@
     };
 
     // ---- Statement import (PDF → expenses) ----------------------------------
+
+    const exportFileName = (extension) => {
+      const period = currentFilters.year && currentFilters.month
+        ? `${currentFilters.year}-${String(currentFilters.month).padStart(2, '0')}`
+        : 'all';
+      return `finance-transactions-${period}.${extension}`;
+    };
+
+    const transactionExportRows = () => transactions.map(transaction => ({
+      Date: formatDate(transaction.occurred_on),
+      Type: transaction.kind,
+      Category: transaction.category || '',
+      Amount: normalizeAmount(transaction.amount).toFixed(2),
+      Account: transaction.account || '',
+      Note: transaction.note || '',
+      'Credit Card': creditCards.find(card => Number(card.id) === Number(transaction.credit_card_id))?.name || '',
+    }));
+
+    const downloadBlob = (content, type, fileName) => {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    };
+
+    const exportCsv = () => {
+      const rows = transactionExportRows();
+      if (rows.length === 0) {
+        showStatusToast('No transactions to export', 'error');
+        return;
+      }
+
+      const headers = Object.keys(rows[0]);
+      const csv = [
+        headers.join(','),
+        ...rows.map(row => headers.map(header => `"${String(row[header]).replace(/"/g, '""')}"`).join(',')),
+      ].join('\n');
+      downloadBlob(csv, 'text/csv;charset=utf-8', exportFileName('csv'));
+    };
+
+    const exportExcel = () => {
+      const rows = transactionExportRows();
+      if (rows.length === 0) {
+        showStatusToast('No transactions to export', 'error');
+        return;
+      }
+
+      const headers = Object.keys(rows[0]);
+      const table = `
+        <table>
+          <thead><tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead>
+          <tbody>
+            ${rows.map(row => `<tr>${headers.map(header => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('')}
+          </tbody>
+        </table>
+      `;
+      downloadBlob(table, 'application/vnd.ms-excel;charset=utf-8', exportFileName('xls'));
+    };
+
+    const exportPdf = () => {
+      const rows = transactionExportRows();
+      if (rows.length === 0) {
+        showStatusToast('No transactions to export', 'error');
+        return;
+      }
+
+      const headers = Object.keys(rows[0]);
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        showStatusToast('Could not open PDF preview', 'error');
+        return;
+      }
+
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Finance Report</title>
+            <style>
+              body { font-family: Arial, sans-serif; color: #111827; padding: 24px; }
+              h1 { font-size: 22px; margin: 0 0 8px; }
+              p { margin: 0 0 20px; color: #4b5563; }
+              table { width: 100%; border-collapse: collapse; font-size: 12px; }
+              th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
+              th { background: #f3f4f6; }
+            </style>
+          </head>
+          <body>
+            <h1>Finance Report</h1>
+            <p>${escapeHtml(getMonthLabel())}</p>
+            <table>
+              <thead><tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead>
+              <tbody>${rows.map(row => `<tr>${headers.map(header => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('')}</tbody>
+            </table>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+    };
 
     const renderImportCardOptions = () => {
       const currentValue = importCardInput.value;
@@ -549,6 +846,9 @@
       form.addEventListener('submit', handleSubmit);
       cancelButton.addEventListener('click', closeModal);
       addButton.addEventListener('click', () => openModal());
+      exportCsvButton?.addEventListener('click', exportCsv);
+      exportPdfButton?.addEventListener('click', exportPdf);
+      exportExcelButton?.addEventListener('click', exportExcel);
 
       // Statement import wiring.
       if (importButton) {
@@ -597,6 +897,7 @@
         loadCategories(),
         loadCreditCards(),
       ]);
+      renderFinanceInsights();
     };
 
     const render = () => {
