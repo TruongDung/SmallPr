@@ -415,7 +415,47 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
   return true;
 };
 
+const sendVerificationEmail = async ({ email, username, verificationUrl }) => {
+  const transporter = createMailTransporter();
+  if (!transporter) {
+    console.warn('Verification email skipped: SMTP_HOST, SMTP_USER, and SMTP_PASS are required.');
+    return false;
+  }
+
+  const to = normalizeEmail(email);
+  if (!to) {
+    console.warn('Verification email skipped: user email is required.');
+    return false;
+  }
+
+  const appName = EMAIL_TRANSLATIONS.en.taskManager;
+  await transporter.sendMail({
+    from: process.env.MAIL_FROM || process.env.SMTP_USER,
+    to,
+    subject: `Verify your ${appName} account`,
+    text: [
+      `Hi ${username},`,
+      '',
+      `Please verify your ${appName} account before logging in:`,
+      verificationUrl,
+      '',
+      'This link expires in 24 hours.',
+    ].join('\n'),
+    html: `
+      <div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.5;color:#111827;">
+        <p>Hi ${escapeHtml(username)},</p>
+        <p>Please verify your ${escapeHtml(appName)} account before logging in.</p>
+        <p><a href="${escapeHtml(verificationUrl)}" target="_blank" rel="noopener noreferrer">Verify email</a></p>
+        <p style="color:#4b5563;">This link expires in 24 hours.</p>
+      </div>
+    `,
+  });
+
+  return true;
+};
+
 module.exports = {
+  sendVerificationEmail,
   sendTaskAlertEmail,
   sendTaskSummaryEmail,
 };

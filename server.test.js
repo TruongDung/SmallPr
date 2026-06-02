@@ -1,9 +1,9 @@
 ﻿const request = require('supertest');
 
 process.env.TASK_ALERT_TO = '';
-process.env.SMTP_HOST = '';
-process.env.SMTP_USER = '';
-process.env.SMTP_PASS = '';
+process.env.SMTP_HOST = 'smtp.test.local';
+process.env.SMTP_USER = 'smtp-user';
+process.env.SMTP_PASS = 'smtp-pass';
 
 const mockSendMail = jest.fn().mockResolvedValue({});
 jest.mock('nodemailer', () => ({
@@ -22,6 +22,12 @@ const humanRegistrationPayload = () => ({
   },
 });
 
+const verifyRegistration = async (token) => {
+  const response = await request(app).get(`/api/verify-email?token=${encodeURIComponent(token)}`);
+  expect(response.statusCode).toBe(200);
+  expect(response.body).toHaveProperty('success', true);
+};
+
 const bcrypt = require('bcrypt');
 const { app, db, dbReady } = require('./server');
 const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
@@ -33,11 +39,21 @@ const createAgent = async (username = testUsername(`user-${Math.random()}`)) => 
   const agent = request.agent(app);
   const response = await agent
     .post('/api/register')
-    .send({ username, password: 'Password123!', ...humanRegistrationPayload() });
+    .send({
+      username,
+      email: `${username}@example.com`,
+      password: 'Password123!',
+      ...humanRegistrationPayload(),
+    });
 
   expect(response.statusCode).toBe(200);
   expect(response.body.user).toMatchObject({ username });
-  await db.query('UPDATE users SET email = $1 WHERE id = $2', [`${username}@example.com`, response.body.user.id]);
+  await verifyRegistration(response.body.verification_token);
+
+  const loginResponse = await agent
+    .post('/api/login')
+    .send({ username, password: 'Password123!' });
+  expect(loginResponse.statusCode).toBe(200);
 
   return agent;
 };
@@ -111,10 +127,23 @@ describe('Auth API', () => {
     const username = testUsername('testuser');
     const signupResponse = await request(app)
       .post('/api/register')
-      .send({ username, password: 'Password123!', ...humanRegistrationPayload() });
+      .send({
+        username,
+        email: `${username}@example.com`,
+        password: 'Password123!',
+        ...humanRegistrationPayload(),
+      });
 
     expect(signupResponse.statusCode).toBe(200);
-    expect(signupResponse.body.user).toMatchObject({ username });
+    expect(signupResponse.body.user).toMatchObject({ username, account_status: 'pending_verification' });
+
+    const pendingLoginResponse = await request(app)
+      .post('/api/login')
+      .send({ username, password: 'Password123!' });
+    expect(pendingLoginResponse.statusCode).toBe(403);
+    expect(pendingLoginResponse.body).toHaveProperty('error', 'Please verify your email before logging in');
+
+    await verifyRegistration(signupResponse.body.verification_token);
 
     const loginResponse = await request(app)
       .post('/api/login')
@@ -122,6 +151,15 @@ describe('Auth API', () => {
 
     expect(loginResponse.statusCode).toBe(200);
     expect(loginResponse.body.user).toMatchObject({ username });
+  });
+
+  test('rejects registration without a valid email', async () => {
+    const response = await request(app)
+      .post('/api/register')
+      .send({ username: testUsername('missing-email'), password: 'Password123!', ...humanRegistrationPayload() });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toHaveProperty('error', 'A valid email is required');
   });
 
   test('rejects signup without required fields', async () => {
@@ -136,7 +174,7 @@ describe('Auth API', () => {
   test('rejects registration without human sign-up signals', async () => {
     const response = await request(app)
       .post('/api/register')
-      .send({ username: testUsername('bot-user'), password: 'Password123!' });
+      .send({ username: testUsername('bot-user'), email: 'bot@example.com', password: 'Password123!' });
 
     expect(response.statusCode).toBe(400);
     expect(response.body).toHaveProperty('error', 'Please complete registration from the sign-up form.');
@@ -147,6 +185,7 @@ describe('Auth API', () => {
       .post('/api/register')
       .send({
         username: testUsername('honeypot-user'),
+        email: 'honeypot@example.com',
         password: 'Password123!',
         human_check: {
           started_at: Date.now() - 2000,
@@ -165,7 +204,12 @@ describe('Auth API', () => {
 
     const response = await request(app)
       .post('/api/register')
-      .send({ username, password: 'Password123!', ...humanRegistrationPayload() });
+      .send({
+        username,
+        email: `${username}@example.com`,
+        password: 'Password123!',
+        ...humanRegistrationPayload(),
+      });
 
     expect(response.statusCode).toBe(409);
     expect(response.body).toHaveProperty('error', 'Username already exists');

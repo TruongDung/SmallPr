@@ -12,6 +12,8 @@ const taskSubtabs = [...document.querySelectorAll('[data-task-tab]')];
 const languageSelect = document.getElementById('language-select');
 const themeToggle = document.getElementById('theme-toggle');
 const authForm = document.getElementById('auth-form');
+const authEmailField = document.getElementById('auth-email-field');
+const authEmailInput = document.getElementById('auth-email');
 const addTaskModal = document.getElementById('add-task-modal');
 const taskForm = document.getElementById('task-form');
 const cancelAddTask = document.getElementById('cancel-add-task');
@@ -353,6 +355,9 @@ const translations = {
     actions: 'Actions',
     welcome: 'Welcome, {name}',
     authRequired: 'Username and password are required.',
+    emailRequired: 'A valid email is required.',
+    verificationEmailSent: 'Registration received. Please verify your email before logging in.',
+    emailVerified: 'Email verified. You can log in now.',
     resetPassword: 'Reset Password',
     delete: 'Delete',
     newPasswordFor: 'New password for {username}',
@@ -406,6 +411,7 @@ const translations = {
     userStatus: 'Status',
     userEnabledStatus: 'Enabled',
     userDisabledStatus: 'Disabled',
+    userPendingStatus: 'Pending verification',
     notes: 'Notes',
     enableUser: 'Enable user',
     disableUser: 'Disable user',
@@ -656,6 +662,9 @@ const translations = {
     actions: 'Thao tác',
     welcome: 'Xin chào, {name}',
     authRequired: 'Vui lòng nhập tên đăng nhập và mật khẩu.',
+    emailRequired: 'Vui lòng nhập email hợp lệ.',
+    verificationEmailSent: 'Đã đăng ký. Vui lòng xác minh email trước khi đăng nhập.',
+    emailVerified: 'Email đã được xác minh. Bạn có thể đăng nhập.',
     resetPassword: 'Đặt lại mật khẩu',
     delete: 'Xóa',
     newPasswordFor: 'Mật khẩu mới cho {username}',
@@ -709,6 +718,7 @@ const translations = {
     userStatus: 'Trạng thái',
     userEnabledStatus: 'Đang bật',
     userDisabledStatus: 'Đã tắt',
+    userPendingStatus: 'Chờ xác minh',
     notes: 'Ghi chú',
     enableUser: 'Bật người dùng',
     disableUser: 'Tắt người dùng',
@@ -889,6 +899,7 @@ const applyTranslations = () => {
   showSignup.textContent = t('signup');
   if (rememberMeText) rememberMeText.textContent = t('rememberMe');
   setText('label[for="username"]', t('username'));
+  setText('label[for="auth-email"]', t('email'));
   setText('label[for="password"]', t('password'));
   togglePasswordButton.setAttribute(
     'aria-label',
@@ -1977,11 +1988,14 @@ const setMode = (mode) => {
   currentMode = mode;
   showLogin.classList.toggle('active', mode === 'login');
   showSignup.classList.toggle('active', mode === 'signup');
+  authEmailField?.classList.toggle('hidden', mode !== 'signup');
+  if (authEmailInput) authEmailInput.required = mode === 'signup';
   passwordInput.setAttribute('autocomplete', mode === 'login' ? 'current-password' : 'new-password');
   if (mode === 'signup') {
     registrationStartedAt = Date.now();
     registrationInteractionCount = 0;
     authForm.username.value = '';
+    if (authEmailInput) authEmailInput.value = '';
     authForm.password.value = '';
     if (authForm.website) authForm.website.value = '';
     if (rememberMeCheckbox) rememberMeCheckbox.checked = false;
@@ -2056,6 +2070,10 @@ const init = async () => {
   const result = await request('/api/me');
   currentUser = result.user;
   showSection();
+  if (!currentUser && new URLSearchParams(window.location.search).get('verified') === '1') {
+    authMessage.textContent = t('emailVerified');
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
   if (currentUser) connectRealtime();
 };
 
@@ -2152,9 +2170,14 @@ const handleAuthSubmit = async (event) => {
 
   const username = authForm.username.value.trim();
   const password = authForm.password.value.trim();
+  const email = authEmailInput?.value.trim() || '';
 
   if (!username || !password) {
     authMessage.textContent = t('authRequired');
+    return;
+  }
+  if (currentMode === 'signup' && (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
+    authMessage.textContent = t('emailRequired');
     return;
   }
 
@@ -2163,6 +2186,7 @@ const handleAuthSubmit = async (event) => {
     ? { username, password }
     : {
       username,
+      email,
       password,
       human_check: {
         started_at: registrationStartedAt,
@@ -2177,6 +2201,12 @@ const handleAuthSubmit = async (event) => {
 
   if (result.error) {
     authMessage.textContent = result.error;
+    return;
+  }
+
+  if (currentMode === 'signup') {
+    authMessage.textContent = result.message || t('verificationEmailSent');
+    setMode('login');
     return;
   }
 
@@ -2446,7 +2476,7 @@ const renderImpersonateOptions = (users) => {
       const option = document.createElement('option');
       option.value = String(user.id);
       option.textContent = user.name ? `${user.username} (${user.name})` : user.username;
-      option.disabled = user.account_status === 'disabled';
+      option.disabled = user.account_status !== 'enabled';
       impersonateUserSelect.append(option);
     });
 
@@ -2476,8 +2506,11 @@ const renderUsers = (users) => {
     statusCell.dataset.label = t('userStatus');
     const statusBadge = document.createElement('span');
     const isDisabled = user.account_status === 'disabled';
-    statusBadge.className = `user-status-badge ${isDisabled ? 'disabled' : 'enabled'}`;
-    statusBadge.textContent = isDisabled ? t('userDisabledStatus') : t('userEnabledStatus');
+    const isPending = user.account_status === 'pending_verification';
+    statusBadge.className = `user-status-badge ${isDisabled || isPending ? 'disabled' : 'enabled'}`;
+    statusBadge.textContent = isPending
+      ? t('userPendingStatus')
+      : (isDisabled ? t('userDisabledStatus') : t('userEnabledStatus'));
     statusCell.append(statusBadge);
 
     const taskCountCell = document.createElement('td');
@@ -4090,6 +4123,8 @@ editTaskRecurrencePattern.addEventListener('change', () => {
 authForm.addEventListener('submit', handleAuthSubmit);
 authForm.username.addEventListener('input', markRegistrationInteraction);
 authForm.username.addEventListener('focus', markRegistrationInteraction);
+authEmailInput?.addEventListener('input', markRegistrationInteraction);
+authEmailInput?.addEventListener('focus', markRegistrationInteraction);
 authForm.password.addEventListener('input', markRegistrationInteraction);
 authForm.password.addEventListener('focus', markRegistrationInteraction);
 taskForm.addEventListener('submit', handleTaskSubmit);

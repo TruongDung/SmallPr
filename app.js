@@ -12,7 +12,7 @@ const redisCache = require('./src/server/cache/redis');
 const { allAsync, getAsync, pool, queryAsync, runAsync } = require('./src/server/db/client');
 const { initializeDatabase } = require('./src/server/db/initialize');
 const { createAuthService } = require('./src/server/services/auth/auth.service');
-const { sendTaskAlertEmail, sendTaskSummaryEmail } = require('./src/server/services/email/email.service');
+const { sendTaskAlertEmail, sendTaskSummaryEmail, sendVerificationEmail } = require('./src/server/services/email/email.service');
 const { createAuthMiddleware } = require('./src/server/middleware/auth');
 const realtime = require('./src/server/realtime');
 const createAdminRouter = require('./src/server/routes/admin.routes');
@@ -117,6 +117,7 @@ app.use('/api', createAuthRouter({
   getAsync,
   getUserById,
   runAsync,
+  sendVerificationEmail,
 }));
 
 app.use('/api/credit-cards', createCreditCardsRouter({

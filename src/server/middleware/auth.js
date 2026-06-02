@@ -14,6 +14,10 @@ const createAuthMiddleware = ({ getUserById }) => {
         req.session.destroy(() => {});
         return res.status(403).json({ error: 'Account is disabled' });
       }
+      if (user.account_status !== 'enabled') {
+        req.session.destroy(() => {});
+        return res.status(403).json({ error: 'Please verify your email before logging in' });
+      }
       req.currentUser = user;
       next();
     } catch (error) {
@@ -32,6 +36,10 @@ const createAuthMiddleware = ({ getUserById }) => {
       if (user?.account_status === 'disabled') {
         req.session.destroy(() => {});
         return res.status(403).json({ error: 'Account is disabled' });
+      }
+      if (user && user.account_status !== 'enabled') {
+        req.session.destroy(() => {});
+        return res.status(403).json({ error: 'Please verify your email before logging in' });
       }
       if (!user || user.username !== 'admin') {
         return res.status(403).json({ error: 'Admin access required' });

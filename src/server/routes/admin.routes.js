@@ -2,7 +2,7 @@ const express = require('express');
 
 const { normalizeEmail, normalizeName } = require('../utils/users');
 
-const ACCOUNT_STATUSES = new Set(['enabled', 'disabled']);
+const ACCOUNT_STATUSES = new Set(['enabled', 'disabled', 'pending_verification']);
 
 const normalizeAccountStatus = (status, fallback = 'enabled') => {
   const normalized = String(status || fallback).trim().toLowerCase();
@@ -68,8 +68,8 @@ const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync
       if (targetUser.username === 'admin') {
         return res.status(400).json({ error: 'The admin account cannot be impersonated' });
       }
-      if (targetUser.account_status === 'disabled') {
-        return res.status(400).json({ error: 'Disabled users cannot be impersonated' });
+      if (targetUser.account_status !== 'enabled') {
+        return res.status(400).json({ error: 'Only enabled users can be impersonated' });
       }
 
       req.session.impersonatorUserId = req.currentUser.id;
