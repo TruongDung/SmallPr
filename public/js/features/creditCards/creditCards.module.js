@@ -11,6 +11,128 @@
     const showEditError = (text) => feature.dom.setFieldError(elements.editError, text);
     const clearEditError = () => feature.dom.clearFieldError(elements.editError);
 
+    const escapeHtml = (value) => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
+    const downloadBlob = (content, type, fileName) => {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    };
+
+    const showCardExportError = () => {
+      showStatusToast(t('noCreditCardsToExport') || 'No credit cards to export', 'error');
+    };
+
+    const creditCardExportFileName = (extension) => `financial-credit-cards-${new Date().toISOString().slice(0, 10)}.${extension}`;
+
+    const creditCardExportRows = () => cards.map(card => ({
+      'Card No': card.name || '',
+      User: card.card_user || '',
+      Type: formatters.formatIssuer(card.issuer),
+      Balance: formatters.normalizeAmount(card.total_balance).toFixed(2),
+      Interest: formatters.normalizeAmount(card.interest_charge).toFixed(2),
+      Close: card.closing_date || '',
+    }));
+
+    const getCreditCardTotals = () => cards.reduce((totals, card) => ({
+      balance: totals.balance + formatters.normalizeAmount(card.total_balance),
+      interest: totals.interest + formatters.normalizeAmount(card.interest_charge),
+    }), { balance: 0, interest: 0 });
+
+    const exportCreditCardsCsv = () => {
+      const rows = creditCardExportRows();
+      if (!rows.length) {
+        showCardExportError();
+        return;
+      }
+
+      const headers = Object.keys(rows[0]);
+      const csv = [
+        headers.join(','),
+        ...rows.map(row => headers.map(header => `"${String(row[header]).replace(/"/g, '""')}"`).join(',')),
+      ].join('\n');
+      downloadBlob(csv, 'text/csv;charset=utf-8', creditCardExportFileName('csv'));
+    };
+
+    const exportCreditCardsExcel = () => {
+      const rows = creditCardExportRows();
+      if (!rows.length) {
+        showCardExportError();
+        return;
+      }
+
+      const headers = Object.keys(rows[0]);
+      const totals = getCreditCardTotals();
+      const table = `
+        <table>
+          <thead><tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead>
+          <tbody>
+            ${rows.map(row => `<tr>${headers.map(header => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('')}
+          </tbody>
+          <tfoot>
+            <tr><td colspan="3">Total</td><td>${escapeHtml(totals.balance.toFixed(2))}</td><td>${escapeHtml(totals.interest.toFixed(2))}</td><td></td></tr>
+          </tfoot>
+        </table>
+      `;
+      downloadBlob(table, 'application/vnd.ms-excel;charset=utf-8', creditCardExportFileName('xls'));
+    };
+
+    const exportCreditCardsPdf = () => {
+      const rows = creditCardExportRows();
+      if (!rows.length) {
+        showCardExportError();
+        return;
+      }
+
+      const headers = Object.keys(rows[0]);
+      const totals = getCreditCardTotals();
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        showStatusToast('Could not open PDF preview', 'error');
+        return;
+      }
+
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Financial Credit Card Report</title>
+            <style>
+              body { font-family: Arial, sans-serif; color: #111827; padding: 24px; }
+              h1 { font-size: 22px; margin: 0 0 8px; }
+              p { margin: 0 0 20px; color: #4b5563; }
+              table { width: 100%; border-collapse: collapse; font-size: 12px; }
+              th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
+              th { background: #f3f4f6; }
+              tfoot td { font-weight: 700; }
+            </style>
+          </head>
+          <body>
+            <h1>Financial Credit Card Report</h1>
+            <p>Total balance: ${escapeHtml(formatters.formatCurrency(totals.balance))} - Total interest: ${escapeHtml(formatters.formatCurrency(totals.interest))}</p>
+            <table>
+              <thead><tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead>
+              <tbody>${rows.map(row => `<tr>${headers.map(header => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('')}</tbody>
+              <tfoot><tr><td colspan="3">Total</td><td>${escapeHtml(formatters.formatCurrency(totals.balance))}</td><td>${escapeHtml(formatters.formatCurrency(totals.interest))}</td><td></td></tr></tfoot>
+            </table>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
+    };
+
     const openEditModal = (card) => {
       pendingEditCard = card;
       clearEditError();
@@ -42,6 +164,7 @@
       formatters,
       request,
       t,
+      showStatusToast,
     });
 
     const closeEditModal = () => {
@@ -255,6 +378,10 @@
       });
       elements.cancelEditButton.addEventListener('click', closeEditModal);
       elements.cancelEditBillButton.addEventListener('click', fastAccessBills.closeEditModal);
+      elements.exportCreditCardsCsvButton?.addEventListener('click', exportCreditCardsCsv);
+      elements.exportCreditCardsPdfButton?.addEventListener('click', exportCreditCardsPdf);
+      elements.exportCreditCardsExcelButton?.addEventListener('click', exportCreditCardsExcel);
+      fastAccessBills.bindExports();
       document.addEventListener('keydown', (event) => {
         if (event.key !== 'Escape') return;
         if (!elements.addModal.classList.contains('hidden')) {

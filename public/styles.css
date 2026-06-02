@@ -2709,7 +2709,10 @@ body.theme-dark .status-in_progress {
 /* Form (add card) and edit-form (modal) — share input/button sizing */
 .credit-card-toolbar {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
   margin-bottom: 20px;
 }
 
@@ -5169,6 +5172,15 @@ body.theme-dark .user-status-badge.disabled {
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 700;
+}
+
+.fast-access-export-actions {
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.credit-card-toolbar .fast-access-export-actions {
+  margin-bottom: 0;
 }
 
 /* Statement import preview modal */

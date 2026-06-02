@@ -1,5 +1,5 @@
 (function () {
-  const createFastAccessBills = ({ elements, formatters, request, t }) => {
+  const createFastAccessBills = ({ elements, formatters, request, t, showStatusToast }) => {
     let bills = [];
     let pendingEditBill = null;
     let billSort = { field: null, direction: null };
@@ -9,8 +9,134 @@
 
     const billGroupKey = (bill) => String(bill.item || '').trim().toLowerCase();
 
+    const escapeHtml = (value) => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
     const setBills = (nextBills) => {
       bills = nextBills || [];
+    };
+
+    const downloadBlob = (content, type, fileName) => {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    };
+
+    const showExportError = () => {
+      if (typeof showStatusToast === 'function') {
+        showStatusToast(t('noBillsToExport') || 'No expense rows to export', 'error');
+        return;
+      }
+      elements.message.textContent = t('noBillsToExport') || 'No expense rows to export';
+    };
+
+    const exportFileName = (extension) => `financial-expense-${new Date().toISOString().slice(0, 10)}.${extension}`;
+
+    const billExportRows = () => {
+      const rows = [];
+      getBillGroups().forEach((group) => {
+        group.bills.forEach((bill) => {
+          rows.push({
+            Group: group.label,
+            Item: bill.item || '',
+            Amount: formatters.normalizeAmount(bill.amount).toFixed(2),
+            'Due Date': bill.due_date || '',
+            'Pay Before': bill.pay_before || '',
+            Status: bill.status || '',
+          });
+        });
+      });
+      return rows;
+    };
+
+    const exportCsv = () => {
+      const rows = billExportRows();
+      if (!rows.length) {
+        showExportError();
+        return;
+      }
+
+      const headers = Object.keys(rows[0]);
+      const csv = [
+        headers.join(','),
+        ...rows.map(row => headers.map(header => `"${String(row[header]).replace(/"/g, '""')}"`).join(',')),
+      ].join('\n');
+      downloadBlob(csv, 'text/csv;charset=utf-8', exportFileName('csv'));
+    };
+
+    const exportExcel = () => {
+      const rows = billExportRows();
+      if (!rows.length) {
+        showExportError();
+        return;
+      }
+
+      const headers = Object.keys(rows[0]);
+      const table = `
+        <table>
+          <thead><tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead>
+          <tbody>
+            ${rows.map(row => `<tr>${headers.map(header => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('')}
+          </tbody>
+          <tfoot>
+            <tr><td colspan="2">Grand total</td><td>${escapeHtml(formatters.normalizeAmount(bills.reduce((sum, bill) => sum + formatters.normalizeAmount(bill.amount), 0)).toFixed(2))}</td><td colspan="3"></td></tr>
+          </tfoot>
+        </table>
+      `;
+      downloadBlob(table, 'application/vnd.ms-excel;charset=utf-8', exportFileName('xls'));
+    };
+
+    const exportPdf = () => {
+      const rows = billExportRows();
+      if (!rows.length) {
+        showExportError();
+        return;
+      }
+
+      const headers = Object.keys(rows[0]);
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) {
+        if (typeof showStatusToast === 'function') showStatusToast('Could not open PDF preview', 'error');
+        return;
+      }
+
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Financial Expense Report</title>
+            <style>
+              body { font-family: Arial, sans-serif; color: #111827; padding: 24px; }
+              h1 { font-size: 22px; margin: 0 0 8px; }
+              p { margin: 0 0 20px; color: #4b5563; }
+              table { width: 100%; border-collapse: collapse; font-size: 12px; }
+              th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
+              th { background: #f3f4f6; }
+              tfoot td { font-weight: 700; }
+            </style>
+          </head>
+          <body>
+            <h1>Financial Expense Report</h1>
+            <p>Grand total: ${escapeHtml(formatters.formatCurrency(bills.reduce((sum, bill) => sum + formatters.normalizeAmount(bill.amount), 0)))}</p>
+            <table>
+              <thead><tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead>
+              <tbody>${rows.map(row => `<tr>${headers.map(header => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('')}</tbody>
+            </table>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      printWindow.print();
     };
 
     const updateTotals = () => {
@@ -265,6 +391,11 @@
     };
 
     return {
+      bindExports: () => {
+        elements.exportFastAccessBillsCsvButton?.addEventListener('click', exportCsv);
+        elements.exportFastAccessBillsPdfButton?.addEventListener('click', exportPdf);
+        elements.exportFastAccessBillsExcelButton?.addEventListener('click', exportExcel);
+      },
       closeEditModal,
       render,
       renderHeaders,
