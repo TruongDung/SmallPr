@@ -169,7 +169,7 @@ const validateCreditCardDetails = ({ name, card_user, issuer, total_balance, int
   };
 };
 
-const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync }) => {
+const createCreditCardsRouter = ({ adminRequired, authRequired, allAsync, getAsync, runAsync }) => {
   const router = express.Router();
   const creditCards = createCreditCardsService({ allAsync, getAsync, runAsync });
 
@@ -189,7 +189,7 @@ const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync })
     }
   });
 
-  router.get('/fast-access-links', async (req, res) => {
+  router.get('/fast-access-links', adminRequired, async (req, res) => {
     try {
       const links = await creditCards.listFastAccessLinks();
       res.json({ links });
@@ -199,7 +199,7 @@ const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync })
     }
   });
 
-  router.post('/fast-access-links', async (req, res) => {
+  router.post('/fast-access-links', adminRequired, async (req, res) => {
     const validation = validateFastAccessLinkDetails(req.body);
     if (validation.error) {
       return res.status(400).json({ error: validation.error });
@@ -214,7 +214,7 @@ const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync })
     }
   });
 
-  router.delete('/fast-access-links/:id', async (req, res) => {
+  router.delete('/fast-access-links/:id', adminRequired, async (req, res) => {
     const { id } = req.params;
     const linkId = Number(id);
     if (!Number.isInteger(linkId) || linkId <= 0) {

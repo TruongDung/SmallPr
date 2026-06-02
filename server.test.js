@@ -1305,10 +1305,15 @@ describe('Credit Card API', () => {
     expect(adminListResponse.body.bills.length).toBeGreaterThanOrEqual(defaultBills.rows[0].count);
   });
 
-  test('lists dynamic fast access links', async () => {
-    const agent = await createAgent(testUsername('fast-access-link-viewer'));
+  test('limits dynamic fast access links to admin', async () => {
+    const adminAgent = await loginAdmin();
+    const regularAgent = await createAgent(testUsername('fast-access-link-viewer'));
 
-    const response = await agent.get('/api/credit-cards/fast-access-links');
+    const forbiddenListResponse = await regularAgent.get('/api/credit-cards/fast-access-links');
+    expect(forbiddenListResponse.statusCode).toBe(403);
+    expect(forbiddenListResponse.body).toHaveProperty('error', 'Admin access required');
+
+    const response = await adminAgent.get('/api/credit-cards/fast-access-links');
 
     expect(response.statusCode).toBe(200);
     expect(response.body.links).toEqual(
@@ -1326,14 +1331,20 @@ describe('Credit Card API', () => {
       ])
     );
 
-    const invalidResponse = await agent
+    const forbiddenCreateResponse = await regularAgent
+      .post('/api/credit-cards/fast-access-links')
+      .send({ label: 'User link', url: 'https://example.com/user' });
+    expect(forbiddenCreateResponse.statusCode).toBe(403);
+    expect(forbiddenCreateResponse.body).toHaveProperty('error', 'Admin access required');
+
+    const invalidResponse = await adminAgent
       .post('/api/credit-cards/fast-access-links')
       .send({ label: 'Bad link', url: 'not-a-url' });
     expect(invalidResponse.statusCode).toBe(400);
     expect(invalidResponse.body).toHaveProperty('error', 'URL must be valid');
 
     const label = `${RUN_ID}-Portal`;
-    const createResponse = await agent
+    const createResponse = await adminAgent
       .post('/api/credit-cards/fast-access-links')
       .send({ label, url: 'https://example.com/portal' });
     expect(createResponse.statusCode).toBe(200);
@@ -1342,25 +1353,29 @@ describe('Credit Card API', () => {
       url: 'https://example.com/portal',
     });
 
-    const updatedResponse = await agent.get('/api/credit-cards/fast-access-links');
+    const updatedResponse = await adminAgent.get('/api/credit-cards/fast-access-links');
     expect(updatedResponse.body.links).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ label, url: 'https://example.com/portal' }),
       ])
     );
 
-    const deleteResponse = await agent.delete(`/api/credit-cards/fast-access-links/${createResponse.body.link.id}`);
+    const forbiddenDeleteResponse = await regularAgent.delete(`/api/credit-cards/fast-access-links/${createResponse.body.link.id}`);
+    expect(forbiddenDeleteResponse.statusCode).toBe(403);
+    expect(forbiddenDeleteResponse.body).toHaveProperty('error', 'Admin access required');
+
+    const deleteResponse = await adminAgent.delete(`/api/credit-cards/fast-access-links/${createResponse.body.link.id}`);
     expect(deleteResponse.statusCode).toBe(200);
     expect(deleteResponse.body).toEqual({ success: true });
 
-    const deletedListResponse = await agent.get('/api/credit-cards/fast-access-links');
+    const deletedListResponse = await adminAgent.get('/api/credit-cards/fast-access-links');
     expect(deletedListResponse.body.links).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: createResponse.body.link.id }),
       ])
     );
 
-    const repeatDeleteResponse = await agent.delete(`/api/credit-cards/fast-access-links/${createResponse.body.link.id}`);
+    const repeatDeleteResponse = await adminAgent.delete(`/api/credit-cards/fast-access-links/${createResponse.body.link.id}`);
     expect(repeatDeleteResponse.statusCode).toBe(404);
   });
 

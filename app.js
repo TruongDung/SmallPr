@@ -121,6 +121,7 @@ app.use('/api', createAuthRouter({
 }));
 
 app.use('/api/credit-cards', createCreditCardsRouter({
+  adminRequired,
   authRequired,
   allAsync,
   getAsync,
