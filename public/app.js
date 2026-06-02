@@ -161,6 +161,7 @@ let pendingDeleteTaskId = null;
 let pendingDeleteUser = null;
 let pendingDeleteTag = null;
 let pendingDeleteCard = null;
+let pendingDeleteFastAccessLink = null;
 let pendingDeleteNote = null;
 let pendingEditTag = null;
 let pendingEditTask = null;
@@ -339,6 +340,8 @@ const translations = {
     creditCardDeleted: 'Credit card deleted.',
     deleteCreditCardTitle: 'Delete card?',
     deleteCreditCardMessage: 'Card {name} will be permanently removed.',
+    deleteFastAccessLinkTitle: 'Delete fast access link?',
+    deleteFastAccessLinkMessage: '{label} will be permanently removed.',
     editCreditCard: 'Edit card',
     closingDateSaved: 'Close saved.',
     creditCardNameRequired: 'Card No is required',
@@ -648,6 +651,8 @@ const translations = {
     creditCardDeleted: 'Đã xóa thẻ tín dụng.',
     deleteCreditCardTitle: 'Xóa thẻ?',
     deleteCreditCardMessage: 'Thẻ {name} sẽ bị xóa vĩnh viễn.',
+    deleteFastAccessLinkTitle: 'Xóa liên kết nhanh?',
+    deleteFastAccessLinkMessage: '{label} sẽ bị xóa vĩnh viễn.',
     editCreditCard: 'Chỉnh sửa thẻ',
     closingDateSaved: 'Đã lưu ngày chốt sao kê.',
     creditCardNameRequired: 'Vui lòng nhập số thẻ.',
@@ -3212,6 +3217,7 @@ const showDeleteConfirm = (id) => {
   pendingDeleteUser = null;
   pendingDeleteTag = null;
   pendingDeleteCard = null;
+  pendingDeleteFastAccessLink = null;
   pendingDeleteNote = null;
   deleteConfirmTitle.textContent = t('deleteTaskTitle');
   deleteConfirmMessage.textContent = t('deleteTaskMessage');
@@ -3224,6 +3230,7 @@ const showUserDeleteConfirm = (user) => {
   pendingDeleteUser = user;
   pendingDeleteTag = null;
   pendingDeleteCard = null;
+  pendingDeleteFastAccessLink = null;
   pendingDeleteNote = null;
   deleteConfirmTitle.textContent = t('deleteUserTitle');
   deleteConfirmMessage.textContent = t('deleteUserMessage', { username: user.username });
@@ -3236,6 +3243,7 @@ const showTagDeleteConfirm = (tag) => {
   pendingDeleteUser = null;
   pendingDeleteTag = tag;
   pendingDeleteCard = null;
+  pendingDeleteFastAccessLink = null;
   pendingDeleteNote = null;
   deleteConfirmTitle.textContent = t('deleteTagTitle');
   deleteConfirmMessage.textContent = t('deleteTagMessage', { tag: tag.name });
@@ -3248,9 +3256,23 @@ const showCreditCardDeleteConfirm = (card) => {
   pendingDeleteUser = null;
   pendingDeleteTag = null;
   pendingDeleteCard = card;
+  pendingDeleteFastAccessLink = null;
   pendingDeleteNote = null;
   deleteConfirmTitle.textContent = t('deleteCreditCardTitle');
   deleteConfirmMessage.textContent = t('deleteCreditCardMessage', { name: card.name });
+  deleteConfirmModal.classList.remove('hidden');
+  confirmDeleteNo.focus();
+};
+
+const showFastAccessLinkDeleteConfirm = (link) => {
+  pendingDeleteTaskId = null;
+  pendingDeleteUser = null;
+  pendingDeleteTag = null;
+  pendingDeleteCard = null;
+  pendingDeleteFastAccessLink = link;
+  pendingDeleteNote = null;
+  deleteConfirmTitle.textContent = t('deleteFastAccessLinkTitle');
+  deleteConfirmMessage.textContent = t('deleteFastAccessLinkMessage', { label: link.label || t('fastAccessLinks') });
   deleteConfirmModal.classList.remove('hidden');
   confirmDeleteNo.focus();
 };
@@ -3260,6 +3282,7 @@ const showNoteDeleteConfirm = (note) => {
   pendingDeleteUser = null;
   pendingDeleteTag = null;
   pendingDeleteCard = null;
+  pendingDeleteFastAccessLink = null;
   pendingDeleteNote = note;
   deleteConfirmTitle.textContent = t('deleteNoteTitle');
   deleteConfirmMessage.textContent = t('deleteNoteMessage');
@@ -3272,6 +3295,7 @@ const hideDeleteConfirm = () => {
   pendingDeleteUser = null;
   pendingDeleteTag = null;
   pendingDeleteCard = null;
+  pendingDeleteFastAccessLink = null;
   pendingDeleteNote = null;
   deleteConfirmModal.classList.add('hidden');
 };
@@ -3279,11 +3303,12 @@ const hideDeleteConfirm = () => {
 confirmDeleteNo.addEventListener('click', hideDeleteConfirm);
 
 confirmDeleteYes.addEventListener('click', async () => {
-  if (!pendingDeleteTaskId && !pendingDeleteUser && !pendingDeleteTag && !pendingDeleteCard && !pendingDeleteNote) return;
+  if (!pendingDeleteTaskId && !pendingDeleteUser && !pendingDeleteTag && !pendingDeleteCard && !pendingDeleteFastAccessLink && !pendingDeleteNote) return;
   const taskId = pendingDeleteTaskId;
   const user = pendingDeleteUser;
   const tag = pendingDeleteTag;
   const card = pendingDeleteCard;
+  const fastAccessLink = pendingDeleteFastAccessLink;
   const note = pendingDeleteNote;
   hideDeleteConfirm();
   if (taskId) {
@@ -3296,6 +3321,10 @@ confirmDeleteYes.addEventListener('click', async () => {
   }
   if (card) {
     await creditCardModule.deleteCard(card);
+    return;
+  }
+  if (fastAccessLink) {
+    await creditCardModule.deleteFastAccessLink(fastAccessLink);
     return;
   }
   if (note) {
@@ -4017,6 +4046,7 @@ const creditCardModule = window.CreditCardModule.create({
   showStatusToast,
   getLanguage: () => currentLanguage,
   confirmDelete: showCreditCardDeleteConfirm,
+  confirmDeleteFastAccessLink: showFastAccessLinkDeleteConfirm,
 });
 
 const transactionsModule = window.TransactionsModule.create({

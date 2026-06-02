@@ -2494,37 +2494,20 @@ body.theme-dark .status-in_progress {
   color: var(--text);
 }
 
-.credit-card-link-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
-  gap: 12px;
+.credit-card-quick-links .credit-card-toolbar h3 {
+  margin: 0;
 }
 
-.credit-card-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 48px;
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface-soft);
+.credit-card-link-url {
   color: var(--primary);
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-align: center;
-  text-decoration: none;
   overflow-wrap: anywhere;
-  transition: all 0.2s ease;
+  text-decoration: none;
 }
 
-.credit-card-link:hover,
-.credit-card-link:focus-visible {
-  border-color: var(--primary);
-  background: var(--surface-tint);
+.credit-card-link-url:hover,
+.credit-card-link-url:focus-visible {
   color: var(--primary-strong);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(47, 112, 255, 0.15);
+  text-decoration: underline;
 }
 
 .fast-access-bills {
@@ -3996,10 +3979,6 @@ body.theme-dark .user-status-badge.disabled {
     width: 100%;
   }
 
-  .credit-card-link-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .credit-card-form button {
     width: 100%;
   }
@@ -4308,18 +4287,6 @@ body.theme-dark .user-status-badge.disabled {
   .financial-tabs,
   .fast-access-bill-totals {
     grid-template-columns: 1fr;
-  }
-
-  /* Quick links: 2-up on phones for better vertical density */
-  .credit-card-link-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .credit-card-link {
-    min-height: 44px;
-    font-size: 0.88rem;
-    padding: 6px 8px;
   }
 
   /* Financial tabs: full-width 3-up so Credit card / Expense / Transactions split evenly */

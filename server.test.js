@@ -1094,6 +1094,10 @@ describe('Credit Card API', () => {
     const billsResponse = await request(app).get('/api/credit-cards/fast-access-bills');
     expect(billsResponse.statusCode).toBe(401);
     expect(billsResponse.body).toHaveProperty('error', 'Authentication required');
+
+    const linksResponse = await request(app).get('/api/credit-cards/fast-access-links');
+    expect(linksResponse.statusCode).toBe(401);
+    expect(linksResponse.body).toHaveProperty('error', 'Authentication required');
   });
 
   test('creates, lists, and updates a credit card', async () => {
@@ -1299,6 +1303,65 @@ describe('Credit Card API', () => {
       'SELECT COUNT(*)::int AS count FROM fast_access_bill_defaults'
     );
     expect(adminListResponse.body.bills.length).toBeGreaterThanOrEqual(defaultBills.rows[0].count);
+  });
+
+  test('lists dynamic fast access links', async () => {
+    const agent = await createAgent(testUsername('fast-access-link-viewer'));
+
+    const response = await agent.get('/api/credit-cards/fast-access-links');
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.links).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          label: 'Mortgage',
+          url: 'https://rocket.com/mortgage/',
+          sort_order: 1,
+        }),
+        expect.objectContaining({
+          label: 'Internet',
+          url: 'https://www.spectrum.net/account-summary',
+          sort_order: 5,
+        }),
+      ])
+    );
+
+    const invalidResponse = await agent
+      .post('/api/credit-cards/fast-access-links')
+      .send({ label: 'Bad link', url: 'not-a-url' });
+    expect(invalidResponse.statusCode).toBe(400);
+    expect(invalidResponse.body).toHaveProperty('error', 'URL must be valid');
+
+    const label = `${RUN_ID}-Portal`;
+    const createResponse = await agent
+      .post('/api/credit-cards/fast-access-links')
+      .send({ label, url: 'https://example.com/portal' });
+    expect(createResponse.statusCode).toBe(200);
+    expect(createResponse.body.link).toMatchObject({
+      label,
+      url: 'https://example.com/portal',
+    });
+
+    const updatedResponse = await agent.get('/api/credit-cards/fast-access-links');
+    expect(updatedResponse.body.links).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label, url: 'https://example.com/portal' }),
+      ])
+    );
+
+    const deleteResponse = await agent.delete(`/api/credit-cards/fast-access-links/${createResponse.body.link.id}`);
+    expect(deleteResponse.statusCode).toBe(200);
+    expect(deleteResponse.body).toEqual({ success: true });
+
+    const deletedListResponse = await agent.get('/api/credit-cards/fast-access-links');
+    expect(deletedListResponse.body.links).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: createResponse.body.link.id }),
+      ])
+    );
+
+    const repeatDeleteResponse = await agent.delete(`/api/credit-cards/fast-access-links/${createResponse.body.link.id}`);
+    expect(repeatDeleteResponse.statusCode).toBe(404);
   });
 
   test('validates and protects fast access bills', async () => {

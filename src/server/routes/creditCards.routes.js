@@ -5,6 +5,8 @@ const {
   FAST_ACCESS_BILL_STATUSES,
   MAX_CREDIT_CARD_NAME_LENGTH,
   MAX_FAST_ACCESS_BILL_TEXT_LENGTH,
+  MAX_FAST_ACCESS_LINK_LABEL_LENGTH,
+  MAX_FAST_ACCESS_LINK_URL_LENGTH,
   MAX_CREDIT_CARD_USER_LENGTH,
 } = require('../constants/creditCards');
 const { createCreditCardsService } = require('../services/creditCards.service');
@@ -18,6 +20,40 @@ const {
 } = require('../utils/creditCards');
 
 const normalizeBillText = (value) => String(value || '').trim();
+const normalizeLinkText = (value) => String(value || '').trim();
+
+const validateFastAccessLinkDetails = ({ label, url }) => {
+  const normalizedLabel = normalizeLinkText(label);
+  if (!normalizedLabel) {
+    return { error: 'Label is required' };
+  }
+  if (normalizedLabel.length > MAX_FAST_ACCESS_LINK_LABEL_LENGTH) {
+    return { error: `Label must be ${MAX_FAST_ACCESS_LINK_LABEL_LENGTH} characters or less` };
+  }
+
+  const normalizedUrl = normalizeLinkText(url);
+  if (!normalizedUrl) {
+    return { error: 'URL is required' };
+  }
+  if (normalizedUrl.length > MAX_FAST_ACCESS_LINK_URL_LENGTH) {
+    return { error: `URL must be ${MAX_FAST_ACCESS_LINK_URL_LENGTH} characters or less` };
+  }
+  try {
+    const parsedUrl = new URL(normalizedUrl);
+    if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+      return { error: 'URL must start with http or https' };
+    }
+  } catch (error) {
+    return { error: 'URL must be valid' };
+  }
+
+  return {
+    values: {
+      label: normalizedLabel,
+      url: normalizedUrl,
+    },
+  };
+};
 
 const normalizeFastAccessBillAmount = (amount) => {
   if (amount === undefined || amount === null || amount === '') {
@@ -150,6 +186,52 @@ const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync })
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Failed to load fast access bills' });
+    }
+  });
+
+  router.get('/fast-access-links', async (req, res) => {
+    try {
+      const links = await creditCards.listFastAccessLinks();
+      res.json({ links });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to load fast access links' });
+    }
+  });
+
+  router.post('/fast-access-links', async (req, res) => {
+    const validation = validateFastAccessLinkDetails(req.body);
+    if (validation.error) {
+      return res.status(400).json({ error: validation.error });
+    }
+
+    try {
+      const link = await creditCards.createFastAccessLink(validation.values);
+      res.json({ link });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to create fast access link' });
+    }
+  });
+
+  router.delete('/fast-access-links/:id', async (req, res) => {
+    const { id } = req.params;
+    const linkId = Number(id);
+    if (!Number.isInteger(linkId) || linkId <= 0) {
+      return res.status(400).json({ error: 'Invalid fast access link' });
+    }
+
+    try {
+      const link = await creditCards.findFastAccessLinkById(linkId);
+      if (!link) {
+        return res.status(404).json({ error: 'Fast access link not found' });
+      }
+
+      await creditCards.removeFastAccessLink(linkId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to delete fast access link' });
     }
   });
 

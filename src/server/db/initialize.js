@@ -98,6 +98,15 @@ const initializeDatabase = async () => {
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )`);
 
+  await pool.query(`CREATE TABLE IF NOT EXISTS fast_access_links (
+    id SERIAL PRIMARY KEY,
+    label TEXT NOT NULL,
+    url TEXT NOT NULL,
+    sort_order INTEGER NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )`);
+
   await pool.query(`CREATE TABLE IF NOT EXISTS notes (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,
@@ -165,6 +174,9 @@ const initializeDatabase = async () => {
   await pool.query('ALTER TABLE fast_access_bill_defaults ADD COLUMN IF NOT EXISTS pay_before TEXT');
   await pool.query("ALTER TABLE fast_access_bill_defaults ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'Unpaid'");
   await pool.query('ALTER TABLE fast_access_bill_defaults ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0');
+  await pool.query('ALTER TABLE fast_access_links ADD COLUMN IF NOT EXISTS label TEXT');
+  await pool.query('ALTER TABLE fast_access_links ADD COLUMN IF NOT EXISTS url TEXT');
+  await pool.query('ALTER TABLE fast_access_links ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0');
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS dashboard_preferences JSONB');
   await pool.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT FALSE');
 
@@ -181,6 +193,20 @@ const initializeDatabase = async () => {
       ('Auto loan',   0.00, '', '', 'Unpaid', 8),
       ('Daycare',     0.00, '', '', 'Unpaid', 9)
     ON CONFLICT (sort_order) DO NOTHING
+  `);
+
+  await pool.query(`
+    INSERT INTO fast_access_links (label, url, sort_order)
+    SELECT label, url, sort_order
+    FROM (VALUES
+      ('Mortgage', 'https://rocket.com/mortgage/', 1),
+      ('Electric', 'https://wemc.smarthub.coop/Login.html', 2),
+      ('Water', 'https://ubwss.raleighnc.gov/wss/login', 3),
+      ('Gas', 'https://account.psncenergy.com/#account-summary', 4),
+      ('Internet', 'https://www.spectrum.net/account-summary', 5),
+      ('Phone', 'https://www.att.com/acctmgmt/overview', 6)
+    ) AS defaults(label, url, sort_order)
+    WHERE NOT EXISTS (SELECT 1 FROM fast_access_links)
   `);
 
   await pool.query(`

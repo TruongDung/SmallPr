@@ -1,12 +1,22 @@
 (function () {
-  const create = ({ request, t, showStatusToast, getLanguage, confirmDelete }) => {
+  const create = ({ request, t, showStatusToast, getLanguage, confirmDelete, confirmDeleteFastAccessLink }) => {
     const feature = window.CreditCardFeature;
     const elements = feature.dom.getElements();
     const formatters = feature.createFormatters({ t, getLanguage });
     const userOptions = feature.createUserOptions({ t, getLanguage });
 
     let cards = [];
+    let fastAccessLinks = [];
     let pendingEditCard = null;
+
+    const defaultFastAccessLinks = [
+      { label: 'Mortgage', url: 'https://rocket.com/mortgage/' },
+      { label: 'Electric', url: 'https://wemc.smarthub.coop/Login.html' },
+      { label: 'Water', url: 'https://ubwss.raleighnc.gov/wss/login' },
+      { label: 'Gas', url: 'https://account.psncenergy.com/#account-summary' },
+      { label: 'Internet', url: 'https://www.spectrum.net/account-summary' },
+      { label: 'Phone', url: 'https://www.att.com/acctmgmt/overview' },
+    ];
 
     const showEditError = (text) => feature.dom.setFieldError(elements.editError, text);
     const clearEditError = () => feature.dom.clearFieldError(elements.editError);
@@ -225,15 +235,99 @@
       load();
     };
 
+    const deleteFastAccessLink = async (link) => {
+      if (!link) return;
+      if (!link.id) {
+        elements.message.textContent = 'This fast access link cannot be deleted until links are loaded from the server.';
+        return;
+      }
+
+      elements.message.textContent = '';
+      const result = await request(`/api/credit-cards/fast-access-links/${link.id}`, {
+        method: 'DELETE',
+      });
+
+      if (result.error) {
+        elements.message.textContent = result.error;
+        return;
+      }
+
+      showStatusToast('Fast access link deleted');
+      load();
+    };
+
     const render = (cardsToRender = cards) => {
       cardTable.render(cardsToRender);
     };
 
+    const renderFastAccessLinks = () => {
+      if (!elements.fastAccessLinksList) return;
+
+      elements.fastAccessLinksList.innerHTML = '';
+      if (!fastAccessLinks.length) {
+        elements.fastAccessLinksList.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem;">No fast access links yet.</td></tr>';
+        return;
+      }
+
+      fastAccessLinks.forEach((link) => {
+        const row = document.createElement('tr');
+        const labelCell = document.createElement('td');
+        const urlCell = document.createElement('td');
+        const actionsCell = document.createElement('td');
+        const anchor = document.createElement('a');
+        const openButton = document.createElement('button');
+        const deleteButton = document.createElement('button');
+        const label = link.label || '';
+        const url = link.url || '#';
+        const canDelete = Boolean(link.id);
+
+        labelCell.textContent = label;
+        anchor.className = 'credit-card-link-url';
+        anchor.href = url;
+        anchor.target = '_blank';
+        anchor.rel = 'noopener noreferrer';
+        anchor.textContent = url;
+        urlCell.append(anchor);
+
+        openButton.className = 'secondary finance-export-button';
+        openButton.type = 'button';
+        openButton.textContent = 'Open';
+        openButton.setAttribute('aria-label', `Open ${label || 'link'}`);
+        openButton.title = `Open ${label || 'link'}`;
+        openButton.addEventListener('click', () => {
+          window.open(url, '_blank', 'noopener,noreferrer');
+        });
+
+        actionsCell.append(openButton);
+
+        if (canDelete) {
+          deleteButton.className = 'task-action-icon danger';
+          deleteButton.type = 'button';
+          deleteButton.textContent = '\u00d7';
+          deleteButton.setAttribute('aria-label', `Delete ${label || 'link'}`);
+          deleteButton.title = `Delete ${label || 'link'}`;
+          deleteButton.addEventListener('click', () => {
+            if (typeof confirmDeleteFastAccessLink === 'function') {
+              confirmDeleteFastAccessLink(link);
+              return;
+            }
+            deleteFastAccessLink(link);
+          });
+
+          actionsCell.append(deleteButton);
+        }
+
+        row.append(labelCell, urlCell, actionsCell);
+        elements.fastAccessLinksList.append(row);
+      });
+    };
+
     const load = async () => {
-      const [cardsResult, usersResult, fastAccessBillsResult] = await Promise.all([
+      const [cardsResult, usersResult, fastAccessBillsResult, fastAccessLinksResult] = await Promise.all([
         request('/api/credit-cards'),
         request('/api/credit-cards/users'),
         request('/api/credit-cards/fast-access-bills'),
+        request('/api/credit-cards/fast-access-links'),
       ]);
 
       if (cardsResult.error) {
@@ -252,12 +346,14 @@
       }
 
       cards = cardsResult.cards || [];
+      fastAccessLinks = fastAccessLinksResult.error ? defaultFastAccessLinks : (fastAccessLinksResult.links || []);
       fastAccessBills.setBills(fastAccessBillsResult.bills || []);
       userOptions.merge(usersResult.users || [], cards);
       userOptions.setOptions(elements.userInput, elements.userInput.value);
       userOptions.setOptions(elements.editUserInput, elements.editUserInput.value);
       elements.message.textContent = '';
       render(cards);
+      renderFastAccessLinks();
       fastAccessBills.render();
     };
 
@@ -272,6 +368,50 @@
     const closeAddModal = () => {
       elements.form.reset();
       elements.addModal.classList.add('hidden');
+    };
+
+    const openAddFastAccessLinkModal = () => {
+      feature.dom.clearFieldError(elements.addFastAccessLinkError);
+      elements.addFastAccessLinkForm.reset();
+      elements.addFastAccessLinkModal.classList.remove('hidden');
+      elements.fastAccessLinkLabelInput.focus();
+    };
+
+    const closeAddFastAccessLinkModal = () => {
+      feature.dom.clearFieldError(elements.addFastAccessLinkError);
+      elements.addFastAccessLinkForm.reset();
+      elements.addFastAccessLinkModal.classList.add('hidden');
+    };
+
+    const createFastAccessLink = async () => {
+      feature.dom.clearFieldError(elements.addFastAccessLinkError);
+
+      const label = elements.fastAccessLinkLabelInput.value.trim();
+      const url = elements.fastAccessLinkUrlInput.value.trim();
+      if (!label) {
+        feature.dom.setFieldError(elements.addFastAccessLinkError, 'Label is required');
+        elements.fastAccessLinkLabelInput.focus();
+        return;
+      }
+      if (!url) {
+        feature.dom.setFieldError(elements.addFastAccessLinkError, 'URL is required');
+        elements.fastAccessLinkUrlInput.focus();
+        return;
+      }
+
+      const result = await request('/api/credit-cards/fast-access-links', {
+        method: 'POST',
+        body: JSON.stringify({ label, url }),
+      });
+
+      if (result.error) {
+        feature.dom.setFieldError(elements.addFastAccessLinkError, result.error);
+        return;
+      }
+
+      closeAddFastAccessLinkModal();
+      showStatusToast('Fast access link added');
+      load();
     };
 
     const handleSubmit = async (event) => {
@@ -317,6 +457,7 @@
         t,
       });
       render();
+      renderFastAccessLinks();
       fastAccessBills.render();
     };
 
@@ -332,8 +473,10 @@
 
     const reset = () => {
       cards = [];
+      fastAccessLinks = [];
       pendingEditCard = null;
       closeAddModal();
+      closeAddFastAccessLinkModal();
       closeEditModal();
       fastAccessBills.closeEditModal();
       fastAccessBills.setBills([]);
@@ -341,6 +484,7 @@
       userOptions.setOptions(elements.userInput);
       userOptions.setOptions(elements.editUserInput);
       render([]);
+      renderFastAccessLinks();
       fastAccessBills.render();
     };
 
@@ -368,6 +512,12 @@
       elements.form.addEventListener('submit', handleSubmit);
       elements.openAddButton.addEventListener('click', openAddModal);
       elements.cancelAddButton.addEventListener('click', closeAddModal);
+      elements.openAddFastAccessLinkButton?.addEventListener('click', openAddFastAccessLinkModal);
+      elements.cancelAddFastAccessLinkButton?.addEventListener('click', closeAddFastAccessLinkModal);
+      elements.addFastAccessLinkForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        await createFastAccessLink();
+      });
       elements.editForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         await updateCard();
@@ -387,6 +537,9 @@
         if (!elements.addModal.classList.contains('hidden')) {
           closeAddModal();
         }
+        if (!elements.addFastAccessLinkModal.classList.contains('hidden')) {
+          closeAddFastAccessLinkModal();
+        }
         if (!elements.editModal.classList.contains('hidden')) {
           closeEditModal();
         }
@@ -402,6 +555,7 @@
       load,
       render,
       deleteCard,
+      deleteFastAccessLink,
       getActiveFinancialTab,
       refreshActivePanel,
       reset,

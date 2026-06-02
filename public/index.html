@@ -426,14 +426,21 @@
 
         <section id="credit-card-links-panel" class="financial-panel hidden" role="tabpanel" aria-labelledby="credit-card-links-tab">
           <section class="credit-card-quick-links" aria-labelledby="credit-card-quick-links-title">
-            <h3 id="credit-card-quick-links-title">Fast Access</h3>
-            <div class="credit-card-link-grid">
-              <a class="credit-card-link" data-i18n-key="mortgageLink" href="https://rocket.com/mortgage/" target="_blank" rel="noopener noreferrer">Mortgage</a>
-              <a class="credit-card-link" data-i18n-key="electricLink" href="https://wemc.smarthub.coop/Login.html" target="_blank" rel="noopener noreferrer">Electric</a>
-              <a class="credit-card-link" data-i18n-key="waterLink" href="https://ubwss.raleighnc.gov/wss/login" target="_blank" rel="noopener noreferrer">Water</a>
-              <a class="credit-card-link" data-i18n-key="gasLink" href="https://account.psncenergy.com/#account-summary" target="_blank" rel="noopener noreferrer">Gas</a>
-              <a class="credit-card-link" data-i18n-key="internetLink" href="https://www.spectrum.net/account-summary" target="_blank" rel="noopener noreferrer">Internet</a>
-              <a class="credit-card-link" data-i18n-key="phoneLink" href="https://www.att.com/acctmgmt/overview" target="_blank" rel="noopener noreferrer">Phone</a>
+            <div class="credit-card-toolbar">
+              <h3 id="credit-card-quick-links-title">Fast Access</h3>
+              <button id="open-add-fast-access-link" type="button" class="primary task-action-icon" aria-label="Add Fast Access Link" title="Add Fast Access Link">+</button>
+            </div>
+            <div class="transactions-table-wrap">
+              <table class="transactions-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>URL</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="credit-card-link-list"></tbody>
+              </table>
             </div>
           </section>
         </section>
@@ -771,6 +778,27 @@
         <div class="modal-actions">
           <button id="cancel-edit-credit-card" type="button" class="secondary">&#x2715; Cancel</button>
           <button id="save-edit-credit-card" type="submit">&#x2713; Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="add-fast-access-link-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="add-fast-access-link-title">
+    <div class="modal">
+      <h3 id="add-fast-access-link-title">Add Fast Access Link</h3>
+      <form id="add-fast-access-link-form" class="credit-card-edit-form" novalidate>
+        <div class="field">
+          <label for="fast-access-link-label">Label</label>
+          <input id="fast-access-link-label" type="text" maxlength="80" placeholder="Mortgage" required />
+        </div>
+        <div class="field">
+          <label for="fast-access-link-url">URL</label>
+          <input id="fast-access-link-url" type="url" maxlength="500" placeholder="https://example.com" required />
+        </div>
+        <p id="add-fast-access-link-error" class="field-error hidden"></p>
+        <div class="modal-actions">
+          <button id="cancel-add-fast-access-link" type="button" class="task-action-icon secondary" aria-label="Cancel" title="Cancel">Ã—</button>
+          <button id="save-add-fast-access-link" type="submit" class="task-action-icon" aria-label="Save" title="Save">âœ“</button>
         </div>
       </form>
     </div>

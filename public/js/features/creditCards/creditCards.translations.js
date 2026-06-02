@@ -1,10 +1,4 @@
 (function () {
-  const translateQuickLinks = (t) => {
-    document.querySelectorAll('.credit-card-link[data-i18n-key]').forEach((link) => {
-      link.textContent = t(link.dataset.i18nKey);
-    });
-  };
-
   const applyStaticTranslations = ({ elements, setUserOptions, renderHeaders, renderBillsHeaders, t }) => {
     const { setText } = window.CreditCardFeature.dom;
 
@@ -16,7 +10,6 @@
     setText('#fast-access-bills-title', t('monthlyBills'));
     renderBillsHeaders();
     setText('#fast-access-grand-total-label', t('grandTotalIncludingRent'));
-    translateQuickLinks(t);
 
     setText('label[for="credit-card-name"]', t('cardName'));
     elements.nameInput.placeholder = t('cardNamePlaceholder');
@@ -36,6 +29,16 @@
       elements.openAddButton.textContent = '+';
       elements.openAddButton.setAttribute('aria-label', t('addCard'));
       elements.openAddButton.title = t('addCard');
+    }
+    if (elements.cancelAddFastAccessLinkButton) {
+      elements.cancelAddFastAccessLinkButton.textContent = '\u00d7';
+      elements.cancelAddFastAccessLinkButton.setAttribute('aria-label', t('cancel'));
+      elements.cancelAddFastAccessLinkButton.title = t('cancel');
+    }
+    if (elements.saveAddFastAccessLinkButton) {
+      elements.saveAddFastAccessLinkButton.textContent = '\u2713';
+      elements.saveAddFastAccessLinkButton.setAttribute('aria-label', t('save'));
+      elements.saveAddFastAccessLinkButton.title = t('save');
     }
     if (elements.addTitle) elements.addTitle.textContent = t('addCreditCard');
     if (elements.cancelAddButton) {
