@@ -1,13 +1,14 @@
 const crypto = require('crypto');
 const express = require('express');
 
-const { normalizeEmail } = require('../utils/users');
+const { normalizeEmail, normalizeName } = require('../utils/users');
 
 const REGISTRATION_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const REGISTRATION_LIMIT_MAX = 5;
 const REGISTRATION_MIN_FORM_AGE_MS = 800;
 const REGISTRATION_MAX_FORM_AGE_MS = 30 * 60 * 1000;
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
+const SUPPORTED_LANGUAGES = new Set(['en', 'vi']);
 
 const registrationAttempts = new Map();
 
@@ -16,6 +17,8 @@ const createSessionUser = (user, impersonator = null) => ({
   username: user.username,
   name: user.name,
   email: user.email,
+  timezone: user.timezone,
+  language: user.language,
   account_status: user.account_status,
   impersonator: impersonator ? {
     id: impersonator.id,
@@ -24,6 +27,16 @@ const createSessionUser = (user, impersonator = null) => ({
     email: impersonator.email,
   } : null,
 });
+
+const isSupportedTimezone = (timezone) => {
+  if (!timezone) return true;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: timezone });
+    return true;
+  } catch (_error) {
+    return false;
+  }
+};
 
 const hashVerificationToken = (token) => crypto
   .createHash('sha256')
@@ -202,7 +215,7 @@ const createAuthRouter = ({ bcrypt, getAsync, getUserById, runAsync, sendVerific
 
     try {
       const user = await getAsync(
-        'SELECT id, username, name, email, password, account_status FROM users WHERE username = ?',
+        'SELECT id, username, name, email, timezone, language, password, account_status FROM users WHERE username = ?',
         [username]
       );
       if (!user) {
@@ -238,6 +251,71 @@ const createAuthRouter = ({ bcrypt, getAsync, getUserById, runAsync, sendVerific
       }
       res.json({ success: true });
     });
+  });
+
+  router.put('/me', async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const name = normalizeName(req.body.name);
+    const email = normalizeEmail(req.body.email);
+    const timezone = String(req.body.timezone || '').trim() || null;
+    const language = String(req.body.language || '').trim() || null;
+
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'A valid email is required' });
+    }
+    if (timezone && !isSupportedTimezone(timezone)) {
+      return res.status(400).json({ error: 'Timezone is invalid' });
+    }
+    if (language && !SUPPORTED_LANGUAGES.has(language)) {
+      return res.status(400).json({ error: 'Language is invalid' });
+    }
+
+    try {
+      await runAsync(
+        'UPDATE users SET name = ?, email = ?, timezone = ?, language = ? WHERE id = ?',
+        [name, email, timezone, language, req.session.userId]
+      );
+      const user = await getUserById(req.session.userId);
+      res.json({ user: createSessionUser(user) });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to update profile' });
+    }
+  });
+
+  router.put('/me/password', async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+
+    const currentPassword = String(req.body.current_password || '');
+    const newPassword = String(req.body.new_password || '');
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current password and new password are required' });
+    }
+
+    try {
+      const user = await getAsync('SELECT id, password FROM users WHERE id = ?', [req.session.userId]);
+      if (!user) {
+        req.session.destroy(() => {});
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const valid = await bcrypt.compare(currentPassword, user.password);
+      if (!valid) {
+        return res.status(401).json({ error: 'Current password is incorrect' });
+      }
+
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      await runAsync('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.session.userId]);
+      res.json({ success: true });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to update password' });
+    }
   });
 
   router.post('/impersonation/stop', async (req, res) => {

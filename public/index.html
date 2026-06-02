@@ -425,9 +425,8 @@
         </section>
 
         <section id="credit-card-links-panel" class="financial-panel hidden" role="tabpanel" aria-labelledby="credit-card-links-tab">
-          <section class="credit-card-quick-links" aria-labelledby="credit-card-quick-links-title">
+          <section class="credit-card-quick-links" aria-label="Bill Payment Websites">
             <div class="credit-card-toolbar">
-              <h3 id="credit-card-quick-links-title">Bill Payment Websites</h3>
               <button id="open-add-fast-access-link" type="button" class="primary task-action-icon" aria-label="Add Bill Payment Website" title="Add Bill Payment Website">+</button>
             </div>
             <div class="transactions-table-wrap">
@@ -565,6 +564,59 @@
             <span aria-hidden="true">×</span>
           </button>
           <button id="save-admin-user" type="submit" class="modal-icon-action modal-icon-action-primary" aria-label="Save" title="Save">
+            <span aria-hidden="true">✓</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="user-settings-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="user-settings-title">
+    <div class="modal">
+      <h3 id="user-settings-title">User Settings</h3>
+      <form id="user-settings-form" class="admin-user-form modal-user-form" novalidate>
+        <div class="field">
+          <label for="settings-name">Name</label>
+          <input id="settings-name" type="text" autocomplete="name" />
+        </div>
+        <div class="field">
+          <label for="settings-email">Email</label>
+          <input id="settings-email" type="email" autocomplete="email" />
+        </div>
+        <div class="field">
+          <label for="settings-timezone">Timezone</label>
+          <input id="settings-timezone" type="text" placeholder="America/New_York" />
+        </div>
+        <div class="field">
+          <label for="settings-language">Language</label>
+          <select id="settings-language">
+            <option value="en">English</option>
+            <option value="vi">Tiếng Việt</option>
+          </select>
+        </div>
+        <p id="user-settings-form-error" class="field-error hidden"></p>
+        <div class="modal-actions">
+          <button id="cancel-user-settings" type="button" class="secondary modal-icon-action" aria-label="Cancel" title="Cancel">
+            <span aria-hidden="true">×</span>
+          </button>
+          <button id="save-user-settings" type="submit" class="modal-icon-action modal-icon-action-primary" aria-label="Save" title="Save">
+            <span aria-hidden="true">✓</span>
+          </button>
+        </div>
+      </form>
+      <form id="password-settings-form" class="admin-user-form modal-user-form" novalidate>
+        <h4 id="password-settings-title">Change Password</h4>
+        <div class="field">
+          <label for="settings-current-password">Current Password</label>
+          <input id="settings-current-password" type="password" autocomplete="current-password" />
+        </div>
+        <div class="field">
+          <label for="settings-new-password">New Password</label>
+          <input id="settings-new-password" type="password" autocomplete="new-password" />
+        </div>
+        <p id="password-settings-form-error" class="field-error hidden"></p>
+        <div class="modal-actions">
+          <button id="save-password-settings" type="submit" class="modal-icon-action modal-icon-action-primary" aria-label="Save" title="Save">
             <span aria-hidden="true">✓</span>
           </button>
         </div>

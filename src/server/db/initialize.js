@@ -10,7 +10,9 @@ const initializeDatabase = async () => {
     id SERIAL PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
     email TEXT,
-    password TEXT NOT NULL
+    password TEXT NOT NULL,
+    timezone TEXT,
+    language TEXT
   )`);
 
   await pool.query(`CREATE TABLE IF NOT EXISTS tasks (
@@ -149,6 +151,8 @@ const initializeDatabase = async () => {
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS next_occurrence_date DATE');
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email TEXT');
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS name TEXT');
+  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS timezone TEXT');
+  await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS language TEXT');
   await pool.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status TEXT NOT NULL DEFAULT 'enabled'");
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status_changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP');
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token TEXT');

@@ -24,6 +24,7 @@
       request,
       t,
       getLanguage = () => 'en',
+      getTimezone = null,
       showStatusToast = () => {},
       openAddTask = () => {},
       openNewNote = () => {},
@@ -90,6 +91,8 @@
 
     const locale = () => (getLanguage() === 'vi' ? 'vi-VN' : 'en-US');
     const tz = () => {
+      const configuredTimezone = typeof getTimezone === 'function' ? getTimezone() : '';
+      if (configuredTimezone) return configuredTimezone;
       try {
         return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
       } catch (_e) {

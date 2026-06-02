@@ -123,6 +123,73 @@ describe('Auth API', () => {
     expect(response.body).toEqual({ user: null });
   });
 
+  test('updates user settings and changes password', async () => {
+    const username = testUsername('settings-user');
+    const agent = await createAgent(username);
+
+    const invalidTimezoneResponse = await agent
+      .put('/api/me')
+      .send({
+        name: 'Settings User',
+        email: `${username}@example.com`,
+        timezone: 'Nope/Nowhere',
+        language: 'en',
+      });
+    expect(invalidTimezoneResponse.statusCode).toBe(400);
+    expect(invalidTimezoneResponse.body).toHaveProperty('error', 'Timezone is invalid');
+
+    const updateResponse = await agent
+      .put('/api/me')
+      .send({
+        name: 'Settings User',
+        email: `${username}-updated@example.com`,
+        timezone: 'Asia/Ho_Chi_Minh',
+        language: 'vi',
+      });
+    expect(updateResponse.statusCode).toBe(200);
+    expect(updateResponse.body.user).toMatchObject({
+      username,
+      name: 'Settings User',
+      email: `${username}-updated@example.com`,
+      timezone: 'Asia/Ho_Chi_Minh',
+      language: 'vi',
+    });
+
+    const meResponse = await agent.get('/api/me');
+    expect(meResponse.body.user).toMatchObject({
+      timezone: 'Asia/Ho_Chi_Minh',
+      language: 'vi',
+    });
+
+    const dashboardResponse = await agent.get('/api/dashboard');
+    expect(dashboardResponse.statusCode).toBe(200);
+    expect(dashboardResponse.body.timezone).toBe('Asia/Ho_Chi_Minh');
+
+    const wrongPasswordResponse = await agent
+      .put('/api/me/password')
+      .send({ current_password: 'WrongPassword123!', new_password: 'NewPassword123!' });
+    expect(wrongPasswordResponse.statusCode).toBe(401);
+    expect(wrongPasswordResponse.body).toHaveProperty('error', 'Current password is incorrect');
+
+    const passwordResponse = await agent
+      .put('/api/me/password')
+      .send({ current_password: 'Password123!', new_password: 'NewPassword123!' });
+    expect(passwordResponse.statusCode).toBe(200);
+    expect(passwordResponse.body).toEqual({ success: true });
+
+    await agent.post('/api/logout');
+
+    const oldLoginResponse = await agent
+      .post('/api/login')
+      .send({ username, password: 'Password123!' });
+    expect(oldLoginResponse.statusCode).toBe(401);
+
+    const newLoginResponse = await agent
+      .post('/api/login')
+      .send({ username, password: 'NewPassword123!' });
+    expect(newLoginResponse.statusCode).toBe(200);
+  });
+
   test('signs up a new user and logs in successfully', async () => {
     const username = testUsername('testuser');
     const signupResponse = await request(app)

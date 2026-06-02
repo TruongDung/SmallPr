@@ -109,6 +109,14 @@ const loadPreferences = async ({ getAsync, userId }) => {
   return mergeWithDefaults(row?.prefs);
 };
 
+const loadUserTimezone = async ({ getAsync, userId }) => {
+  const row = await getAsync(
+    'SELECT timezone FROM users WHERE id = ?',
+    [userId]
+  );
+  return row?.timezone || '';
+};
+
 const createDashboardRouter = ({ authRequired, allAsync, getAsync, runAsync, cache = null }) => {
   const router = express.Router();
   const dashboardService = createDashboardService({ allAsync });
@@ -116,11 +124,13 @@ const createDashboardRouter = ({ authRequired, allAsync, getAsync, runAsync, cac
   router.use('/dashboard', authRequired);
 
   router.get('/dashboard', async (req, res) => {
-    const tz = typeof req.query.tz === 'string' ? req.query.tz : '';
+    const requestedTimezone = typeof req.query.tz === 'string' ? req.query.tz : '';
     const dueSoonDays = req.query.dueSoonDays;
-    const cacheKey = `user:${req.session.userId}:dashboard:${encodeURIComponent(tz)}:${encodeURIComponent(String(dueSoonDays || ''))}`;
 
     try {
+      const savedTimezone = requestedTimezone ? '' : await loadUserTimezone({ getAsync, userId: req.session.userId });
+      const tz = requestedTimezone || savedTimezone;
+      const cacheKey = `user:${req.session.userId}:dashboard:${encodeURIComponent(tz)}:${encodeURIComponent(String(dueSoonDays || ''))}`;
       const cached = await cache?.getJson?.(cacheKey);
       if (cached) {
         res.set('Cache-Control', 'no-store');

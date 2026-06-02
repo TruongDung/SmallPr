@@ -41,6 +41,22 @@ const adminPasswordInput = document.getElementById('admin-password');
 const adminUserFormError = document.getElementById('admin-user-form-error');
 const cancelAdminUser = document.getElementById('cancel-admin-user');
 const saveAdminUser = document.getElementById('save-admin-user');
+const userSettingsModal = document.getElementById('user-settings-modal');
+const userSettingsTitle = document.getElementById('user-settings-title');
+const userSettingsForm = document.getElementById('user-settings-form');
+const settingsNameInput = document.getElementById('settings-name');
+const settingsEmailInput = document.getElementById('settings-email');
+const settingsTimezoneInput = document.getElementById('settings-timezone');
+const settingsLanguageInput = document.getElementById('settings-language');
+const userSettingsFormError = document.getElementById('user-settings-form-error');
+const cancelUserSettings = document.getElementById('cancel-user-settings');
+const saveUserSettings = document.getElementById('save-user-settings');
+const passwordSettingsTitle = document.getElementById('password-settings-title');
+const passwordSettingsForm = document.getElementById('password-settings-form');
+const settingsCurrentPasswordInput = document.getElementById('settings-current-password');
+const settingsNewPasswordInput = document.getElementById('settings-new-password');
+const passwordSettingsFormError = document.getElementById('password-settings-form-error');
+const savePasswordSettings = document.getElementById('save-password-settings');
 const taskList = document.getElementById('task-list');
 const tagList = document.getElementById('tag-list');
 const userList = document.getElementById('user-list');
@@ -150,6 +166,7 @@ const getSavedView = () => {
 };
 let currentView = getSavedView();
 let currentLanguage = localStorage.getItem('task-manager-language') || 'en';
+let currentTimezone = null;
 let currentTheme = localStorage.getItem('task-manager-theme') || 'light';
 let currentTagFilter = '';
 let tasks = [];
@@ -207,6 +224,15 @@ const translations = {
     exportPdf: 'Export to PDF',
     exportWord: 'Export to Word',
     logout: 'Logout',
+    userSettings: 'User Settings',
+    profileSettings: 'Profile',
+    changePassword: 'Change Password',
+    currentPassword: 'Current Password',
+    newPassword: 'New Password',
+    timezone: 'Timezone',
+    settingsSaved: 'Settings saved.',
+    passwordUpdated: 'Password updated.',
+    passwordRequired: 'Current password and new password are required',
     searchTasks: 'Search tasks',
     searchTasksPlaceholder: 'Search title, description, comment',
     clearSearch: 'Clear search',
@@ -522,6 +548,15 @@ const translations = {
     exportPdf: 'Xuất PDF',
     exportWord: 'Xuất Word',
     logout: 'Đăng xuất',
+    userSettings: 'Cài đặt người dùng',
+    profileSettings: 'Hồ sơ',
+    changePassword: 'Đổi mật khẩu',
+    currentPassword: 'Mật khẩu hiện tại',
+    newPassword: 'Mật khẩu mới',
+    timezone: 'Múi giờ',
+    settingsSaved: 'Đã lưu cài đặt.',
+    passwordUpdated: 'Đã cập nhật mật khẩu.',
+    passwordRequired: 'Vui lòng nhập mật khẩu hiện tại và mật khẩu mới',
     searchTasks: 'Tìm công việc',
     searchTasksPlaceholder: 'Tìm theo tiêu đề, mô tả hoặc bình luận',
     clearSearch: 'Xóa tìm kiếm',
@@ -928,6 +963,20 @@ const applyTranslations = () => {
   setIconButtonLabel(exportPdfButton, t('exportPdf'));
   if (exportWordButton) setIconButtonLabel(exportWordButton, t('exportWord'));
   logoutButton.textContent = t('logout');
+  if (userSettingsTitle) userSettingsTitle.textContent = t('userSettings');
+  if (passwordSettingsTitle) passwordSettingsTitle.textContent = t('changePassword');
+  setText('label[for="settings-name"]', t('name'));
+  setText('label[for="settings-email"]', t('email'));
+  setText('label[for="settings-timezone"]', t('timezone'));
+  setText('label[for="settings-language"]', t('language'));
+  setText('label[for="settings-current-password"]', t('currentPassword'));
+  setText('label[for="settings-new-password"]', t('newPassword'));
+  cancelUserSettings?.setAttribute('aria-label', t('cancel'));
+  if (cancelUserSettings) cancelUserSettings.title = t('cancel');
+  saveUserSettings?.setAttribute('aria-label', t('save'));
+  if (saveUserSettings) saveUserSettings.title = t('save');
+  savePasswordSettings?.setAttribute('aria-label', t('save'));
+  if (savePasswordSettings) savePasswordSettings.title = t('save');
   setText('#weather-title', t('weather'));
   weatherCityInput.placeholder = t('cityPlaceholder');
   setText('#weather-form button[type="submit"]', t('addCity'));
@@ -1998,6 +2047,13 @@ const renderUserArea = () => {
     userArea.append(returnButton);
   }
 
+  const settingsButton = document.createElement('button');
+  settingsButton.type = 'button';
+  settingsButton.className = 'secondary nav-button';
+  setNavButtonContent(settingsButton, t('userSettings'), '⚙');
+  settingsButton.addEventListener('click', showUserSettingsModal);
+  userArea.append(settingsButton);
+
   userArea.append(logoutButton);
 };
 
@@ -2025,6 +2081,125 @@ const setLanguage = (language) => {
   localStorage.setItem('task-manager-language', language);
   languageSelect.value = language;
   applyTranslations();
+};
+
+const getBrowserTimezone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch (_error) {
+    return 'UTC';
+  }
+};
+
+const getActiveTimezone = () => currentTimezone || currentUser?.timezone || getBrowserTimezone();
+
+const applyUserPreferences = (user) => {
+  currentTimezone = user?.timezone || null;
+  if (user?.language && translations[user.language]) {
+    currentLanguage = user.language;
+    localStorage.setItem('task-manager-language', user.language);
+    languageSelect.value = user.language;
+  }
+};
+
+const setSettingsError = (element, text) => {
+  if (!element) return;
+  element.textContent = text || '';
+  element.classList.toggle('hidden', !text);
+};
+
+const showUserSettingsModal = () => {
+  if (!currentUser || !userSettingsModal) return;
+  setSettingsError(userSettingsFormError, '');
+  setSettingsError(passwordSettingsFormError, '');
+  userSettingsForm?.reset();
+  passwordSettingsForm?.reset();
+  settingsNameInput.value = currentUser.name || '';
+  settingsEmailInput.value = currentUser.email || '';
+  settingsTimezoneInput.value = getActiveTimezone();
+  settingsLanguageInput.value = currentUser.language || currentLanguage;
+  userSettingsModal.classList.remove('hidden');
+  settingsNameInput.focus();
+};
+
+const hideUserSettingsModal = () => {
+  userSettingsForm?.reset();
+  passwordSettingsForm?.reset();
+  setSettingsError(userSettingsFormError, '');
+  setSettingsError(passwordSettingsFormError, '');
+  userSettingsModal?.classList.add('hidden');
+};
+
+const handleUserSettingsSubmit = async (event) => {
+  event.preventDefault();
+  setSettingsError(userSettingsFormError, '');
+
+  const result = await request('/api/me', {
+    method: 'PUT',
+    body: JSON.stringify({
+      name: settingsNameInput.value.trim(),
+      email: settingsEmailInput.value.trim(),
+      timezone: settingsTimezoneInput.value.trim(),
+      language: settingsLanguageInput.value,
+    }),
+  });
+
+  if (result.error) {
+    setSettingsError(userSettingsFormError, result.error);
+    return;
+  }
+
+  currentUser = result.user;
+  applyUserPreferences(currentUser);
+  applyTranslations();
+  renderUserArea();
+  dashboardModule.refresh?.();
+  showStatusToast(t('settingsSaved'));
+};
+
+const handlePasswordSettingsSubmit = async (event) => {
+  event.preventDefault();
+  setSettingsError(passwordSettingsFormError, '');
+
+  const currentPassword = settingsCurrentPasswordInput.value;
+  const newPassword = settingsNewPasswordInput.value;
+  if (!currentPassword || !newPassword) {
+    setSettingsError(passwordSettingsFormError, t('passwordRequired'));
+    return;
+  }
+
+  const result = await request('/api/me/password', {
+    method: 'PUT',
+    body: JSON.stringify({
+      current_password: currentPassword,
+      new_password: newPassword,
+    }),
+  });
+
+  if (result.error) {
+    setSettingsError(passwordSettingsFormError, result.error);
+    return;
+  }
+
+  passwordSettingsForm.reset();
+  showStatusToast(t('passwordUpdated'));
+};
+
+const persistCurrentUserPreferences = async () => {
+  if (!currentUser) return;
+  const result = await request('/api/me', {
+    method: 'PUT',
+    body: JSON.stringify({
+      name: currentUser.name || '',
+      email: currentUser.email || '',
+      timezone: getActiveTimezone(),
+      language: currentLanguage,
+    }),
+  });
+  if (!result.error) {
+    currentUser = result.user;
+    applyUserPreferences(currentUser);
+  }
 };
 
 const togglePasswordVisibility = () => {
@@ -2086,6 +2261,8 @@ const init = async () => {
   prefillRememberedCredentials();
   const result = await request('/api/me');
   currentUser = result.user;
+  applyUserPreferences(currentUser);
+  applyTranslations();
   showSection();
   if (!currentUser && new URLSearchParams(window.location.search).get('verified') === '1') {
     authMessage.textContent = t('emailVerified');
@@ -2239,6 +2416,8 @@ const handleAuthSubmit = async (event) => {
 
   resetFinancialModules();
   currentUser = result.user;
+  applyUserPreferences(currentUser);
+  applyTranslations();
   setCurrentView(getSavedView());
   authForm.reset();
   if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
@@ -2707,6 +2886,8 @@ const startImpersonation = async (userId) => {
 
   resetFinancialModules();
   currentUser = result.user;
+  applyUserPreferences(currentUser);
+  applyTranslations();
   disconnectRealtime();
   connectRealtime();
   setCurrentView('dashboard');
@@ -2724,6 +2905,8 @@ const stopImpersonation = async () => {
 
   resetFinancialModules();
   currentUser = result.user;
+  applyUserPreferences(currentUser);
+  applyTranslations();
   disconnectRealtime();
   connectRealtime();
   setCurrentView('admin');
@@ -3376,6 +3559,10 @@ document.addEventListener('keydown', (event) => {
     hideAdminUserModal();
   }
 
+  if (event.key === 'Escape' && !userSettingsModal.classList.contains('hidden')) {
+    hideUserSettingsModal();
+  }
+
   if (event.key === 'Escape' && !editTaskModal.classList.contains('hidden')) {
     hideEditTaskModal();
   }
@@ -3810,6 +3997,7 @@ const handleLogout = async () => {
   await request('/api/logout', { method: 'POST' });
   resetFinancialModules();
   currentUser = null;
+  currentTimezone = null;
   disconnectRealtime();
   setCurrentView('tasks', { persist: false });
   showSection();
@@ -4075,6 +4263,7 @@ const dashboardModule = window.DashboardModule.create({
   request,
   t,
   getLanguage: () => currentLanguage,
+  getTimezone: getActiveTimezone,
   showStatusToast,
   openAddTask: () => {
     setCurrentView('tasks');
@@ -4096,7 +4285,10 @@ window.dashboardModule = dashboardModule;
 
 showLogin.addEventListener('click', () => setMode('login'));
 showSignup.addEventListener('click', () => setMode('signup'));
-languageSelect.addEventListener('change', (event) => setLanguage(event.target.value));
+languageSelect.addEventListener('change', (event) => {
+  setLanguage(event.target.value);
+  persistCurrentUserPreferences();
+});
 themeToggle.addEventListener('click', toggleTheme);
 togglePasswordButton.addEventListener('click', togglePasswordVisibility);
 const taskSubtabAddButton = document.getElementById('task-subtab-add-button');
@@ -4193,6 +4385,9 @@ if (impersonateUserSelect) {
   });
 }
 cancelAdminUser.addEventListener('click', hideAdminUserModal);
+userSettingsForm?.addEventListener('submit', handleUserSettingsSubmit);
+passwordSettingsForm?.addEventListener('submit', handlePasswordSettingsSubmit);
+cancelUserSettings?.addEventListener('click', hideUserSettingsModal);
 logoutButton.addEventListener('click', handleLogout);
 sendSummaryEmailButton.addEventListener('click', sendSummaryEmail);
 exportExcelButton.addEventListener('click', exportToExcel);

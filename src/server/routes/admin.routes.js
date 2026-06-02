@@ -25,6 +25,8 @@ const createSessionUser = (user, impersonator = null) => ({
   username: user.username,
   name: user.name,
   email: user.email,
+  timezone: user.timezone,
+  language: user.language,
   account_status: user.account_status,
   impersonator: impersonator ? {
     id: impersonator.id,
@@ -59,7 +61,7 @@ const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync
 
     try {
       const targetUser = await getAsync(
-        'SELECT id, username, name, email, account_status FROM users WHERE id = ?',
+        'SELECT id, username, name, email, timezone, language, account_status FROM users WHERE id = ?',
         [targetUserId]
       );
       if (!targetUser) {
