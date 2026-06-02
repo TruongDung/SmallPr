@@ -1467,6 +1467,7 @@ const scheduleTaskReminders = (loadedTasks) => {
 
 const renderQuoteWidget = () => {
   const quoteWidget = document.getElementById('quote-widget');
+  if (!quoteWidget) return;
   quoteWidget.innerHTML = getDailyQuoteCard(DEFAULT_DAILY_QUOTE);
   quoteWidget.classList.remove('hidden');
   loadDailyQuote(quoteWidget);
@@ -1838,7 +1839,7 @@ const showSection = () => {
   const showTags = currentView === 'tags';
   taskSubtabNav.classList.toggle('hidden', !showTaskWorkspace);
   setActiveTaskSubtab();
-  quoteWidget.classList.toggle('hidden', showWeather);
+  quoteWidget?.classList.add('hidden');
   taskHeader.classList.toggle('hidden', showWeather || showTags);
   tagManager.classList.toggle('hidden', !showTags);
   taskList.classList.toggle('hidden', showWeather || showTags);
@@ -1850,7 +1851,7 @@ const showSection = () => {
   }
 
   if (showTags) {
-    quoteWidget.classList.add('hidden');
+    quoteWidget?.classList.add('hidden');
     taskForm.classList.add('hidden');
     loadTags();
     loadTasks();
@@ -1860,7 +1861,6 @@ const showSection = () => {
   taskForm.classList.toggle('hidden', currentView === 'archived');
   loadTags();
   loadTasks();
-  renderQuoteWidget();
 };
 
 const showAddTaskModal = () => {
