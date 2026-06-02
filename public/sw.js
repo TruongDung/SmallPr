@@ -1,4 +1,4 @@
-const CACHE_NAME = 'task-manager-ios-v84';
+const CACHE_NAME = 'task-manager-ios-v85';
 const APP_SHELL = [
   '/',
   '/index.html',

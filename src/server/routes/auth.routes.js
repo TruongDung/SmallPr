@@ -1,5 +1,12 @@
 const express = require('express');
 
+const REGISTRATION_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+const REGISTRATION_LIMIT_MAX = 5;
+const REGISTRATION_MIN_FORM_AGE_MS = 800;
+const REGISTRATION_MAX_FORM_AGE_MS = 30 * 60 * 1000;
+
+const registrationAttempts = new Map();
+
 const createSessionUser = (user, impersonator = null) => ({
   id: user.id,
   username: user.username,
@@ -14,10 +21,72 @@ const createSessionUser = (user, impersonator = null) => ({
   } : null,
 });
 
+const getRequestIp = (req) => {
+  const forwardedFor = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return forwardedFor || req.ip || req.socket?.remoteAddress || 'unknown';
+};
+
+const pruneRegistrationAttempts = (now = Date.now()) => {
+  for (const [key, timestamps] of registrationAttempts.entries()) {
+    const recent = timestamps.filter((timestamp) => now - timestamp < REGISTRATION_LIMIT_WINDOW_MS);
+    if (recent.length) {
+      registrationAttempts.set(key, recent);
+    } else {
+      registrationAttempts.delete(key);
+    }
+  }
+};
+
+const registrationRateLimit = (req, res, next) => {
+  if (process.env.NODE_ENV === 'test') return next();
+
+  const now = Date.now();
+  pruneRegistrationAttempts(now);
+
+  const key = getRequestIp(req);
+  const attempts = registrationAttempts.get(key) || [];
+  const recentAttempts = attempts.filter((timestamp) => now - timestamp < REGISTRATION_LIMIT_WINDOW_MS);
+
+  if (recentAttempts.length >= REGISTRATION_LIMIT_MAX) {
+    const retryAfterSeconds = Math.ceil((REGISTRATION_LIMIT_WINDOW_MS - (now - recentAttempts[0])) / 1000);
+    res.set('Retry-After', String(Math.max(1, retryAfterSeconds)));
+    return res.status(429).json({ error: 'Too many registration attempts. Please try again later.' });
+  }
+
+  recentAttempts.push(now);
+  registrationAttempts.set(key, recentAttempts);
+  return next();
+};
+
+const validateHumanRegistration = (req, res, next) => {
+  if (!req.body?.username || !req.body?.password) return next();
+
+  const humanCheck = req.body?.human_check || {};
+  const startedAt = Number(humanCheck.started_at);
+  const interactionCount = Number(humanCheck.interaction_count || 0);
+  const honeypot = String(humanCheck.website || req.body?.website || '').trim();
+  const formAge = Date.now() - startedAt;
+
+  if (honeypot) {
+    return res.status(400).json({ error: 'Please complete registration from the sign-up form.' });
+  }
+
+  if (
+    !Number.isFinite(startedAt)
+    || formAge < REGISTRATION_MIN_FORM_AGE_MS
+    || formAge > REGISTRATION_MAX_FORM_AGE_MS
+    || interactionCount < 1
+  ) {
+    return res.status(400).json({ error: 'Please complete registration from the sign-up form.' });
+  }
+
+  return next();
+};
+
 const createAuthRouter = ({ bcrypt, getAsync, getUserById, runAsync }) => {
   const router = express.Router();
 
-  router.post('/signup', async (req, res) => {
+  router.post(['/signup', '/register'], registrationRateLimit, validateHumanRegistration, async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password are required' });

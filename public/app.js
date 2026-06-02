@@ -133,6 +133,8 @@ const uploadProgressPercent = document.getElementById('upload-progress-percent')
 
 let currentMode = 'login';
 let currentUser = null;
+let registrationStartedAt = Date.now();
+let registrationInteractionCount = 0;
 const SAVED_VIEW_KEY = 'task-manager-current-view';
 const REMEMBER_ME_KEY = 'task-manager-remember-me';
 const rememberMeCheckbox = document.getElementById('remember-me');
@@ -1977,8 +1979,11 @@ const setMode = (mode) => {
   showSignup.classList.toggle('active', mode === 'signup');
   passwordInput.setAttribute('autocomplete', mode === 'login' ? 'current-password' : 'new-password');
   if (mode === 'signup') {
+    registrationStartedAt = Date.now();
+    registrationInteractionCount = 0;
     authForm.username.value = '';
     authForm.password.value = '';
+    if (authForm.website) authForm.website.value = '';
     if (rememberMeCheckbox) rememberMeCheckbox.checked = false;
     authMessage.textContent = '';
   }
@@ -2135,6 +2140,12 @@ const resetFinancialModules = () => {
   transactionsModule.reset?.();
 };
 
+const markRegistrationInteraction = () => {
+  if (currentMode === 'signup') {
+    registrationInteractionCount += 1;
+  }
+};
+
 const handleAuthSubmit = async (event) => {
   event.preventDefault();
   authMessage.textContent = '';
@@ -2147,10 +2158,21 @@ const handleAuthSubmit = async (event) => {
     return;
   }
 
-  const endpoint = currentMode === 'login' ? '/api/login' : '/api/signup';
+  const endpoint = currentMode === 'login' ? '/api/login' : '/api/register';
+  const payload = currentMode === 'login'
+    ? { username, password }
+    : {
+      username,
+      password,
+      human_check: {
+        started_at: registrationStartedAt,
+        interaction_count: registrationInteractionCount,
+        website: authForm.website?.value || '',
+      },
+    };
   const result = await request(endpoint, {
     method: 'POST',
-    body: JSON.stringify({ username, password }),
+    body: JSON.stringify(payload),
   });
 
   if (result.error) {
@@ -4066,6 +4088,10 @@ editTaskRecurrencePattern.addEventListener('change', () => {
 });
 
 authForm.addEventListener('submit', handleAuthSubmit);
+authForm.username.addEventListener('input', markRegistrationInteraction);
+authForm.username.addEventListener('focus', markRegistrationInteraction);
+authForm.password.addEventListener('input', markRegistrationInteraction);
+authForm.password.addEventListener('focus', markRegistrationInteraction);
 taskForm.addEventListener('submit', handleTaskSubmit);
 tagForm.addEventListener('submit', handleTagSubmit);
 weatherForm.addEventListener('submit', handleWeatherSubmit);

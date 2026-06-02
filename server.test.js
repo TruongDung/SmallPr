@@ -14,6 +14,13 @@ const RUN_ID = `test-${Date.now()}-${Math.round(Math.random() * 100000)}`;
 const TEST_ADMIN_PASSWORD = `${RUN_ID}-admin-password`;
 process.env.DEFAULT_ADMIN_PASSWORD = process.env.DEFAULT_ADMIN_PASSWORD || TEST_ADMIN_PASSWORD;
 const testUsername = (name) => `${RUN_ID}-${name}`;
+const humanRegistrationPayload = () => ({
+  human_check: {
+    started_at: Date.now() - 2000,
+    interaction_count: 2,
+    website: '',
+  },
+});
 
 const bcrypt = require('bcrypt');
 const { app, db, dbReady } = require('./server');
@@ -25,8 +32,8 @@ let originalAdminStatus = null;
 const createAgent = async (username = testUsername(`user-${Math.random()}`)) => {
   const agent = request.agent(app);
   const response = await agent
-    .post('/api/signup')
-    .send({ username, password: 'Password123!' });
+    .post('/api/register')
+    .send({ username, password: 'Password123!', ...humanRegistrationPayload() });
 
   expect(response.statusCode).toBe(200);
   expect(response.body.user).toMatchObject({ username });
@@ -103,8 +110,8 @@ describe('Auth API', () => {
   test('signs up a new user and logs in successfully', async () => {
     const username = testUsername('testuser');
     const signupResponse = await request(app)
-      .post('/api/signup')
-      .send({ username, password: 'Password123!' });
+      .post('/api/register')
+      .send({ username, password: 'Password123!', ...humanRegistrationPayload() });
 
     expect(signupResponse.statusCode).toBe(200);
     expect(signupResponse.body.user).toMatchObject({ username });
@@ -119,11 +126,37 @@ describe('Auth API', () => {
 
   test('rejects signup without required fields', async () => {
     const response = await request(app)
-      .post('/api/signup')
+      .post('/api/register')
       .send({ username: '' });
 
     expect(response.statusCode).toBe(400);
     expect(response.body).toHaveProperty('error', 'Username and password are required');
+  });
+
+  test('rejects registration without human sign-up signals', async () => {
+    const response = await request(app)
+      .post('/api/register')
+      .send({ username: testUsername('bot-user'), password: 'Password123!' });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toHaveProperty('error', 'Please complete registration from the sign-up form.');
+  });
+
+  test('rejects registration when the honeypot field is filled', async () => {
+    const response = await request(app)
+      .post('/api/register')
+      .send({
+        username: testUsername('honeypot-user'),
+        password: 'Password123!',
+        human_check: {
+          started_at: Date.now() - 2000,
+          interaction_count: 2,
+          website: 'https://spam.example',
+        },
+      });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toHaveProperty('error', 'Please complete registration from the sign-up form.');
   });
 
   test('rejects duplicate usernames', async () => {
@@ -131,8 +164,8 @@ describe('Auth API', () => {
     await createAgent(username);
 
     const response = await request(app)
-      .post('/api/signup')
-      .send({ username, password: 'Password123!' });
+      .post('/api/register')
+      .send({ username, password: 'Password123!', ...humanRegistrationPayload() });
 
     expect(response.statusCode).toBe(409);
     expect(response.body).toHaveProperty('error', 'Username already exists');
