@@ -913,7 +913,7 @@ const applyTranslations = () => {
   setIconButtonLabel(sendSummaryEmailButton, t('sendEmail'));
   setIconButtonLabel(exportExcelButton, t('exportExcel'));
   setIconButtonLabel(exportPdfButton, t('exportPdf'));
-  setIconButtonLabel(exportWordButton, t('exportWord'));
+  if (exportWordButton) setIconButtonLabel(exportWordButton, t('exportWord'));
   logoutButton.textContent = t('logout');
   setText('#weather-title', t('weather'));
   weatherCityInput.placeholder = t('cityPlaceholder');
@@ -4159,7 +4159,7 @@ logoutButton.addEventListener('click', handleLogout);
 sendSummaryEmailButton.addEventListener('click', sendSummaryEmail);
 exportExcelButton.addEventListener('click', exportToExcel);
 exportPdfButton.addEventListener('click', exportToPdf);
-exportWordButton.addEventListener('click', exportToWord);
+if (exportWordButton) exportWordButton.addEventListener('click', exportToWord);
 
 setMode('login');
 setupRichTextEditors();
