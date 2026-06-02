@@ -996,6 +996,18 @@ describe('Task API', () => {
 });
 
 describe('Credit Card API', () => {
+  const loginAdmin = async () => {
+    const agent = request.agent(app);
+    const response = await agent
+      .post('/api/login')
+      .send({ username: 'admin', password: TEST_ADMIN_PASSWORD });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.user).toMatchObject({ username: 'admin' });
+
+    return agent;
+  };
+
   test('requires authentication before listing credit cards', async () => {
     const response = await request(app).get('/api/credit-cards');
 
@@ -1176,60 +1188,54 @@ describe('Credit Card API', () => {
     expect(repeatDeleteResponse.statusCode).toBe(404);
   });
 
-  test('seeds and updates fast access bills for each user', async () => {
-    const agent = await createAgent(testUsername('fast-access-owner'));
+  test('seeds fast access bills for admin only', async () => {
+    const adminAgent = await loginAdmin();
+    const userAgent = await createAgent(testUsername('fast-access-owner'));
 
-    const listResponse = await agent.get('/api/credit-cards/fast-access-bills');
-    expect(listResponse.statusCode).toBe(200);
+    const userListResponse = await userAgent.get('/api/credit-cards/fast-access-bills');
+    expect(userListResponse.statusCode).toBe(200);
+    expect(userListResponse.body.bills).toHaveLength(0);
+
+    const userResponse = await userAgent.get('/api/me');
+    await db.query(
+      `INSERT INTO fast_access_bills (user_id, item, amount, due_date, pay_before, status, sort_order)
+       SELECT $1, item, amount, due_date, pay_before, status, sort_order
+       FROM fast_access_bill_defaults
+       ORDER BY sort_order
+       LIMIT 1`,
+      [userResponse.body.user.id]
+    );
+    await db.query(
+      `INSERT INTO fast_access_bills (user_id, item, amount, due_date, pay_before, status, sort_order)
+       VALUES ($1, 'Custom user bill', 25.00, '2026-06-20', '', 'Unpaid', 99)`,
+      [userResponse.body.user.id]
+    );
+
+    const userFilteredListResponse = await userAgent.get('/api/credit-cards/fast-access-bills');
+    expect(userFilteredListResponse.statusCode).toBe(200);
+    expect(userFilteredListResponse.body.bills.map((bill) => bill.item)).toEqual(['Custom user bill']);
+
+    const adminListResponse = await adminAgent.get('/api/credit-cards/fast-access-bills');
+    expect(adminListResponse.statusCode).toBe(200);
 
     const defaultBills = await db.query(
-      'SELECT item, amount, due_date, pay_before, status, sort_order FROM fast_access_bill_defaults ORDER BY sort_order'
+      'SELECT COUNT(*)::int AS count FROM fast_access_bill_defaults'
     );
-    expect(listResponse.body.bills).toHaveLength(defaultBills.rows.length);
-    expect(listResponse.body.bills.map((bill) => ({
-      item: bill.item,
-      amount: Number(bill.amount),
-      due_date: bill.due_date,
-      pay_before: bill.pay_before,
-      status: bill.status,
-      sort_order: bill.sort_order,
-    }))).toEqual(defaultBills.rows.map((bill) => ({
-      item: bill.item,
-      amount: Number(bill.amount),
-      due_date: bill.due_date,
-      pay_before: bill.pay_before,
-      status: bill.status,
-      sort_order: bill.sort_order,
-    })));
-
-    const hoa = listResponse.body.bills.at(-1);
-
-    const updateResponse = await agent
-      .put(`/api/credit-cards/fast-access-bills/${hoa.id}`)
-      .send({
-        item: 'HOA dues',
-        amount: '75.25',
-        due_date: '5th of every month',
-        pay_before: '10th',
-        status: 'Unpaid',
-      });
-
-    expect(updateResponse.statusCode).toBe(200);
-    expect(updateResponse.body.bill).toMatchObject({
-      item: 'HOA dues',
-      due_date: '5th of every month',
-      pay_before: '10th',
-      status: 'Unpaid',
-    });
-    expect(Number(updateResponse.body.bill.amount)).toBeCloseTo(75.25);
+    expect(adminListResponse.body.bills.length).toBeGreaterThanOrEqual(defaultBills.rows[0].count);
   });
 
   test('validates and protects fast access bills', async () => {
     const ownerAgent = await createAgent(testUsername('fast-access-private-owner'));
     const otherAgent = await createAgent(testUsername('fast-access-private-other'));
 
-    const listResponse = await ownerAgent.get('/api/credit-cards/fast-access-bills');
-    const internet = listResponse.body.bills.find((bill) => bill.item === 'Internet');
+    const ownerResponse = await ownerAgent.get('/api/me');
+    const insertResponse = await db.query(
+      `INSERT INTO fast_access_bills (user_id, item, amount, due_date, pay_before, status, sort_order)
+       VALUES ($1, 'Internet', 80.00, '2026-06-15', '', 'Unpaid', 1)
+       RETURNING id, item`,
+      [ownerResponse.body.user.id]
+    );
+    const internet = insertResponse.rows[0];
 
     const invalidStatusResponse = await ownerAgent
       .put(`/api/credit-cards/fast-access-bills/${internet.id}`)
@@ -1244,6 +1250,25 @@ describe('Credit Card API', () => {
 
     expect(invalidAmountResponse.statusCode).toBe(400);
     expect(invalidAmountResponse.body).toHaveProperty('error', 'Amount must be a valid amount');
+
+    const updateResponse = await ownerAgent
+      .put(`/api/credit-cards/fast-access-bills/${internet.id}`)
+      .send({
+        item: 'Internet fiber',
+        amount: '75.25',
+        due_date: '2026-07-15',
+        pay_before: '2026-07-10',
+        status: 'Unpaid',
+      });
+
+    expect(updateResponse.statusCode).toBe(200);
+    expect(updateResponse.body.bill).toMatchObject({
+      item: 'Internet fiber',
+      due_date: '2026-07-15',
+      pay_before: '2026-07-10',
+      status: 'Unpaid',
+    });
+    expect(Number(updateResponse.body.bill.amount)).toBeCloseTo(75.25);
 
     const otherUpdateResponse = await otherAgent
       .put(`/api/credit-cards/fast-access-bills/${internet.id}`)

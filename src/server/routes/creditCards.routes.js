@@ -141,7 +141,10 @@ const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync })
 
   router.get('/fast-access-bills', async (req, res) => {
     try {
-      await creditCards.seedFastAccessBillsForUser(req.session.userId);
+      const accountUser = await creditCards.getAccountUser(req.session.userId);
+      if (accountUser?.username === 'admin') {
+        await creditCards.seedFastAccessBillsForUser(req.session.userId);
+      }
       const bills = await creditCards.listFastAccessBillsForUser(req.session.userId);
       res.json({ bills });
     } catch (error) {

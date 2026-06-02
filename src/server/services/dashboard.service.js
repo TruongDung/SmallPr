@@ -235,9 +235,22 @@ const loadBills = async ({ allAsync, userId, windows }) => {
   const { todayYmd, dueSoonEndYmd } = windows;
   const rows = await allAsync(
     `SELECT id, item, amount, due_date, pay_before
-     FROM fast_access_bills
+     FROM fast_access_bills bills
      WHERE user_id = ?
        AND status = 'Unpaid'
+       AND (
+         bills.user_id = (SELECT id FROM users WHERE username = 'admin' ORDER BY id LIMIT 1)
+         OR NOT EXISTS (
+           SELECT 1
+           FROM fast_access_bill_defaults defaults
+           WHERE defaults.item = bills.item
+             AND defaults.amount = bills.amount
+             AND COALESCE(defaults.due_date, '') = COALESCE(bills.due_date, '')
+             AND COALESCE(defaults.pay_before, '') = COALESCE(bills.pay_before, '')
+             AND defaults.status = bills.status
+             AND defaults.sort_order = bills.sort_order
+         )
+       )
      ORDER BY
        CASE WHEN due_date IS NULL OR due_date = '' THEN 1 ELSE 0 END,
        due_date ASC, id ASC`,

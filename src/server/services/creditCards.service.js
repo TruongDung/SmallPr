@@ -1,6 +1,21 @@
 const CREDIT_CARD_SELECT = 'id, name, card_user, issuer, total_balance, interest_charge, closing_date, created_at, updated_at';
 const FAST_ACCESS_BILL_SELECT = 'id, item, amount, due_date, pay_before, status, sort_order, created_at, updated_at';
 
+const NON_ADMIN_DEFAULT_BILL_FILTER = `
+     AND (
+       bills.user_id = (SELECT id FROM users WHERE username = 'admin' ORDER BY id LIMIT 1)
+       OR NOT EXISTS (
+         SELECT 1
+         FROM fast_access_bill_defaults defaults
+         WHERE defaults.item = bills.item
+           AND defaults.amount = bills.amount
+           AND COALESCE(defaults.due_date, '') = COALESCE(bills.due_date, '')
+           AND COALESCE(defaults.pay_before, '') = COALESCE(bills.pay_before, '')
+           AND defaults.status = bills.status
+           AND defaults.sort_order = bills.sort_order
+       )
+     )`;
+
 const createCreditCardsService = ({ allAsync, getAsync, runAsync }) => {
   const listForUser = (userId) => allAsync(
     `SELECT ${CREDIT_CARD_SELECT}
@@ -63,8 +78,9 @@ const createCreditCardsService = ({ allAsync, getAsync, runAsync }) => {
 
   const listFastAccessBillsForUser = (userId) => allAsync(
     `SELECT ${FAST_ACCESS_BILL_SELECT}
-     FROM fast_access_bills
+     FROM fast_access_bills bills
      WHERE user_id = ?
+     ${NON_ADMIN_DEFAULT_BILL_FILTER}
      ORDER BY sort_order, LOWER(item), item`,
     [userId]
   );
