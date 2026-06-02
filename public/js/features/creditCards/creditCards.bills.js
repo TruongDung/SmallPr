@@ -4,10 +4,6 @@
     let pendingEditBill = null;
     let billSort = { field: null, direction: null };
 
-    const otherBills = [
-      { id: 'other-study-dsa', item: 'Study DSA', amount: 1760, due_date: '', pay_before: '', status: '' },
-    ];
-
     const showEditBillError = (text) => window.CreditCardFeature.dom.setFieldError(elements.editBillError, text);
     const clearEditBillError = () => window.CreditCardFeature.dom.clearFieldError(elements.editBillError);
 
@@ -17,14 +13,11 @@
       bills = nextBills || [];
     };
 
-    const otherTotal = () => otherBills.reduce((sum, bill) => sum + formatters.normalizeAmount(bill.amount), 0);
-
     const updateTotals = () => {
       const billsTotal = bills.reduce((sum, bill) => sum + formatters.normalizeAmount(bill.amount), 0);
-      const grandTotal = billsTotal + otherTotal();
 
       if (elements.fastAccessGrandTotal) {
-        elements.fastAccessGrandTotal.textContent = formatters.formatCurrency(grandTotal);
+        elements.fastAccessGrandTotal.textContent = formatters.formatCurrency(billsTotal);
       }
     };
 
@@ -48,10 +41,6 @@
           groups.push({ label: matchingBills[0].item || t('notAvailable'), bills: sortBills(matchingBills) });
         }
       });
-
-      if (otherBills.length) {
-        groups.push({ label: t('otherSubTab') || 'Other', bills: sortBills(otherBills) });
-      }
 
       return groups;
     };

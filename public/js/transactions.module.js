@@ -50,6 +50,7 @@
     let categories = [];
     let creditCards = [];
     let pendingEditTransaction = null;
+    let dataVersion = 0;
     let currentFilters = {
       month: '',
       year: '',
@@ -192,6 +193,7 @@
     };
 
     const loadTransactions = async () => {
+      const version = dataVersion;
       try {
         const params = new URLSearchParams();
         if (currentFilters.month) params.append('month', currentFilters.month);
@@ -200,22 +202,26 @@
         if (currentFilters.category) params.append('category', currentFilters.category);
 
         const response = await request(`/api/transactions?${params.toString()}`);
+        if (version !== dataVersion) return;
         transactions = response.transactions || [];
         renderTransactions();
         await loadSummary();
       } catch (error) {
+        if (version !== dataVersion) return;
         console.error('Failed to load transactions:', error);
         showStatusToast(t('failedToLoadTransactions') || 'Failed to load transactions', 'error');
       }
     };
 
     const loadSummary = async () => {
+      const version = dataVersion;
       try {
         const params = new URLSearchParams();
         if (currentFilters.month) params.append('month', currentFilters.month);
         if (currentFilters.year) params.append('year', currentFilters.year);
 
         const response = await request(`/api/transactions/summary?${params.toString()}`);
+        if (version !== dataVersion) return;
         const summary = response.summary || { income: 0, expense: 0, net: 0 };
 
         summaryIncome.textContent = formatCurrency(summary.income);
@@ -230,27 +236,34 @@
           summaryBalance.classList.add('negative');
         }
       } catch (error) {
+        if (version !== dataVersion) return;
         console.error('Failed to load summary:', error);
       }
     };
 
     const loadCategories = async () => {
+      const version = dataVersion;
       try {
         const response = await request('/api/transactions/categories');
+        if (version !== dataVersion) return;
         categories = response.categories || [];
         renderCategorySuggestions();
         renderCategoryFilter();
       } catch (error) {
+        if (version !== dataVersion) return;
         console.error('Failed to load categories:', error);
       }
     };
 
     const loadCreditCards = async () => {
+      const version = dataVersion;
       try {
         const response = await request('/api/credit-cards');
+        if (version !== dataVersion) return;
         creditCards = response.cards || [];
         renderCreditCardOptions();
       } catch (error) {
+        if (version !== dataVersion) return;
         console.error('Failed to load credit cards:', error);
       }
     };
@@ -900,6 +913,25 @@
       renderFinanceInsights();
     };
 
+    const reset = () => {
+      dataVersion += 1;
+      transactions = [];
+      categories = [];
+      creditCards = [];
+      pendingEditTransaction = null;
+      closeModal();
+      closeImportModal();
+      list.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">No transactions found</td></tr>';
+      summaryIncome.textContent = formatCurrency(0);
+      summaryExpense.textContent = formatCurrency(0);
+      summaryBalance.textContent = formatCurrency(0);
+      summaryBalance.className = 'summary-amount';
+      renderCategorySuggestions();
+      renderCategoryFilter();
+      renderCreditCardOptions();
+      renderFinanceInsights();
+    };
+
     const render = () => {
       initializeFilters();
       load();
@@ -914,6 +946,7 @@
       bind,
       render,
       load,
+      reset,
       applyTranslations,
       edit: editTransaction,
       confirmDelete,

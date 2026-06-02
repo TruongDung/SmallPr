@@ -1254,6 +1254,57 @@ describe('Credit Card API', () => {
   });
 });
 
+describe('Transactions API', () => {
+  const loginAdmin = async () => {
+    const agent = request.agent(app);
+    const response = await agent
+      .post('/api/login')
+      .send({ username: 'admin', password: TEST_ADMIN_PASSWORD });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.user).toMatchObject({ username: 'admin' });
+
+    return agent;
+  };
+
+  test('lists only transactions owned by the current user', async () => {
+    const adminAgent = await loginAdmin();
+    const userAgent = await createAgent(testUsername('transaction-private-owner'));
+
+    const adminCreateResponse = await adminAgent
+      .post('/api/transactions')
+      .send({
+        occurred_on: '2026-06-01',
+        kind: 'expense',
+        amount: '12.34',
+        category: 'Admin only',
+        account: 'Admin account',
+      });
+    expect(adminCreateResponse.statusCode).toBe(200);
+
+    const userCreateResponse = await userAgent
+      .post('/api/transactions')
+      .send({
+        occurred_on: '2026-06-01',
+        kind: 'expense',
+        amount: '56.78',
+        category: 'User only',
+        account: 'User account',
+      });
+    expect(userCreateResponse.statusCode).toBe(200);
+
+    const adminListResponse = await adminAgent.get('/api/transactions?year=2026&month=6');
+    expect(adminListResponse.statusCode).toBe(200);
+    expect(adminListResponse.body.transactions.map((transaction) => transaction.category)).toContain('Admin only');
+    expect(adminListResponse.body.transactions.map((transaction) => transaction.category)).not.toContain('User only');
+
+    const userListResponse = await userAgent.get('/api/transactions?year=2026&month=6');
+    expect(userListResponse.statusCode).toBe(200);
+    expect(userListResponse.body.transactions.map((transaction) => transaction.category)).toContain('User only');
+    expect(userListResponse.body.transactions.map((transaction) => transaction.category)).not.toContain('Admin only');
+  });
+});
+
 describe('Admin API', () => {
   const loginAdmin = async () => {
     const agent = request.agent(app);

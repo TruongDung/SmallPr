@@ -207,6 +207,20 @@
       }
     };
 
+    const reset = () => {
+      cards = [];
+      pendingEditCard = null;
+      closeAddModal();
+      closeEditModal();
+      fastAccessBills.closeEditModal();
+      fastAccessBills.setBills([]);
+      elements.message.textContent = '';
+      userOptions.setOptions(elements.userInput);
+      userOptions.setOptions(elements.editUserInput);
+      render([]);
+      fastAccessBills.render();
+    };
+
     const bind = () => {
       elements.financialTabs.forEach((tab) => {
         tab.addEventListener('click', () => {
@@ -263,6 +277,7 @@
       deleteCard,
       getActiveFinancialTab,
       refreshActivePanel,
+      reset,
     };
   };
 

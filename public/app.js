@@ -2130,6 +2130,11 @@ const disconnectRealtime = () => {
   window.realtimeSocket = null;
 };
 
+const resetFinancialModules = () => {
+  creditCardModule.reset?.();
+  transactionsModule.reset?.();
+};
+
 const handleAuthSubmit = async (event) => {
   event.preventDefault();
   authMessage.textContent = '';
@@ -2163,6 +2168,7 @@ const handleAuthSubmit = async (event) => {
     localStorage.removeItem(REMEMBER_ME_KEY);
   }
 
+  resetFinancialModules();
   currentUser = result.user;
   setCurrentView(getSavedView());
   authForm.reset();
@@ -2627,6 +2633,7 @@ const startImpersonation = async (userId) => {
     return;
   }
 
+  resetFinancialModules();
   currentUser = result.user;
   disconnectRealtime();
   connectRealtime();
@@ -2643,6 +2650,7 @@ const stopImpersonation = async () => {
     return;
   }
 
+  resetFinancialModules();
   currentUser = result.user;
   disconnectRealtime();
   connectRealtime();
@@ -3704,6 +3712,7 @@ const hideUploadProgress = () => {
 
 const handleLogout = async () => {
   await request('/api/logout', { method: 'POST' });
+  resetFinancialModules();
   currentUser = null;
   disconnectRealtime();
   setCurrentView('tasks', { persist: false });
