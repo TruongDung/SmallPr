@@ -179,7 +179,6 @@
           <button id="tasks-subtab" class="task-subtab active" type="button" role="tab" aria-selected="true" data-task-tab="tasks">Tasks</button>
           <button id="archived-subtab" class="task-subtab" type="button" role="tab" aria-selected="false" data-task-tab="archived">Archive</button>
           <button id="tag-subtab" class="task-subtab" type="button" role="tab" aria-selected="false" data-task-tab="tags">Tag</button>
-          <button id="task-subtab-add-button" class="task-action-icon" type="button" aria-label="Add task" title="Add task">+</button>
         </div>
 
         <div class="task-header">
@@ -189,16 +188,13 @@
             <input id="task-search-input" type="search" placeholder="Search title, description, comment" autocomplete="off" />
             <button id="clear-task-search" class="task-search-clear hidden" type="button" aria-label="Clear search" title="Clear search">×</button>
           </div>
-          <div class="export-buttons">
-            <button id="send-summary-email" class="secondary icon-button" type="button" aria-label="Send Email" title="Send Email">
+          <div class="transactions-toolbar-actions">
+            <button id="send-summary-email" class="secondary task-action-icon" type="button" aria-label="Send Email" title="Send Email">
               <span aria-hidden="true">✉</span>
             </button>
-            <button id="export-excel" class="secondary icon-button icon-button-excel" type="button" aria-label="Export to Excel" title="Export to Excel">
-              <span aria-hidden="true">XLS</span>
-            </button>
-            <button id="export-pdf" class="secondary icon-button icon-button-pdf" type="button" aria-label="Export to PDF" title="Export to PDF">
-              <span aria-hidden="true">PDF</span>
-            </button>
+            <button id="export-excel" class="secondary finance-export-button" type="button" aria-label="Export to Excel" title="Export to Excel">Excel</button>
+            <button id="export-pdf" class="secondary finance-export-button" type="button" aria-label="Export to PDF" title="Export to PDF">PDF</button>
+            <button id="task-subtab-add-button" class="primary task-action-icon" type="button" aria-label="Add task" title="Add task">+</button>
           </div>
           <button id="logout-button" class="secondary">Logout</button>
         </div>

@@ -943,10 +943,9 @@ body.theme-dark #user-area .nav-button.active-nav {
 }
 
 .task-subtabs {
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
   gap: 6px;
   margin-bottom: 24px;
   padding: 6px;
@@ -988,8 +987,8 @@ body.theme-dark #user-area .nav-button.active-nav {
 }
 
 #task-subtab-add-button {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   padding: 0;
   border-radius: 8px;
   display: inline-grid;
@@ -999,7 +998,6 @@ body.theme-dark #user-area .nav-button.active-nav {
   border: 1px solid var(--primary);
   font-size: 1.1rem;
   font-weight: 700;
-  margin-left: auto;
   flex-shrink: 0;
 }
 
@@ -3991,7 +3989,8 @@ body.theme-dark .user-status-badge.disabled {
     grid-template-columns: 1fr;
   }
 
-  .financial-tabs {
+  .financial-tabs,
+  .task-subtabs:not(.hidden) {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     width: 100%;
@@ -4324,13 +4323,15 @@ body.theme-dark .user-status-badge.disabled {
   }
 
   /* Financial tabs: full-width 3-up so Credit card / Expense / Transactions split evenly */
-  .financial-tabs {
+  .financial-tabs,
+  .task-subtabs:not(.hidden) {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     width: 100%;
   }
 
-  .financial-tab {
+  .financial-tab,
+  .task-subtab {
     width: 100%;
     min-height: 42px;
     padding: 10px 8px;
