@@ -7,6 +7,7 @@
     setText('#credit-card-info-tab', t('creditCardInfoSubTab'));
     setText('#credit-card-links-tab', t('fastAccessLinks'));
     setText('#credit-card-quick-links-title', t('fastAccessLinks'));
+    setText('#add-fast-access-link-title', t('addFastAccessLink'));
     setText('#fast-access-bills-title', t('monthlyBills'));
     renderBillsHeaders();
     setText('#fast-access-grand-total-label', t('grandTotalIncludingRent'));
@@ -34,6 +35,10 @@
       elements.cancelAddFastAccessLinkButton.textContent = '\u00d7';
       elements.cancelAddFastAccessLinkButton.setAttribute('aria-label', t('cancel'));
       elements.cancelAddFastAccessLinkButton.title = t('cancel');
+    }
+    if (elements.openAddFastAccessLinkButton) {
+      elements.openAddFastAccessLinkButton.setAttribute('aria-label', t('addFastAccessLink'));
+      elements.openAddFastAccessLinkButton.title = t('addFastAccessLink');
     }
     if (elements.saveAddFastAccessLinkButton) {
       elements.saveAddFastAccessLinkButton.textContent = '\u2713';

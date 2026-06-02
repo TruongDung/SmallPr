@@ -1,5 +1,5 @@
 (function () {
-  const create = ({ request, t, showStatusToast, getLanguage, isAdminUser, confirmDelete, confirmDeleteFastAccessLink }) => {
+  const create = ({ request, t, showStatusToast, getLanguage, confirmDelete, confirmDeleteFastAccessLink }) => {
     const feature = window.CreditCardFeature;
     const elements = feature.dom.getElements();
     const formatters = feature.createFormatters({ t, getLanguage });
@@ -177,23 +177,6 @@
       showStatusToast,
     });
 
-    const canUseFastAccessLinks = () => (
-      typeof isAdminUser === 'function' && isAdminUser()
-    );
-
-    const syncFastAccessLinkAccess = () => {
-      const linksTab = elements.financialTabs.find((tab) => tab.dataset.financialTab === 'links');
-      const canUseLinks = canUseFastAccessLinks();
-      linksTab?.classList.toggle('hidden', !canUseLinks);
-      if (linksTab) linksTab.disabled = !canUseLinks;
-      if (!canUseLinks && getActiveFinancialTab() === 'links') {
-        feature.dom.setActiveFinancialTab({
-          tabs: elements.financialTabs,
-          panels: elements.financialPanels,
-        }, 'cards');
-      }
-    };
-
     const closeEditModal = () => {
       pendingEditCard = null;
       clearEditError();
@@ -255,7 +238,7 @@
     const deleteFastAccessLink = async (link) => {
       if (!link) return;
       if (!link.id) {
-        elements.message.textContent = 'This fast access link cannot be deleted until links are loaded from the server.';
+        elements.message.textContent = 'This bill payment website cannot be deleted until links are loaded from the server.';
         return;
       }
 
@@ -269,7 +252,7 @@
         return;
       }
 
-      showStatusToast('Fast access link deleted');
+      showStatusToast(t('fastAccessLinkDeleted'));
       load();
     };
 
@@ -281,9 +264,8 @@
       if (!elements.fastAccessLinksList) return;
 
       elements.fastAccessLinksList.innerHTML = '';
-      if (!canUseFastAccessLinks()) return;
       if (!fastAccessLinks.length) {
-        elements.fastAccessLinksList.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 2rem;">No fast access links yet.</td></tr>';
+        elements.fastAccessLinksList.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 2rem;">${t('noFastAccessLinks')}</td></tr>`;
         return;
       }
 
@@ -329,15 +311,11 @@
     };
 
     const load = async () => {
-      syncFastAccessLinkAccess();
-      const shouldLoadFastAccessLinks = canUseFastAccessLinks();
       const [cardsResult, usersResult, fastAccessBillsResult, fastAccessLinksResult] = await Promise.all([
         request('/api/credit-cards'),
         request('/api/credit-cards/users'),
         request('/api/credit-cards/fast-access-bills'),
-        shouldLoadFastAccessLinks
-          ? request('/api/credit-cards/fast-access-links')
-          : Promise.resolve({ links: [] }),
+        request('/api/credit-cards/fast-access-links'),
       ]);
 
       if (cardsResult.error) {
@@ -356,9 +334,7 @@
       }
 
       cards = cardsResult.cards || [];
-      fastAccessLinks = shouldLoadFastAccessLinks
-        ? (fastAccessLinksResult.error ? defaultFastAccessLinks : (fastAccessLinksResult.links || []))
-        : [];
+      fastAccessLinks = fastAccessLinksResult.error ? defaultFastAccessLinks : (fastAccessLinksResult.links || []);
       fastAccessBills.setBills(fastAccessBillsResult.bills || []);
       userOptions.merge(usersResult.users || [], cards);
       userOptions.setOptions(elements.userInput, elements.userInput.value);
@@ -422,7 +398,7 @@
       }
 
       closeAddFastAccessLinkModal();
-      showStatusToast('Fast access link added');
+      showStatusToast(t('fastAccessLinkAdded'));
       load();
     };
 
@@ -495,7 +471,6 @@
       elements.message.textContent = '';
       userOptions.setOptions(elements.userInput);
       userOptions.setOptions(elements.editUserInput);
-      syncFastAccessLinkAccess();
       render([]);
       renderFastAccessLinks();
       fastAccessBills.render();
@@ -521,7 +496,6 @@
         tabs: elements.financialTabs,
         panels: elements.financialPanels,
       }, 'cards');
-      syncFastAccessLinkAccess();
 
       elements.form.addEventListener('submit', handleSubmit);
       elements.openAddButton.addEventListener('click', openAddModal);

@@ -1,6 +1,6 @@
 const CREDIT_CARD_SELECT = 'id, name, card_user, issuer, total_balance, interest_charge, closing_date, created_at, updated_at';
 const FAST_ACCESS_BILL_SELECT = 'id, item, amount, due_date, pay_before, status, sort_order, created_at, updated_at';
-const FAST_ACCESS_LINK_SELECT = 'id, label, url, sort_order, created_at, updated_at';
+const FAST_ACCESS_LINK_SELECT = 'id, user_id, label, url, sort_order, created_at, updated_at';
 
 const NON_ADMIN_DEFAULT_BILL_FILTER = `
      AND (
@@ -86,18 +86,20 @@ const createCreditCardsService = ({ allAsync, getAsync, runAsync }) => {
     [userId]
   );
 
-  const listFastAccessLinks = () => allAsync(
+  const listFastAccessLinksForUser = (userId) => allAsync(
     `SELECT ${FAST_ACCESS_LINK_SELECT}
      FROM fast_access_links
-     ORDER BY sort_order, LOWER(label), label`
+     WHERE user_id = ?
+     ORDER BY sort_order, LOWER(label), label`,
+    [userId]
   );
 
-  const createFastAccessLink = async ({ label, url }) => {
+  const createFastAccessLink = async ({ userId, label, url }) => {
     const result = await runAsync(
-      `INSERT INTO fast_access_links (label, url, sort_order)
-       VALUES (?, ?, COALESCE((SELECT MAX(sort_order) FROM fast_access_links), 0) + 1)
+      `INSERT INTO fast_access_links (user_id, label, url, sort_order)
+       VALUES (?, ?, ?, COALESCE((SELECT MAX(sort_order) FROM fast_access_links), 0) + 1)
        RETURNING id`,
-      [label, url]
+      [userId, label, url]
     );
 
     return getAsync(
@@ -106,14 +108,14 @@ const createCreditCardsService = ({ allAsync, getAsync, runAsync }) => {
     );
   };
 
-  const findFastAccessLinkById = (id) => getAsync(
-    `SELECT ${FAST_ACCESS_LINK_SELECT} FROM fast_access_links WHERE id = ?`,
-    [id]
+  const findFastAccessLinkForUser = (id, userId) => getAsync(
+    `SELECT ${FAST_ACCESS_LINK_SELECT} FROM fast_access_links WHERE id = ? AND user_id = ?`,
+    [id, userId]
   );
 
-  const removeFastAccessLink = (id) => runAsync(
-    'DELETE FROM fast_access_links WHERE id = ? RETURNING id',
-    [id]
+  const removeFastAccessLink = ({ id, userId }) => runAsync(
+    'DELETE FROM fast_access_links WHERE id = ? AND user_id = ? RETURNING id',
+    [id, userId]
   );
 
   const listForAdmin = () => allAsync(
@@ -166,10 +168,10 @@ const createCreditCardsService = ({ allAsync, getAsync, runAsync }) => {
     createFastAccessLink,
     findForUser,
     findFastAccessBillForUser,
-    findFastAccessLinkById,
+    findFastAccessLinkForUser,
     getAccountUser,
     listFastAccessBillsForUser,
-    listFastAccessLinks,
+    listFastAccessLinksForUser,
     listCardUsersForUser,
     listForAdmin,
     seedFastAccessBillsForUser,

@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS fast_access_bill_defaults (
 
 CREATE TABLE IF NOT EXISTS fast_access_links (
   id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
   label TEXT NOT NULL,
   url TEXT NOT NULL,
   sort_order INTEGER NOT NULL UNIQUE,

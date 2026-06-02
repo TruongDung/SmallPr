@@ -1305,13 +1305,10 @@ describe('Credit Card API', () => {
     expect(adminListResponse.body.bills.length).toBeGreaterThanOrEqual(defaultBills.rows[0].count);
   });
 
-  test('limits dynamic fast access links to admin', async () => {
+  test('allows users to manage their own bill payment websites', async () => {
     const adminAgent = await loginAdmin();
     const regularAgent = await createAgent(testUsername('fast-access-link-viewer'));
-
-    const forbiddenListResponse = await regularAgent.get('/api/credit-cards/fast-access-links');
-    expect(forbiddenListResponse.statusCode).toBe(403);
-    expect(forbiddenListResponse.body).toHaveProperty('error', 'Admin access required');
+    const otherAgent = await createAgent(testUsername('fast-access-link-other'));
 
     const response = await adminAgent.get('/api/credit-cards/fast-access-links');
 
@@ -1331,20 +1328,18 @@ describe('Credit Card API', () => {
       ])
     );
 
-    const forbiddenCreateResponse = await regularAgent
-      .post('/api/credit-cards/fast-access-links')
-      .send({ label: 'User link', url: 'https://example.com/user' });
-    expect(forbiddenCreateResponse.statusCode).toBe(403);
-    expect(forbiddenCreateResponse.body).toHaveProperty('error', 'Admin access required');
+    const initialRegularResponse = await regularAgent.get('/api/credit-cards/fast-access-links');
+    expect(initialRegularResponse.statusCode).toBe(200);
+    expect(initialRegularResponse.body.links).toEqual([]);
 
-    const invalidResponse = await adminAgent
+    const invalidResponse = await regularAgent
       .post('/api/credit-cards/fast-access-links')
       .send({ label: 'Bad link', url: 'not-a-url' });
     expect(invalidResponse.statusCode).toBe(400);
     expect(invalidResponse.body).toHaveProperty('error', 'URL must be valid');
 
     const label = `${RUN_ID}-Portal`;
-    const createResponse = await adminAgent
+    const createResponse = await regularAgent
       .post('/api/credit-cards/fast-access-links')
       .send({ label, url: 'https://example.com/portal' });
     expect(createResponse.statusCode).toBe(200);
@@ -1353,29 +1348,36 @@ describe('Credit Card API', () => {
       url: 'https://example.com/portal',
     });
 
-    const updatedResponse = await adminAgent.get('/api/credit-cards/fast-access-links');
+    const updatedResponse = await regularAgent.get('/api/credit-cards/fast-access-links');
     expect(updatedResponse.body.links).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ label, url: 'https://example.com/portal' }),
       ])
     );
 
-    const forbiddenDeleteResponse = await regularAgent.delete(`/api/credit-cards/fast-access-links/${createResponse.body.link.id}`);
-    expect(forbiddenDeleteResponse.statusCode).toBe(403);
-    expect(forbiddenDeleteResponse.body).toHaveProperty('error', 'Admin access required');
+    const otherListResponse = await otherAgent.get('/api/credit-cards/fast-access-links');
+    expect(otherListResponse.statusCode).toBe(200);
+    expect(otherListResponse.body.links).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ label, url: 'https://example.com/portal' }),
+      ])
+    );
 
-    const deleteResponse = await adminAgent.delete(`/api/credit-cards/fast-access-links/${createResponse.body.link.id}`);
+    const otherDeleteResponse = await otherAgent.delete(`/api/credit-cards/fast-access-links/${createResponse.body.link.id}`);
+    expect(otherDeleteResponse.statusCode).toBe(404);
+
+    const deleteResponse = await regularAgent.delete(`/api/credit-cards/fast-access-links/${createResponse.body.link.id}`);
     expect(deleteResponse.statusCode).toBe(200);
     expect(deleteResponse.body).toEqual({ success: true });
 
-    const deletedListResponse = await adminAgent.get('/api/credit-cards/fast-access-links');
+    const deletedListResponse = await regularAgent.get('/api/credit-cards/fast-access-links');
     expect(deletedListResponse.body.links).not.toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: createResponse.body.link.id }),
       ])
     );
 
-    const repeatDeleteResponse = await adminAgent.delete(`/api/credit-cards/fast-access-links/${createResponse.body.link.id}`);
+    const repeatDeleteResponse = await regularAgent.delete(`/api/credit-cards/fast-access-links/${createResponse.body.link.id}`);
     expect(repeatDeleteResponse.statusCode).toBe(404);
   });
 

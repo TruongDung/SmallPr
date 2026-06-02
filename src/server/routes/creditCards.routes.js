@@ -169,7 +169,7 @@ const validateCreditCardDetails = ({ name, card_user, issuer, total_balance, int
   };
 };
 
-const createCreditCardsRouter = ({ adminRequired, authRequired, allAsync, getAsync, runAsync }) => {
+const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync }) => {
   const router = express.Router();
   const creditCards = createCreditCardsService({ allAsync, getAsync, runAsync });
 
@@ -189,49 +189,52 @@ const createCreditCardsRouter = ({ adminRequired, authRequired, allAsync, getAsy
     }
   });
 
-  router.get('/fast-access-links', adminRequired, async (req, res) => {
+  router.get('/fast-access-links', async (req, res) => {
     try {
-      const links = await creditCards.listFastAccessLinks();
+      const links = await creditCards.listFastAccessLinksForUser(req.session.userId);
       res.json({ links });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Failed to load fast access links' });
+      res.status(500).json({ error: 'Failed to load bill payment websites' });
     }
   });
 
-  router.post('/fast-access-links', adminRequired, async (req, res) => {
+  router.post('/fast-access-links', async (req, res) => {
     const validation = validateFastAccessLinkDetails(req.body);
     if (validation.error) {
       return res.status(400).json({ error: validation.error });
     }
 
     try {
-      const link = await creditCards.createFastAccessLink(validation.values);
+      const link = await creditCards.createFastAccessLink({
+        userId: req.session.userId,
+        ...validation.values,
+      });
       res.json({ link });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Failed to create fast access link' });
+      res.status(500).json({ error: 'Failed to create bill payment website' });
     }
   });
 
-  router.delete('/fast-access-links/:id', adminRequired, async (req, res) => {
+  router.delete('/fast-access-links/:id', async (req, res) => {
     const { id } = req.params;
     const linkId = Number(id);
     if (!Number.isInteger(linkId) || linkId <= 0) {
-      return res.status(400).json({ error: 'Invalid fast access link' });
+      return res.status(400).json({ error: 'Invalid bill payment website' });
     }
 
     try {
-      const link = await creditCards.findFastAccessLinkById(linkId);
+      const link = await creditCards.findFastAccessLinkForUser(linkId, req.session.userId);
       if (!link) {
-        return res.status(404).json({ error: 'Fast access link not found' });
+        return res.status(404).json({ error: 'Bill payment website not found' });
       }
 
-      await creditCards.removeFastAccessLink(linkId);
+      await creditCards.removeFastAccessLink({ id: linkId, userId: req.session.userId });
       res.json({ success: true });
     } catch (error) {
       console.error(error);
-      res.status(500).json({ error: 'Failed to delete fast access link' });
+      res.status(500).json({ error: 'Failed to delete bill payment website' });
     }
   });
 
