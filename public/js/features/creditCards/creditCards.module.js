@@ -197,6 +197,16 @@
       fastAccessBills.render();
     };
 
+    const getActiveFinancialTab = () => (
+      elements.financialTabs.find((tab) => tab.classList.contains('active'))?.dataset.financialTab || 'cards'
+    );
+
+    const refreshActivePanel = () => {
+      if (getActiveFinancialTab() === 'transactions' && window.transactionsModule) {
+        window.transactionsModule.load();
+      }
+    };
+
     const bind = () => {
       elements.financialTabs.forEach((tab) => {
         tab.addEventListener('click', () => {
@@ -251,6 +261,8 @@
       load,
       render,
       deleteCard,
+      getActiveFinancialTab,
+      refreshActivePanel,
     };
   };
 

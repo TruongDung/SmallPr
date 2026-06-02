@@ -1825,6 +1825,7 @@ const showSection = () => {
 
   if (showCreditCards) {
     creditCardModule.load();
+    creditCardModule.refreshActivePanel?.();
     return;
   }
 
