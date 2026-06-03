@@ -60,6 +60,8 @@ const savePasswordSettings = document.getElementById('save-password-settings');
 const taskList = document.getElementById('task-list');
 const tagList = document.getElementById('tag-list');
 const userList = document.getElementById('user-list');
+const auditLogList = document.getElementById('audit-log-list');
+const refreshAuditLog = document.getElementById('refresh-audit-log');
 const authMessage = document.getElementById('auth-message');
 const tagMessage = document.getElementById('tag-message');
 const adminMessage = document.getElementById('admin-message');
@@ -172,6 +174,7 @@ let currentTagFilter = '';
 let tasks = [];
 let tags = [];
 let users = [];
+let auditLogs = [];
 let pendingAdminUser = null;
 const reminderTimers = new Map();
 let pendingDeleteTaskId = null;
@@ -281,6 +284,14 @@ const translations = {
     impersonationStarted: 'Now viewing as {username}.',
     impersonationStopped: 'Back to admin.',
     userUpdated: 'User updated.',
+    auditLog: 'Audit Log',
+    refresh: 'Refresh',
+    time: 'Time',
+    actor: 'Actor',
+    target: 'Target',
+    owner: 'Owner',
+    summary: 'Summary',
+    auditNoEvents: 'No audit events yet.',
     id: 'ID',
     tasks: 'Tasks',
     notes: 'Notes',
@@ -613,6 +624,14 @@ const translations = {
     impersonationStarted: 'Đang xem như {username}.',
     impersonationStopped: 'Đã về admin.',
     userUpdated: 'Đã cập nhật người dùng.',
+    auditLog: 'Nhật ký kiểm tra',
+    refresh: 'Tải lại',
+    time: 'Thời gian',
+    actor: 'Người thực hiện',
+    target: 'Đối tượng',
+    owner: 'Chủ sở hữu',
+    summary: 'Tóm tắt',
+    auditNoEvents: 'Chưa có sự kiện kiểm tra.',
     id: 'ID',
     tasks: 'Công việc',
     notes: 'Ghi chú',
@@ -1111,6 +1130,14 @@ const applyTranslations = () => {
   setText('.user-table th:nth-child(5)', t('tasks'));
   setText('.user-table th:nth-child(6)', t('notes'));
   setText('.user-table th:nth-child(7)', t('actions'));
+  setText('#audit-log-title', t('auditLog'));
+  setText('#refresh-audit-log', t('refresh'));
+  setText('.audit-log-table th:nth-child(1)', t('time'));
+  setText('.audit-log-table th:nth-child(2)', t('actor'));
+  setText('.audit-log-table th:nth-child(3)', t('actions'));
+  setText('.audit-log-table th:nth-child(4)', t('target'));
+  setText('.audit-log-table th:nth-child(5)', t('owner'));
+  setText('.audit-log-table th:nth-child(6)', t('summary'));
   confirmDeleteNo.className = 'task-action-icon secondary';
   confirmDeleteNo.textContent = '×';
   confirmDeleteNo.setAttribute('aria-label', t('no'));
@@ -1126,6 +1153,7 @@ const applyTranslations = () => {
   if (currentUser && currentView === 'weather') renderWeatherView();
   if (currentUser && currentView === 'credit-cards') creditCardModule.render();
   if (currentUser && currentView === 'admin') renderUsers(users);
+  if (currentUser && currentView === 'admin') renderAuditLogs(auditLogs);
 };
 
 // Helper function to format date in EST (New York)
@@ -1378,6 +1406,39 @@ const restoreRichEditorSelection = (editor) => {
   return true;
 };
 
+const placeCaretInside = (element) => {
+  const selection = window.getSelection();
+  if (!selection) return;
+
+  const range = document.createRange();
+  range.selectNodeContents(element);
+  range.collapse(true);
+  selection.removeAllRanges();
+  selection.addRange(range);
+};
+
+const getActiveChecklistBlock = (editor) => {
+  const selection = window.getSelection();
+  const selectedNode = selection?.rangeCount ? selection.getRangeAt(0).commonAncestorContainer : null;
+  const baseNode = selectedNode?.nodeType === Node.TEXT_NODE ? selectedNode.parentElement : selectedNode;
+  const checkItem = baseNode?.closest?.('.rich-check-item') || document.activeElement?.closest?.('.rich-check-item');
+  if (!checkItem || !editor.contains(checkItem)) return null;
+  return checkItem.closest('div') || checkItem;
+};
+
+const insertLineAfterChecklist = (editor) => {
+  const checklistBlock = getActiveChecklistBlock(editor);
+  if (!checklistBlock) return false;
+
+  const nextLine = document.createElement('div');
+  nextLine.append(document.createElement('br'));
+  checklistBlock.after(nextLine);
+  editor.focus();
+  placeCaretInside(nextLine);
+  saveRichEditorSelection(editor);
+  return true;
+};
+
 const setupRichTextEditors = () => {
   document.querySelectorAll('.rich-editor-toolbar button').forEach((button) => {
     button.addEventListener('mousedown', (event) => {
@@ -1403,6 +1464,14 @@ const setupRichTextEditors = () => {
     editor.addEventListener('keyup', () => saveRichEditorSelection(editor));
     editor.addEventListener('mouseup', () => saveRichEditorSelection(editor));
     editor.addEventListener('input', () => saveRichEditorSelection(editor));
+
+    editor.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter') return;
+      if (!event.target.closest('.rich-check-item') && !getActiveChecklistBlock(editor)) return;
+
+      event.preventDefault();
+      insertLineAfterChecklist(editor);
+    });
 
     editor.addEventListener('change', (event) => {
       if (event.target.matches('input[data-rich-checklist]')) {
@@ -2697,6 +2766,18 @@ const loadUsers = async () => {
   users = result.users || [];
   renderImpersonateOptions(users);
   renderUsers(users);
+  await loadAuditLogs();
+};
+
+const loadAuditLogs = async () => {
+  if (!isAdminUser()) return;
+  const result = await request('/api/admin/audit-logs?limit=50');
+  if (result.error) {
+    adminMessage.textContent = result.error;
+    return;
+  }
+  auditLogs = result.logs || [];
+  renderAuditLogs(auditLogs);
 };
 
 const renderImpersonateOptions = (users) => {
@@ -2813,6 +2894,68 @@ const renderUsers = (users) => {
     actionsCell.append(actions);
     row.append(usernameCell, nameCell, emailCell, statusCell, taskCountCell, noteCountCell, actionsCell);
     userList.append(row);
+  });
+};
+
+const formatAuditAction = (action) => {
+  if (action === 'create') return t('created');
+  if (action === 'edit') return t('updated');
+  if (action === 'delete') return t('delete');
+  if (action === 'login') return t('login');
+  if (action === 'register') return t('signup');
+  return action;
+};
+
+const formatAuditTarget = (log) => {
+  const labels = {
+    credit_card: t('creditCards'),
+    expense: t('monthlyBills'),
+    note: t('notes'),
+    task: t('tasks'),
+    transaction: t('transactionsSubTab'),
+    user: t('manageUsers'),
+  };
+  const type = labels[log.entity_type] || log.entity_type;
+  return `${type} #${log.entity_id || ''}`.trim();
+};
+
+const renderAuditLogs = (logs) => {
+  if (!auditLogList) return;
+  auditLogList.innerHTML = '';
+
+  if (!logs.length) {
+    const row = document.createElement('tr');
+    const cell = document.createElement('td');
+    cell.colSpan = 6;
+    cell.className = 'empty-table-cell';
+    cell.textContent = t('auditNoEvents');
+    row.append(cell);
+    auditLogList.append(row);
+    return;
+  }
+
+  logs.forEach((log) => {
+    const row = document.createElement('tr');
+    const actor = log.impersonator_username
+      ? `${log.actor_username || ''} -> ${log.username || ''}`
+      : (log.actor_username || log.username || '');
+    const cells = [
+      [t('time'), formatLocalDateTime(log.created_at)],
+      [t('actor'), actor],
+      [t('actions'), formatAuditAction(log.action)],
+      [t('target'), formatAuditTarget(log)],
+      [t('owner'), log.username || ''],
+      [t('summary'), log.summary || ''],
+    ];
+
+    cells.forEach(([label, value]) => {
+      const cell = document.createElement('td');
+      cell.dataset.label = label;
+      cell.textContent = value;
+      row.append(cell);
+    });
+
+    auditLogList.append(row);
   });
 };
 
@@ -4441,6 +4584,7 @@ if (impersonateUserSelect) {
     if (event.target.value) startImpersonation(event.target.value);
   });
 }
+refreshAuditLog?.addEventListener('click', loadAuditLogs);
 cancelAdminUser.addEventListener('click', hideAdminUserModal);
 userSettingsForm?.addEventListener('submit', handleUserSettingsSubmit);
 passwordSettingsForm?.addEventListener('submit', handlePasswordSettingsSubmit);

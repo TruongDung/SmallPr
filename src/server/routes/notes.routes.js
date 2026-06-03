@@ -1,5 +1,7 @@
 const express = require('express');
 
+const { createAuditContext } = require('../services/auditLog.service');
+
 const NOTE_SELECT = `
   notes.id,
   notes.title,
@@ -26,7 +28,7 @@ const normalizePositiveInteger = (value, fallback, max = Number.MAX_SAFE_INTEGER
   return Math.min(normalized, max);
 };
 
-const createNotesRouter = ({ allAsync, authRequired, emitToUser, queryAsync, runAsync }) => {
+const createNotesRouter = ({ allAsync, auditLogs, authRequired, emitToUser, queryAsync, runAsync }) => {
   const router = express.Router();
 
   router.get('/notes', authRequired, async (req, res) => {
@@ -84,6 +86,14 @@ const createNotesRouter = ({ allAsync, authRequired, emitToUser, queryAsync, run
          WHERE notes.id = ? AND notes.user_id = ?`,
         [result.rows[0].id, req.session.userId]
       ))[0];
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'create',
+        entityType: 'note',
+        entityId: note.id,
+        summary: note.title,
+        after: note,
+      });
       emitToUser(req.session.userId, 'note:created', { note });
       res.json({ note });
     } catch (error) {
@@ -142,6 +152,15 @@ const createNotesRouter = ({ allAsync, authRequired, emitToUser, queryAsync, run
          WHERE notes.id = ? AND notes.user_id = ?`,
         [id, req.session.userId]
       ))[0];
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'edit',
+        entityType: 'note',
+        entityId: note.id,
+        summary: note.title,
+        before: existing,
+        after: note,
+      });
       emitToUser(req.session.userId, 'note:updated', { note });
       res.json({ note });
     } catch (error) {
@@ -155,6 +174,18 @@ const createNotesRouter = ({ allAsync, authRequired, emitToUser, queryAsync, run
     const pinned = Boolean(req.body?.pinned);
 
     try {
+      const existing = (await allAsync(
+        `SELECT ${NOTE_SELECT}
+         FROM notes
+         LEFT JOIN tasks ON tasks.id = notes.task_id AND tasks.user_id = notes.user_id
+         WHERE notes.id = ? AND notes.user_id = ?
+         LIMIT 1`,
+        [id, req.session.userId]
+      ))[0];
+      if (!existing) {
+        return res.status(404).json({ error: 'Note not found' });
+      }
+
       const result = await queryAsync(
         `UPDATE notes
          SET pinned = ?
@@ -174,6 +205,15 @@ const createNotesRouter = ({ allAsync, authRequired, emitToUser, queryAsync, run
          WHERE notes.id = ? AND notes.user_id = ?`,
         [id, req.session.userId]
       ))[0];
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'edit',
+        entityType: 'note',
+        entityId: note.id,
+        summary: note.title,
+        before: existing,
+        after: note,
+      });
       emitToUser(req.session.userId, 'note:updated', { note });
       res.json({ note });
     } catch (error) {
@@ -186,6 +226,18 @@ const createNotesRouter = ({ allAsync, authRequired, emitToUser, queryAsync, run
     const { id } = req.params;
 
     try {
+      const existing = (await allAsync(
+        `SELECT ${NOTE_SELECT}
+         FROM notes
+         LEFT JOIN tasks ON tasks.id = notes.task_id AND tasks.user_id = notes.user_id
+         WHERE notes.id = ? AND notes.user_id = ?
+         LIMIT 1`,
+        [id, req.session.userId]
+      ))[0];
+      if (!existing) {
+        return res.status(404).json({ error: 'Note not found' });
+      }
+
       const result = await runAsync(
         'DELETE FROM notes WHERE id = ? AND user_id = ? RETURNING id',
         [id, req.session.userId]
@@ -195,6 +247,14 @@ const createNotesRouter = ({ allAsync, authRequired, emitToUser, queryAsync, run
         return res.status(404).json({ error: 'Note not found' });
       }
 
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'delete',
+        entityType: 'note',
+        entityId: existing.id,
+        summary: existing.title,
+        before: existing,
+      });
       emitToUser(req.session.userId, 'note:deleted', { id: Number(id) });
       res.json({ success: true });
     } catch (error) {

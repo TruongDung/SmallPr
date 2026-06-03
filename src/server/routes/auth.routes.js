@@ -113,7 +113,7 @@ const validateHumanRegistration = (req, res, next) => {
   return next();
 };
 
-const createAuthRouter = ({ bcrypt, getAsync, getUserById, runAsync, sendVerificationEmail }) => {
+const createAuthRouter = ({ auditLogs, bcrypt, getAsync, getUserById, runAsync, sendVerificationEmail }) => {
   const router = express.Router();
 
   router.post(['/signup', '/register'], registrationRateLimit, validateHumanRegistration, async (req, res) => {
@@ -155,9 +155,20 @@ const createAuthRouter = ({ bcrypt, getAsync, getUserById, runAsync, sendVerific
         return res.status(503).json({ error: 'Email verification is not configured' });
       }
 
+      const registeredUser = { id: result.lastID, username, email, account_status: 'pending_verification' };
+      await auditLogs.record({
+        userId: result.lastID,
+        actorUserId: result.lastID,
+        action: 'register',
+        entityType: 'user',
+        entityId: result.lastID,
+        summary: username,
+        after: registeredUser,
+      });
+
       res.json({
         message: 'Registration received. Please verify your email before logging in.',
-        user: { id: result.lastID, username, email, account_status: 'pending_verification', impersonator: null },
+        user: { ...registeredUser, impersonator: null },
         ...(process.env.NODE_ENV === 'test' ? { verification_token: verificationToken } : {}),
       });
     } catch (error) {
@@ -236,6 +247,15 @@ const createAuthRouter = ({ bcrypt, getAsync, getUserById, runAsync, sendVerific
 
       req.session.userId = user.id;
       delete req.session.impersonatorUserId;
+      await auditLogs.record({
+        userId: user.id,
+        actorUserId: user.id,
+        action: 'login',
+        entityType: 'user',
+        entityId: user.id,
+        summary: user.username,
+        after: createSessionUser(user),
+      });
       res.json({ user: createSessionUser(user) });
     } catch (error) {
       console.error(error);

@@ -1,5 +1,6 @@
 const express = require('express');
 
+const { createAuditContext } = require('../services/auditLog.service');
 const {
   CREDIT_CARD_ISSUERS,
   FAST_ACCESS_BILL_STATUSES,
@@ -169,7 +170,7 @@ const validateCreditCardDetails = ({ name, card_user, issuer, total_balance, int
   };
 };
 
-const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync }) => {
+const createCreditCardsRouter = ({ authRequired, auditLogs, allAsync, getAsync, runAsync }) => {
   const router = express.Router();
   const creditCards = createCreditCardsService({ allAsync, getAsync, runAsync });
 
@@ -257,6 +258,15 @@ const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync })
         userId: req.session.userId,
         ...validation.values,
       });
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'edit',
+        entityType: 'expense',
+        entityId: updatedBill.id,
+        summary: updatedBill.item,
+        before: bill,
+        after: updatedBill,
+      });
       emitToUser(req.session.userId, 'bill:updated', { bill: updatedBill });
       res.json({ bill: updatedBill });
     } catch (error) {
@@ -308,6 +318,14 @@ const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync })
         userId: req.session.userId,
         ...validation.values,
       });
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'create',
+        entityType: 'credit_card',
+        entityId: card.id,
+        summary: card.name,
+        after: card,
+      });
       emitToUser(req.session.userId, 'card:updated', { id: card.id });
       res.json({ card });
     } catch (error) {
@@ -335,6 +353,15 @@ const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync })
         userId: req.session.userId,
         ...validation.values,
       });
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'edit',
+        entityType: 'credit_card',
+        entityId: updatedCard.id,
+        summary: updatedCard.name,
+        before: card,
+        after: updatedCard,
+      });
       emitToUser(req.session.userId, 'card:updated', { id: Number(id) });
       res.json({ card: updatedCard });
     } catch (error) {
@@ -353,6 +380,14 @@ const createCreditCardsRouter = ({ authRequired, allAsync, getAsync, runAsync })
       }
 
       await creditCards.remove({ id, userId: req.session.userId });
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'delete',
+        entityType: 'credit_card',
+        entityId: card.id,
+        summary: card.name,
+        before: card,
+      });
       emitToUser(req.session.userId, 'card:updated', { id: Number(id) });
       res.json({ success: true });
     } catch (error) {

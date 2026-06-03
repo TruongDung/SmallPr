@@ -36,8 +36,23 @@ const createSessionUser = (user, impersonator = null) => ({
   } : null,
 });
 
-const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync }) => {
+const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsync, runAsync }) => {
   const router = express.Router();
+
+  router.get('/admin/audit-logs', adminRequired, async (req, res) => {
+    try {
+      const logs = await auditLogs.list({
+        action: String(req.query.action || ''),
+        entityType: String(req.query.entity_type || ''),
+        limit: req.query.limit,
+        userId: req.query.user_id ? Number(req.query.user_id) : null,
+      });
+      res.json({ logs });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Failed to load audit logs' });
+    }
+  });
 
   router.get('/admin/users', adminRequired, async (req, res) => {
     try {
@@ -113,6 +128,15 @@ const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync
          ${USER_LIST_GROUP}`,
         [result.lastID]
       );
+      await auditLogs.record({
+        userId: user.id,
+        actorUserId: req.currentUser.id,
+        action: 'create',
+        entityType: 'user',
+        entityId: user.id,
+        summary: user.username,
+        after: user,
+      });
       res.json({ user });
     } catch (error) {
       console.error(error);
@@ -130,7 +154,10 @@ const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync
     }
 
     try {
-      const user = await getAsync('SELECT id, username, account_status FROM users WHERE id = ?', [id]);
+      const user = await getAsync(
+        'SELECT id, username, name, email, account_status, account_status_changed_at FROM users WHERE id = ?',
+        [id]
+      );
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
@@ -163,6 +190,16 @@ const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync
          ${USER_LIST_GROUP}`,
         [id]
       );
+      await auditLogs.record({
+        userId: updatedUser.id,
+        actorUserId: req.currentUser.id,
+        action: 'edit',
+        entityType: 'user',
+        entityId: updatedUser.id,
+        summary: updatedUser.username,
+        before: user,
+        after: updatedUser,
+      });
       res.json({ user: updatedUser });
     } catch (error) {
       console.error(error);
@@ -182,7 +219,10 @@ const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync
     }
 
     try {
-      const user = await getAsync('SELECT id, username, account_status FROM users WHERE id = ?', [id]);
+      const user = await getAsync(
+        'SELECT id, username, name, email, account_status, account_status_changed_at FROM users WHERE id = ?',
+        [id]
+      );
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
@@ -203,6 +243,16 @@ const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync
          ${USER_LIST_GROUP}`,
         [id]
       );
+      await auditLogs.record({
+        userId: updatedUser.id,
+        actorUserId: req.currentUser.id,
+        action: 'edit',
+        entityType: 'user',
+        entityId: updatedUser.id,
+        summary: updatedUser.username,
+        before: user,
+        after: updatedUser,
+      });
       res.json({ user: updatedUser });
     } catch (error) {
       console.error(error);
@@ -225,6 +275,16 @@ const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync
 
       const hashedPassword = await bcrypt.hash(password, 10);
       await runAsync('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, id]);
+      await auditLogs.record({
+        userId: user.id,
+        actorUserId: req.currentUser.id,
+        action: 'edit',
+        entityType: 'user',
+        entityId: user.id,
+        summary: `Password reset for ${user.username}`,
+        before: { id: user.id, username: user.username },
+        after: { id: user.id, username: user.username, password_reset: true },
+      });
       res.json({ success: true });
     } catch (error) {
       console.error(error);
@@ -239,7 +299,10 @@ const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync
     }
 
     try {
-      const user = await getAsync('SELECT id, username FROM users WHERE id = ?', [id]);
+      const user = await getAsync(
+        'SELECT id, username, name, email, account_status, account_status_changed_at FROM users WHERE id = ?',
+        [id]
+      );
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
       }
@@ -248,6 +311,15 @@ const createAdminRouter = ({ adminRequired, allAsync, bcrypt, getAsync, runAsync
       }
 
       await runAsync('DELETE FROM tasks WHERE user_id = ?', [id]);
+      await auditLogs.record({
+        userId: user.id,
+        actorUserId: req.currentUser.id,
+        action: 'delete',
+        entityType: 'user',
+        entityId: user.id,
+        summary: user.username,
+        before: user,
+      });
       await runAsync('DELETE FROM users WHERE id = ?', [id]);
       res.json({ success: true });
     } catch (error) {

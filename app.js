@@ -12,6 +12,7 @@ const { Server: SocketIOServer } = require('socket.io');
 const redisCache = require('./src/server/cache/redis');
 const { allAsync, getAsync, pool, queryAsync, runAsync } = require('./src/server/db/client');
 const { initializeDatabase } = require('./src/server/db/initialize');
+const { createAuditLogService } = require('./src/server/services/auditLog.service');
 const { createAuthService } = require('./src/server/services/auth/auth.service');
 const { sendTaskAlertEmail, sendTaskSummaryEmail, sendVerificationEmail } = require('./src/server/services/email/email.service');
 const { createAuthMiddleware } = require('./src/server/middleware/auth');
@@ -185,6 +186,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const { getUserById } = createAuthService({ getAsync });
 const { adminRequired, authRequired } = createAuthMiddleware({ getUserById });
+const auditLogs = createAuditLogService({ allAsync, runAsync });
 const routeDependencies = {
   allAsync,
   getAsync,
@@ -193,6 +195,7 @@ const routeDependencies = {
 };
 
 app.use('/api', createAuthRouter({
+  auditLogs,
   bcrypt,
   getAsync,
   getUserById,
@@ -221,6 +224,7 @@ app.get('/api/config/public', (req, res) => {
 app.use('/api/credit-cards', createCreditCardsRouter({
   adminRequired,
   authRequired,
+  auditLogs,
   allAsync,
   getAsync,
   runAsync,
@@ -228,6 +232,7 @@ app.use('/api/credit-cards', createCreditCardsRouter({
 
 app.use('/api/transactions', createTransactionsRouter({
   authRequired,
+  auditLogs,
   allAsync,
   getAsync,
   runAsync,
@@ -236,6 +241,7 @@ app.use('/api/transactions', createTransactionsRouter({
 
 app.use('/api', createTasksRouter({
   authRequired,
+  auditLogs,
   allAsync,
   getAsync,
   runAsync,
@@ -259,11 +265,13 @@ app.use('/api', createWeatherRouter({
 }));
 app.use('/api', createNotesRouter({
   authRequired,
+  auditLogs,
   emitToUser: realtime.emitToUser,
   ...routeDependencies,
 }));
 app.use('/api', createAdminRouter({
   adminRequired,
+  auditLogs,
   bcrypt,
   allAsync,
   getAsync,

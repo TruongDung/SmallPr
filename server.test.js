@@ -11,6 +11,7 @@ jest.mock('nodemailer', () => ({
 }));
 
 const RUN_ID = `test-${Date.now()}-${Math.round(Math.random() * 100000)}`;
+const TEST_STARTED_AT = new Date();
 const TEST_ADMIN_PASSWORD = `${RUN_ID}-admin-password`;
 process.env.DEFAULT_ADMIN_PASSWORD = process.env.DEFAULT_ADMIN_PASSWORD || TEST_ADMIN_PASSWORD;
 const testUsername = (name) => `${RUN_ID}-${name}`;
@@ -58,6 +59,18 @@ const createAgent = async (username = testUsername(`user-${Math.random()}`)) => 
   return agent;
 };
 
+const createAdminAgent = async () => {
+  const agent = request.agent(app);
+  const response = await agent
+    .post('/api/login')
+    .send({ username: 'admin', password: TEST_ADMIN_PASSWORD });
+
+  expect(response.statusCode).toBe(200);
+  expect(response.body.user).toMatchObject({ username: 'admin' });
+
+  return agent;
+};
+
 const attachment = (name = 'notes.txt', data = 'hello') => ({
   name,
   type: 'text/plain',
@@ -88,6 +101,13 @@ afterAll(async () => {
         [originalAdminPasswordHash, originalAdminStatus, 'admin']
       );
     }
+    await db.query(
+      `DELETE FROM audit_logs
+       WHERE summary LIKE $1
+          OR user_id IN (SELECT id FROM users WHERE username LIKE $1)
+          OR (action = 'login' AND summary = 'admin' AND created_at >= $2)`,
+      [`${RUN_ID}%`, TEST_STARTED_AT]
+    ).catch(() => {});
     await db.query('DELETE FROM users WHERE username LIKE $1', [`${RUN_ID}%`]);
   } catch (error) {
     if (process.env.JEST_WORKER_ID) {
@@ -1667,6 +1687,165 @@ describe('Notes API', () => {
 
     const otherHistoryResponse = await otherAgent.get(`/api/notes/${createResponse.body.note.id}/versions`);
     expect(otherHistoryResponse.statusCode).toBe(404);
+  });
+});
+
+describe('Audit Log API', () => {
+  test('records who creates, edits, and deletes audited records', async () => {
+    const username = testUsername('audit-owner');
+    const agent = await createAgent(username);
+    const adminAgent = await createAdminAgent();
+
+    const meResponse = await agent.get('/api/me');
+    expect(meResponse.statusCode).toBe(200);
+    const userId = meResponse.body.user.id;
+
+    const taskCreate = await agent
+      .post('/api/tasks')
+      .send({ title: 'Audit task', priority: 'low' });
+    expect(taskCreate.statusCode).toBe(200);
+    const taskId = taskCreate.body.task.id;
+
+    const taskUpdate = await agent
+      .put(`/api/tasks/${taskId}`)
+      .send({ title: 'Audit task edited' });
+    expect(taskUpdate.statusCode).toBe(200);
+
+    const transactionCreate = await agent
+      .post('/api/transactions')
+      .send({
+        occurred_on: '2026-06-03',
+        kind: 'expense',
+        amount: '42.25',
+        category: `${RUN_ID} audit transaction`,
+        account: 'Checking',
+      });
+    expect(transactionCreate.statusCode).toBe(200);
+    const transactionId = transactionCreate.body.transaction.id;
+
+    const transactionUpdate = await agent
+      .put(`/api/transactions/${transactionId}`)
+      .send({ note: 'audit edit' });
+    expect(transactionUpdate.statusCode).toBe(200);
+
+    const cardCreate = await agent
+      .post('/api/credit-cards')
+      .send({
+        name: `${RUN_ID} card`,
+        total_balance: '25.00',
+        closing_date: '2026-06-20',
+      });
+    expect(cardCreate.statusCode).toBe(200);
+    const cardId = cardCreate.body.card.id;
+
+    const cardUpdate = await agent
+      .put(`/api/credit-cards/${cardId}`)
+      .send({ total_balance: '30.00' });
+    expect(cardUpdate.statusCode).toBe(200);
+
+    const expenseInsert = await db.query(
+      `INSERT INTO fast_access_bills (user_id, item, amount, due_date, pay_before, status, sort_order)
+       VALUES ($1, $2, 10.00, '2026-06-10', '', 'Unpaid', 500)
+       RETURNING id`,
+      [userId, `${RUN_ID} expense`]
+    );
+    const expenseId = expenseInsert.rows[0].id;
+
+    const expenseUpdate = await agent
+      .put(`/api/credit-cards/fast-access-bills/${expenseId}`)
+      .send({ amount: '15.00', status: 'Paid' });
+    expect(expenseUpdate.statusCode).toBe(200);
+
+    const noteCreate = await agent
+      .post('/api/notes')
+      .send({ title: `${RUN_ID} audit note`, body: 'draft' });
+    expect(noteCreate.statusCode).toBe(200);
+    const noteId = noteCreate.body.note.id;
+
+    const noteUpdate = await agent
+      .put(`/api/notes/${noteId}`)
+      .send({ title: `${RUN_ID} audit note updated`, body: 'final' });
+    expect(noteUpdate.statusCode).toBe(200);
+
+    expect((await agent.delete(`/api/notes/${noteId}`)).statusCode).toBe(200);
+    expect((await agent.delete(`/api/credit-cards/${cardId}`)).statusCode).toBe(200);
+    expect((await agent.delete(`/api/transactions/${transactionId}`)).statusCode).toBe(200);
+    expect((await agent.delete(`/api/tasks/${taskId}`)).statusCode).toBe(200);
+
+    const auditResponse = await adminAgent.get(`/api/admin/audit-logs?user_id=${userId}&limit=20`);
+    expect(auditResponse.statusCode).toBe(200);
+
+    const compactLogs = auditResponse.body.logs.map((log) => ({
+      action: log.action,
+      entity_type: log.entity_type,
+      entity_id: log.entity_id,
+      username: log.username,
+      actor_username: log.actor_username,
+    }));
+
+    expect(compactLogs).toEqual(expect.arrayContaining([
+      { action: 'register', entity_type: 'user', entity_id: userId, username, actor_username: username },
+      { action: 'login', entity_type: 'user', entity_id: userId, username, actor_username: username },
+      { action: 'create', entity_type: 'task', entity_id: taskId, username, actor_username: username },
+      { action: 'edit', entity_type: 'task', entity_id: taskId, username, actor_username: username },
+      { action: 'delete', entity_type: 'task', entity_id: taskId, username, actor_username: username },
+      { action: 'create', entity_type: 'transaction', entity_id: transactionId, username, actor_username: username },
+      { action: 'edit', entity_type: 'transaction', entity_id: transactionId, username, actor_username: username },
+      { action: 'delete', entity_type: 'transaction', entity_id: transactionId, username, actor_username: username },
+      { action: 'create', entity_type: 'credit_card', entity_id: cardId, username, actor_username: username },
+      { action: 'edit', entity_type: 'credit_card', entity_id: cardId, username, actor_username: username },
+      { action: 'delete', entity_type: 'credit_card', entity_id: cardId, username, actor_username: username },
+      { action: 'edit', entity_type: 'expense', entity_id: expenseId, username, actor_username: username },
+      { action: 'create', entity_type: 'note', entity_id: noteId, username, actor_username: username },
+      { action: 'edit', entity_type: 'note', entity_id: noteId, username, actor_username: username },
+      { action: 'delete', entity_type: 'note', entity_id: noteId, username, actor_username: username },
+    ]));
+
+    const managedUsername = testUsername('audit-managed-user');
+    const managedCreate = await adminAgent
+      .post('/api/admin/users')
+      .send({
+        username: managedUsername,
+        name: 'Managed User',
+        email: `${managedUsername}@example.com`,
+        password: 'Password123!',
+        account_status: 'enabled',
+      });
+    expect(managedCreate.statusCode).toBe(200);
+    const managedUserId = managedCreate.body.user.id;
+
+    const managedUpdate = await adminAgent
+      .put(`/api/admin/users/${managedUserId}`)
+      .send({
+        username: managedUsername,
+        name: 'Managed User Edited',
+        email: `${managedUsername}@example.com`,
+        account_status: 'disabled',
+      });
+    expect(managedUpdate.statusCode).toBe(200);
+
+    const managedDelete = await adminAgent.delete(`/api/admin/users/${managedUserId}`);
+    expect(managedDelete.statusCode).toBe(200);
+
+    const adminAuditResponse = await adminAgent.get('/api/admin/audit-logs?entity_type=user&limit=80');
+    expect(adminAuditResponse.statusCode).toBe(200);
+    const managedLogs = adminAuditResponse.body.logs
+      .filter((log) => log.summary === managedUsername)
+      .map((log) => ({
+        action: log.action,
+        entity_type: log.entity_type,
+        entity_id: log.entity_id,
+        actor_username: log.actor_username,
+      }));
+    expect(managedLogs).toEqual(expect.arrayContaining([
+      { action: 'create', entity_type: 'user', entity_id: managedUserId, actor_username: 'admin' },
+      { action: 'edit', entity_type: 'user', entity_id: managedUserId, actor_username: 'admin' },
+      { action: 'delete', entity_type: 'user', entity_id: managedUserId, actor_username: 'admin' },
+    ]));
+
+    const taskOnlyResponse = await adminAgent.get('/api/admin/audit-logs?entity_type=task&action=delete&limit=10');
+    expect(taskOnlyResponse.statusCode).toBe(200);
+    expect(taskOnlyResponse.body.logs.some((log) => log.entity_id === taskId)).toBe(true);
   });
 });
 

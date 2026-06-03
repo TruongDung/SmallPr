@@ -1,5 +1,6 @@
 const express = require('express');
 
+const { createAuditContext } = require('../services/auditLog.service');
 const {
   TRANSACTION_KINDS,
   MAX_TRANSACTION_CATEGORY_LENGTH,
@@ -85,7 +86,7 @@ const validateTransactionDetails = ({ occurred_on, kind, amount, category, accou
   };
 };
 
-const createTransactionsRouter = ({ authRequired, allAsync, getAsync, runAsync, anthropicApiKey }) => {
+const createTransactionsRouter = ({ authRequired, auditLogs, allAsync, getAsync, runAsync, anthropicApiKey }) => {
   const router = express.Router();
   const transactions = createTransactionsService({ allAsync, getAsync, runAsync });
   const statementImport = createStatementImportService({ apiKey: anthropicApiKey });
@@ -170,6 +171,14 @@ const createTransactionsRouter = ({ authRequired, allAsync, getAsync, runAsync, 
         userId: req.session.userId,
         ...validation.values,
       });
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'create',
+        entityType: 'transaction',
+        entityId: transaction.id,
+        summary: `${transaction.kind} ${transaction.amount} ${transaction.category || ''}`.trim(),
+        after: transaction,
+      });
       emitToUser(req.session.userId, 'transaction:created', { transaction });
       res.json({ transaction });
     } catch (error) {
@@ -197,6 +206,15 @@ const createTransactionsRouter = ({ authRequired, allAsync, getAsync, runAsync, 
         userId: req.session.userId,
         ...validation.values,
       });
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'edit',
+        entityType: 'transaction',
+        entityId: updated.id,
+        summary: `${updated.kind} ${updated.amount} ${updated.category || ''}`.trim(),
+        before: transaction,
+        after: updated,
+      });
       emitToUser(req.session.userId, 'transaction:updated', { transaction: updated });
       res.json({ transaction: updated });
     } catch (error) {
@@ -215,6 +233,14 @@ const createTransactionsRouter = ({ authRequired, allAsync, getAsync, runAsync, 
       }
 
       await transactions.remove({ id, userId: req.session.userId });
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'delete',
+        entityType: 'transaction',
+        entityId: transaction.id,
+        summary: `${transaction.kind} ${transaction.amount} ${transaction.category || ''}`.trim(),
+        before: transaction,
+      });
       emitToUser(req.session.userId, 'transaction:deleted', { id: Number(id) });
       res.json({ success: true });
     } catch (error) {

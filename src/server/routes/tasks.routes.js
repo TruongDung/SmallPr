@@ -1,5 +1,6 @@
 const express = require('express');
 
+const { createAuditContext } = require('../services/auditLog.service');
 const { createTasksService } = require('../services/tasks.service');
 const { createRecurrenceService } = require('../services/recurrence.service');
 const { emitToUser } = require('../realtime');
@@ -12,6 +13,7 @@ const {
 const createTasksRouter = ({
   authRequired,
   allAsync,
+  auditLogs,
   getAsync,
   runAsync,
   getUserById,
@@ -198,6 +200,14 @@ const createTasksRouter = ({
         }
       }
 
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'create',
+        entityType: 'task',
+        entityId: task.id,
+        summary: task.title,
+        after: task,
+      });
       emitToUser(req.session.userId, 'task:created', { task });
       res.json({ task, emailSent });
     } catch (error) {
@@ -236,6 +246,14 @@ const createTasksRouter = ({
         try {
           const nextTask = await recurrence.createNextRecurringInstance(updatedTask);
           if (nextTask) {
+            await auditLogs.record({
+              ...createAuditContext(req),
+              action: 'create',
+              entityType: 'task',
+              entityId: nextTask.id,
+              summary: nextTask.title,
+              after: nextTask,
+            });
             emitToUser(req.session.userId, 'task:created', { task: nextTask });
           }
         } catch (recurrenceError) {
@@ -243,6 +261,15 @@ const createTasksRouter = ({
         }
       }
 
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'edit',
+        entityType: 'task',
+        entityId: updatedTask.id,
+        summary: updatedTask.title,
+        before: task,
+        after: updatedTask,
+      });
       emitToUser(req.session.userId, 'task:updated', { task: updatedTask });
       res.json({ task: updatedTask });
     } catch (error) {
@@ -261,6 +288,14 @@ const createTasksRouter = ({
       }
 
       await tasks.deleteTask(id, req.session.userId);
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'delete',
+        entityType: 'task',
+        entityId: task.id,
+        summary: task.title,
+        before: task,
+      });
       emitToUser(req.session.userId, 'task:deleted', { id: Number(id) });
       res.json({ success: true });
     } catch (error) {
