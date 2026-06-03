@@ -2395,6 +2395,36 @@ body.theme-dark .status-in_progress {
   background: var(--surface);
 }
 
+.audit-log-section {
+  margin-top: 28px;
+}
+
+.audit-log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.audit-log-header h3 {
+  margin: 0;
+  color: var(--text);
+  font-size: 1.1rem;
+}
+
+.audit-log-table td:last-child {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty-table-cell {
+  color: var(--muted);
+  text-align: center;
+}
+
 /* ============================================================
    Credit Cards — desktop layout
    Sections: header · tabs · quick links · form · table · summary rows · misc
