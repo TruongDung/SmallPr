@@ -1,13 +1,7 @@
 require('dotenv').config();
 
-const http = require('http');
-const path = require('path');
 const express = require('express');
 const bcrypt = require('bcrypt');
-const session = require('express-session');
-const PgSession = require('connect-pg-simple')(session);
-const pinoHttp = require('pino-http');
-const { Server: SocketIOServer } = require('socket.io');
 
 const redisCache = require('./src/server/cache/redis');
 const { allAsync, getAsync, pool, queryAsync, runAsync } = require('./src/server/db/client');
@@ -16,264 +10,95 @@ const { createAuditLogService } = require('./src/server/services/auditLog.servic
 const { createAuthService } = require('./src/server/services/auth/auth.service');
 const { sendTaskAlertEmail, sendTaskSummaryEmail, sendVerificationEmail } = require('./src/server/services/email/email.service');
 const { createAuthMiddleware } = require('./src/server/middleware/auth');
-const realtime = require('./src/server/realtime');
-const createAdminRouter = require('./src/server/routes/admin.routes');
-const createAuthRouter = require('./src/server/routes/auth.routes');
-const createCreditCardsRouter = require('./src/server/routes/creditCards.routes');
-const createDailyQuoteRouter = require('./src/server/routes/dailyQuote.routes');
-const createDashboardRouter = require('./src/server/routes/dashboard.routes');
-const createNotesRouter = require('./src/server/routes/notes.routes');
-const createTasksRouter = require('./src/server/routes/tasks.routes');
-const createTransactionsRouter = require('./src/server/routes/transactions.routes');
-const createWeatherRouter = require('./src/server/routes/weather.routes');
 const logger = require('./src/server/logger');
-const { withTimeout } = require('./src/server/utils/timeout');
 
+// Bootstrap modules
+const { createSessionMiddleware } = require('./src/server/config/session');
+const { registerHealthRoutes } = require('./src/server/bootstrap/health');
+const { createHttpServer, initializeSocketIO } = require('./src/server/bootstrap/sockets');
+const {
+  setupExpressMiddleware,
+  setupLogging,
+  setupProxyTrust,
+  setupCacheInvalidation,
+  setupDatabaseReadyCheck,
+  setupStaticFiles,
+  setupConfigEndpoint,
+  setupFallbackRoute,
+} = require('./src/server/bootstrap/middleware');
+const { registerRoutes } = require('./src/server/bootstrap/routes');
+
+// Initialize app
 const app = express();
 const cacheReady = redisCache.connectRedis();
 const dbReady = initializeDatabase();
 
-app.use(express.json({ limit: '8mb' }));
-app.use(express.urlencoded({ extended: true }));
-app.use(pinoHttp({
-  logger,
-  customProps: (req) => ({
-    userId: req.session?.userId || null,
-  }),
-  customLogLevel: (req, res, error) => {
-    if (error || res.statusCode >= 500) return 'error';
-    if (res.statusCode >= 400) return 'warn';
-    return 'info';
-  },
-  autoLogging: {
-    ignore: (req) => req.path === '/favicon.ico',
-  },
-}));
+// Setup middleware
+setupExpressMiddleware(app);
+setupLogging(app);
+setupProxyTrust(app);
 
-// Vercel terminates TLS at the edge and forwards plain HTTP to the function.
-// Without this, Express marks the connection as "insecure" and refuses to send
-// secure cookies, breaking sessions in production.
-app.set('trust proxy', 1);
-
+// Setup session
 const isProduction = process.env.NODE_ENV === 'production';
-
-const sessionMiddleware = session({
-  store: new PgSession({
-    pool,
-    tableName: 'session',
-    createTableIfMissing: true,
-  }),
-  secret: process.env.SESSION_SECRET || 'task-manager-secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    maxAge: 24 * 60 * 60 * 1000,
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: isProduction,
-  },
-});
-
+const sessionMiddleware = createSessionMiddleware(isProduction);
 app.use(sessionMiddleware);
 
-app.use((req, res, next) => {
-  const shouldInvalidate = req.path.startsWith('/api/')
-    && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
+// Setup cache invalidation
+setupCacheInvalidation(app);
 
-  if (shouldInvalidate) {
-    res.on('finish', () => {
-      if (res.statusCode >= 200 && res.statusCode < 400 && req.session?.userId) {
-        redisCache.clearUserCache(req.session.userId);
-      }
-    });
-  }
+// Setup HTTP server and Socket.IO
+const httpServer = createHttpServer(app);
+const io = initializeSocketIO(httpServer, sessionMiddleware);
 
-  next();
-});
+// Register health check routes
+registerHealthRoutes(app, dbReady, cacheReady);
 
-const httpServer = http.createServer(app);
-const io = new SocketIOServer(httpServer, {
-  cors: { origin: false },
-});
-realtime.setIo(io);
+// Setup database check middleware
+setupDatabaseReadyCheck(app, dbReady, logger);
 
-io.engine.use(sessionMiddleware);
+// Setup static files
+setupStaticFiles(app);
 
-io.on('connection', (socket) => {
-  const socketSession = socket.request?.session;
-  const userId = socketSession?.userId;
-  if (!userId) {
-    socket.disconnect(true);
-    return;
-  }
-  socket.join(`user:${userId}`);
-});
-
-const buildHealthPayload = async ({ includeDependencies = false } = {}) => {
-  const payload = {
-    status: 'ok',
-    service: process.env.SERVICE_NAME || 'task-manager-app',
-    environment: process.env.NODE_ENV || 'development',
-    uptimeSeconds: Math.round(process.uptime()),
-    timestamp: new Date().toISOString(),
-  };
-
-  if (!includeDependencies) return payload;
-
-  const dependencies = {
-    database: { status: 'unknown' },
-    redis: {
-      status: redisCache.isEnabled() ? 'unknown' : 'disabled',
-      enabled: redisCache.isEnabled(),
-    },
-  };
-
-  try {
-    await withTimeout(dbReady, 5000);
-    await withTimeout(pool.query('SELECT 1'), 5000);
-    dependencies.database.status = 'ok';
-  } catch (error) {
-    dependencies.database.status = 'error';
-    dependencies.database.message = error.message;
-    payload.status = 'error';
-  }
-
-  if (redisCache.isEnabled()) {
-    try {
-      await withTimeout(cacheReady, 5000);
-      dependencies.redis.status = redisCache.isReady() ? 'ok' : 'degraded';
-      if (!redisCache.isReady()) {
-        dependencies.redis.message = 'Redis is configured but not connected';
-      }
-    } catch (error) {
-      dependencies.redis.status = 'degraded';
-      dependencies.redis.message = error.message;
-    }
-  }
-
-  payload.dependencies = dependencies;
-  return payload;
-};
-
-app.get(['/healthz', '/health'], async (req, res) => {
-  res.set('Cache-Control', 'no-store');
-  res.json(await buildHealthPayload());
-});
-
-app.get(['/readyz', '/api/health'], async (req, res) => {
-  res.set('Cache-Control', 'no-store');
-  const payload = await buildHealthPayload({ includeDependencies: true });
-  res.status(payload.status === 'ok' ? 200 : 503).json(payload);
-});
-
-app.use(async (req, res, next) => {
-  try {
-    await dbReady;
-    next();
-  } catch (error) {
-    logger.error({ err: error }, 'Database initialization failed');
-    res.status(500).json({ error: 'Database is not configured correctly' });
-  }
-});
-
-app.use(express.static(path.join(__dirname, 'public')));
-
+// Create service instances
 const { getUserById } = createAuthService({ getAsync });
 const { adminRequired, authRequired } = createAuthMiddleware({ getUserById });
 const auditLogs = createAuditLogService({ allAsync, runAsync });
-const routeDependencies = {
+
+// Register API routes
+registerRoutes(app, {
+  adminRequired,
+  authRequired,
+  auditLogs,
   allAsync,
   getAsync,
   queryAsync,
   runAsync,
-};
-
-app.use('/api', createAuthRouter({
-  auditLogs,
-  bcrypt,
-  getAsync,
-  getUserById,
-  runAsync,
-  sendVerificationEmail,
-}));
-
-app.get('/api/config/public', (req, res) => {
-  res.set('Cache-Control', 'no-store');
-  res.json({
-    sentry: {
-      dsn: process.env.PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN || '',
-      environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || 'development',
-      release: process.env.SENTRY_RELEASE || '',
-      tracesSampleRate: Number.parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0'),
-      replaysSessionSampleRate: Number.parseFloat(process.env.SENTRY_REPLAYS_SESSION_SAMPLE_RATE || '0'),
-      replaysOnErrorSampleRate: Number.parseFloat(process.env.SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE || '1'),
-    },
-    posthog: {
-      apiKey: process.env.PUBLIC_POSTHOG_API_KEY || process.env.POSTHOG_API_KEY || '',
-      apiHost: process.env.PUBLIC_POSTHOG_HOST || process.env.POSTHOG_HOST || 'https://us.i.posthog.com',
-    },
-  });
-});
-
-app.use('/api/credit-cards', createCreditCardsRouter({
-  adminRequired,
-  authRequired,
-  auditLogs,
-  allAsync,
-  getAsync,
-  runAsync,
-}));
-
-app.use('/api/transactions', createTransactionsRouter({
-  authRequired,
-  auditLogs,
-  allAsync,
-  getAsync,
-  runAsync,
-}));
-
-app.use('/api', createTasksRouter({
-  authRequired,
-  auditLogs,
-  allAsync,
-  getAsync,
-  runAsync,
   getUserById,
   sendTaskAlertEmail,
   sendTaskSummaryEmail,
-}));
-
-app.use('/api', createDashboardRouter({
-  authRequired,
-  allAsync,
-  cache: redisCache,
-  getAsync,
-  runAsync,
-}));
-
-app.use('/api', createDailyQuoteRouter());
-app.use('/api', createWeatherRouter({
-  authRequired,
-  ...routeDependencies,
-}));
-app.use('/api', createNotesRouter({
-  authRequired,
-  auditLogs,
-  emitToUser: realtime.emitToUser,
-  ...routeDependencies,
-}));
-app.use('/api', createAdminRouter({
-  adminRequired,
-  auditLogs,
+  sendVerificationEmail,
   bcrypt,
-  allAsync,
-  getAsync,
-  runAsync,
-}));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  redisCache,
 });
+
+// Setup public config endpoint
+setupConfigEndpoint(app);
+
+// Setup fallback route for SPA
+setupFallbackRoute(app);
+
+// Export the Express app as the module's default so platforms like Vercel,
+// which import this file as a serverless function and require the default
+// export to be a request handler (or server), get a valid `(req, res)` handler.
+// The remaining values are attached as properties so existing destructuring
+// importers (e.g. server.js) keep working.
+module.exports = app;
+module.exports.app = app;
+module.exports.cacheReady = cacheReady;
+module.exports.db = pool;
+module.exports.dbReady = dbReady;
+module.exports.httpServer = httpServer;
+module.exports.io = io;
 
 // Export the Express app as the module's default so platforms like Vercel,
 // which import this file as a serverless function and require the default
