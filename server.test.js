@@ -1641,7 +1641,7 @@ describe('Transactions API', () => {
       .send({
         occurred_on: '2026-06-03',
         kind: 'expense',
-        amount: '18.02',
+        amount: '00.01',
         category: 'Bread',
         account: 'CC',
         note: 'Original note',
@@ -1653,7 +1653,7 @@ describe('Transactions API', () => {
       .send({
         occurred_on: '2026-06-03',
         kind: 'expense',
-        amount: '18.02',
+        amount: '00.00',
         category: 'Bread',
         account: 'CC',
         note: 'test ',
