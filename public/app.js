@@ -1,3 +1,12 @@
+// ---- Module imports ----
+// Reusable utilities extracted to js/utils.js — available as window.AppUtils
+const U = window.AppUtils;
+// HTTP client extracted to js/apiClient.js
+const apiClient = window.ApiClient.create({ state: window.AppState.state });
+// Toast notifications extracted to js/ui/toast.js
+const toast = window.ToastModule.create({ state: window.AppState.state });
+
+// ---- DOM refs ----
 const authSection = document.getElementById('auth-section');
 const taskSection = document.getElementById('task-section');
 const adminSection = document.getElementById('admin-section');
