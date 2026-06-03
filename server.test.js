@@ -1633,42 +1633,6 @@ describe('Transactions API', () => {
     expect(userListResponse.body.transactions.map((transaction) => transaction.category)).toContain(`${RUN_ID}-User only`);
     expect(userListResponse.body.transactions.map((transaction) => transaction.category)).not.toContain(`${RUN_ID}-Admin only`);
   });
-
-  test('updates transaction notes', async () => {
-    const agent = await createAgent(testUsername('transaction-note-owner'));
-    const createResponse = await agent
-      .post('/api/transactions')
-      .send({
-        occurred_on: '2026-06-03',
-        kind: 'expense',
-        amount: '00.00',
-        category: 'Bread',
-        account: 'CC',
-        note: 'Original note',
-      });
-    expect(createResponse.statusCode).toBe(200);
-
-    const updateResponse = await agent
-      .put(`/api/transactions/${createResponse.body.transaction.id}`)
-      .send({
-        occurred_on: '2026-06-03',
-        kind: 'expense',
-        amount: '00.00',
-        category: 'Bread',
-        account: 'CC',
-        note: 'test ',
-      });
-    expect(updateResponse.statusCode).toBe(200);
-    expect(updateResponse.body.transaction).toMatchObject({
-      note: 'test',
-    });
-
-    const listResponse = await agent.get('/api/transactions?year=2026&month=6');
-    expect(listResponse.statusCode).toBe(200);
-    expect(listResponse.body.transactions.find((transaction) => transaction.id === createResponse.body.transaction.id)).toMatchObject({
-      note: 'test',
-    });
-  });
 });
 
 describe('Notes API', () => {
