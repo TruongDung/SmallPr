@@ -115,12 +115,27 @@ const initializeDatabase = async () => {
   await pool.query(`CREATE TABLE IF NOT EXISTS notes (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL,
+    task_id INTEGER,
     title TEXT NOT NULL DEFAULT '',
     body TEXT NOT NULL DEFAULT '',
     pinned BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE SET NULL
+  )`);
+
+  await pool.query(`CREATE TABLE IF NOT EXISTS note_versions (
+    id SERIAL PRIMARY KEY,
+    note_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    title TEXT NOT NULL DEFAULT '',
+    body TEXT NOT NULL DEFAULT '',
+    task_id INTEGER,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(note_id) REFERENCES notes(id) ON DELETE CASCADE,
+    FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE SET NULL
   )`);
 
   await pool.query(`CREATE TABLE IF NOT EXISTS transactions (
@@ -187,6 +202,11 @@ const initializeDatabase = async () => {
   await pool.query('ALTER TABLE fast_access_links ADD COLUMN IF NOT EXISTS user_id INTEGER REFERENCES users(id) ON DELETE CASCADE');
   await pool.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS dashboard_preferences JSONB');
   await pool.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS pinned BOOLEAN NOT NULL DEFAULT FALSE');
+  await pool.query('ALTER TABLE notes ADD COLUMN IF NOT EXISTS task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL');
+  await pool.query(
+    `CREATE INDEX IF NOT EXISTS notes_search_idx
+     ON notes USING GIN (to_tsvector('simple', COALESCE(title, '') || ' ' || COALESCE(body, '')))`
+  );
 
   await pool.query(`
     INSERT INTO fast_access_bill_defaults (item, amount, due_date, pay_before, status, sort_order)

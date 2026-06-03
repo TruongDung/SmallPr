@@ -1603,6 +1603,73 @@ describe('Transactions API', () => {
   });
 });
 
+describe('Notes API', () => {
+  test('links notes to owned tasks and records version history', async () => {
+    const agent = await createAgent(testUsername('notes-owner'));
+    const otherAgent = await createAgent(testUsername('notes-other-owner'));
+
+    const taskResponse = await agent
+      .post('/api/tasks')
+      .send({ title: 'Pay utility bill' });
+    expect(taskResponse.statusCode).toBe(200);
+    const taskId = taskResponse.body.task.id;
+
+    const otherTaskResponse = await otherAgent
+      .post('/api/tasks')
+      .send({ title: 'Other task' });
+    expect(otherTaskResponse.statusCode).toBe(200);
+
+    const forbiddenLinkResponse = await agent
+      .post('/api/notes')
+      .send({ title: 'Bad link', body: 'nope', task_id: otherTaskResponse.body.task.id });
+    expect(forbiddenLinkResponse.statusCode).toBe(400);
+
+    const createResponse = await agent
+      .post('/api/notes')
+      .send({ title: 'Bill note', body: 'first draft', task_id: taskId });
+    expect(createResponse.statusCode).toBe(200);
+    expect(createResponse.body.note).toMatchObject({
+      title: 'Bill note',
+      body: 'first draft',
+      task_id: taskId,
+      task_title: 'Pay utility bill',
+    });
+
+    const updateResponse = await agent
+      .put(`/api/notes/${createResponse.body.note.id}`)
+      .send({ title: 'Bill note updated', body: 'second draft', task_id: null });
+    expect(updateResponse.statusCode).toBe(200);
+    expect(updateResponse.body.note).toMatchObject({
+      title: 'Bill note updated',
+      body: 'second draft',
+      task_id: null,
+    });
+
+    const listResponse = await agent.get('/api/notes');
+    expect(listResponse.statusCode).toBe(200);
+    expect(listResponse.body.notes.find((note) => note.id === createResponse.body.note.id)).toMatchObject({
+      title: 'Bill note updated',
+      task_id: null,
+    });
+
+    const searchResponse = await agent.get('/api/notes?q=second');
+    expect(searchResponse.statusCode).toBe(200);
+    expect(searchResponse.body.notes.map((note) => note.id)).toContain(createResponse.body.note.id);
+
+    const historyResponse = await agent.get(`/api/notes/${createResponse.body.note.id}/versions`);
+    expect(historyResponse.statusCode).toBe(200);
+    expect(historyResponse.body.versions[0]).toMatchObject({
+      title: 'Bill note',
+      body: 'first draft',
+      task_id: taskId,
+      task_title: 'Pay utility bill',
+    });
+
+    const otherHistoryResponse = await otherAgent.get(`/api/notes/${createResponse.body.note.id}/versions`);
+    expect(otherHistoryResponse.statusCode).toBe(404);
+  });
+});
+
 describe('Admin API', () => {
   const loginAdmin = async () => {
     const agent = request.agent(app);

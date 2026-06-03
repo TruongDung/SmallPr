@@ -177,19 +177,51 @@
 
     result = processedLines.join('\n');
 
-    // Process inline code (`code`)
-    result = result.replace(/`([^`]+)`/g, (match, code) => {
-      const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-      return `<code class="inline-code">${escaped}</code>`;
-    });
+    const renderMarkdownText = (section) => {
+      const inlineCodeTokens = [];
+      const placeholder = (index) => `\uE100${index}\uE101`;
+      let rendered = escapeHtml(section);
 
-    // Convert remaining newlines to <br> for non-code text, but preserve newlines inside code blocks.
+      rendered = rendered.replace(/`([^`]+)`/g, (match, code) => {
+        const token = placeholder(inlineCodeTokens.length);
+        inlineCodeTokens.push(`<code class="inline-code">${code}</code>`);
+        return token;
+      });
+
+      rendered = rendered.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/g, (match, label, url) => (
+        `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`
+      ));
+
+      rendered = rendered
+        .replace(/^######\s+(.+)$/gm, '<h6>$1</h6>')
+        .replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>')
+        .replace(/^####\s+(.+)$/gm, '<h4>$1</h4>')
+        .replace(/^###\s+(.+)$/gm, '<h3>$1</h3>')
+        .replace(/^##\s+(.+)$/gm, '<h2>$1</h2>')
+        .replace(/^#\s+(.+)$/gm, '<h1>$1</h1>')
+        .replace(/^&gt;\s+(.+)$/gm, '<blockquote>$1</blockquote>')
+        .replace(/^\s*[-*]\s+(.+)$/gm, '<li>$1</li>');
+
+      rendered = rendered.replace(/(?:<li>.*?<\/li>\n?)+/g, (items) => (
+        `<ul>${items.replace(/\n/g, '')}</ul>`
+      ));
+
+      rendered = rendered
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/__([^_]+)__/g, '<strong>$1</strong>')
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+        .replace(/_([^_]+)_/g, '<em>$1</em>');
+
+      return rendered.replace(/\uE100(\d+)\uE101/g, (match, index) => inlineCodeTokens[Number(index)] || match);
+    };
+
+    // Render markdown in non-code text, preserving highlighted code blocks.
     result = result.split(/(<pre class="code-block"[\s\S]*?<\/pre>)/g)
       .map((section) => {
         if (section.startsWith('<pre class="code-block"')) {
           return section;
         }
-        return section.replace(/\n/g, '<br>');
+        return renderMarkdownText(section).replace(/\n/g, '<br>');
       })
       .join('');
 

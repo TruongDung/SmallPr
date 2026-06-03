@@ -149,11 +149,18 @@
                 <input id="note-title-input" type="text" maxlength="200" placeholder="Title" class="notes-editor-title" />
                 <button id="delete-note-button" type="button" class="task-action-icon danger" aria-label="Delete note" title="Delete note">🗑</button>
               </div>
+              <label class="notes-task-link">
+                <span id="note-task-label">Linked task</span>
+                <select id="note-task-select">
+                  <option value="">No linked task</option>
+                </select>
+              </label>
               <textarea id="note-body-input" class="notes-editor-body" placeholder="Start writing..." rows="14"></textarea>
               <div id="note-preview" class="note-preview hidden"></div>
               <div class="notes-editor-actions">
                 <button id="note-paste-button" type="button" class="secondary" title="Paste clipboard to the last line">Paste</button>
                 <button id="toggle-preview-button" type="button" class="secondary">Preview</button>
+                <button id="note-history-button" type="button" class="secondary">History</button>
               </div>
               <p id="note-saved-indicator" class="notes-saved-indicator" aria-live="polite"></p>
             </div>
@@ -631,6 +638,17 @@
       <div class="modal-actions">
         <button id="confirm-delete-no" type="button" class="task-action-icon secondary" aria-label="No" title="No">×</button>
         <button id="confirm-delete-yes" type="button" class="task-action-icon danger" aria-label="Yes" title="Yes">✓</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="note-history-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="note-history-title">
+    <div class="modal note-history-modal">
+      <h3 id="note-history-title">Note history</h3>
+      <p id="note-history-message" class="message"></p>
+      <div id="note-history-list" class="note-history-list"></div>
+      <div class="modal-actions">
+        <button id="close-note-history" type="button" class="secondary">Close</button>
       </div>
     </div>
   </div>

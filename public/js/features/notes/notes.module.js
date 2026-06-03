@@ -14,8 +14,17 @@
     const previewDiv = document.getElementById('note-preview');
     const togglePreviewButton = document.getElementById('toggle-preview-button');
     const pasteButton = document.getElementById('note-paste-button');
+    const taskLabel = document.getElementById('note-task-label');
+    const taskSelect = document.getElementById('note-task-select');
+    const historyButton = document.getElementById('note-history-button');
+    const historyModal = document.getElementById('note-history-modal');
+    const historyTitle = document.getElementById('note-history-title');
+    const historyMessage = document.getElementById('note-history-message');
+    const historyList = document.getElementById('note-history-list');
+    const closeHistoryButton = document.getElementById('close-note-history');
 
     let notes = [];
+    let tasks = [];
     let activeNoteId = null;
     let saveTimer = null;
     let pendingSave = false;
@@ -52,6 +61,31 @@
       return firstLine.slice(0, 80);
     };
 
+    const normalizeTaskId = (value) => {
+      const normalized = Number(value);
+      return Number.isInteger(normalized) && normalized > 0 ? normalized : null;
+    };
+
+    const updateTaskOptions = () => {
+      if (!taskSelect) return;
+      const selected = taskSelect.value;
+      taskSelect.innerHTML = '';
+
+      const empty = document.createElement('option');
+      empty.value = '';
+      empty.textContent = t('noLinkedTask');
+      taskSelect.append(empty);
+
+      tasks.forEach((task) => {
+        const option = document.createElement('option');
+        option.value = String(task.id);
+        option.textContent = task.title || t('untitledNote');
+        taskSelect.append(option);
+      });
+
+      taskSelect.value = tasks.some((task) => String(task.id) === selected) ? selected : '';
+    };
+
     const filteredNotes = () => {
       const query = searchInput.value.trim().toLowerCase();
       if (!query) return notes;
@@ -72,6 +106,10 @@
       editorForm.classList.remove('hidden');
       titleInput.value = note.title || '';
       bodyInput.value = note.body || '';
+      if (taskSelect) {
+        updateTaskOptions();
+        taskSelect.value = note.task_id ? String(note.task_id) : '';
+      }
       savedIndicator.textContent = '';
       if (showPreview) {
         updatePreview();
@@ -106,7 +144,8 @@
         meta.className = 'notes-list-meta';
         const dateText = formatRelativeDate(note.updated_at);
         const preview = previewBody(note.body);
-        meta.textContent = preview ? `${dateText} · ${preview}` : dateText;
+        const linkedTask = note.task_title ? `↔ ${note.task_title}` : '';
+        meta.textContent = [dateText, linkedTask, preview].filter(Boolean).join(' · ');
 
         content.append(title, meta);
         content.addEventListener('click', () => selectNote(note.id));
@@ -177,13 +216,14 @@
 
       const title = titleInput.value;
       const body = bodyInput.value;
+      const taskId = normalizeTaskId(taskSelect?.value);
 
-      if (note.title === title && note.body === body) return;
+      if (note.title === title && note.body === body && normalizeTaskId(note.task_id) === taskId) return;
 
       savedIndicator.textContent = t('noteSaving');
       const result = await request(`/api/notes/${activeNoteId}`, {
         method: 'PUT',
-        body: JSON.stringify({ title, body }),
+        body: JSON.stringify({ title, body, task_id: taskId }),
       });
 
       if (result.error) {
@@ -226,6 +266,7 @@
       const previousNoteId = activeNoteId;
       const previousTitle = titleInput.value;
       const previousBody = bodyInput.value;
+      const previousTaskId = normalizeTaskId(taskSelect?.value);
       const hadPendingSave = pendingSave || Boolean(saveTimer);
       if (saveTimer) {
         clearTimeout(saveTimer);
@@ -241,16 +282,31 @@
       editorForm.classList.remove('hidden');
       titleInput.value = '';
       bodyInput.value = '';
+      if (taskSelect) {
+        updateTaskOptions();
+        taskSelect.value = '';
+      }
       savedIndicator.textContent = '';
       titleInput.focus();
 
       (async () => {
         if (hadPendingSave && previousNoteId) {
           const previousNote = notes.find((entry) => entry.id === previousNoteId);
-          if (previousNote && (previousNote.title !== previousTitle || previousNote.body !== previousBody)) {
+          if (
+            previousNote
+            && (
+              previousNote.title !== previousTitle
+              || previousNote.body !== previousBody
+              || normalizeTaskId(previousNote.task_id) !== previousTaskId
+            )
+          ) {
             const saveResult = await request(`/api/notes/${previousNoteId}`, {
               method: 'PUT',
-              body: JSON.stringify({ title: previousTitle, body: previousBody }),
+              body: JSON.stringify({
+                title: previousTitle,
+                body: previousBody,
+                task_id: previousTaskId,
+              }),
             });
             if (!saveResult.error && saveResult.note) {
               notes = notes.map((entry) => (entry.id === saveResult.note.id ? saveResult.note : entry));
@@ -260,7 +316,11 @@
 
         const result = await request('/api/notes', {
           method: 'POST',
-          body: JSON.stringify({ title: titleInput.value, body: bodyInput.value }),
+          body: JSON.stringify({
+            title: titleInput.value,
+            body: bodyInput.value,
+            task_id: normalizeTaskId(taskSelect?.value),
+          }),
         });
 
         if (result.error) {
@@ -311,13 +371,22 @@
     };
 
     const load = async () => {
-      const result = await request('/api/notes');
-      if (result.error) {
-        setMessage(result.error);
+      const [notesResult, tasksResult, archivedTasksResult] = await Promise.all([
+        request('/api/notes'),
+        request('/api/tasks'),
+        request('/api/tasks?archived=true'),
+      ]);
+      if (notesResult.error) {
+        setMessage(notesResult.error);
         return;
       }
 
-      notes = result.notes || [];
+      notes = notesResult.notes || [];
+      tasks = [
+        ...(tasksResult.error ? [] : (tasksResult.tasks || [])),
+        ...(archivedTasksResult.error ? [] : (archivedTasksResult.tasks || [])),
+      ];
+      updateTaskOptions();
       setMessage('');
 
       if (!notes.length) {
@@ -345,6 +414,11 @@
         pasteButton.textContent = t('notePaste');
         pasteButton.title = t('notePaste');
       }
+      if (taskLabel) taskLabel.textContent = t('linkedTask');
+      if (historyButton) historyButton.textContent = t('noteHistory');
+      if (historyTitle) historyTitle.textContent = t('noteHistory');
+      if (closeHistoryButton) closeHistoryButton.textContent = t('cancel');
+      updateTaskOptions();
       searchInput.placeholder = t('searchNotes');
       const editorEmptyText = section.querySelector('#notes-editor-empty p');
       if (editorEmptyText) editorEmptyText.textContent = t('notesEmpty');
@@ -365,8 +439,14 @@
       });
       titleInput.addEventListener('blur', flushSave);
       bodyInput.addEventListener('blur', flushSave);
+      taskSelect?.addEventListener('change', scheduleSave);
       searchInput.addEventListener('input', renderList);
       window.addEventListener('beforeunload', flushSave);
+      historyButton?.addEventListener('click', openHistory);
+      closeHistoryButton?.addEventListener('click', closeHistory);
+      historyModal?.addEventListener('click', (event) => {
+        if (event.target === historyModal) closeHistory();
+      });
 
       // Toggle preview button
       if (togglePreviewButton) {
@@ -474,6 +554,64 @@
       if (!previewDiv || !window.NotesCodeHighlighter) return;
       const highlighted = window.NotesCodeHighlighter.detectAndHighlightCodeBlocks(bodyInput.value);
       previewDiv.innerHTML = highlighted || '<p style="color: #999;">Nothing to preview</p>';
+    };
+
+    const closeHistory = () => {
+      historyModal?.classList.add('hidden');
+    };
+
+    const restoreVersion = async (version) => {
+      if (!activeNoteId) return;
+      titleInput.value = version.title || '';
+      bodyInput.value = version.body || '';
+      if (taskSelect) taskSelect.value = version.task_id ? String(version.task_id) : '';
+      if (showPreview) updatePreview();
+      await saveActiveNote();
+      closeHistory();
+    };
+
+    const openHistory = async () => {
+      if (!activeNoteId || !historyModal || !historyList) return;
+      historyList.innerHTML = '';
+      historyMessage.textContent = '';
+      historyModal.classList.remove('hidden');
+
+      const result = await request(`/api/notes/${activeNoteId}/versions`);
+      if (result.error) {
+        historyMessage.textContent = result.error;
+        return;
+      }
+
+      const versions = result.versions || [];
+      if (!versions.length) {
+        historyMessage.textContent = t('noteHistoryEmpty');
+        return;
+      }
+
+      versions.forEach((version) => {
+        const item = document.createElement('article');
+        item.className = 'note-history-item';
+
+        const heading = document.createElement('strong');
+        heading.textContent = version.title?.trim() || t('untitledNote');
+
+        const meta = document.createElement('span');
+        const date = formatRelativeDate(version.created_at);
+        const linkedTask = version.task_title ? `↔ ${version.task_title}` : '';
+        meta.textContent = [date, linkedTask].filter(Boolean).join(' · ');
+
+        const body = document.createElement('p');
+        body.textContent = previewBody(version.body) || '—';
+
+        const restoreButton = document.createElement('button');
+        restoreButton.type = 'button';
+        restoreButton.className = 'secondary';
+        restoreButton.textContent = t('restoreVersion');
+        restoreButton.addEventListener('click', () => restoreVersion(version));
+
+        item.append(heading, meta, body, restoreButton);
+        historyList.append(item);
+      });
     };
 
     return { applyTranslations, bind, load, deleteNote };
