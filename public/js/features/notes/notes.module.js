@@ -21,6 +21,10 @@
     const historyTitle = document.getElementById('note-history-title');
     const historyMessage = document.getElementById('note-history-message');
     const historyList = document.getElementById('note-history-list');
+    const historyPagination = document.getElementById('note-history-pagination');
+    const historyPreviousButton = document.getElementById('note-history-previous');
+    const historyNextButton = document.getElementById('note-history-next');
+    const historyPageInfo = document.getElementById('note-history-page-info');
     const closeHistoryButton = document.getElementById('close-note-history');
 
     let notes = [];
@@ -29,6 +33,8 @@
     let saveTimer = null;
     let pendingSave = false;
     let showPreview = false;
+    let historyPage = 1;
+    const historyPageSize = 10;
 
     // Pinned notes float to the top; within each group the most recently
     // updated comes first. Mirrors the server's ORDER BY so the optimistic
@@ -417,6 +423,8 @@
       if (taskLabel) taskLabel.textContent = t('linkedTask');
       if (historyButton) historyButton.textContent = t('noteHistory');
       if (historyTitle) historyTitle.textContent = t('noteHistory');
+      if (historyPreviousButton) historyPreviousButton.textContent = t('previousPage');
+      if (historyNextButton) historyNextButton.textContent = t('nextPage');
       if (closeHistoryButton) closeHistoryButton.textContent = t('cancel');
       updateTaskOptions();
       searchInput.placeholder = t('searchNotes');
@@ -443,6 +451,8 @@
       searchInput.addEventListener('input', renderList);
       window.addEventListener('beforeunload', flushSave);
       historyButton?.addEventListener('click', openHistory);
+      historyPreviousButton?.addEventListener('click', () => loadHistoryPage(historyPage - 1));
+      historyNextButton?.addEventListener('click', () => loadHistoryPage(historyPage + 1));
       closeHistoryButton?.addEventListener('click', closeHistory);
       historyModal?.addEventListener('click', (event) => {
         if (event.target === historyModal) closeHistory();
@@ -570,19 +580,46 @@
       closeHistory();
     };
 
-    const openHistory = async () => {
+    const renderHistoryPagination = (pagination) => {
+      if (!historyPagination || !historyPageInfo || !historyPreviousButton || !historyNextButton) return;
+      if (!pagination || pagination.totalPages <= 1) {
+        historyPagination.classList.add('hidden');
+        return;
+      }
+
+      historyPagination.classList.remove('hidden');
+      historyPageInfo.textContent = t('pageStatus', {
+        page: pagination.page,
+        totalPages: pagination.totalPages,
+        total: pagination.total,
+      });
+      historyPreviousButton.disabled = !pagination.hasPreviousPage;
+      historyNextButton.disabled = !pagination.hasNextPage;
+    };
+
+    const loadHistoryPage = async (page = 1) => {
       if (!activeNoteId || !historyModal || !historyList) return;
       historyList.innerHTML = '';
       historyMessage.textContent = '';
-      historyModal.classList.remove('hidden');
+      historyPagination?.classList.add('hidden');
 
-      const result = await request(`/api/notes/${activeNoteId}/versions`);
+      const result = await request(`/api/notes/${activeNoteId}/versions?page=${page}&limit=${historyPageSize}`);
       if (result.error) {
         historyMessage.textContent = result.error;
         return;
       }
 
       const versions = result.versions || [];
+      const pagination = result.pagination || {
+        page: 1,
+        total: versions.length,
+        totalPages: 1,
+        hasPreviousPage: false,
+        hasNextPage: false,
+      };
+      historyPage = pagination.page || 1;
+      renderHistoryPagination(pagination);
+
       if (!versions.length) {
         historyMessage.textContent = t('noteHistoryEmpty');
         return;
@@ -612,6 +649,13 @@
         item.append(heading, meta, body, restoreButton);
         historyList.append(item);
       });
+    };
+
+    const openHistory = async () => {
+      if (!activeNoteId || !historyModal || !historyList) return;
+      historyPage = 1;
+      historyModal.classList.remove('hidden');
+      await loadHistoryPage(historyPage);
     };
 
     return { applyTranslations, bind, load, deleteNote };

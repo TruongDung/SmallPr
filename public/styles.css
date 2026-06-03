@@ -5905,6 +5905,20 @@ body.theme-dark .user-status-badge.disabled {
   font-size: 0.85rem;
 }
 
+.note-history-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.note-history-pagination button {
+  min-width: 92px;
+}
+
 body:not(.theme-dark) .notes-editor-actions button.secondary {
   background: var(--surface);
   color: var(--text);

@@ -17,6 +17,15 @@ const normalizeTaskId = (value) => {
   return Number.isInteger(normalized) && normalized > 0 ? normalized : null;
 };
 
+const HISTORY_PAGE_SIZE = 10;
+const HISTORY_MAX_PAGE_SIZE = 50;
+
+const normalizePositiveInteger = (value, fallback, max = Number.MAX_SAFE_INTEGER) => {
+  const normalized = Number(value);
+  if (!Number.isInteger(normalized) || normalized < 1) return fallback;
+  return Math.min(normalized, max);
+};
+
 const createNotesRouter = ({ allAsync, authRequired, emitToUser, queryAsync, runAsync }) => {
   const router = express.Router();
 
@@ -196,6 +205,8 @@ const createNotesRouter = ({ allAsync, authRequired, emitToUser, queryAsync, run
 
   router.get('/notes/:id/versions', authRequired, async (req, res) => {
     const { id } = req.params;
+    const requestedPage = normalizePositiveInteger(req.query?.page, 1);
+    const limit = normalizePositiveInteger(req.query?.limit, HISTORY_PAGE_SIZE, HISTORY_MAX_PAGE_SIZE);
 
     try {
       const note = await allAsync(
@@ -206,16 +217,38 @@ const createNotesRouter = ({ allAsync, authRequired, emitToUser, queryAsync, run
         return res.status(404).json({ error: 'Note not found' });
       }
 
+      const totalRows = await allAsync(
+        `SELECT COUNT(*)::int AS total
+         FROM note_versions
+         WHERE note_id = ? AND user_id = ?`,
+        [id, req.session.userId]
+      );
+      const total = Number(totalRows[0]?.total || 0);
+      const totalPages = Math.max(1, Math.ceil(total / limit));
+      const page = total ? Math.min(requestedPage, totalPages) : 1;
+      const offset = (page - 1) * limit;
+
       const versions = await allAsync(
         `SELECT note_versions.id, note_versions.note_id, note_versions.title, note_versions.body,
                 note_versions.task_id, tasks.title AS task_title, note_versions.created_at
          FROM note_versions
          LEFT JOIN tasks ON tasks.id = note_versions.task_id AND tasks.user_id = note_versions.user_id
          WHERE note_versions.note_id = ? AND note_versions.user_id = ?
-         ORDER BY note_versions.created_at DESC, note_versions.id DESC`,
-        [id, req.session.userId]
+         ORDER BY note_versions.created_at DESC, note_versions.id DESC
+         LIMIT ? OFFSET ?`,
+        [id, req.session.userId, limit, offset]
       );
-      res.json({ versions });
+      res.json({
+        versions,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+          hasPreviousPage: page > 1,
+          hasNextPage: page < totalPages,
+        },
+      });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Failed to load note history' });
