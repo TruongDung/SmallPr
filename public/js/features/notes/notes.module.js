@@ -34,6 +34,7 @@
     let pendingSave = false;
     let showPreview = false;
     let historyPage = 1;
+    let dataVersion = 0;
     const historyPageSize = 10;
 
     // Pinned notes float to the top; within each group the most recently
@@ -105,6 +106,10 @@
       if (!note) {
         editorForm.classList.add('hidden');
         editorEmpty.classList.remove('hidden');
+        titleInput.value = '';
+        bodyInput.value = '';
+        if (taskSelect) taskSelect.value = '';
+        if (showPreview) updatePreview();
         savedIndicator.textContent = '';
         return;
       }
@@ -365,6 +370,7 @@
     };
 
     const reset = () => {
+      dataVersion += 1;
       if (saveTimer) {
         clearTimeout(saveTimer);
         saveTimer = null;
@@ -396,11 +402,13 @@
     };
 
     const load = async () => {
+      const version = dataVersion;
       const [notesResult, tasksResult, archivedTasksResult] = await Promise.all([
-        request('/api/notes'),
-        request('/api/tasks'),
-        request('/api/tasks?archived=true'),
+        request('/api/notes', { cache: 'no-store' }),
+        request('/api/tasks', { cache: 'no-store' }),
+        request('/api/tasks?archived=true', { cache: 'no-store' }),
       ]);
+      if (version !== dataVersion) return;
       if (notesResult.error) {
         setMessage(notesResult.error);
         return;
