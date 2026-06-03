@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS transactions (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  occurred_on DATE NOT NULL,
+  kind TEXT NOT NULL,
+  amount NUMERIC(12, 2) NOT NULL,
+  category TEXT,
+  account TEXT,
+  note TEXT,
+  credit_card_id INTEGER,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

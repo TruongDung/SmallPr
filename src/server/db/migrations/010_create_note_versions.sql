@@ -1,5 +1,3 @@
-ALTER TABLE notes ADD COLUMN IF NOT EXISTS task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL;
-
 CREATE TABLE IF NOT EXISTS note_versions (
   id SERIAL PRIMARY KEY,
   note_id INTEGER NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
@@ -9,6 +7,3 @@ CREATE TABLE IF NOT EXISTS note_versions (
   task_id INTEGER REFERENCES tasks(id) ON DELETE SET NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
-CREATE INDEX IF NOT EXISTS notes_search_idx
-ON notes USING GIN (to_tsvector('simple', COALESCE(title, '') || ' ' || COALESCE(body, '')));

@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS fast_access_bill_defaults (
+  id SERIAL PRIMARY KEY,
+  item TEXT NOT NULL,
+  amount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  due_date TEXT,
+  pay_before TEXT,
+  status TEXT NOT NULL DEFAULT 'Unpaid',
+  sort_order INTEGER NOT NULL UNIQUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
