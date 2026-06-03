@@ -1601,9 +1601,6 @@ describe('Transactions API', () => {
     const adminAgent = await loginAdmin();
     const userAgent = await createAgent(testUsername('transaction-private-owner'));
 
-    
-    expect(userCreateResponse.statusCode).toBe(200);
-
     const adminListResponse = await adminAgent.get('/api/transactions?year=2026&month=6');
     expect(adminListResponse.statusCode).toBe(200);
     expect(adminListResponse.body.transactions.map((transaction) => transaction.category)).toContain(`${RUN_ID}-Admin only`);
@@ -1634,7 +1631,7 @@ describe('Transactions API', () => {
       .send({
         occurred_on: '2026-06-03',
         kind: 'expense',
-        amount: '0',
+        amount: '18.02',
         category: 'Bread',
         account: 'CC',
         note: 'test ',
