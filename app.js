@@ -230,7 +230,6 @@ app.use('/api/transactions', createTransactionsRouter({
   allAsync,
   getAsync,
   runAsync,
-  anthropicApiKey: process.env.ANTHROPIC_API_KEY,
 }));
 
 app.use('/api', createTasksRouter({

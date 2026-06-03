@@ -1,4 +1,4 @@
-const Anthropic = require('@anthropic-ai/sdk');
+const { getDocumentProxy, extractText } = require('unpdf');
 
 const logger = require('../logger');
 
@@ -7,57 +7,160 @@ const {
   MAX_TRANSACTION_NOTE_LENGTH,
 } = require('../constants/transactions');
 
-// Sonnet handles multi-page statement layouts well at a reasonable cost.
-const MODEL = 'claude-sonnet-4-6';
-const MAX_TOKENS = 8000;
-
-const SYSTEM_PROMPT = `You extract purchase line items from a credit card statement PDF.
-Return ONLY real purchases/charges made by the cardholder.
-EXCLUDE: payments, statement credits, refunds, returns, balance transfers,
-interest charges, fees summaries, rewards, and any subtotal/total lines.
-For each purchase, capture the transaction date (NOT the posting date when both
-are shown), the merchant/description, and the amount as a positive number.
-If the year is missing from a date, infer it from the statement period.`;
-
-// A single tool whose input schema is the structured result we want back.
-// Forcing this tool guarantees valid JSON instead of free-form prose.
-const EXTRACT_TOOL = {
-  name: 'record_statement_items',
-  description: 'Record the purchase line items extracted from the statement.',
-  input_schema: {
-    type: 'object',
-    properties: {
-      items: {
-        type: 'array',
-        items: {
-          type: 'object',
-          properties: {
-            date: {
-              type: 'string',
-              description: 'Transaction date in YYYY-MM-DD format.',
-            },
-            description: {
-              type: 'string',
-              description: 'Merchant name or transaction description.',
-            },
-            amount: {
-              type: 'number',
-              description: 'Charge amount as a positive number.',
-            },
-          },
-          required: ['date', 'description', 'amount'],
-        },
-      },
-    },
-    required: ['items'],
-  },
-};
+// --- Date normalisation ---------------------------------------------------
 
 const isValidDate = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
   && !Number.isNaN(new Date(`${value}T00:00:00`).getTime());
 
-// Keep only well-formed rows and clamp text to the transaction column limits so
-// the downstream create validation never rejects an imported row on length.
+const MONTH_NAMES = {
+  jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
+  jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12',
+};
+
+/**
+ * Attempt to normalise a raw date token into YYYY-MM-DD.
+ * Handles: MM/DD, MM/DD/YYYY, YYYY-MM-DD, Mon DD, Mon DD YYYY.
+ * Returns null when the token doesn't look like a date.
+ */
+const normaliseDate = (raw, fallbackYear) => {
+  const token = String(raw || '').trim();
+  if (!token) return null;
+
+  // YYYY-MM-DD
+  let match = token.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    const [, y, m, d] = match;
+    if (Number(m) >= 1 && Number(m) <= 12 && Number(d) >= 1 && Number(d) <= 31) {
+      return `${y}-${m}-${d}`;
+    }
+    return null;
+  }
+
+  // MM/DD/YYYY or MM/DD
+  match = token.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?$/);
+  if (match) {
+    const m = String(Number(match[1])).padStart(2, '0');
+    const d = String(Number(match[2])).padStart(2, '0');
+    let y = match[3] ? String(match[3]) : String(fallbackYear || new Date().getFullYear());
+    if (y.length === 2) y = `20${y}`;
+    if (Number(m) >= 1 && Number(m) <= 12 && Number(d) >= 1 && Number(d) <= 31) {
+      return `${y}-${m}-${d}`;
+    }
+    return null;
+  }
+
+  // Mon DD or Mon DD YYYY (e.g. "Jan 15" or "Jan 15 2025")
+  match = token.match(/^([A-Za-z]{3,})\s+(\d{1,2})(?:\s+(\d{2,4}))?$/);
+  if (match) {
+    const m = MONTH_NAMES[match[1].toLowerCase().slice(0, 3)];
+    if (!m) return null;
+    const d = String(Number(match[2])).padStart(2, '0');
+    let y = match[3] ? String(match[3]) : String(fallbackYear || new Date().getFullYear());
+    if (y.length === 2) y = `20${y}`;
+    return `${y}-${m}-${d}`;
+  }
+
+  return null;
+};
+
+// --- Amount normalisation -------------------------------------------------
+
+/**
+ * Parse a raw dollar-amount token into a positive number.
+ * Handles: $1,234.56, -$500.00, 45.67, (1,234.56).
+ * Returns NaN when the token doesn't look like an amount.
+ */
+const normaliseAmount = (raw) => {
+  const token = String(raw || '').trim();
+  if (!token) return NaN;
+
+  // Parenthesised amounts are negative (accounting notation)
+  const isParens = token.startsWith('(') && token.endsWith(')');
+  const cleaned = isParens ? token.slice(1, -1) : token;
+
+  // Strip currency symbols, commas, spaces
+  const numeric = cleaned.replace(/[$€£¥\s,]/g, '');
+
+  const value = Number(numeric);
+  if (!Number.isFinite(value)) return NaN;
+
+  return isParens ? Math.abs(value) : Math.abs(value);
+};
+
+// --- Transaction line extraction ------------------------------------------
+
+// Regex to find a dollar amount at or near the end of a line.
+// Captures: $1,234.56  -$500.00  45.67  (1,234.56)
+const AMOUNT_RE = /(?:^|\s)(-?\$?\s*-?[\d][\d,]{0,10}\.\d{2}\s*$|\(\s*\$?[\d][\d,]{0,10}\.\d{2}\s*\)\s*$)/;
+
+/**
+ * Regex that matches a transaction line with:
+ *   (date)  (description...)  (amount)
+ *
+ * Group 1: date token  (MM/DD, MM/DD/YYYY, YYYY-MM-DD, Mon DD)
+ * Group 2: description (everything between date and amount)
+ * Group 3: amount token
+ */
+const LINE_RE = new RegExp(
+  '(?:^|\\n)\\s*' +                                        // start of line
+  '(' +                                                     // date (group 1)
+    '(?:\\d{4}-\\d{2}-\\d{2})|' +
+    '(?:\\d{1,2}/\\d{1,2}(?:/\\d{2,4})?)|' +
+    '(?:[A-Z][a-z]{2,}\\s+\\d{1,2}(?:\\s*[,\\\']?\\s*\\d{2,4})?)' +
+  ')' +
+  '(?=\\s+|\\b)' +                                         // date must be followed by whitespace or word boundary
+  '(.+?)' +                                                 // description (group 2) — lazy
+  '(' +                                                      // amount (group 3)
+    '(?:-?\\$?\\s*-?[\\d][\\d,]{0,10}\\.\\d{2})|' +
+    '(?:\\(\\s*\\$?[\\d][\\d,]{0,10}\\.\\d{2}\\s*\\))' +
+  ')' +
+  '\\s*$',
+  'gm'
+);
+
+// Exclude words that signal non-purchase lines
+const SKIP_DESCRIPTIONS = /^(payments?|credits?|refunds?|returns?|balance transfers?|fees?|charges?|interest|rewards?|total|subtotal|amount due|minimum payment|payment due|new balance|previous balance|apr|annual fee|late fee|finance charge)/i;
+
+const extractTransactions = (text, fallbackYear) => {
+  const items = [];
+  const seen = new Set(); // deduplicate exact matches
+
+  let match;
+  while ((match = LINE_RE.exec(text)) !== null) {
+    const rawDate = match[1].trim();
+    const rawDescription = match[2].trim();
+    const rawAmount = match[3].trim();
+
+    // Skip header/total lines that happen to match the pattern
+    if (SKIP_DESCRIPTIONS.test(rawDescription)) continue;
+
+    const date = normaliseDate(rawDate, fallbackYear);
+    if (!date) continue;
+
+    const amount = normaliseAmount(rawAmount);
+    if (!Number.isFinite(amount) || amount <= 0) continue;
+
+    // Clean up description: collapse whitespace, remove stray characters
+    const description = rawDescription
+      .replace(/\s+/g, ' ')
+      .replace(/[^\x20-\x7E]/g, '') // strip non-printable characters
+      .trim();
+
+    if (!description || description.length < 2) continue;
+
+    // Deduplicate on date + description + amount
+    const key = `${date}|${description}|${amount}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    items.push({ date, description, amount });
+  }
+
+  return items;
+};
+
+// --- Post-processing (reused from the original AI-based version) ----------
+
 const normalizeItems = (rawItems) => (Array.isArray(rawItems) ? rawItems : [])
   .map((item) => {
     const amount = Number(item?.amount);
@@ -75,63 +178,65 @@ const normalizeItems = (rawItems) => (Array.isArray(rawItems) ? rawItems : [])
   })
   .filter(Boolean);
 
-const createStatementImportService = ({ apiKey }) => {
-  const isConfigured = () => Boolean(apiKey);
+// --- Public API -----------------------------------------------------------
 
+const createStatementImportService = () => {
   const parseStatement = async ({ base64Pdf }) => {
-    if (!apiKey) {
-      return { error: 'AI import is not configured. Set ANTHROPIC_API_KEY to enable PDF import.' };
-    }
     if (!base64Pdf) {
       return { error: 'No PDF provided.' };
     }
 
-    const client = new Anthropic({ apiKey });
-
-    let message;
+    // Decode the base64 PDF into a buffer
+    let buffer;
     try {
-      message = await client.messages.create({
-        model: MODEL,
-        max_tokens: MAX_TOKENS,
-        system: [
-          { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
-        ],
-        tools: [EXTRACT_TOOL],
-        tool_choice: { type: 'tool', name: 'record_statement_items' },
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'document',
-                source: { type: 'base64', media_type: 'application/pdf', data: base64Pdf },
-              },
-              { type: 'text', text: 'Extract the purchase line items from this statement.' },
-            ],
-          },
-        ],
-      });
-    } catch (error) {
-      logger.error({ err: error }, 'Statement parse request failed');
-      return { error: 'Failed to read the statement. Please try again or enter the items manually.' };
+      buffer = Buffer.from(base64Pdf, 'base64');
+    } catch (_error) {
+      return { error: 'Invalid PDF data.' };
     }
 
-    const toolUse = message.content.find((block) => block.type === 'tool_use');
-    if (!toolUse) {
-      // The model answered with prose instead of the forced tool call — usually
-      // a misconfigured key/proxy or a refusal. Log the text to aid debugging.
-      const textBlock = message.content.find((block) => block.type === 'text');
-      if (textBlock) {
-        logger.error('Statement parse returned no tool_use. Model said: %s', textBlock.text);
+    // Extract text from the PDF using unpdf (pdf.js under the hood)
+    let text;
+    let pdf;
+    try {
+      pdf = await getDocumentProxy(new Uint8Array(buffer));
+      const result = await extractText(pdf, { mergePages: true });
+      text = result.text;
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to extract text from PDF');
+      return { error: 'Failed to read the statement. Please try again or enter the items manually.' };
+    } finally {
+      if (pdf) {
+        try { pdf.destroy(); } catch (_error) { /* ignore */ }
       }
+    }
+
+    if (!text || String(text).trim().length === 0) {
+      return { error: 'Could not read any text from this statement.' };
+    }
+
+    // Try to infer the statement year from header text
+    const fallbackYear = (() => {
+      const yearMatch = String(text).match(/(?:statement\s+period|statement\s+date|for\s+period|billing\s+cycle).*?(\d{4})/i)
+        || String(text).match(/\b(20\d{2})\b/);
+      return yearMatch ? Number(yearMatch[1]) : new Date().getFullYear();
+    })();
+
+    const rawItems = extractTransactions(String(text), fallbackYear);
+
+    if (!rawItems.length) {
+      return { error: 'No purchases were found in this statement.' };
+    }
+
+    const items = normalizeItems(rawItems);
+
+    if (!items.length) {
       return { error: 'Could not read any transactions from this statement.' };
     }
 
-    const items = normalizeItems(toolUse.input?.items);
     return { items };
   };
 
-  return { isConfigured, parseStatement };
+  return { parseStatement };
 };
 
 module.exports = {

@@ -87,10 +87,10 @@ const validateTransactionDetails = ({ occurred_on, kind, amount, category, accou
   };
 };
 
-const createTransactionsRouter = ({ authRequired, auditLogs, allAsync, getAsync, runAsync, anthropicApiKey }) => {
+const createTransactionsRouter = ({ authRequired, auditLogs, allAsync, getAsync, runAsync }) => {
   const router = express.Router();
   const transactions = createTransactionsService({ allAsync, getAsync, runAsync });
-  const statementImport = createStatementImportService({ apiKey: anthropicApiKey });
+  const statementImport = createStatementImportService();
 
   router.use(authRequired);
 
@@ -168,8 +168,7 @@ const createTransactionsRouter = ({ authRequired, auditLogs, allAsync, getAsync,
     try {
       const result = await statementImport.parseStatement({ base64Pdf });
       if (result.error) {
-        const status = statementImport.isConfigured() ? 422 : 503;
-        return res.status(status).json({ error: result.error });
+        return res.status(422).json({ error: result.error });
       }
       res.json({ items: result.items });
     } catch (error) {
