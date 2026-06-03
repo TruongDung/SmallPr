@@ -1615,8 +1615,8 @@ describe('Transactions API', () => {
         occurred_on: '2026-06-01',
         kind: 'expense',
         amount: '12.34',
-        category: 'Admin only',
-        account: 'Admin account',
+        category: `${RUN_ID}-Admin only`,
+        account: `${RUN_ID}-Admin account`,
       });
     expect(adminCreateResponse.statusCode).toBe(200);
 
@@ -1626,20 +1626,20 @@ describe('Transactions API', () => {
         occurred_on: '2026-06-01',
         kind: 'expense',
         amount: '56.78',
-        category: 'User only',
-        account: 'User account',
+        category: `${RUN_ID}-User only`,
+        account: `${RUN_ID}-User account`,
       });
     expect(userCreateResponse.statusCode).toBe(200);
 
     const adminListResponse = await adminAgent.get('/api/transactions?year=2026&month=6');
     expect(adminListResponse.statusCode).toBe(200);
-    expect(adminListResponse.body.transactions.map((transaction) => transaction.category)).toContain('Admin only');
-    expect(adminListResponse.body.transactions.map((transaction) => transaction.category)).not.toContain('User only');
+    expect(adminListResponse.body.transactions.map((transaction) => transaction.category)).toContain(`${RUN_ID}-Admin only`);
+    expect(adminListResponse.body.transactions.map((transaction) => transaction.category)).not.toContain(`${RUN_ID}-User only`);
 
     const userListResponse = await userAgent.get('/api/transactions?year=2026&month=6');
     expect(userListResponse.statusCode).toBe(200);
-    expect(userListResponse.body.transactions.map((transaction) => transaction.category)).toContain('User only');
-    expect(userListResponse.body.transactions.map((transaction) => transaction.category)).not.toContain('Admin only');
+    expect(userListResponse.body.transactions.map((transaction) => transaction.category)).toContain(`${RUN_ID}-User only`);
+    expect(userListResponse.body.transactions.map((transaction) => transaction.category)).not.toContain(`${RUN_ID}-Admin only`);
   });
 });
 
