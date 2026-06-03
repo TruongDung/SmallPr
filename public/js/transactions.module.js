@@ -84,6 +84,16 @@
       return `${month}-${day}-${year}`;
     };
 
+    const formatDateInputValue = (dateString) => {
+      if (!dateString) return '';
+      const match = String(dateString).match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+
+      const date = new Date(dateString);
+      if (Number.isNaN(date.getTime())) return '';
+      return date.toISOString().slice(0, 10);
+    };
+
     const escapeHtml = (value) => String(value ?? '')
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -170,7 +180,7 @@
         kindInput.value = transaction.kind;
         amountInput.value = transaction.amount;
         categoryInput.value = transaction.category || '';
-        dateInput.value = transaction.occurred_on;
+        dateInput.value = formatDateInputValue(transaction.occurred_on);
         accountInput.value = transaction.account || '';
         creditCardInput.value = transaction.credit_card_id || '';
         noteInput.value = transaction.note || '';
@@ -458,16 +468,24 @@
 
       try {
         if (pendingEditTransaction) {
-          await request(`/api/transactions/${pendingEditTransaction.id}`, {
+          const result = await request(`/api/transactions/${pendingEditTransaction.id}`, {
             method: 'PUT',
             body: JSON.stringify(data),
           });
+          if (result.error) {
+            showFormError(result.error);
+            return;
+          }
           showStatusToast(t('transactionUpdated') || 'Transaction updated', 'success');
         } else {
-          await request('/api/transactions', {
+          const result = await request('/api/transactions', {
             method: 'POST',
             body: JSON.stringify(data),
           });
+          if (result.error) {
+            showFormError(result.error);
+            return;
+          }
           showStatusToast(t('transactionAdded') || 'Transaction added', 'success');
 
           // Update filter to show the month of the newly created transaction
