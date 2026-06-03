@@ -41,13 +41,15 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsyn
 
   router.get('/admin/audit-logs', adminRequired, async (req, res) => {
     try {
-      const logs = await auditLogs.list({
+      const result = await auditLogs.list({
         action: String(req.query.action || ''),
         entityType: String(req.query.entity_type || ''),
         limit: req.query.limit,
+        page: req.query.page,
+        search: req.query.q,
         userId: req.query.user_id ? Number(req.query.user_id) : null,
       });
-      res.json({ logs });
+      res.json(result);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Failed to load audit logs' });

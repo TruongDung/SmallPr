@@ -239,6 +239,7 @@
 
       headerCells.forEach((cell, index) => {
         cell.innerHTML = '';
+        cell.classList.toggle('credit-card-table-nowrap', index === 3);
         if (sortableHeaders[index]) {
           cell.append(createSortableHeader(sortableHeaders[index], labels[index], getCards));
         } else {

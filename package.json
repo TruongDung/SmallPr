@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
+    "seed:audit-logs": "node scripts/seed-audit-logs.js",
     "test": "jest"
   },
   "dependencies": {

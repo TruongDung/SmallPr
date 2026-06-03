@@ -61,6 +61,11 @@ const tagList = document.getElementById('tag-list');
 const userList = document.getElementById('user-list');
 const auditLogList = document.getElementById('audit-log-list');
 const refreshAuditLog = document.getElementById('refresh-audit-log');
+const auditLogPagination = document.getElementById('audit-log-pagination');
+const auditLogPrevious = document.getElementById('audit-log-previous');
+const auditLogNext = document.getElementById('audit-log-next');
+const auditLogPageInfo = document.getElementById('audit-log-page-info');
+const auditLogSearchInput = document.getElementById('audit-log-search-input');
 const authMessage = document.getElementById('auth-message');
 const tagMessage = document.getElementById('tag-message');
 const adminMessage = document.getElementById('admin-message');
@@ -174,6 +179,9 @@ let tasks = [];
 let tags = [];
 let users = [];
 let auditLogs = [];
+let auditLogPage = 1;
+const AUDIT_LOG_PAGE_SIZE = 25;
+let auditLogSearchTimer = null;
 let pendingAdminUser = null;
 const reminderTimers = new Map();
 let pendingDeleteTaskId = null;
@@ -284,6 +292,7 @@ const translations = {
     impersonationStopped: 'Back to admin.',
     userUpdated: 'User updated.',
     auditLog: 'Audit Log',
+    searchAuditLog: 'Search audit log',
     refresh: 'Refresh',
     time: 'Time',
     actor: 'Actor',
@@ -624,6 +633,7 @@ const translations = {
     impersonationStopped: 'Đã về admin.',
     userUpdated: 'Đã cập nhật người dùng.',
     auditLog: 'Nhật ký kiểm tra',
+    searchAuditLog: 'Tìm nhật ký kiểm tra',
     refresh: 'Tải lại',
     time: 'Thời gian',
     actor: 'Người thực hiện',
@@ -1129,7 +1139,11 @@ const applyTranslations = () => {
   setText('.user-table th:nth-child(6)', t('notes'));
   setText('.user-table th:nth-child(7)', t('actions'));
   setText('#audit-log-title', t('auditLog'));
+  setText('label[for="audit-log-search-input"]', t('searchAuditLog'));
+  if (auditLogSearchInput) auditLogSearchInput.placeholder = t('searchAuditLog');
   setText('#refresh-audit-log', t('refresh'));
+  setText('#audit-log-previous', t('previousPage'));
+  setText('#audit-log-next', t('nextPage'));
   setText('.audit-log-table th:nth-child(1)', t('time'));
   setText('.audit-log-table th:nth-child(2)', t('actor'));
   setText('.audit-log-table th:nth-child(3)', t('actions'));
@@ -2740,18 +2754,53 @@ const loadUsers = async () => {
   users = result.users || [];
   renderImpersonateOptions(users);
   renderUsers(users);
+  auditLogPage = 1;
   await loadAuditLogs();
 };
 
-const loadAuditLogs = async () => {
+const renderAuditLogPagination = (pagination) => {
+  if (!auditLogPagination || !auditLogPageInfo || !auditLogPrevious || !auditLogNext) return;
+  if (!pagination || pagination.totalPages <= 1) {
+    auditLogPagination.classList.add('hidden');
+    return;
+  }
+
+  auditLogPagination.classList.remove('hidden');
+  auditLogPageInfo.textContent = t('pageStatus', {
+    page: pagination.page,
+    totalPages: pagination.totalPages,
+    total: pagination.total,
+  });
+  auditLogPrevious.disabled = !pagination.hasPreviousPage;
+  auditLogNext.disabled = !pagination.hasNextPage;
+};
+
+const loadAuditLogs = async (page = auditLogPage) => {
   if (!isAdminUser()) return;
-  const result = await request('/api/admin/audit-logs?limit=50');
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(AUDIT_LOG_PAGE_SIZE),
+  });
+  const search = auditLogSearchInput?.value.trim() || '';
+  if (search) params.set('q', search);
+
+  const result = await request(`/api/admin/audit-logs?${params.toString()}`);
   if (result.error) {
     adminMessage.textContent = result.error;
     return;
   }
   auditLogs = result.logs || [];
+  auditLogPage = result.pagination?.page || 1;
   renderAuditLogs(auditLogs);
+  renderAuditLogPagination(result.pagination);
+};
+
+const scheduleAuditLogSearch = () => {
+  if (auditLogSearchTimer) clearTimeout(auditLogSearchTimer);
+  auditLogSearchTimer = setTimeout(() => {
+    auditLogPage = 1;
+    loadAuditLogs(1);
+  }, 250);
 };
 
 const renderImpersonateOptions = (users) => {
@@ -4554,7 +4603,10 @@ if (impersonateUserSelect) {
     if (event.target.value) startImpersonation(event.target.value);
   });
 }
-refreshAuditLog?.addEventListener('click', loadAuditLogs);
+refreshAuditLog?.addEventListener('click', () => loadAuditLogs(auditLogPage));
+auditLogSearchInput?.addEventListener('input', scheduleAuditLogSearch);
+auditLogPrevious?.addEventListener('click', () => loadAuditLogs(auditLogPage - 1));
+auditLogNext?.addEventListener('click', () => loadAuditLogs(auditLogPage + 1));
 cancelAdminUser.addEventListener('click', hideAdminUserModal);
 userSettingsForm?.addEventListener('submit', handleUserSettingsSubmit);
 passwordSettingsForm?.addEventListener('submit', handlePasswordSettingsSubmit);

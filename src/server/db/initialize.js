@@ -171,6 +171,17 @@ const initializeDatabase = async () => {
   await pool.query('CREATE INDEX IF NOT EXISTS audit_logs_created_at_idx ON audit_logs (created_at DESC, id DESC)');
   await pool.query('CREATE INDEX IF NOT EXISTS audit_logs_entity_idx ON audit_logs (entity_type, entity_id)');
   await pool.query('CREATE INDEX IF NOT EXISTS audit_logs_user_idx ON audit_logs (user_id, created_at DESC)');
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS audit_logs_search_idx
+    ON audit_logs USING GIN (to_tsvector('simple',
+      COALESCE(action, '') || ' ' ||
+      COALESCE(entity_type, '') || ' ' ||
+      COALESCE(entity_id::text, '') || ' ' ||
+      COALESCE(summary, '') || ' ' ||
+      COALESCE(before_data::text, '') || ' ' ||
+      COALESCE(after_data::text, '')
+    ))
+  `);
 
   await pool.query('ALTER TABLE transactions ALTER COLUMN category DROP NOT NULL').catch(() => {});
   await pool.query('ALTER TABLE transactions ALTER COLUMN account DROP NOT NULL').catch(() => {});

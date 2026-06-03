@@ -353,7 +353,11 @@
         <section class="audit-log-section" aria-labelledby="audit-log-title">
           <div class="audit-log-header">
             <h3 id="audit-log-title">Audit Log</h3>
-            <button id="refresh-audit-log" type="button" class="secondary">Refresh</button>
+            <div class="audit-log-actions">
+              <label class="sr-only" for="audit-log-search-input">Search audit log</label>
+              <input id="audit-log-search-input" type="search" placeholder="Search audit log" autocomplete="off" />
+              <button id="refresh-audit-log" type="button" class="secondary">Refresh</button>
+            </div>
           </div>
           <div class="user-table-wrap">
             <table class="user-table audit-log-table">
@@ -369,6 +373,11 @@
               </thead>
               <tbody id="audit-log-list"></tbody>
             </table>
+          </div>
+          <div id="audit-log-pagination" class="audit-log-pagination hidden">
+            <button id="audit-log-previous" type="button" class="secondary">Previous</button>
+            <span id="audit-log-page-info"></span>
+            <button id="audit-log-next" type="button" class="secondary">Next</button>
           </div>
         </section>
       </section>
@@ -405,7 +414,7 @@
                   <th>Card No</th>
                   <th>Type</th>
                   <th>Balance</th>
-                  <th>Interest</th>
+                  <th class="credit-card-table-nowrap">Interest</th>
                   <th>Close</th>
                   <th>Actions</th>
                 </tr>

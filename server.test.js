@@ -1847,6 +1847,60 @@ describe('Audit Log API', () => {
     expect(taskOnlyResponse.statusCode).toBe(200);
     expect(taskOnlyResponse.body.logs.some((log) => log.entity_id === taskId)).toBe(true);
   });
+
+  test('paginates seeded audit logs', async () => {
+    const adminAgent = await createAdminAgent();
+    const ownerAgent = await createAgent(testUsername('audit-page-owner'));
+    const ownerResponse = await ownerAgent.get('/api/me');
+    expect(ownerResponse.statusCode).toBe(200);
+    const ownerId = ownerResponse.body.user.id;
+    const seedPrefix = `${RUN_ID}-audit-page-seed-`;
+
+    await db.query(
+      `WITH seed AS (
+         SELECT generate_series(1, 35) AS n
+       )
+       INSERT INTO audit_logs (
+         user_id, actor_user_id, action, entity_type, entity_id, summary, after_data, created_at
+       )
+       SELECT
+         $1,
+         $1,
+         'edit',
+         'note',
+         800000 + n,
+         $2 || n,
+         jsonb_build_object('seed', true, 'row', n),
+         CURRENT_TIMESTAMP - (n || ' minutes')::interval
+       FROM seed`,
+      [ownerId, seedPrefix]
+    );
+
+    const pageTwoResponse = await adminAgent.get(
+      `/api/admin/audit-logs?user_id=${ownerId}&entity_type=note&action=edit&limit=10&page=2`
+    );
+    expect(pageTwoResponse.statusCode).toBe(200);
+    expect(pageTwoResponse.body.logs).toHaveLength(10);
+    expect(pageTwoResponse.body.pagination).toMatchObject({
+      page: 2,
+      limit: 10,
+      hasPreviousPage: true,
+      hasNextPage: true,
+    });
+    expect(pageTwoResponse.body.pagination.total).toBe(35);
+    expect(pageTwoResponse.body.logs.some((log) => log.summary === `${seedPrefix}11`)).toBe(true);
+
+    const searchResponse = await adminAgent.get(
+      `/api/admin/audit-logs?q=${encodeURIComponent(`${seedPrefix}35`)}&limit=10`
+    );
+    expect(searchResponse.statusCode).toBe(200);
+    expect(searchResponse.body.pagination.total).toBe(1);
+    expect(searchResponse.body.logs[0]).toMatchObject({
+      summary: `${seedPrefix}35`,
+      entity_type: 'note',
+      action: 'edit',
+    });
+  });
 });
 
 describe('Admin API', () => {

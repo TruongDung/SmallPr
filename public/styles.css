@@ -2374,11 +2374,47 @@ body.theme-dark .status-in_progress {
   font-size: 1.1rem;
 }
 
+.audit-log-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.audit-log-actions input {
+  min-width: min(280px, 70vw);
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+}
+
 .audit-log-table td:last-child {
   max-width: 280px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.audit-log-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.audit-log-pagination button {
+  min-width: 92px;
+}
+
+.audit-log-pagination.hidden {
+  display: none;
 }
 
 .empty-table-cell {
@@ -2818,6 +2854,11 @@ body.theme-dark .status-in_progress {
   letter-spacing: 0.05em;
   padding-bottom: 10px;
   padding-top: 4px;
+}
+
+.credit-card-table .credit-card-table-nowrap,
+.credit-card-table .credit-card-table-nowrap .table-sort-button {
+  white-space: nowrap;
 }
 
 .credit-card-table tbody tr {

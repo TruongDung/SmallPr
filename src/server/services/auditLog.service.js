@@ -37,10 +37,16 @@ const createAuditLogService = ({ allAsync, runAsync }) => {
     );
   };
 
-  const list = ({ limit = 100, entityType = '', action = '', userId = null } = {}) => {
+  const list = async ({ limit = 100, page = 1, entityType = '', action = '', userId = null, search = '' } = {}) => {
     const normalizedLimit = Math.min(Math.max(Number(limit) || 100, 1), 500);
+    const requestedPage = Math.max(Number(page) || 1, 1);
+    const normalizedSearch = String(search || '').trim().slice(0, 200);
     const clauses = [];
     const params = [];
+    const fromClause = `FROM audit_logs
+       LEFT JOIN users ON users.id = audit_logs.user_id
+       LEFT JOIN users actor ON actor.id = audit_logs.actor_user_id
+       LEFT JOIN users impersonator ON impersonator.id = audit_logs.impersonator_user_id`;
 
     if (AUDIT_ENTITY_TYPES.has(entityType)) {
       clauses.push('audit_logs.entity_type = ?');
@@ -57,9 +63,38 @@ const createAuditLogService = ({ allAsync, runAsync }) => {
       params.push(userId);
     }
 
-    params.push(normalizedLimit);
+    if (normalizedSearch) {
+      clauses.push(`to_tsvector('simple',
+        COALESCE(users.username, '') || ' ' ||
+        COALESCE(users.name, '') || ' ' ||
+        COALESCE(actor.username, '') || ' ' ||
+        COALESCE(actor.name, '') || ' ' ||
+        COALESCE(impersonator.username, '') || ' ' ||
+        COALESCE(audit_logs.action, '') || ' ' ||
+        COALESCE(audit_logs.entity_type, '') || ' ' ||
+        COALESCE(audit_logs.entity_id::text, '') || ' ' ||
+        COALESCE(audit_logs.summary, '') || ' ' ||
+        COALESCE(audit_logs.before_data::text, '') || ' ' ||
+        COALESCE(audit_logs.after_data::text, '')
+      ) @@ plainto_tsquery('simple', ?)`);
+      params.push(normalizedSearch);
+    }
 
-    return allAsync(
+    const whereClause = clauses.length ? `WHERE ${clauses.join(' AND ')}` : '';
+    const totalRows = await allAsync(
+      `SELECT COUNT(*)::int AS total
+       ${fromClause}
+       ${whereClause}`,
+      params
+    );
+    const total = Number(totalRows[0]?.total || 0);
+    const totalPages = Math.max(1, Math.ceil(total / normalizedLimit));
+    const currentPage = total ? Math.min(requestedPage, totalPages) : 1;
+    const offset = (currentPage - 1) * normalizedLimit;
+
+    params.push(normalizedLimit, offset);
+
+    const logs = await allAsync(
       `SELECT
          audit_logs.id,
          audit_logs.user_id,
@@ -77,15 +112,24 @@ const createAuditLogService = ({ allAsync, runAsync }) => {
          audit_logs.before_data,
          audit_logs.after_data,
          audit_logs.created_at
-       FROM audit_logs
-       LEFT JOIN users ON users.id = audit_logs.user_id
-       LEFT JOIN users actor ON actor.id = audit_logs.actor_user_id
-       LEFT JOIN users impersonator ON impersonator.id = audit_logs.impersonator_user_id
-       ${clauses.length ? `WHERE ${clauses.join(' AND ')}` : ''}
+       ${fromClause}
+       ${whereClause}
        ORDER BY audit_logs.created_at DESC, audit_logs.id DESC
-       LIMIT ?`,
+       LIMIT ? OFFSET ?`,
       params
     );
+
+    return {
+      logs,
+      pagination: {
+        page: currentPage,
+        limit: normalizedLimit,
+        total,
+        totalPages,
+        hasPreviousPage: currentPage > 1,
+        hasNextPage: currentPage < totalPages,
+      },
+    };
   };
 
   return {
