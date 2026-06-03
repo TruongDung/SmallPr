@@ -1,3 +1,5 @@
+const logger = require('../logger');
+
 const createAuthMiddleware = ({ getUserById }) => {
   const authRequired = async (req, res, next) => {
     if (!req.session.userId) {
@@ -21,7 +23,7 @@ const createAuthMiddleware = ({ getUserById }) => {
       req.currentUser = user;
       next();
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Auth middleware error');
       res.status(500).json({ error: 'Failed to verify authentication' });
     }
   };
@@ -47,7 +49,7 @@ const createAuthMiddleware = ({ getUserById }) => {
       req.currentUser = user;
       next();
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Auth middleware error');
       res.status(500).json({ error: 'Failed to verify admin access' });
     }
   };

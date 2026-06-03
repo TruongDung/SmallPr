@@ -1,5 +1,7 @@
 const express = require('express');
 
+const logger = require('../logger');
+
 const MAX_WEATHER_CITY_LENGTH = 120;
 
 const normalizeWeatherCity = (body = {}) => {
@@ -38,7 +40,7 @@ const createWeatherRouter = ({ allAsync, authRequired, queryAsync, runAsync }) =
       );
       res.json({ cities });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to load weather cities');
       res.status(500).json({ error: 'Failed to load weather cities' });
     }
   });
@@ -64,7 +66,7 @@ const createWeatherRouter = ({ allAsync, authRequired, queryAsync, runAsync }) =
       );
       res.json({ city: result.rows[0] });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to save weather city');
       res.status(500).json({ error: 'Failed to save weather city' });
     }
   });
@@ -84,7 +86,7 @@ const createWeatherRouter = ({ allAsync, authRequired, queryAsync, runAsync }) =
 
       res.json({ success: true });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to delete weather city');
       res.status(500).json({ error: 'Failed to delete weather city' });
     }
   });

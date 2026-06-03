@@ -1,6 +1,7 @@
 const {
   MAX_TAG_LENGTH,
   MAX_TASK_TEXT_LENGTH,
+  MAX_TASK_TITLE_LENGTH,
 } = require('../constants/tasks');
 const {
   normalizePriority,
@@ -60,8 +61,8 @@ const validateCreateTask = (body = {}) => {
     return taskError('Task status must be todo, in_progress, or done');
   }
 
-  if (title.length > 20) {
-    return taskError('Task title must be 20 characters or less');
+  if (title.length > MAX_TASK_TITLE_LENGTH) {
+    return taskError(`Task title must be ${MAX_TASK_TITLE_LENGTH} characters or less`);
   }
 
   if (description && stripHtml(description).length > MAX_TASK_TEXT_LENGTH) {
@@ -121,8 +122,8 @@ const validateUpdateTask = (body = {}, existingTask) => {
   const hasStatusUpdate = Object.prototype.hasOwnProperty.call(body, 'status');
   const hasTagUpdate = Object.prototype.hasOwnProperty.call(body, 'tag');
 
-  if (title && title.length > 20) {
-    return taskError('Task title must be 20 characters or less');
+  if (title !== undefined && title.length > MAX_TASK_TITLE_LENGTH) {
+    return taskError(`Task title must be ${MAX_TASK_TITLE_LENGTH} characters or less`);
   }
 
   const normalizedTag = normalizeTag(tag);

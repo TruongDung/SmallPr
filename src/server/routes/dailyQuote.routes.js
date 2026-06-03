@@ -1,5 +1,6 @@
 const express = require('express');
 
+const logger = require('../logger');
 const { DEFAULT_DAILY_QUOTE, fetchDailyQuote } = require('../services/dailyQuote.service');
 
 const createDailyQuoteRouter = () => {
@@ -10,7 +11,7 @@ const createDailyQuoteRouter = () => {
       const quote = await fetchDailyQuote();
       res.json({ quote });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to fetch daily quote');
       res.json({ quote: DEFAULT_DAILY_QUOTE });
     }
   });

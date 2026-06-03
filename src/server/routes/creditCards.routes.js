@@ -1,5 +1,6 @@
 const express = require('express');
 
+const logger = require('../logger');
 const { createAuditContext } = require('../services/auditLog.service');
 const {
   CREDIT_CARD_ISSUERS,
@@ -185,7 +186,7 @@ const createCreditCardsRouter = ({ authRequired, auditLogs, allAsync, getAsync, 
       const bills = await creditCards.listFastAccessBillsForUser(req.session.userId);
       res.json({ bills });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to load fast access bills');
       res.status(500).json({ error: 'Failed to load fast access bills' });
     }
   });
@@ -195,7 +196,7 @@ const createCreditCardsRouter = ({ authRequired, auditLogs, allAsync, getAsync, 
       const links = await creditCards.listFastAccessLinksForUser(req.session.userId);
       res.json({ links });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to load bill payment websites');
       res.status(500).json({ error: 'Failed to load bill payment websites' });
     }
   });
@@ -213,7 +214,7 @@ const createCreditCardsRouter = ({ authRequired, auditLogs, allAsync, getAsync, 
       });
       res.json({ link });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to create bill payment website');
       res.status(500).json({ error: 'Failed to create bill payment website' });
     }
   });
@@ -234,7 +235,7 @@ const createCreditCardsRouter = ({ authRequired, auditLogs, allAsync, getAsync, 
       await creditCards.removeFastAccessLink({ id: linkId, userId: req.session.userId });
       res.json({ success: true });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to delete bill payment website');
       res.status(500).json({ error: 'Failed to delete bill payment website' });
     }
   });
@@ -270,7 +271,7 @@ const createCreditCardsRouter = ({ authRequired, auditLogs, allAsync, getAsync, 
       emitToUser(req.session.userId, 'bill:updated', { bill: updatedBill });
       res.json({ bill: updatedBill });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to update fast access bill');
       res.status(500).json({ error: 'Failed to update fast access bill' });
     }
   });
@@ -289,7 +290,7 @@ const createCreditCardsRouter = ({ authRequired, auditLogs, allAsync, getAsync, 
       ];
       res.json({ users });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to load credit card users');
       res.status(500).json({ error: 'Failed to load credit card users' });
     }
   });
@@ -302,7 +303,7 @@ const createCreditCardsRouter = ({ authRequired, auditLogs, allAsync, getAsync, 
         : await creditCards.listForUser(req.session.userId);
       res.json({ cards });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to load credit cards');
       res.status(500).json({ error: 'Failed to load credit cards' });
     }
   });
@@ -329,7 +330,7 @@ const createCreditCardsRouter = ({ authRequired, auditLogs, allAsync, getAsync, 
       emitToUser(req.session.userId, 'card:updated', { id: card.id });
       res.json({ card });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to create credit card');
       res.status(500).json({ error: 'Failed to create credit card' });
     }
   });
@@ -365,7 +366,7 @@ const createCreditCardsRouter = ({ authRequired, auditLogs, allAsync, getAsync, 
       emitToUser(req.session.userId, 'card:updated', { id: Number(id) });
       res.json({ card: updatedCard });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to update credit card');
       res.status(500).json({ error: 'Failed to update credit card' });
     }
   });
@@ -391,7 +392,7 @@ const createCreditCardsRouter = ({ authRequired, auditLogs, allAsync, getAsync, 
       emitToUser(req.session.userId, 'card:updated', { id: Number(id) });
       res.json({ success: true });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to delete credit card');
       res.status(500).json({ error: 'Failed to delete credit card' });
     }
   });

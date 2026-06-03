@@ -1,5 +1,6 @@
 const express = require('express');
 
+const logger = require('../logger');
 const { createAuditContext } = require('../services/auditLog.service');
 const { createTasksService } = require('../services/tasks.service');
 const { createRecurrenceService } = require('../services/recurrence.service');
@@ -32,7 +33,7 @@ const createTasksRouter = ({
       const rows = await tasks.listTasks({ userId: req.session.userId, archived });
       res.json({ tasks: rows });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to load tasks');
       res.status(500).json({ error: 'Failed to load tasks' });
     }
   });
@@ -42,7 +43,7 @@ const createTasksRouter = ({
       const tags = await tasks.listTags(req.session.userId);
       res.json({ tags });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to load tags');
       res.status(500).json({ error: 'Failed to load tags' });
     }
   });
@@ -58,7 +59,7 @@ const createTasksRouter = ({
       const tag = await tasks.ensureTaskTag(req.session.userId, name);
       res.json({ tag });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to save tag');
       res.status(500).json({ error: 'Failed to save tag' });
     }
   });
@@ -98,7 +99,7 @@ const createTasksRouter = ({
       });
       res.json({ tag: updatedTag });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to update tag');
       res.status(500).json({ error: 'Failed to update tag' });
     }
   });
@@ -115,7 +116,7 @@ const createTasksRouter = ({
       await tasks.deleteTag({ id, userId: req.session.userId, name: tag.name });
       res.json({ success: true });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to delete tag');
       res.status(500).json({ error: 'Failed to delete tag' });
     }
   });
@@ -132,12 +133,7 @@ const createTasksRouter = ({
 
       res.json({ success: true, emailSent });
     } catch (error) {
-      console.error('Failed to send task summary email:', {
-        code: error.code,
-        command: error.command,
-        response: error.response,
-        message: error.message,
-      });
+      logger.error({ err: error }, 'Failed to send task summary email');
       res.status(500).json({
         error: 'Failed to send email',
         detail: error.code || error.message || 'unknown',
@@ -163,12 +159,7 @@ const createTasksRouter = ({
 
       res.json({ success: true, emailSent });
     } catch (error) {
-      console.error('Failed to send task email:', {
-        code: error.code,
-        command: error.command,
-        response: error.response,
-        message: error.message,
-      });
+      logger.error({ err: error }, 'Failed to send task email');
       res.status(500).json({
         error: 'Failed to send email',
         detail: error.code || error.message || 'unknown',
@@ -196,7 +187,7 @@ const createTasksRouter = ({
         try {
           emailSent = await sendTaskAlertEmail(task, user, taskInput.language);
         } catch (emailError) {
-          console.error('Failed to send task alert email:', emailError);
+          logger.error({ err: emailError }, 'Failed to send task alert email');
         }
       }
 
@@ -211,7 +202,7 @@ const createTasksRouter = ({
       emitToUser(req.session.userId, 'task:created', { task });
       res.json({ task, emailSent });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to create task');
       res.status(500).json({ error: 'Failed to create task' });
     }
   });
@@ -257,7 +248,7 @@ const createTasksRouter = ({
             emitToUser(req.session.userId, 'task:created', { task: nextTask });
           }
         } catch (recurrenceError) {
-          console.error('Failed to create next recurring instance:', recurrenceError);
+          logger.error({ err: recurrenceError }, 'Failed to create next recurring instance');
         }
       }
 
@@ -273,7 +264,7 @@ const createTasksRouter = ({
       emitToUser(req.session.userId, 'task:updated', { task: updatedTask });
       res.json({ task: updatedTask });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to update task');
       res.status(500).json({ error: 'Failed to update task' });
     }
   });
@@ -299,7 +290,7 @@ const createTasksRouter = ({
       emitToUser(req.session.userId, 'task:deleted', { id: Number(id) });
       res.json({ success: true });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to delete task');
       res.status(500).json({ error: 'Failed to delete task' });
     }
   });

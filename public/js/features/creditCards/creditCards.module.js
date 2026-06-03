@@ -10,12 +10,12 @@
     let pendingEditCard = null;
 
     const defaultFastAccessLinks = [
-      { label: 'Mortgage', url: 'https://rocket.com/mortgage/' },
-      { label: 'Electric', url: 'https://wemc.smarthub.coop/Login.html' },
-      { label: 'Water', url: 'https://ubwss.raleighnc.gov/wss/login' },
-      { label: 'Gas', url: 'https://account.psncenergy.com/#account-summary' },
-      { label: 'Internet', url: 'https://www.spectrum.net/account-summary' },
-      { label: 'Phone', url: 'https://www.att.com/acctmgmt/overview' },
+      { label: 'Link 1', url: 'https://example.com/link1' },
+      { label: 'Link 2', url: 'https://example.com/link2' },
+      { label: 'Link 3', url: 'https://example.com/link3' },
+      { label: 'Link 4', url: 'https://example.com/link4' },
+      { label: 'Link 5', url: 'https://example.com/link5' },
+      { label: 'Link 6', url: 'https://example.com/link6' },
     ];
 
     const showEditError = (text) => feature.dom.setFieldError(elements.editError, text);

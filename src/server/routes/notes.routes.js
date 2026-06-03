@@ -1,5 +1,6 @@
 const express = require('express');
 
+const logger = require('../logger');
 const { createAuditContext } = require('../services/auditLog.service');
 
 const NOTE_SELECT = `
@@ -52,7 +53,7 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, emitToUser, quer
       );
       res.json({ notes });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to load notes');
       res.status(500).json({ error: 'Failed to load notes' });
     }
   });
@@ -97,7 +98,7 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, emitToUser, quer
       emitToUser(req.session.userId, 'note:created', { note });
       res.json({ note });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to create note');
       res.status(500).json({ error: 'Failed to create note' });
     }
   });
@@ -164,7 +165,7 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, emitToUser, quer
       emitToUser(req.session.userId, 'note:updated', { note });
       res.json({ note });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to update note');
       res.status(500).json({ error: 'Failed to update note' });
     }
   });
@@ -217,7 +218,7 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, emitToUser, quer
       emitToUser(req.session.userId, 'note:updated', { note });
       res.json({ note });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to update note');
       res.status(500).json({ error: 'Failed to update note' });
     }
   });
@@ -258,7 +259,7 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, emitToUser, quer
       emitToUser(req.session.userId, 'note:deleted', { id: Number(id) });
       res.json({ success: true });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to delete note');
       res.status(500).json({ error: 'Failed to delete note' });
     }
   });
@@ -310,7 +311,7 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, emitToUser, quer
         },
       });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to load note history');
       res.status(500).json({ error: 'Failed to load note history' });
     }
   });

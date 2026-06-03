@@ -1,7 +1,9 @@
 const nodemailer = require('nodemailer');
 
+const logger = require('../../logger');
 const { TASK_ALERT_TO } = require('../../config/env');
 const { normalizeEmail } = require('../../utils/users');
+const { stripHtml } = require('../../utils/tasks');
 
 const EMAIL_TRANSLATIONS = {
   en: {
@@ -113,19 +115,6 @@ const createMailTransporter = () => {
 
 const getUserEmailRecipient = (user) => normalizeEmail(user?.email) || TASK_ALERT_TO;
 
-const stripHtml = (value = '') => String(value)
-  .replace(/<br\s*\/?>/gi, '\n')
-  .replace(/<\/(p|div|li)>/gi, '\n')
-  .replace(/<[^>]*>/g, '')
-  .replace(/&nbsp;/g, ' ')
-  .replace(/&amp;/g, '&')
-  .replace(/&lt;/g, '<')
-  .replace(/&gt;/g, '>')
-  .replace(/&quot;/g, '"')
-  .replace(/&#39;/g, "'")
-  .replace(/\n{3,}/g, '\n\n')
-  .trim();
-
 const escapeHtml = (value = '') => String(value)
   .replace(/&/g, '&amp;')
   .replace(/</g, '&lt;')
@@ -223,14 +212,14 @@ const formatRichTextEmailHtml = (value = '', fallback = '') => {
 const sendTaskAlertEmail = async (task, user, language = 'en') => {
   const transporter = createMailTransporter();
   if (!transporter) {
-    console.warn('Task alert email skipped: SMTP_HOST, SMTP_USER, and SMTP_PASS are required.');
+    logger.warn('Task alert email skipped: SMTP_HOST, SMTP_USER, and SMTP_PASS are required.');
     return false;
   }
 
   const from = process.env.MAIL_FROM || process.env.SMTP_USER;
   const to = getUserEmailRecipient(user);
   if (!to) {
-    console.warn('Task alert email skipped: user email or TASK_ALERT_TO is required.');
+    logger.warn('Task alert email skipped: user email or TASK_ALERT_TO is required.');
     return false;
   }
 
@@ -306,14 +295,14 @@ const sendTaskAlertEmail = async (task, user, language = 'en') => {
 const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
   const transporter = createMailTransporter();
   if (!transporter) {
-    console.warn('Task summary email skipped: SMTP_HOST, SMTP_USER, and SMTP_PASS are required.');
+    logger.warn('Task summary email skipped: SMTP_HOST, SMTP_USER, and SMTP_PASS are required.');
     return false;
   }
 
   const from = process.env.MAIL_FROM || process.env.SMTP_USER;
   const to = getUserEmailRecipient(user);
   if (!to) {
-    console.warn('Task summary email skipped: user email or TASK_ALERT_TO is required.');
+    logger.warn('Task summary email skipped: user email or TASK_ALERT_TO is required.');
     return false;
   }
 
@@ -418,13 +407,13 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
 const sendVerificationEmail = async ({ email, username, verificationUrl }) => {
   const transporter = createMailTransporter();
   if (!transporter) {
-    console.warn('Verification email skipped: SMTP_HOST, SMTP_USER, and SMTP_PASS are required.');
+    logger.warn('Verification email skipped: SMTP_HOST, SMTP_USER, and SMTP_PASS are required.');
     return false;
   }
 
   const to = normalizeEmail(email);
   if (!to) {
-    console.warn('Verification email skipped: user email is required.');
+    logger.warn('Verification email skipped: user email is required.');
     return false;
   }
 

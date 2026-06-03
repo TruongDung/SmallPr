@@ -1,5 +1,6 @@
 const express = require('express');
 
+const logger = require('../logger');
 const { createDashboardService } = require('../services/dashboard.service');
 
 const KNOWN_CARD_IDS = [
@@ -148,7 +149,7 @@ const createDashboardRouter = ({ authRequired, allAsync, getAsync, runAsync, cac
       res.set('X-Redis-Cache', cache?.isReady?.() ? 'MISS' : 'BYPASS');
       res.json(response);
     } catch (error) {
-      console.error('Dashboard load failed:', error);
+      logger.error({ err: error }, 'Dashboard load failed');
       res.status(500).json({ error: 'Failed to load dashboard' });
     }
   });
@@ -170,7 +171,7 @@ const createDashboardRouter = ({ authRequired, allAsync, getAsync, runAsync, cac
         updated_at: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('Dashboard preferences save failed:', error);
+      logger.error({ err: error }, 'Dashboard preferences save failed');
       res.status(500).json({ error: 'Failed to save dashboard preferences' });
     }
   });
@@ -184,7 +185,7 @@ const createDashboardRouter = ({ authRequired, allAsync, getAsync, runAsync, cac
       await cache?.clearUserCache?.(req.session.userId);
       res.json({ preferences: buildDefaultPreferences() });
     } catch (error) {
-      console.error('Dashboard preferences reset failed:', error);
+      logger.error({ err: error }, 'Dashboard preferences reset failed');
       res.status(500).json({ error: 'Failed to reset dashboard preferences' });
     }
   });

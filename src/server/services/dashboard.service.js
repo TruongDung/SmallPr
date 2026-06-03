@@ -5,7 +5,9 @@
 // to SQL as ISO strings — keeps the queries portable and avoids AT TIME
 // ZONE on TEXT columns.
 
+const logger = require('../logger');
 const { fetchDailyQuote, DEFAULT_DAILY_QUOTE } = require('./dailyQuote.service');
+const { stripHtml } = require('../utils/tasks');
 
 const DEFAULT_DUE_SOON_DAYS = 3;
 const MIN_DUE_SOON_DAYS = 1;
@@ -18,19 +20,6 @@ const RECENT_NOTES_LIMIT = 5;
 const NOTE_EXCERPT_LENGTH = 120;
 
 const PRIORITY_RANK = { high: 0, medium: 1, low: 2 };
-
-const stripHtml = (value = '') => String(value)
-  .replace(/<br\s*\/?>/gi, '\n')
-  .replace(/<\/(p|div|li)>/gi, '\n')
-  .replace(/<[^>]*>/g, '')
-  .replace(/&nbsp;/g, ' ')
-  .replace(/&amp;/g, '&')
-  .replace(/&lt;/g, '<')
-  .replace(/&gt;/g, '>')
-  .replace(/&quot;/g, '"')
-  .replace(/&#39;/g, "'")
-  .replace(/\s+/g, ' ')
-  .trim();
 
 const trimExcerpt = (text, max = NOTE_EXCERPT_LENGTH) => {
   if (!text) return '';
@@ -380,7 +369,7 @@ const wrapSettled = async (label, loader) => {
     const data = await loader();
     return [label, { ok: true, data }];
   } catch (error) {
-    console.error(`Dashboard card ${label} failed:`, error.message);
+    logger.error({ err: error }, `Dashboard card ${label} failed`);
     return [label, { ok: false, error: error.code || error.message || 'load_failed' }];
   }
 };
@@ -426,5 +415,4 @@ module.exports = {
   clampDueSoonDays,
   computeWindows,
   trimExcerpt,
-  stripHtml,
 };

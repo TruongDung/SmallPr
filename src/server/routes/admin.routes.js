@@ -1,6 +1,7 @@
 const express = require('express');
 
-const { normalizeEmail, normalizeName } = require('../utils/users');
+const logger = require('../logger');
+const { createSessionUser, normalizeEmail, normalizeName } = require('../utils/users');
 
 const ACCOUNT_STATUSES = new Set(['enabled', 'disabled', 'pending_verification']);
 
@@ -20,22 +21,6 @@ const USER_LIST_SELECT = `SELECT users.id, users.username, users.name, users.ema
 const USER_LIST_GROUP = `GROUP BY users.id, users.username, users.name, users.email,
        users.account_status, users.account_status_changed_at`;
 
-const createSessionUser = (user, impersonator = null) => ({
-  id: user.id,
-  username: user.username,
-  name: user.name,
-  email: user.email,
-  timezone: user.timezone,
-  language: user.language,
-  account_status: user.account_status,
-  impersonator: impersonator ? {
-    id: impersonator.id,
-    username: impersonator.username,
-    name: impersonator.name,
-    email: impersonator.email,
-  } : null,
-});
-
 const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsync, runAsync }) => {
   const router = express.Router();
 
@@ -51,7 +36,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsyn
       });
       res.json(result);
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to load audit logs');
       res.status(500).json({ error: 'Failed to load audit logs' });
     }
   });
@@ -65,7 +50,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsyn
       );
       res.json({ users });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to load users');
       res.status(500).json({ error: 'Failed to load users' });
     }
   });
@@ -95,7 +80,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsyn
       req.session.userId = targetUser.id;
       res.json({ user: createSessionUser(targetUser, req.currentUser) });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to impersonate user');
       res.status(500).json({ error: 'Failed to impersonate user' });
     }
   });
@@ -141,7 +126,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsyn
       });
       res.json({ user });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to create user');
       res.status(500).json({ error: 'Failed to create user' });
     }
   });
@@ -204,7 +189,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsyn
       });
       res.json({ user: updatedUser });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to update user');
       res.status(500).json({ error: 'Failed to update user' });
     }
   });
@@ -257,7 +242,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsyn
       });
       res.json({ user: updatedUser });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to update user status');
       res.status(500).json({ error: 'Failed to update user status' });
     }
   });
@@ -289,7 +274,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsyn
       });
       res.json({ success: true });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to update password');
       res.status(500).json({ error: 'Failed to update password' });
     }
   });
@@ -325,7 +310,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsyn
       await runAsync('DELETE FROM users WHERE id = ?', [id]);
       res.json({ success: true });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to delete user');
       res.status(500).json({ error: 'Failed to delete user' });
     }
   });

@@ -1472,13 +1472,13 @@ describe('Credit Card API', () => {
     expect(response.body.links).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          label: 'Mortgage',
-          url: 'https://rocket.com/mortgage/',
+          label: 'Link 1',
+          url: 'https://example.com/link1',
           sort_order: 1,
         }),
         expect.objectContaining({
-          label: 'Internet',
-          url: 'https://www.spectrum.net/account-summary',
+          label: 'Link 5',
+          url: 'https://example.com/link5',
           sort_order: 5,
         }),
       ])

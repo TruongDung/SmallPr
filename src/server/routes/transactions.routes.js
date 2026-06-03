@@ -1,5 +1,6 @@
 const express = require('express');
 
+const logger = require('../logger');
 const { createAuditContext } = require('../services/auditLog.service');
 const {
   TRANSACTION_KINDS,
@@ -98,15 +99,32 @@ const createTransactionsRouter = ({ authRequired, auditLogs, allAsync, getAsync,
       const { month, year, kind, category } = req.query;
       const filters = {};
 
-      if (month) filters.month = Number(month);
-      if (year) filters.year = Number(year);
-      if (kind) filters.kind = kind;
-      if (category) filters.category = category;
+      if (month) {
+        const m = Number(month);
+        if (!Number.isFinite(m) || m < 1 || m > 12) {
+          return res.status(400).json({ error: 'Month must be a number between 1 and 12' });
+        }
+        filters.month = m;
+      }
+      if (year) {
+        const y = Number(year);
+        if (!Number.isFinite(y) || y < 2000 || y > 2100) {
+          return res.status(400).json({ error: 'Year must be a number between 2000 and 2100' });
+        }
+        filters.year = y;
+      }
+      if (kind) {
+        if (!TRANSACTION_KINDS.includes(kind)) {
+          return res.status(400).json({ error: 'Kind must be income or expense' });
+        }
+        filters.kind = kind;
+      }
+      if (category) filters.category = String(category).trim().slice(0, MAX_TRANSACTION_CATEGORY_LENGTH);
 
       const list = await transactions.listForUser(req.session.userId, filters);
       res.json({ transactions: list });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to load transactions');
       res.status(500).json({ error: 'Failed to load transactions' });
     }
   });
@@ -121,7 +139,7 @@ const createTransactionsRouter = ({ authRequired, auditLogs, allAsync, getAsync,
       );
       res.json({ summary });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to load summary');
       res.status(500).json({ error: 'Failed to load summary' });
     }
   });
@@ -131,7 +149,7 @@ const createTransactionsRouter = ({ authRequired, auditLogs, allAsync, getAsync,
       const categories = await transactions.getCategoriesForUser(req.session.userId);
       res.json({ categories: categories.map(c => c.category) });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to load categories');
       res.status(500).json({ error: 'Failed to load categories' });
     }
   });
@@ -155,7 +173,7 @@ const createTransactionsRouter = ({ authRequired, auditLogs, allAsync, getAsync,
       }
       res.json({ items: result.items });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to import statement');
       res.status(500).json({ error: 'Failed to import statement' });
     }
   });
@@ -182,7 +200,7 @@ const createTransactionsRouter = ({ authRequired, auditLogs, allAsync, getAsync,
       emitToUser(req.session.userId, 'transaction:created', { transaction });
       res.json({ transaction });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to create transaction');
       res.status(500).json({ error: 'Failed to create transaction' });
     }
   });
@@ -218,7 +236,7 @@ const createTransactionsRouter = ({ authRequired, auditLogs, allAsync, getAsync,
       emitToUser(req.session.userId, 'transaction:updated', { transaction: updated });
       res.json({ transaction: updated });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to update transaction');
       res.status(500).json({ error: 'Failed to update transaction' });
     }
   });
@@ -244,7 +262,7 @@ const createTransactionsRouter = ({ authRequired, auditLogs, allAsync, getAsync,
       emitToUser(req.session.userId, 'transaction:deleted', { id: Number(id) });
       res.json({ success: true });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to delete transaction');
       res.status(500).json({ error: 'Failed to delete transaction' });
     }
   });

@@ -183,9 +183,15 @@ const initializeDatabase = async () => {
     ))
   `);
 
-  await pool.query('ALTER TABLE transactions ALTER COLUMN category DROP NOT NULL').catch(() => {});
-  await pool.query('ALTER TABLE transactions ALTER COLUMN account DROP NOT NULL').catch(() => {});
-  await pool.query('ALTER TABLE transactions ALTER COLUMN note DROP NOT NULL').catch(() => {});
+  await pool.query('ALTER TABLE transactions ALTER COLUMN category DROP NOT NULL').catch((error) => {
+    logger.warn({ err: error }, 'ALTER TABLE transactions.category DROP NOT NULL failed');
+  });
+  await pool.query('ALTER TABLE transactions ALTER COLUMN account DROP NOT NULL').catch((error) => {
+    logger.warn({ err: error }, 'ALTER TABLE transactions.account DROP NOT NULL failed');
+  });
+  await pool.query('ALTER TABLE transactions ALTER COLUMN note DROP NOT NULL').catch((error) => {
+    logger.warn({ err: error }, 'ALTER TABLE transactions.note DROP NOT NULL failed');
+  });
 
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS reminder_at TEXT');
   await pool.query('ALTER TABLE tasks ADD COLUMN IF NOT EXISTS is_recurring BOOLEAN DEFAULT FALSE');
@@ -287,12 +293,12 @@ const initializeDatabase = async () => {
       INSERT INTO fast_access_links (user_id, label, url, sort_order)
       SELECT $1, defaults.label, defaults.url, base.max_sort_order + defaults.sort_order
       FROM (VALUES
-        ('Mortgage', 'https://rocket.com/mortgage/', 1),
-        ('Electric', 'https://wemc.smarthub.coop/Login.html', 2),
-        ('Water', 'https://ubwss.raleighnc.gov/wss/login', 3),
-        ('Gas', 'https://account.psncenergy.com/#account-summary', 4),
-        ('Internet', 'https://www.spectrum.net/account-summary', 5),
-        ('Phone', 'https://www.att.com/acctmgmt/overview', 6)
+        ('Link 1', 'https://example.com/link1', 1),
+        ('Link 2', 'https://example.com/link2', 2),
+        ('Link 3', 'https://example.com/link3', 3),
+        ('Link 4', 'https://example.com/link4', 4),
+        ('Link 5', 'https://example.com/link5', 5),
+        ('Link 6', 'https://example.com/link6', 6)
       ) AS defaults(label, url, sort_order)
       CROSS JOIN (
         SELECT COALESCE(MAX(sort_order), 0) AS max_sort_order FROM fast_access_links

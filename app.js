@@ -27,6 +27,7 @@ const createTasksRouter = require('./src/server/routes/tasks.routes');
 const createTransactionsRouter = require('./src/server/routes/transactions.routes');
 const createWeatherRouter = require('./src/server/routes/weather.routes');
 const logger = require('./src/server/logger');
+const { withTimeout } = require('./src/server/utils/timeout');
 
 const app = express();
 const cacheReady = redisCache.connectRedis();
@@ -153,13 +154,6 @@ const buildHealthPayload = async ({ includeDependencies = false } = {}) => {
   payload.dependencies = dependencies;
   return payload;
 };
-
-const withTimeout = (promise, timeoutMs) => Promise.race([
-  promise,
-  new Promise((_, reject) => {
-    setTimeout(() => reject(new Error(`Timed out after ${timeoutMs}ms`)), timeoutMs);
-  }),
-]);
 
 app.get(['/healthz', '/health'], async (req, res) => {
   res.set('Cache-Control', 'no-store');

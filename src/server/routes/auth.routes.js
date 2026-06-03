@@ -1,7 +1,8 @@
 const crypto = require('crypto');
 const express = require('express');
 
-const { normalizeEmail, normalizeName } = require('../utils/users');
+const logger = require('../logger');
+const { createSessionUser, normalizeEmail, normalizeName } = require('../utils/users');
 
 const REGISTRATION_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const REGISTRATION_LIMIT_MAX = 5;
@@ -11,22 +12,6 @@ const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 const SUPPORTED_LANGUAGES = new Set(['en', 'vi']);
 
 const registrationAttempts = new Map();
-
-const createSessionUser = (user, impersonator = null) => ({
-  id: user.id,
-  username: user.username,
-  name: user.name,
-  email: user.email,
-  timezone: user.timezone,
-  language: user.language,
-  account_status: user.account_status,
-  impersonator: impersonator ? {
-    id: impersonator.id,
-    username: impersonator.username,
-    name: impersonator.name,
-    email: impersonator.email,
-  } : null,
-});
 
 const isSupportedTimezone = (timezone) => {
   if (!timezone) return true;
@@ -172,7 +157,7 @@ const createAuthRouter = ({ auditLogs, bcrypt, getAsync, getUserById, runAsync, 
         ...(process.env.NODE_ENV === 'test' ? { verification_token: verificationToken } : {}),
       });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to create user');
       res.status(500).json({ error: 'Failed to create user' });
     }
   });
@@ -213,7 +198,7 @@ const createAuthRouter = ({ auditLogs, bcrypt, getAsync, getUserById, runAsync, 
       }
       return res.json({ success: true });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to verify email');
       return res.status(500).json({ error: 'Failed to verify email' });
     }
   });
@@ -258,7 +243,7 @@ const createAuthRouter = ({ auditLogs, bcrypt, getAsync, getUserById, runAsync, 
       });
       res.json({ user: createSessionUser(user) });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Login failed');
       res.status(500).json({ error: 'Login failed' });
     }
   });
@@ -266,7 +251,7 @@ const createAuthRouter = ({ auditLogs, bcrypt, getAsync, getUserById, runAsync, 
   router.post('/logout', (req, res) => {
     req.session.destroy((err) => {
       if (err) {
-        console.error(err);
+        logger.error({ err }, 'Logout failed');
         return res.status(500).json({ error: 'Logout failed' });
       }
       res.json({ success: true });
@@ -301,7 +286,7 @@ const createAuthRouter = ({ auditLogs, bcrypt, getAsync, getUserById, runAsync, 
       const user = await getUserById(req.session.userId);
       res.json({ user: createSessionUser(user) });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to update profile');
       res.status(500).json({ error: 'Failed to update profile' });
     }
   });
@@ -333,7 +318,7 @@ const createAuthRouter = ({ auditLogs, bcrypt, getAsync, getUserById, runAsync, 
       await runAsync('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.session.userId]);
       res.json({ success: true });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to update password');
       res.status(500).json({ error: 'Failed to update password' });
     }
   });
@@ -362,7 +347,7 @@ const createAuthRouter = ({ auditLogs, bcrypt, getAsync, getUserById, runAsync, 
       delete req.session.impersonatorUserId;
       res.json({ user: createSessionUser(admin) });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to stop impersonation');
       res.status(500).json({ error: 'Failed to stop impersonation' });
     }
   });
@@ -398,7 +383,7 @@ const createAuthRouter = ({ auditLogs, bcrypt, getAsync, getUserById, runAsync, 
 
       res.json({ user: createSessionUser(user, impersonator) });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error }, 'Failed to retrieve user');
       res.status(500).json({ error: 'Failed to retrieve user' });
     }
   });

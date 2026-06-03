@@ -6,6 +6,7 @@
 // external call stays off the dashboard's hot path — without this, every cold
 // dashboard rebuild (common on serverless) blocked on a third-party request.
 
+const logger = require('../logger');
 const cache = require('../cache/redis');
 
 const DEFAULT_DAILY_QUOTE = {
@@ -68,7 +69,7 @@ const fetchFreshQuote = async () => {
         };
       }
     } catch (error) {
-      console.warn('Daily quote provider failed:', error.message);
+      logger.warn({ err: error }, 'Daily quote provider failed');
     }
   }
 

@@ -1,5 +1,7 @@
 const Anthropic = require('@anthropic-ai/sdk');
 
+const logger = require('../logger');
+
 const {
   MAX_TRANSACTION_CATEGORY_LENGTH,
   MAX_TRANSACTION_NOTE_LENGTH,
@@ -110,7 +112,7 @@ const createStatementImportService = ({ apiKey }) => {
         ],
       });
     } catch (error) {
-      console.error('Statement parse request failed:', error?.message || error);
+      logger.error({ err: error }, 'Statement parse request failed');
       return { error: 'Failed to read the statement. Please try again or enter the items manually.' };
     }
 
@@ -120,7 +122,7 @@ const createStatementImportService = ({ apiKey }) => {
       // a misconfigured key/proxy or a refusal. Log the text to aid debugging.
       const textBlock = message.content.find((block) => block.type === 'text');
       if (textBlock) {
-        console.error('Statement parse returned no tool_use. Model said:', textBlock.text);
+        logger.error('Statement parse returned no tool_use. Model said: %s', textBlock.text);
       }
       return { error: 'Could not read any transactions from this statement.' };
     }
