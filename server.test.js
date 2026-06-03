@@ -583,6 +583,26 @@ describe('Task API', () => {
     expect(response.body).toHaveProperty('error', 'Invalid attachment');
   });
 
+  test('rejects attachments larger than 5 MB', async () => {
+    const agent = await createAgent(testUsername('large-attachment-owner'));
+    const largePayload = Buffer.alloc((5 * 1024 * 1024) + 1).toString('base64');
+
+    const response = await agent
+      .post('/api/tasks')
+      .send({
+        title: 'Large file',
+        attachment: {
+          name: 'large.bin',
+          type: 'application/octet-stream',
+          data: `data:application/octet-stream;base64,${largePayload}`,
+          size: 1,
+        },
+      });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body).toHaveProperty('error', 'File must be 5 MB or less');
+  });
+
   test('updates task fields while preserving the existing attachment', async () => {
     const agent = await createAgent(testUsername('preserve-attachment-owner'));
 

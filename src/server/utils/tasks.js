@@ -43,6 +43,18 @@ const stripHtml = (value = '') => String(value)
 
 const sanitizeFileName = (name = '') => path.basename(String(name)).replace(/[<>:"/\\|?*\u0000-\u001F]/g, '_').slice(0, 180);
 
+const getDataUrlPayloadBytes = (data = '') => {
+  const separatorIndex = data.indexOf(',');
+  if (separatorIndex === -1) return Buffer.byteLength(data, 'utf8');
+
+  const metadata = data.slice(0, separatorIndex).toLowerCase();
+  const payload = data.slice(separatorIndex + 1);
+  if (metadata.includes(';base64')) {
+    return Buffer.byteLength(payload, 'base64');
+  }
+  return Buffer.byteLength(decodeURIComponent(payload), 'utf8');
+};
+
 const parseAttachment = (attachment) => {
   if (!attachment) return null;
 
@@ -55,7 +67,8 @@ const parseAttachment = (attachment) => {
     throw new Error('Invalid attachment');
   }
 
-  if (size > MAX_ATTACHMENT_BYTES || Buffer.byteLength(data, 'utf8') > MAX_ATTACHMENT_BYTES * 1.5) {
+  const payloadBytes = getDataUrlPayloadBytes(data);
+  if (size > MAX_ATTACHMENT_BYTES || payloadBytes > MAX_ATTACHMENT_BYTES) {
     throw new Error('File must be 5 MB or less');
   }
 
