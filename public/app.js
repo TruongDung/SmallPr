@@ -4,7 +4,11 @@ const U = window.AppUtils;
 // HTTP client extracted to js/apiClient.js
 const apiClient = window.ApiClient.create({ state: window.AppState.state });
 // Toast notifications extracted to js/ui/toast.js
-const toast = window.ToastModule.create({ state: window.AppState.state });
+// `t` is late-bound: the wrapper only calls t() at runtime, after it's defined below.
+const toast = window.ToastModule.create({
+  state: window.AppState.state,
+  t: (key, values) => t(key, values),
+});
 
 // ---- DOM refs ----
 const authSection = document.getElementById('auth-section');
@@ -2312,20 +2316,8 @@ const togglePasswordVisibility = () => {
   togglePasswordButton.setAttribute('aria-label', isHidden ? t('hidePassword') : t('showPassword'));
 };
 
-const request = async (url, options = {}) => {
-  const response = await fetch(url, {
-    credentials: 'include',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    ...options,
-  });
-  try {
-    return await response.json();
-  } catch (error) {
-    return { error: `Request failed (${response.status} ${response.statusText || ''})`.trim() };
-  }
-};
+// request() is provided by js/apiClient.js (window.ApiClient)
+const request = apiClient.request;
 
 const getSelectedWeekdays = (container = weeklyOptions) => {
   const checkboxes = container.querySelectorAll('input[type="checkbox"]:checked');
@@ -4165,63 +4157,15 @@ reminderAlertModal.addEventListener('click', (event) => {
   }
 });
 
-const hideStatusToast = () => {
-  statusToast.classList.add('hidden');
-};
-
-const showStatusToast = (message, tone = 'success', options = {}) => {
-  if (statusToastTimer) {
-    clearTimeout(statusToastTimer);
-    statusToastTimer = null;
-  }
-
-  statusToast.textContent = message;
-  statusToast.classList.toggle('status-toast-error', tone === 'error');
-  statusToast.classList.remove('hidden');
-  if (options.persist) {
-    return;
-  }
-  statusToastTimer = setTimeout(() => {
-    hideStatusToast();
-    statusToastTimer = null;
-  }, tone === 'error' ? 3500 : 2000);
-};
-
-const setUploadProgress = (percent, message = t('uploadPleaseWait')) => {
-  const safePercent = Math.max(0, Math.min(100, Math.round(percent)));
-  uploadProgressText.textContent = message;
-  uploadProgressFill.style.width = `${safePercent}%`;
-  uploadProgressPercent.textContent = `${safePercent}%`;
-};
-
-const registerServiceWorker = () => {
-  if (!('serviceWorker' in navigator) || !window.isSecureContext) {
-    return;
-  }
-
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((error) => {
-      console.warn('Service worker registration failed:', error);
-    });
-  });
-};
-
-const showUploadProgress = () => {
-  uploadProgressTitle.textContent = t('uploadingFile');
-  setUploadProgress(0);
-  appContainer.inert = true;
-  appContainer.setAttribute('aria-busy', 'true');
-  uploadProgressOverlay.classList.remove('hidden');
-  document.body.classList.add('is-uploading');
-};
-
-const hideUploadProgress = () => {
-  uploadProgressOverlay.classList.add('hidden');
-  appContainer.inert = false;
-  appContainer.removeAttribute('aria-busy');
-  document.body.classList.remove('is-uploading');
-  setUploadProgress(0);
-};
+// Toast + upload-progress UI provided by js/ui/toast.js (window.ToastModule)
+const {
+  hideStatusToast,
+  showStatusToast,
+  setUploadProgress,
+  registerServiceWorker,
+  showUploadProgress,
+  hideUploadProgress,
+} = toast;
 
 const handleLogout = async () => {
   await request('/api/logout', { method: 'POST' });
