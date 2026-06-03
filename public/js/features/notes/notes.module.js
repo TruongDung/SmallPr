@@ -364,6 +364,25 @@
       renderList();
     };
 
+    const reset = () => {
+      if (saveTimer) {
+        clearTimeout(saveTimer);
+        saveTimer = null;
+      }
+      notes = [];
+      tasks = [];
+      activeNoteId = null;
+      pendingSave = false;
+      historyPage = 1;
+      closeHistory();
+      historyList.innerHTML = '';
+      historyMessage.textContent = '';
+      historyPagination?.classList.add('hidden');
+      setMessage('');
+      showEditor(null);
+      renderList();
+    };
+
     const requestDeleteActive = async () => {
       if (!activeNoteId) return;
       const note = notes.find((entry) => entry.id === activeNoteId);
@@ -658,7 +677,7 @@
       await loadHistoryPage(historyPage);
     };
 
-    return { applyTranslations, bind, load, deleteNote };
+    return { applyTranslations, bind, load, deleteNote, reset };
   };
 
   window.NotesModule = { create };

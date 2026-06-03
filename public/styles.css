@@ -157,23 +157,6 @@ body.theme-dark .app-brand-mark {
   border-top: 1px solid transparent;
 }
 
-.language-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.language-control label {
-  margin: 0;
-  font-size: 0.9rem;
-}
-
-.language-control select {
-  min-height: 34px;
-  padding-block: 6px;
-}
-
 .theme-toggle {
   display: inline-flex;
   align-items: center;
@@ -889,17 +872,11 @@ body.theme-dark #user-area .nav-button.active-nav {
   background: var(--primary-strong);
 }
 
-.header-actions .theme-toggle,
-.header-actions .language-control select {
+.header-actions .theme-toggle {
   min-height: 36px;
   height: 36px;
   border-radius: 999px;
   font-size: 0.92rem;
-}
-
-.header-actions {
-  grid-template-columns: max-content minmax(150px, 180px);
-  justify-content: end;
 }
 
 .header-actions .theme-toggle {
@@ -907,22 +884,6 @@ body.theme-dark #user-area .nav-button.active-nav {
   min-width: 112px;
   padding: 6px 12px;
   justify-self: end;
-}
-
-.header-actions .language-control {
-  width: 180px;
-  justify-self: end;
-}
-
-.header-actions .language-control select {
-  width: 100%;
-  padding-top: 6px;
-  padding-bottom: 6px;
-}
-
-.container:has(#auth-section:not(.hidden)) .header-actions {
-  grid-template-columns: max-content minmax(150px, 180px);
-  justify-content: end;
 }
 
 .task-header {
@@ -3894,7 +3855,6 @@ body.theme-dark .user-status-badge.disabled {
   }
 
   .theme-toggle,
-  .language-control select,
   #user-area button {
     min-height: 40px;
   }
@@ -4266,9 +4226,6 @@ body.theme-dark .user-status-badge.disabled {
     width: 100%;
   }
 
-  .language-control {
-    margin-left: 0;
-  }
 }
 
 @media (display-mode: standalone) {

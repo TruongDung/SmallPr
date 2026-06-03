@@ -9,7 +9,6 @@ const userArea = document.getElementById('user-area');
 const floatingAddTask = document.getElementById('floating-add-task');
 const taskSubtabNav = document.getElementById('task-subtab-nav');
 const taskSubtabs = [...document.querySelectorAll('[data-task-tab]')];
-const languageSelect = document.getElementById('language-select');
 const themeToggle = document.getElementById('theme-toggle');
 const authForm = document.getElementById('auth-form');
 const authEmailField = document.getElementById('auth-email-field');
@@ -993,7 +992,6 @@ const applyTranslations = () => {
   setText('h1', t('appTitle'));
   setText('.app-subtitle', t('appSubtitle'));
   applyTheme();
-  setText('label[for="language-select"]', t('language'));
   showLogin.textContent = t('login');
   showSignup.textContent = t('signup');
   if (rememberMeText) rememberMeText.textContent = t('rememberMe');
@@ -2177,13 +2175,6 @@ const setMode = (mode) => {
   }
 };
 
-const setLanguage = (language) => {
-  currentLanguage = language;
-  localStorage.setItem('task-manager-language', language);
-  languageSelect.value = language;
-  applyTranslations();
-};
-
 const getBrowserTimezone = () => {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
@@ -2199,7 +2190,6 @@ const applyUserPreferences = (user) => {
   if (user?.language && translations[user.language]) {
     currentLanguage = user.language;
     localStorage.setItem('task-manager-language', user.language);
-    languageSelect.value = user.language;
   }
 };
 
@@ -2290,23 +2280,6 @@ const handlePasswordSettingsSubmit = async (event) => {
   passwordSettingsForm.reset();
   trackEvent('password_changed');
   showStatusToast(t('passwordUpdated'));
-};
-
-const persistCurrentUserPreferences = async () => {
-  if (!currentUser) return;
-  const result = await request('/api/me', {
-    method: 'PUT',
-    body: JSON.stringify({
-      name: currentUser.name || '',
-      email: currentUser.email || '',
-      timezone: getActiveTimezone(),
-      language: currentLanguage,
-    }),
-  });
-  if (!result.error) {
-    currentUser = result.user;
-    applyUserPreferences(currentUser);
-  }
 };
 
 const togglePasswordVisibility = () => {
@@ -2458,6 +2431,7 @@ const disconnectRealtime = () => {
 const resetFinancialModules = () => {
   creditCardModule.reset?.();
   transactionsModule.reset?.();
+  notesModule.reset?.();
 };
 
 const markRegistrationInteraction = () => {
@@ -4485,10 +4459,6 @@ window.dashboardModule = dashboardModule;
 
 showLogin.addEventListener('click', () => setMode('login'));
 showSignup.addEventListener('click', () => setMode('signup'));
-languageSelect.addEventListener('change', (event) => {
-  setLanguage(event.target.value);
-  persistCurrentUserPreferences();
-});
 themeToggle.addEventListener('click', toggleTheme);
 togglePasswordButton.addEventListener('click', togglePasswordVisibility);
 const taskSubtabAddButton = document.getElementById('task-subtab-add-button');
@@ -4597,7 +4567,6 @@ if (exportWordButton) exportWordButton.addEventListener('click', exportToWord);
 
 setMode('login');
 setupRichTextEditors();
-languageSelect.value = currentLanguage;
 applyTranslations();
 registerServiceWorker();
 init();
