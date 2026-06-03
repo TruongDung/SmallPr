@@ -65,16 +65,24 @@ Set `TASK_ALERT_TO` only when task alerts should go to a fallback recipient. Set
 Set the Sentry and PostHog variables only when frontend monitoring and analytics should be enabled.
 Set `BETTER_STACK_SOURCE_TOKEN` only when backend logs should be forwarded to Better Stack. Without it, Pino writes structured JSON logs to stdout.
 
-5. To automatically star and label task alert emails in Gmail, create a Gmail filter in ``:
+5. Backend uptime monitoring:
+
+- Liveness endpoint: `GET /healthz` returns `200` when the Node process is running.
+- Readiness endpoint: `GET /readyz` returns dependency status and returns `503` if Postgres is unavailable.
+- API alias: `GET /api/health` returns the same readiness payload for external monitors.
+- Uptime Kuma: create an HTTP(s) monitor for `https://<your-domain>/readyz`, expect status `200`, and optionally add keyword `status`.
+- Better Stack Uptime: create an HTTP monitor for `https://<your-domain>/readyz`; use the same Better Stack project as logs if desired.
+
+6. To automatically star and label task alert emails in Gmail, create a Gmail filter in ``:
 
 - Search query: `from:<sender-email> "Task Manager"`
 - Filter actions: `Star it` and `Apply the label: Task Manager`
 
 The app adds `Task Manager` to every Add Task email body and header so the filter can reliably find it without adding `[Task Manager]` to the email title.
 
-6. Open http://localhost:3000 in your browser.
+7. Open http://localhost:3000 in your browser.
 
-7. Test link: https://small-pr.vercel.app/
+8. Test link: https://small-pr.vercel.app/
 
 ## iOS App
 

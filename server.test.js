@@ -144,6 +144,34 @@ describe('Auth API', () => {
     });
   });
 
+  test('reports liveness and readiness for uptime monitors', async () => {
+    const livenessResponse = await request(app).get('/healthz');
+    expect(livenessResponse.statusCode).toBe(200);
+    expect(livenessResponse.body).toMatchObject({
+      status: 'ok',
+      service: expect.any(String),
+      environment: expect.any(String),
+    });
+    expect(livenessResponse.body).toHaveProperty('uptimeSeconds');
+    expect(livenessResponse.headers['cache-control']).toContain('no-store');
+
+    const readinessResponse = await request(app).get('/readyz');
+    expect(readinessResponse.statusCode).toBe(200);
+    expect(readinessResponse.body).toMatchObject({
+      status: 'ok',
+      dependencies: {
+        database: { status: 'ok' },
+        redis: expect.objectContaining({
+          enabled: expect.any(Boolean),
+        }),
+      },
+    });
+
+    const apiHealthResponse = await request(app).get('/api/health');
+    expect(apiHealthResponse.statusCode).toBe(200);
+    expect(apiHealthResponse.body.dependencies.database.status).toBe('ok');
+  });
+
   test('updates user settings and changes password', async () => {
     const username = testUsername('settings-user');
     const agent = await createAgent(username);

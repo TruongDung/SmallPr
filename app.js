@@ -107,6 +107,70 @@ io.on('connection', (socket) => {
   socket.join(`user:${userId}`);
 });
 
+const buildHealthPayload = async ({ includeDependencies = false } = {}) => {
+  const payload = {
+    status: 'ok',
+    service: process.env.SERVICE_NAME || 'task-manager-app',
+    environment: process.env.NODE_ENV || 'development',
+    uptimeSeconds: Math.round(process.uptime()),
+    timestamp: new Date().toISOString(),
+  };
+
+  if (!includeDependencies) return payload;
+
+  const dependencies = {
+    database: { status: 'unknown' },
+    redis: {
+      status: redisCache.isEnabled() ? 'unknown' : 'disabled',
+      enabled: redisCache.isEnabled(),
+    },
+  };
+
+  try {
+    await withTimeout(dbReady, 5000);
+    await withTimeout(pool.query('SELECT 1'), 5000);
+    dependencies.database.status = 'ok';
+  } catch (error) {
+    dependencies.database.status = 'error';
+    dependencies.database.message = error.message;
+    payload.status = 'error';
+  }
+
+  if (redisCache.isEnabled()) {
+    try {
+      await withTimeout(cacheReady, 5000);
+      dependencies.redis.status = redisCache.isReady() ? 'ok' : 'degraded';
+      if (!redisCache.isReady()) {
+        dependencies.redis.message = 'Redis is configured but not connected';
+      }
+    } catch (error) {
+      dependencies.redis.status = 'degraded';
+      dependencies.redis.message = error.message;
+    }
+  }
+
+  payload.dependencies = dependencies;
+  return payload;
+};
+
+const withTimeout = (promise, timeoutMs) => Promise.race([
+  promise,
+  new Promise((_, reject) => {
+    setTimeout(() => reject(new Error(`Timed out after ${timeoutMs}ms`)), timeoutMs);
+  }),
+]);
+
+app.get(['/healthz', '/health'], async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json(await buildHealthPayload());
+});
+
+app.get(['/readyz', '/api/health'], async (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  const payload = await buildHealthPayload({ includeDependencies: true });
+  res.status(payload.status === 'ok' ? 200 : 503).json(payload);
+});
+
 app.use(async (req, res, next) => {
   try {
     await dbReady;
