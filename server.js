@@ -1,6 +1,7 @@
 require('dotenv').config();
 
 const { PORT } = require('./src/server/config/env');
+const logger = require('./src/server/logger');
 const {
   app,
   cacheReady,
@@ -14,11 +15,11 @@ if (require.main === module) {
   dbReady
     .then(() => {
       httpServer.listen(PORT, () => {
-        console.log(`Server running at http://localhost:${PORT}`);
+        logger.info({ port: PORT }, `Server running at http://localhost:${PORT}`);
       });
     })
     .catch((error) => {
-      console.error('Failed to initialize database:', error);
+      logger.error({ err: error }, 'Failed to initialize database');
       process.exit(1);
     });
 }

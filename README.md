@@ -56,10 +56,14 @@ SENTRY_ENVIRONMENT=production
 SENTRY_RELEASE=<release-name>
 PUBLIC_POSTHOG_API_KEY=<posthog-project-api-key>
 PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
+LOG_LEVEL=info
+BETTER_STACK_SOURCE_TOKEN=<better-stack-source-token>
+BETTER_STACK_ENDPOINT=https://in.logs.betterstack.com
 ```
 
 Set `TASK_ALERT_TO` only when task alerts should go to a fallback recipient. Set `DEFAULT_ADMIN_PASSWORD` only when bootstrapping a fresh database that does not already have an admin user.
 Set the Sentry and PostHog variables only when frontend monitoring and analytics should be enabled.
+Set `BETTER_STACK_SOURCE_TOKEN` only when backend logs should be forwarded to Better Stack. Without it, Pino writes structured JSON logs to stdout.
 
 5. To automatically star and label task alert emails in Gmail, create a Gmail filter in ``:
 

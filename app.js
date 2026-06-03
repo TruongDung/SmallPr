@@ -6,6 +6,7 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const session = require('express-session');
 const PgSession = require('connect-pg-simple')(session);
+const pinoHttp = require('pino-http');
 const { Server: SocketIOServer } = require('socket.io');
 
 const redisCache = require('./src/server/cache/redis');
@@ -24,6 +25,7 @@ const createNotesRouter = require('./src/server/routes/notes.routes');
 const createTasksRouter = require('./src/server/routes/tasks.routes');
 const createTransactionsRouter = require('./src/server/routes/transactions.routes');
 const createWeatherRouter = require('./src/server/routes/weather.routes');
+const logger = require('./src/server/logger');
 
 const app = express();
 const cacheReady = redisCache.connectRedis();
@@ -31,6 +33,20 @@ const dbReady = initializeDatabase();
 
 app.use(express.json({ limit: '8mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use(pinoHttp({
+  logger,
+  customProps: (req) => ({
+    userId: req.session?.userId || null,
+  }),
+  customLogLevel: (req, res, error) => {
+    if (error || res.statusCode >= 500) return 'error';
+    if (res.statusCode >= 400) return 'warn';
+    return 'info';
+  },
+  autoLogging: {
+    ignore: (req) => req.path === '/favicon.ico',
+  },
+}));
 
 // Vercel terminates TLS at the edge and forwards plain HTTP to the function.
 // Without this, Express marks the connection as "insecure" and refuses to send
@@ -96,7 +112,7 @@ app.use(async (req, res, next) => {
     await dbReady;
     next();
   } catch (error) {
-    console.error('Database initialization failed:', error);
+    logger.error({ err: error }, 'Database initialization failed');
     res.status(500).json({ error: 'Database is not configured correctly' });
   }
 });

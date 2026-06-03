@@ -1,6 +1,7 @@
 const { createClient } = require('redis');
 
 const { CACHE_TTL_SECONDS, REDIS_URL } = require('../config/env');
+const logger = require('../logger');
 
 let client = null;
 let ready = false;
@@ -23,12 +24,12 @@ const connectRedis = async () => {
 
   client.on('error', (error) => {
     ready = false;
-    console.warn('Redis cache error:', error?.message || error);
+    logger.warn({ err: error }, 'Redis cache error');
   });
 
   client.on('ready', () => {
     ready = true;
-    console.log('Redis cache connected.');
+    logger.info('Redis cache connected');
   });
 
   client.on('end', () => {
@@ -37,7 +38,7 @@ const connectRedis = async () => {
 
   connectPromise = client.connect().catch((error) => {
     ready = false;
-    console.warn('Redis cache unavailable; continuing without cache:', error?.message || error);
+    logger.warn({ err: error }, 'Redis cache unavailable; continuing without cache');
     return null;
   });
 
@@ -64,7 +65,7 @@ const getJson = async (key) => {
     const cached = await c.get(key);
     return cached ? JSON.parse(cached) : null;
   } catch (error) {
-    console.warn('Redis cache read failed:', error?.message || error);
+    logger.warn({ err: error }, 'Redis cache read failed');
     return null;
   }
 };
@@ -77,7 +78,7 @@ const setJson = async (key, value, ttlSeconds = CACHE_TTL_SECONDS) => {
     await c.set(key, JSON.stringify(value), { EX: ttlSeconds });
     return true;
   } catch (error) {
-    console.warn('Redis cache write failed:', error?.message || error);
+    logger.warn({ err: error }, 'Redis cache write failed');
     return false;
   }
 };
@@ -95,7 +96,7 @@ const deleteByPattern = async (pattern) => {
       }
     }
   } catch (error) {
-    console.warn('Redis cache invalidation failed:', error?.message || error);
+    logger.warn({ err: error }, 'Redis cache invalidation failed');
   }
 
   return deleted;

@@ -2,6 +2,7 @@ const { Pool } = require('pg');
 const pgTypes = require('pg-types');
 
 const { DATABASE_URL } = require('../config/env');
+const logger = require('../logger');
 
 // Postgres TIMESTAMP (without time zone) is parsed by pg as if it were
 // local time. When the server runs in any non-UTC tz (or the value was
@@ -21,7 +22,7 @@ const pool = new Pool({
 });
 
 pool.on('error', (error, client) => {
-  console.error('Unexpected Postgres pool error:', error?.message || error);
+  logger.error({ err: error }, 'Unexpected Postgres pool error');
   if (client) {
     client.release(true);
   }

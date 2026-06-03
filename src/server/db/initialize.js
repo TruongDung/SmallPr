@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 
 const { getAsync, pool, runAsync } = require('./client');
 const { runMigrations } = require('./migrationRunner');
+const logger = require('../logger');
 
 const initializeDatabase = async () => {
   await runMigrations(pool);
@@ -214,7 +215,7 @@ const initializeDatabase = async () => {
   if (!admin) {
     const defaultAdminPassword = process.env.DEFAULT_ADMIN_PASSWORD;
     if (!defaultAdminPassword) {
-      console.warn('Default admin user was not created: DEFAULT_ADMIN_PASSWORD is not set.');
+      logger.warn('Default admin user was not created: DEFAULT_ADMIN_PASSWORD is not set');
       return;
     }
 
@@ -223,7 +224,7 @@ const initializeDatabase = async () => {
       'INSERT INTO users (username, password) VALUES (?, ?) RETURNING id',
       ['admin', hashedPassword]
     );
-    console.log('Default admin user created.');
+    logger.info('Default admin user created');
   }
 
   const adminUser = await getAsync('SELECT id FROM users WHERE username = ?', ['admin']);
