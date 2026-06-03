@@ -123,6 +123,27 @@ describe('Auth API', () => {
     expect(response.body).toEqual({ user: null });
   });
 
+  test('exposes public monitoring config without authentication', async () => {
+    const response = await request(app).get('/api/config/public');
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['cache-control']).toContain('no-store');
+    expect(response.body).toEqual({
+      sentry: expect.objectContaining({
+        dsn: expect.any(String),
+        environment: expect.any(String),
+        release: expect.any(String),
+        tracesSampleRate: expect.any(Number),
+        replaysSessionSampleRate: expect.any(Number),
+        replaysOnErrorSampleRate: expect.any(Number),
+      }),
+      posthog: expect.objectContaining({
+        apiKey: expect.any(String),
+        apiHost: expect.any(String),
+      }),
+    });
+  });
+
   test('updates user settings and changes password', async () => {
     const username = testUsername('settings-user');
     const agent = await createAgent(username);

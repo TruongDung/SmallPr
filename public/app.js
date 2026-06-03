@@ -875,6 +875,18 @@ const setActionIconButton = (button, label, icon) => {
   button.title = label;
 };
 
+const trackEvent = (eventName, properties = {}) => {
+  window.AppMonitoring?.captureEvent?.(eventName, properties);
+};
+
+const captureMonitoringError = (error, context = {}) => {
+  window.AppMonitoring?.captureError?.(error, context);
+};
+
+const identifyMonitoringUser = () => {
+  window.AppMonitoring?.setUser?.(currentUser);
+};
+
 const setNavButtonContent = (button, label, icon) => {
   button.textContent = '';
   const iconSpan = document.createElement('span');
@@ -1844,9 +1856,13 @@ const handleWeatherListClick = async (event) => {
 const isTaskWorkspaceView = () => ['tasks', 'archived', 'tags'].includes(currentView);
 
 const setCurrentView = (view, { persist = true } = {}) => {
+  const previousView = currentView;
   currentView = VIEW_NAMES.has(view) ? view : 'tasks';
   if (persist) {
     localStorage.setItem(SAVED_VIEW_KEY, currentView);
+  }
+  if (currentUser && previousView !== currentView) {
+    trackEvent('view_changed', { view: currentView, previous_view: previousView || null });
   }
 };
 
@@ -2152,6 +2168,11 @@ const handleUserSettingsSubmit = async (event) => {
   currentUser = result.user;
   applyUserPreferences(currentUser);
   applyTranslations();
+  identifyMonitoringUser();
+  trackEvent('settings_saved', {
+    has_timezone: Boolean(currentUser.timezone),
+    language: currentUser.language || currentLanguage,
+  });
   renderUserArea();
   dashboardModule.refresh?.();
   showStatusToast(t('settingsSaved'));
@@ -2182,6 +2203,7 @@ const handlePasswordSettingsSubmit = async (event) => {
   }
 
   passwordSettingsForm.reset();
+  trackEvent('password_changed');
   showStatusToast(t('passwordUpdated'));
 };
 
@@ -2263,6 +2285,7 @@ const init = async () => {
   currentUser = result.user;
   applyUserPreferences(currentUser);
   applyTranslations();
+  identifyMonitoringUser();
   showSection();
   if (!currentUser && new URLSearchParams(window.location.search).get('verified') === '1') {
     authMessage.textContent = t('emailVerified');
@@ -2399,6 +2422,7 @@ const handleAuthSubmit = async (event) => {
   }
 
   if (currentMode === 'signup') {
+    trackEvent('signup_submitted');
     authMessage.textContent = result.message || t('verificationEmailSent');
     setMode('login');
     return;
@@ -2418,6 +2442,8 @@ const handleAuthSubmit = async (event) => {
   currentUser = result.user;
   applyUserPreferences(currentUser);
   applyTranslations();
+  identifyMonitoringUser();
+  trackEvent('login_succeeded');
   setCurrentView(getSavedView());
   authForm.reset();
   if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
@@ -2888,6 +2914,8 @@ const startImpersonation = async (userId) => {
   currentUser = result.user;
   applyUserPreferences(currentUser);
   applyTranslations();
+  identifyMonitoringUser();
+  trackEvent('impersonation_started');
   disconnectRealtime();
   connectRealtime();
   setCurrentView('dashboard');
@@ -2907,6 +2935,8 @@ const stopImpersonation = async () => {
   currentUser = result.user;
   applyUserPreferences(currentUser);
   applyTranslations();
+  identifyMonitoringUser();
+  trackEvent('impersonation_stopped');
   disconnectRealtime();
   connectRealtime();
   setCurrentView('admin');
@@ -3040,10 +3070,19 @@ const handleTaskSubmit = async (event) => {
       attachmentError.classList.add('hidden');
       formError.classList.add('hidden');
       hideAddTaskModal();
+      trackEvent('task_created', {
+        priority,
+        status,
+        has_tag: Boolean(tag),
+        has_reminder: Boolean(reminder_at),
+        has_attachment: Boolean(preparedAttachment),
+        is_recurring: Boolean(is_recurring),
+      });
       loadTags();
       loadTasks();
     }
   } catch (error) {
+    captureMonitoringError(error, { feature: 'tasks', action: 'create' });
     formError.textContent = error.message;
     formError.classList.remove('hidden');
   }
@@ -3998,6 +4037,8 @@ const handleLogout = async () => {
   resetFinancialModules();
   currentUser = null;
   currentTimezone = null;
+  identifyMonitoringUser();
+  trackEvent('logout');
   disconnectRealtime();
   setCurrentView('tasks', { persist: false });
   showSection();

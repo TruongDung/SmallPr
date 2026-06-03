@@ -120,6 +120,24 @@ app.use('/api', createAuthRouter({
   sendVerificationEmail,
 }));
 
+app.get('/api/config/public', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.json({
+    sentry: {
+      dsn: process.env.PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN || '',
+      environment: process.env.SENTRY_ENVIRONMENT || process.env.NODE_ENV || 'development',
+      release: process.env.SENTRY_RELEASE || '',
+      tracesSampleRate: Number.parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE || '0'),
+      replaysSessionSampleRate: Number.parseFloat(process.env.SENTRY_REPLAYS_SESSION_SAMPLE_RATE || '0'),
+      replaysOnErrorSampleRate: Number.parseFloat(process.env.SENTRY_REPLAYS_ON_ERROR_SAMPLE_RATE || '1'),
+    },
+    posthog: {
+      apiKey: process.env.PUBLIC_POSTHOG_API_KEY || process.env.POSTHOG_API_KEY || '',
+      apiHost: process.env.PUBLIC_POSTHOG_HOST || process.env.POSTHOG_HOST || 'https://us.i.posthog.com',
+    },
+  });
+});
+
 app.use('/api/credit-cards', createCreditCardsRouter({
   adminRequired,
   authRequired,
