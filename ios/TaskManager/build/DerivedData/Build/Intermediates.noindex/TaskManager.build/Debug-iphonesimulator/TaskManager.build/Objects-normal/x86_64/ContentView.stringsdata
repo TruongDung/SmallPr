@@ -1,0 +1,16 @@
+{
+  "source": "/Users/cas/SmallPr/ios/TaskManager/TaskManager/ContentView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Task Manager",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 25
+        }
+      }
+    ]
+  },
+  "version": 1
+}
