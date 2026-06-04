@@ -144,6 +144,8 @@ const cancelEditTask = document.getElementById('cancel-edit-task');
 const previewTaskModal = document.getElementById('preview-task-modal');
 const previewTaskTitle = document.getElementById('preview-task-title');
 const previewTaskDescription = document.getElementById('preview-task-description');
+const previewRelatedTasksInput = document.getElementById('preview-related-tasks-input');
+const previewRelatedTasksHint = document.getElementById('preview-related-tasks-hint');
 const previewTaskCommentDisplay = document.getElementById('preview-task-comment-display');
 const previewTaskCommentInput = document.getElementById('preview-task-comment-input');
 const editPreviewTask = document.getElementById('edit-preview-task');
@@ -383,6 +385,8 @@ const applyTranslations = () => {
   saveAddTask.title = t('addTask');
   editTaskTitle.textContent = t('editTaskTitle');
   updatePreviewTaskModalTitle();
+  setText('label[for="preview-related-tasks-input"]', t('relatedTasks'));
+  if (previewRelatedTasksHint) previewRelatedTasksHint.textContent = t('relatedTasksHint');
   setText('label[for="preview-task-comment-input"]', t('comment'));
   previewTaskCommentInput.setAttribute('data-placeholder', t('commentPlaceholder'));
   setActionIconButton(sendPreviewTaskEmail, t('sendEmail'), '✉');
@@ -614,6 +618,49 @@ const getPreviewTaskModalTitle = (task) => String(task?.title || '').trim() || t
 const updatePreviewTaskModalTitle = () => {
   if (!previewTaskTitle) return;
   previewTaskTitle.textContent = getPreviewTaskModalTitle(pendingPreviewTask);
+};
+
+const getRelatedTaskIds = (task) => {
+  if (Array.isArray(task?.related_task_ids)) {
+    return task.related_task_ids.map((id) => Number(id)).filter((id) => Number.isInteger(id));
+  }
+  if (Array.isArray(task?.related_tasks)) {
+    return task.related_tasks.map((related) => Number(related.id)).filter((id) => Number.isInteger(id));
+  }
+  return [];
+};
+
+const renderPreviewRelatedTasks = (task) => {
+  if (!previewRelatedTasksInput) return;
+  previewRelatedTasksInput.innerHTML = '';
+
+  const selectedIds = new Set(getRelatedTaskIds(task));
+  tasks
+    .filter((candidate) => Number(candidate.id) !== Number(task?.id))
+    .forEach((candidate) => {
+      const option = document.createElement('option');
+      option.value = String(candidate.id);
+      option.textContent = candidate.title || t('previewTaskTitle');
+      option.selected = selectedIds.has(Number(candidate.id));
+      previewRelatedTasksInput.append(option);
+    });
+};
+
+const getPreviewRelatedTaskSelection = () => (
+  Array.from(previewRelatedTasksInput?.selectedOptions || [])
+    .map((option) => Number(option.value))
+    .filter((id) => Number.isInteger(id) && id > 0)
+);
+
+const savePreviewRelatedTasks = async () => {
+  if (!pendingPreviewTask || !previewRelatedTasksInput) return;
+  const result = await updateTask(pendingPreviewTask.id, {
+    related_task_ids: getPreviewRelatedTaskSelection(),
+  });
+  if (result?.task) {
+    pendingPreviewTask = result.task;
+    renderPreviewRelatedTasks(pendingPreviewTask);
+  }
 };
 
 const insertChecklistItem = (editor) => {
@@ -3063,6 +3110,7 @@ previewTaskCommentDisplay.addEventListener('change', (event) => {
 const showPreviewTaskModal = (task) => {
   pendingPreviewTask = task;
   updatePreviewTaskModalTitle();
+  renderPreviewRelatedTasks(task);
   previewTaskDescription.innerHTML = task.description
     ? renderStoredRichText(task.description)
     : t('noDescription');
@@ -3083,6 +3131,7 @@ const hidePreviewTaskModal = () => {
   previewTaskModal.classList.add('hidden');
   updatePreviewTaskModalTitle();
   previewTaskDescription.textContent = '';
+  if (previewRelatedTasksInput) previewRelatedTasksInput.innerHTML = '';
   previewTaskCommentDisplay.textContent = '';
   previewTaskCommentDisplay.classList.add('hidden');
   previewTaskCommentInput.closest('.rich-editor')?.classList.remove('hidden');
@@ -3153,6 +3202,7 @@ sendPreviewTaskEmail.addEventListener('click', async () => {
 });
 
 closePreviewTask.addEventListener('click', hidePreviewTaskModal);
+previewRelatedTasksInput?.addEventListener('change', savePreviewRelatedTasks);
 
 previewTaskModal.addEventListener('click', (event) => {
   if (event.target === previewTaskModal) {

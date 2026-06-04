@@ -13,6 +13,30 @@ const {
 
 const taskError = (message) => ({ error: message });
 
+const normalizeRelatedTaskIds = (value) => {
+  if (value === undefined) {
+    return { hasRelatedTaskUpdate: false, relatedTaskIds: undefined };
+  }
+
+  if (value === null || value === '') {
+    return { hasRelatedTaskUpdate: true, relatedTaskIds: [] };
+  }
+
+  if (!Array.isArray(value)) {
+    return { error: 'Related tasks must be an array' };
+  }
+
+  const ids = [...new Set(value
+    .map((entry) => Number(entry))
+    .filter((entry) => Number.isInteger(entry) && entry > 0))];
+
+  if (ids.length > 25) {
+    return { error: 'Related tasks must include 25 tasks or less' };
+  }
+
+  return { hasRelatedTaskUpdate: true, relatedTaskIds: ids };
+};
+
 const validateTagName = (value) => {
   const name = normalizeTag(value);
   if (!name) {
@@ -40,6 +64,7 @@ const validateCreateTask = (body = {}) => {
     recurrence_pattern,
     recurrence_interval,
     recurrence_days,
+    related_task_ids,
   } = body;
 
   if (!title) {
@@ -80,6 +105,11 @@ const validateCreateTask = (body = {}) => {
     return taskError(attachmentError.message);
   }
 
+  const relatedTasks = normalizeRelatedTaskIds(related_task_ids);
+  if (relatedTasks.error) {
+    return taskError(relatedTasks.error);
+  }
+
   return {
     value: {
       title,
@@ -96,6 +126,7 @@ const validateCreateTask = (body = {}) => {
       recurrencePattern: recurrence_pattern || null,
       recurrenceInterval: recurrence_interval || null,
       recurrenceDays: recurrence_days || null,
+      relatedTaskIds: relatedTasks.relatedTaskIds || [],
     },
   };
 };
@@ -117,6 +148,7 @@ const validateUpdateTask = (body = {}, existingTask) => {
     recurrence_pattern,
     recurrence_interval,
     recurrence_days,
+    related_task_ids,
   } = body;
   const hasAttachmentUpdate = Object.prototype.hasOwnProperty.call(body, 'attachment');
   const hasStatusUpdate = Object.prototype.hasOwnProperty.call(body, 'status');
@@ -161,6 +193,11 @@ const validateUpdateTask = (body = {}, existingTask) => {
     }
   }
 
+  const relatedTasks = normalizeRelatedTaskIds(related_task_ids);
+  if (relatedTasks.error) {
+    return taskError(relatedTasks.error);
+  }
+
   return {
     value: {
       title,
@@ -179,6 +216,8 @@ const validateUpdateTask = (body = {}, existingTask) => {
       recurrencePattern: recurrence_pattern,
       recurrenceInterval: recurrence_interval,
       recurrenceDays: recurrence_days,
+      hasRelatedTaskUpdate: relatedTasks.hasRelatedTaskUpdate,
+      relatedTaskIds: relatedTasks.relatedTaskIds,
     },
   };
 };

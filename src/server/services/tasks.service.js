@@ -2,12 +2,48 @@ const { TASK_PRIORITY_ORDER_SQL } = require('../constants/tasks');
 const { normalizeTag } = require('../utils/tasks');
 
 const createTasksService = ({ allAsync, getAsync, runAsync }) => {
-  const listTasks = ({ userId, archived = 0 }) => allAsync(
-    `SELECT * FROM tasks
-     WHERE user_id = ? AND archived = ?
-     ORDER BY ${TASK_PRIORITY_ORDER_SQL}`,
-    [userId, archived]
-  );
+  const attachRelatedTasks = async (userId, rows) => {
+    if (!rows.length) return rows;
+
+    const taskIds = rows.map((task) => Number(task.id));
+    const placeholders = taskIds.map(() => '?').join(', ');
+    const relatedRows = await allAsync(
+      `SELECT relation.task_id, related.id, related.title, related.status, related.archived
+       FROM task_related_tasks relation
+       JOIN tasks related ON related.id = relation.related_task_id AND related.user_id = relation.user_id
+       WHERE relation.user_id = ? AND relation.task_id IN (${placeholders})
+       ORDER BY LOWER(related.title), related.id`,
+      [userId, ...taskIds]
+    );
+
+    const relatedByTaskId = relatedRows.reduce((map, row) => {
+      const key = Number(row.task_id);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push({
+        id: row.id,
+        title: row.title,
+        status: row.status,
+        archived: row.archived,
+      });
+      return map;
+    }, new Map());
+
+    return rows.map((task) => ({
+      ...task,
+      related_tasks: relatedByTaskId.get(Number(task.id)) || [],
+      related_task_ids: (relatedByTaskId.get(Number(task.id)) || []).map((related) => related.id),
+    }));
+  };
+
+  const listTasks = async ({ userId, archived = 0 }) => {
+    const rows = await allAsync(
+      `SELECT * FROM tasks
+       WHERE user_id = ? AND archived = ?
+       ORDER BY ${TASK_PRIORITY_ORDER_SQL}`,
+      [userId, archived]
+    );
+    return attachRelatedTasks(userId, rows);
+  };
 
   const listAllTasksForEmail = (userId) => allAsync(
     `SELECT * FROM tasks
@@ -16,12 +52,46 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     [userId]
   );
 
-  const getTaskForUser = (id, userId) => getAsync(
-    'SELECT * FROM tasks WHERE id = ? AND user_id = ?',
-    [id, userId]
-  );
+  const getTaskForUser = async (id, userId) => {
+    const task = await getAsync(
+      'SELECT * FROM tasks WHERE id = ? AND user_id = ?',
+      [id, userId]
+    );
+    if (!task) return null;
+    return (await attachRelatedTasks(userId, [task]))[0];
+  };
 
   const getTaskById = (id) => getAsync('SELECT * FROM tasks WHERE id = ?', [id]);
+
+  const setRelatedTasks = async ({ userId, taskId, relatedTaskIds = [] }) => {
+    const normalizedIds = [...new Set(relatedTaskIds
+      .map((id) => Number(id))
+      .filter((id) => Number.isInteger(id) && id > 0 && Number(id) !== Number(taskId)))];
+
+    await runAsync(
+      'DELETE FROM task_related_tasks WHERE user_id = ? AND task_id = ?',
+      [userId, taskId]
+    );
+
+    if (!normalizedIds.length) return;
+
+    const placeholders = normalizedIds.map(() => '?').join(', ');
+    const ownedRows = await allAsync(
+      `SELECT id FROM tasks WHERE user_id = ? AND id IN (${placeholders})`,
+      [userId, ...normalizedIds]
+    );
+    const ownedIds = ownedRows.map((row) => Number(row.id));
+
+    for (const relatedTaskId of ownedIds) {
+      await runAsync(
+        `INSERT INTO task_related_tasks (user_id, task_id, related_task_id)
+         VALUES (?, ?, ?)
+         ON CONFLICT (task_id, related_task_id) DO NOTHING
+         RETURNING task_id`,
+        [userId, taskId, relatedTaskId]
+      );
+    }
+  };
 
   const listTags = (userId) => allAsync(
     'SELECT id, name FROM task_tags WHERE user_id = ? ORDER BY LOWER(name), name',
@@ -95,7 +165,8 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     recurrenceInterval,
     recurrenceDays,
     parentTaskId,
-    nextOccurrenceDate
+    nextOccurrenceDate,
+    relatedTaskIds,
   }) => {
     const result = await runAsync(
       `INSERT INTO tasks (
@@ -127,7 +198,8 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
       ]
     );
 
-    return getTaskById(result.lastID);
+    await setRelatedTasks({ userId, taskId: result.lastID, relatedTaskIds });
+    return getTaskForUser(result.lastID, userId);
   };
 
   const updateTask = async ({
@@ -149,7 +221,9 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     isRecurring,
     recurrencePattern,
     recurrenceInterval,
-    recurrenceDays
+    recurrenceDays,
+    hasRelatedTaskUpdate,
+    relatedTaskIds
   }) => {
     await runAsync(
       `UPDATE tasks SET
@@ -197,7 +271,11 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
       ]
     );
 
-    return getTaskById(id);
+    if (hasRelatedTaskUpdate) {
+      await setRelatedTasks({ userId, taskId: id, relatedTaskIds });
+    }
+
+    return getTaskForUser(id, userId);
   };
 
   const deleteTask = (id, userId) => runAsync('DELETE FROM tasks WHERE id = ? AND user_id = ?', [id, userId]);

@@ -455,6 +455,42 @@ describe('Task API', () => {
     });
   });
 
+  test('stores multiple related tasks for a task', async () => {
+    const agent = await createAgent(testUsername('related-task-owner'));
+
+    const mainResponse = await agent
+      .post('/api/tasks')
+      .send({ title: 'Main task' });
+    const relatedOneResponse = await agent
+      .post('/api/tasks')
+      .send({ title: 'Related one' });
+    const relatedTwoResponse = await agent
+      .post('/api/tasks')
+      .send({ title: 'Related two' });
+
+    const updateResponse = await agent
+      .put(`/api/tasks/${mainResponse.body.task.id}`)
+      .send({
+        related_task_ids: [
+          relatedOneResponse.body.task.id,
+          relatedTwoResponse.body.task.id,
+        ],
+      });
+    expect(updateResponse.statusCode).toBe(200);
+    expect(updateResponse.body.task.related_task_ids).toEqual(expect.arrayContaining([
+      relatedOneResponse.body.task.id,
+      relatedTwoResponse.body.task.id,
+    ]));
+
+    const listResponse = await agent.get('/api/tasks');
+    expect(listResponse.statusCode).toBe(200);
+    const mainTask = listResponse.body.tasks.find((task) => task.id === mainResponse.body.task.id);
+    expect(mainTask.related_tasks.map((task) => task.title)).toEqual(expect.arrayContaining([
+      'Related one',
+      'Related two',
+    ]));
+  });
+
   test('lists higher priority tasks first', async () => {
     const agent = await createAgent(testUsername('priority-order-owner'));
 

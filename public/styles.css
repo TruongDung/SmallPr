@@ -455,6 +455,16 @@ label {
   cursor: default;
 }
 
+.preview-related-tasks-field select[multiple] {
+  min-height: 112px;
+  padding: 8px;
+  background-image: none;
+}
+
+.preview-related-tasks-field option {
+  padding: 6px 8px;
+}
+
 input,
 select,
 textarea,
