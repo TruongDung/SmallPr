@@ -88,6 +88,7 @@ const registerRoutes = (app, {
   // Weather routes
   app.use('/api', createWeatherRouter({
     authRequired,
+    cache: redisCache,
     ...routeDependencies,
   }));
 
@@ -95,6 +96,7 @@ const registerRoutes = (app, {
   app.use('/api', createNotesRouter({
     authRequired,
     auditLogs,
+    cache: redisCache,
     emitToUser: realtime.emitToUser,
     ...routeDependencies,
   }));

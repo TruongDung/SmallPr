@@ -1,5 +1,6 @@
 const express = require('express');
 
+const { WEATHER_PAGE_CACHE_TTL_SECONDS } = require('../config/env');
 const logger = require('../logger');
 
 const MAX_WEATHER_CITY_LENGTH = 120;
@@ -26,11 +27,26 @@ const normalizeWeatherCity = (body = {}) => {
   };
 };
 
-const createWeatherRouter = ({ allAsync, authRequired, queryAsync, runAsync }) => {
+const buildWeatherCitiesCacheKey = (userId) => `user:${userId}:weather-cities:v1`;
+
+const sendCachedJson = ({ res, payload, cacheStatus }) => {
+  res.set('X-Redis-Cache', cacheStatus);
+  res.set('X-Weather-Cache-TTL', String(WEATHER_PAGE_CACHE_TTL_SECONDS));
+  res.json(payload);
+};
+
+const createWeatherRouter = ({ allAsync, authRequired, cache, queryAsync, runAsync }) => {
   const router = express.Router();
 
   router.get('/weather-cities', authRequired, async (req, res) => {
+    const cacheKey = buildWeatherCitiesCacheKey(req.session.userId);
+
     try {
+      const cachedPayload = await cache?.get(cacheKey);
+      if (cachedPayload) {
+        return sendCachedJson({ res, payload: cachedPayload, cacheStatus: 'HIT' });
+      }
+
       const cities = await allAsync(
         `SELECT id, weather_key, name, latitude, longitude
          FROM weather_cities
@@ -38,7 +54,9 @@ const createWeatherRouter = ({ allAsync, authRequired, queryAsync, runAsync }) =
          ORDER BY LOWER(name), name`,
         [req.session.userId]
       );
-      res.json({ cities });
+      const payload = { cities };
+      await cache?.set(cacheKey, payload, WEATHER_PAGE_CACHE_TTL_SECONDS);
+      sendCachedJson({ res, payload, cacheStatus: cache ? 'MISS' : 'BYPASS' });
     } catch (error) {
       logger.error({ err: error }, 'Failed to load weather cities');
       res.status(500).json({ error: 'Failed to load weather cities' });
@@ -95,3 +113,4 @@ const createWeatherRouter = ({ allAsync, authRequired, queryAsync, runAsync }) =
 };
 
 module.exports = createWeatherRouter;
+module.exports.buildWeatherCitiesCacheKey = buildWeatherCitiesCacheKey;

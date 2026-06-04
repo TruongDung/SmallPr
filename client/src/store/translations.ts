@@ -70,7 +70,7 @@ export const translations: Record<string, Record<string, string>> = {
     dateTimeAlert: 'Date Time Alert',
     uploadFile: 'Upload File',
     addTask: 'Add Task',
-    manageUsers: 'User',
+    manageUsers: 'Users',
     addUser: 'Add User',
     editUser: 'Edit User',
     impersonate: 'Impersonate...',

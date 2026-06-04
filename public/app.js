@@ -528,8 +528,11 @@ const sanitizeRichText = (html = '') => {
       return;
     }
 
-    if (element.tagName === 'LABEL' && className.includes('rich-check-item')) {
-      element.className = `rich-check-item${element.querySelector('input[type="checkbox"]:checked') ? ' checked' : ''}`;
+    if ((element.tagName === 'LABEL' || element.tagName === 'SPAN') && className.includes('rich-check-item')) {
+      const item = document.createElement('span');
+      item.className = `rich-check-item${element.querySelector('input[type="checkbox"]:checked') ? ' checked' : ''}`;
+      item.append(...element.childNodes);
+      element.replaceWith(item);
       return;
     }
 
@@ -613,7 +616,7 @@ const insertChecklistItem = (editor) => {
   document.execCommand(
     'insertHTML',
     false,
-    `<div><label class="rich-check-item"><input id="${id}" class="rich-check-input" data-rich-checklist="true" type="checkbox"> <span class="rich-check-text">Checklist item</span></label></div>`
+    `<div><span class="rich-check-item"><input id="${id}" class="rich-check-input" data-rich-checklist="true" type="checkbox"> <span class="rich-check-text">Checklist item</span></span></div>`
   );
   editor.innerHTML = sanitizeRichText(editor.innerHTML);
   saveRichEditorSelection(editor);
@@ -1081,14 +1084,6 @@ const renderUserArea = () => {
     showSection();
   });
 
-  const addTaskButton = document.createElement('button');
-  addTaskButton.type = 'button';
-  addTaskButton.className = 'secondary add-task-shortcut';
-  addTaskButton.textContent = '+';
-  addTaskButton.setAttribute('aria-label', t('addTaskShortcut'));
-  addTaskButton.title = t('addTaskShortcut');
-  addTaskButton.addEventListener('click', openAddTaskFlow);
-
   const dashboardButton = document.createElement('button');
   dashboardButton.type = 'button';
   dashboardButton.className = `secondary nav-button ${currentView === 'dashboard' ? 'active-nav' : ''}`;
@@ -1098,7 +1093,7 @@ const renderUserArea = () => {
     showSection();
   });
 
-  userArea.append(addTaskButton, dashboardButton, notesButton, tasksButton, weatherButton, creditCardsButton);
+  userArea.append(dashboardButton, notesButton, tasksButton, weatherButton, creditCardsButton);
 
   if (isAdminUser()) {
     const adminButton = document.createElement('button');

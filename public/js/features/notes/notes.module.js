@@ -68,6 +68,52 @@
       return firstLine.slice(0, 80);
     };
 
+    const summarizeHistoryText = (value) => {
+      const normalized = String(value || '').replace(/\s+/g, ' ').trim();
+      if (!normalized) return '—';
+      return normalized.length > 140 ? `${normalized.slice(0, 137)}...` : normalized;
+    };
+
+    const taskNameFor = (taskId, taskTitle) => {
+      if (taskTitle) return taskTitle;
+      const normalizedTaskId = normalizeTaskId(taskId);
+      if (!normalizedTaskId) return t('noLinkedTask');
+      return tasks.find((task) => Number(task.id) === normalizedTaskId)?.title || t('untitledNote');
+    };
+
+    const getHistoryChanges = (version, currentNote) => {
+      if (!currentNote) return [];
+
+      const changes = [];
+      const oldTitle = String(version.title || '').trim();
+      const newTitle = String(currentNote.title || '').trim();
+      if (oldTitle !== newTitle) {
+        changes.push({
+          label: t('title'),
+          before: oldTitle || t('untitledNote'),
+          after: newTitle || t('untitledNote'),
+        });
+      }
+
+      if (String(version.body || '') !== String(currentNote.body || '')) {
+        changes.push({
+          label: t('noteHistoryBodyChanged'),
+          before: summarizeHistoryText(version.body),
+          after: summarizeHistoryText(currentNote.body),
+        });
+      }
+
+      if (normalizeTaskId(version.task_id) !== normalizeTaskId(currentNote.task_id)) {
+        changes.push({
+          label: t('linkedTask'),
+          before: taskNameFor(version.task_id, version.task_title),
+          after: taskNameFor(currentNote.task_id, currentNote.task_title),
+        });
+      }
+
+      return changes;
+    };
+
     const normalizeTaskId = (value) => {
       const normalized = Number(value);
       return Number.isInteger(normalized) && normalized > 0 ? normalized : null;
@@ -652,6 +698,8 @@
         return;
       }
 
+      const currentNote = notes.find((entry) => entry.id === activeNoteId);
+
       versions.forEach((version) => {
         const item = document.createElement('article');
         item.className = 'note-history-item';
@@ -667,13 +715,39 @@
         const body = document.createElement('p');
         body.textContent = previewBody(version.body) || '—';
 
+        const changes = getHistoryChanges(version, currentNote);
+        const changesWrap = document.createElement('div');
+        changesWrap.className = 'note-history-changes';
+
+        const changesTitle = document.createElement('span');
+        changesTitle.className = 'note-history-changes-title';
+        changesTitle.textContent = changes.length ? t('noteHistoryChangedFields') : t('noteHistoryNoChanges');
+        changesWrap.append(changesTitle);
+
+        changes.forEach((change) => {
+          const row = document.createElement('div');
+          row.className = 'note-history-change';
+
+          const label = document.createElement('strong');
+          label.textContent = change.label;
+
+          const before = document.createElement('span');
+          before.textContent = `${t('noteHistoryWas')}: ${change.before}`;
+
+          const after = document.createElement('span');
+          after.textContent = `${t('noteHistoryNow')}: ${change.after}`;
+
+          row.append(label, before, after);
+          changesWrap.append(row);
+        });
+
         const restoreButton = document.createElement('button');
         restoreButton.type = 'button';
         restoreButton.className = 'secondary';
         restoreButton.textContent = t('restoreVersion');
         restoreButton.addEventListener('click', () => restoreVersion(version));
 
-        item.append(heading, meta, body, restoreButton);
+        item.append(heading, meta, body, changesWrap, restoreButton);
         historyList.append(item);
       });
     };

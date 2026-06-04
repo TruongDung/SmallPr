@@ -38,9 +38,11 @@ REDIS_URL=redis://localhost:6379
 CACHE_TTL_SECONDS=30
 DASHBOARD_CACHE_TTL_SECONDS=60
 TASK_PAGE_CACHE_TTL_SECONDS=30
+NOTE_PAGE_CACHE_TTL_SECONDS=30
+WEATHER_PAGE_CACHE_TTL_SECONDS=30
 ```
 
-Redis is used for short-lived server-side cache entries. `DASHBOARD_CACHE_TTL_SECONDS` controls the `/api/dashboard` payload TTL, including today's tasks, task status summaries, bills, credit card summaries, recent notes, weather city metadata, and the daily quote. `TASK_PAGE_CACHE_TTL_SECONDS` controls the task page's `/api/tasks` and `/api/tags` payload TTL. Both fall back to `CACHE_TTL_SECONDS` when omitted. Successful API mutations automatically clear the current user's Redis entries, so dashboard and task page data refreshes after tasks, transactions, notes, financial records, weather cities, or preferences change. If Redis is not configured or temporarily unavailable, the app falls back to Postgres reads and keeps running.
+Redis is used for short-lived server-side cache entries. `DASHBOARD_CACHE_TTL_SECONDS` controls the `/api/dashboard` payload TTL, including today's tasks, task status summaries, bills, credit card summaries, recent notes, weather city metadata, and the daily quote. `TASK_PAGE_CACHE_TTL_SECONDS` controls the task page's `/api/tasks` and `/api/tags` payload TTL. `NOTE_PAGE_CACHE_TTL_SECONDS` controls the note page's `/api/notes` and `/api/notes/:id/versions` payload TTL. `WEATHER_PAGE_CACHE_TTL_SECONDS` controls the weather page's `/api/weather-cities` payload TTL. These route-specific TTLs fall back to `CACHE_TTL_SECONDS` when omitted. Successful API mutations automatically clear the current user's Redis entries, so dashboard, task page, note page, and weather page data refreshes after tasks, transactions, notes, financial records, weather cities, or preferences change. If Redis is not configured or temporarily unavailable, the app falls back to Postgres reads and keeps running.
 
 4. To send an email alert when a task is added, set these environment variables before starting the app:
 

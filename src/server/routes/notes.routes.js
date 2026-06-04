@@ -1,5 +1,6 @@
 const express = require('express');
 
+const { NOTE_PAGE_CACHE_TTL_SECONDS } = require('../config/env');
 const logger = require('../logger');
 const { createAuditContext } = require('../services/auditLog.service');
 
@@ -29,11 +30,36 @@ const normalizePositiveInteger = (value, fallback, max = Number.MAX_SAFE_INTEGER
   return Math.min(normalized, max);
 };
 
-const createNotesRouter = ({ allAsync, auditLogs, authRequired, emitToUser, queryAsync, runAsync }) => {
+const buildNoteListCacheKey = ({ userId, search }) => [
+  'user',
+  userId,
+  'notes',
+  'v1',
+  encodeURIComponent(search || 'all'),
+].join(':');
+
+const buildNoteVersionsCacheKey = ({ userId, noteId, page, limit }) => [
+  'user',
+  userId,
+  'note-versions',
+  'v1',
+  encodeURIComponent(String(noteId)),
+  page,
+  limit,
+].join(':');
+
+const sendCachedJson = ({ res, payload, cacheStatus }) => {
+  res.set('X-Redis-Cache', cacheStatus);
+  res.set('X-Note-Cache-TTL', String(NOTE_PAGE_CACHE_TTL_SECONDS));
+  res.json(payload);
+};
+
+const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUser, queryAsync, runAsync }) => {
   const router = express.Router();
 
   router.get('/notes', authRequired, async (req, res) => {
     const search = String(req.query?.q || '').trim().slice(0, 200);
+    const cacheKey = buildNoteListCacheKey({ userId: req.session.userId, search });
     const params = [req.session.userId];
     const searchClause = search
       ? `AND to_tsvector('simple', COALESCE(notes.title, '') || ' ' || COALESCE(notes.body, ''))
@@ -42,6 +68,11 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, emitToUser, quer
     if (search) params.push(search);
 
     try {
+      const cachedPayload = await cache?.get(cacheKey);
+      if (cachedPayload) {
+        return sendCachedJson({ res, payload: cachedPayload, cacheStatus: 'HIT' });
+      }
+
       const notes = await allAsync(
         `SELECT ${NOTE_SELECT}
          FROM notes
@@ -51,7 +82,9 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, emitToUser, quer
          ORDER BY notes.pinned DESC, notes.updated_at DESC, notes.id DESC`,
         params
       );
-      res.json({ notes });
+      const payload = { notes };
+      await cache?.set(cacheKey, payload, NOTE_PAGE_CACHE_TTL_SECONDS);
+      sendCachedJson({ res, payload, cacheStatus: cache ? 'MISS' : 'BYPASS' });
     } catch (error) {
       logger.error({ err: error }, 'Failed to load notes');
       res.status(500).json({ error: 'Failed to load notes' });
@@ -278,6 +311,17 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, emitToUser, quer
         return res.status(404).json({ error: 'Note not found' });
       }
 
+      const cacheKey = buildNoteVersionsCacheKey({
+        userId: req.session.userId,
+        noteId: id,
+        page: requestedPage,
+        limit,
+      });
+      const cachedPayload = await cache?.get(cacheKey);
+      if (cachedPayload) {
+        return sendCachedJson({ res, payload: cachedPayload, cacheStatus: 'HIT' });
+      }
+
       const totalRows = await allAsync(
         `SELECT COUNT(*)::int AS total
          FROM note_versions
@@ -299,7 +343,7 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, emitToUser, quer
          LIMIT ? OFFSET ?`,
         [id, req.session.userId, limit, offset]
       );
-      res.json({
+      const payload = {
         versions,
         pagination: {
           page,
@@ -309,7 +353,9 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, emitToUser, quer
           hasPreviousPage: page > 1,
           hasNextPage: page < totalPages,
         },
-      });
+      };
+      await cache?.set(cacheKey, payload, NOTE_PAGE_CACHE_TTL_SECONDS);
+      sendCachedJson({ res, payload, cacheStatus: cache ? 'MISS' : 'BYPASS' });
     } catch (error) {
       logger.error({ err: error }, 'Failed to load note history');
       res.status(500).json({ error: 'Failed to load note history' });
@@ -320,3 +366,5 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, emitToUser, quer
 };
 
 module.exports = createNotesRouter;
+module.exports.buildNoteListCacheKey = buildNoteListCacheKey;
+module.exports.buildNoteVersionsCacheKey = buildNoteVersionsCacheKey;

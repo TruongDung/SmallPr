@@ -1681,6 +1681,8 @@ describe('Notes API', () => {
 
     const listResponse = await agent.get('/api/notes');
     expect(listResponse.statusCode).toBe(200);
+    expect(['BYPASS', 'HIT', 'MISS']).toContain(listResponse.headers['x-redis-cache']);
+    expect(listResponse.headers['x-note-cache-ttl']).toMatch(/^\d+$/);
     expect(listResponse.body.notes.find((note) => note.id === createResponse.body.note.id)).toMatchObject({
       title: 'Bill note updated',
       task_id: null,
@@ -1692,6 +1694,8 @@ describe('Notes API', () => {
 
     const historyResponse = await agent.get(`/api/notes/${createResponse.body.note.id}/versions`);
     expect(historyResponse.statusCode).toBe(200);
+    expect(['BYPASS', 'HIT', 'MISS']).toContain(historyResponse.headers['x-redis-cache']);
+    expect(historyResponse.headers['x-note-cache-ttl']).toMatch(/^\d+$/);
     expect(historyResponse.body.versions[0]).toMatchObject({
       title: 'Bill note',
       body: 'first draft',
@@ -1701,6 +1705,33 @@ describe('Notes API', () => {
 
     const otherHistoryResponse = await otherAgent.get(`/api/notes/${createResponse.body.note.id}/versions`);
     expect(otherHistoryResponse.statusCode).toBe(404);
+  });
+});
+
+describe('Weather API', () => {
+  test('caches saved weather cities per user', async () => {
+    const agent = await createAgent(testUsername('weather-owner'));
+
+    const saveResponse = await agent
+      .post('/api/weather-cities')
+      .send({
+        name: 'New York',
+        latitude: 40.7128,
+        longitude: -74.006,
+        weather_key: `${RUN_ID}-new-york`,
+      });
+    expect(saveResponse.statusCode).toBe(200);
+
+    const listResponse = await agent.get('/api/weather-cities');
+    expect(listResponse.statusCode).toBe(200);
+    expect(['BYPASS', 'HIT', 'MISS']).toContain(listResponse.headers['x-redis-cache']);
+    expect(listResponse.headers['x-weather-cache-ttl']).toMatch(/^\d+$/);
+    expect(listResponse.body.cities).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        name: 'New York',
+        weather_key: `${RUN_ID}-new-york`,
+      }),
+    ]));
   });
 });
 

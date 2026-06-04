@@ -690,6 +690,7 @@ textarea {
   margin: 2px 0;
   color: var(--text);
   font-weight: 500;
+  cursor: text;
 }
 
 .rich-check-input {
@@ -707,6 +708,7 @@ textarea {
 .rich-check-text {
   min-width: 0;
   overflow-wrap: anywhere;
+  cursor: text;
 }
 
 .rich-check-item.checked .rich-check-text {
@@ -856,24 +858,6 @@ body.theme-dark #user-area .nav-button.active-nav {
   display: none;
   font-size: 1.05rem;
   line-height: 1;
-}
-
-#user-area .add-task-shortcut {
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  border-radius: 50%;
-  display: inline-grid;
-  place-items: center;
-  background: var(--primary);
-  border-color: transparent;
-  color: white;
-  font-size: 1.12rem;
-  line-height: 1;
-}
-
-#user-area .add-task-shortcut:hover {
-  background: var(--primary-strong);
 }
 
 .header-actions .theme-toggle {
@@ -2394,6 +2378,24 @@ body.theme-dark .status-in_progress {
   border-radius: 999px;
   background: var(--surface);
   color: var(--text);
+}
+
+body.theme-dark .audit-log-actions button.secondary,
+body.theme-dark .audit-log-pagination button.secondary {
+  background: #172033;
+  color: #dbeafe;
+  border-color: #3b4963;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+}
+
+body.theme-dark .audit-log-actions button.secondary:hover:not(:disabled),
+body.theme-dark .audit-log-actions button.secondary:focus-visible:not(:disabled),
+body.theme-dark .audit-log-pagination button.secondary:hover:not(:disabled),
+body.theme-dark .audit-log-pagination button.secondary:focus-visible:not(:disabled) {
+  background: #1e2b44;
+  color: #bfdbfe;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(122, 162, 255, 0.18), 0 6px 14px rgba(0, 0, 0, 0.22);
 }
 
 .audit-log-table td:last-child {
@@ -3947,10 +3949,6 @@ body.theme-dark .user-status-badge.disabled {
     display: none;
   }
 
-  #user-area .add-task-shortcut {
-    flex: 0 0 auto;
-  }
-
   .card {
     padding: 14px;
     border-radius: 12px;
@@ -4209,10 +4207,6 @@ body.theme-dark .user-status-badge.disabled {
 
   .add-task-modal .modal-text-action {
     width: 100%;
-  }
-
-  #user-area .add-task-shortcut {
-    display: none;
   }
 
   .floating-add-task {
@@ -5181,6 +5175,21 @@ body.theme-dark .user-status-badge.disabled {
   line-height: 1;
 }
 
+body.theme-dark .month-nav-button.secondary {
+  background: #172033;
+  color: #dbeafe;
+  border-color: #3b4963;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
+}
+
+body.theme-dark .month-nav-button.secondary:hover:not(:disabled),
+body.theme-dark .month-nav-button.secondary:focus-visible:not(:disabled) {
+  background: #1e2b44;
+  color: #bfdbfe;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(122, 162, 255, 0.18), 0 6px 14px rgba(0, 0, 0, 0.22);
+}
+
 .transactions-toolbar-actions {
   display: flex;
   align-items: center;
@@ -5960,6 +5969,39 @@ body.theme-dark .finance-export-button.secondary:disabled {
   margin: 0;
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.note-history-changes {
+  display: grid;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 75%, var(--primary));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 72%, var(--surface-tint));
+}
+
+.note-history-changes-title {
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.note-history-change {
+  display: grid;
+  gap: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.note-history-change strong {
+  color: var(--primary-strong);
+  font-size: 0.82rem;
+}
+
+.note-history-change span {
+  color: var(--text);
+  overflow-wrap: anywhere;
 }
 
 .note-history-pagination {
