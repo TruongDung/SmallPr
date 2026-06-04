@@ -1004,7 +1004,8 @@ const applyTranslations = () => {
   savePasswordSettings?.setAttribute('aria-label', t('save'));
   if (savePasswordSettings) savePasswordSettings.title = t('save');
   setText('#weather-title', t('weather'));
-  weatherCityInput.placeholder = t('cityPlaceholder');
+  const weatherCityInput = document.getElementById('weather-city-input');
+  if (weatherCityInput) weatherCityInput.placeholder = t('cityPlaceholder');
   setText('#weather-form button[type="submit"]', t('addCity'));
   creditCardModule.applyTranslations();
   notesModule.applyTranslations();
