@@ -382,7 +382,7 @@ const applyTranslations = () => {
   saveAddTask.setAttribute('aria-label', t('addTask'));
   saveAddTask.title = t('addTask');
   editTaskTitle.textContent = t('editTaskTitle');
-  previewTaskTitle.textContent = t('previewTaskTitle');
+  updatePreviewTaskModalTitle();
   setText('label[for="preview-task-comment-input"]', t('comment'));
   previewTaskCommentInput.setAttribute('data-placeholder', t('commentPlaceholder'));
   setActionIconButton(sendPreviewTaskEmail, t('sendEmail'), '✉');
@@ -607,6 +607,13 @@ const savePreviewChecklistField = async (field, container) => {
   if (!result?.error && result?.task) {
     pendingPreviewTask = result.task;
   }
+};
+
+const getPreviewTaskModalTitle = (task) => String(task?.title || '').trim() || t('previewTaskTitle');
+
+const updatePreviewTaskModalTitle = () => {
+  if (!previewTaskTitle) return;
+  previewTaskTitle.textContent = getPreviewTaskModalTitle(pendingPreviewTask);
 };
 
 const insertChecklistItem = (editor) => {
@@ -3055,6 +3062,7 @@ previewTaskCommentDisplay.addEventListener('change', (event) => {
 
 const showPreviewTaskModal = (task) => {
   pendingPreviewTask = task;
+  updatePreviewTaskModalTitle();
   previewTaskDescription.innerHTML = task.description
     ? renderStoredRichText(task.description)
     : t('noDescription');
@@ -3073,6 +3081,7 @@ const showPreviewTaskModal = (task) => {
 const hidePreviewTaskModal = () => {
   pendingPreviewTask = null;
   previewTaskModal.classList.add('hidden');
+  updatePreviewTaskModalTitle();
   previewTaskDescription.textContent = '';
   previewTaskCommentDisplay.textContent = '';
   previewTaskCommentDisplay.classList.add('hidden');
