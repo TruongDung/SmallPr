@@ -414,6 +414,8 @@ describe('Task API', () => {
     const listResponse = await agent.get('/api/tasks');
 
     expect(listResponse.statusCode).toBe(200);
+    expect(listResponse.headers['x-task-cache-ttl']).toMatch(/^\d+$/);
+    expect(['BYPASS', 'MISS', 'HIT']).toContain(listResponse.headers['x-redis-cache']);
     expect(listResponse.body.tasks).toHaveLength(1);
     expect(listResponse.body.tasks[0]).toMatchObject({
       title: 'Plan',
@@ -2171,6 +2173,8 @@ describe('Dashboard API', () => {
     const agent = await createAgent(testUsername('dashboard-shape'));
     const response = await agent.get('/api/dashboard?tz=America/New_York');
     expect(response.statusCode).toBe(200);
+    expect(response.headers['x-dashboard-cache-ttl']).toMatch(/^\d+$/);
+    expect(['BYPASS', 'MISS', 'HIT']).toContain(response.headers['x-redis-cache']);
     expect(response.body).toHaveProperty('timezone', 'America/New_York');
     expect(response.body).toHaveProperty('timezoneFallback', false);
     expect(response.body).toHaveProperty('today');

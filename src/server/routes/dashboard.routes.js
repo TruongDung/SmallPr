@@ -1,5 +1,6 @@
 const express = require('express');
 
+const { DASHBOARD_CACHE_TTL_SECONDS } = require('../config/env');
 const logger = require('../logger');
 const { createDashboardService } = require('../services/dashboard.service');
 
@@ -118,6 +119,15 @@ const loadUserTimezone = async ({ getAsync, userId }) => {
   return row?.timezone || '';
 };
 
+const buildDashboardCacheKey = ({ userId, timezone, dueSoonDays }) => [
+  'user',
+  userId,
+  'dashboard',
+  'v2',
+  encodeURIComponent(timezone || ''),
+  encodeURIComponent(String(dueSoonDays || '')),
+].join(':');
+
 const createDashboardRouter = ({ authRequired, allAsync, getAsync, runAsync, cache = null }) => {
   const router = express.Router();
   const dashboardService = createDashboardService({ allAsync });
@@ -131,11 +141,12 @@ const createDashboardRouter = ({ authRequired, allAsync, getAsync, runAsync, cac
     try {
       const savedTimezone = requestedTimezone ? '' : await loadUserTimezone({ getAsync, userId: req.session.userId });
       const tz = requestedTimezone || savedTimezone;
-      const cacheKey = `user:${req.session.userId}:dashboard:${encodeURIComponent(tz)}:${encodeURIComponent(String(dueSoonDays || ''))}`;
+      const cacheKey = buildDashboardCacheKey({ userId: req.session.userId, timezone: tz, dueSoonDays });
       const cached = await cache?.getJson?.(cacheKey);
       if (cached) {
         res.set('Cache-Control', 'no-store');
         res.set('X-Redis-Cache', 'HIT');
+        res.set('X-Dashboard-Cache-TTL', String(DASHBOARD_CACHE_TTL_SECONDS));
         return res.json(cached);
       }
 
@@ -144,9 +155,10 @@ const createDashboardRouter = ({ authRequired, allAsync, getAsync, runAsync, cac
         loadPreferences({ getAsync, userId: req.session.userId }),
       ]);
       const response = { ...payload, preferences };
-      await cache?.setJson?.(cacheKey, response);
+      const wroteCache = await cache?.setJson?.(cacheKey, response, DASHBOARD_CACHE_TTL_SECONDS);
       res.set('Cache-Control', 'no-store');
-      res.set('X-Redis-Cache', cache?.isReady?.() ? 'MISS' : 'BYPASS');
+      res.set('X-Redis-Cache', wroteCache ? 'MISS' : 'BYPASS');
+      res.set('X-Dashboard-Cache-TTL', String(DASHBOARD_CACHE_TTL_SECONDS));
       res.json(response);
     } catch (error) {
       logger.error({ err: error }, 'Dashboard load failed');
@@ -195,4 +207,5 @@ const createDashboardRouter = ({ authRequired, allAsync, getAsync, runAsync, cac
 
 module.exports = createDashboardRouter;
 module.exports.KNOWN_CARD_IDS = KNOWN_CARD_IDS;
+module.exports.buildDashboardCacheKey = buildDashboardCacheKey;
 module.exports.buildDefaultPreferences = buildDefaultPreferences;

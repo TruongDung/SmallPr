@@ -1,5 +1,6 @@
 const express = require('express');
 
+const { TASK_PAGE_CACHE_TTL_SECONDS } = require('../config/env');
 const logger = require('../logger');
 const { createAuditContext } = require('../services/auditLog.service');
 const { createTasksService } = require('../services/tasks.service');
@@ -11,10 +12,28 @@ const {
   validateUpdateTask,
 } = require('../schemas/task.schema');
 
+const buildTaskListCacheKey = ({ userId, archived }) => [
+  'user',
+  userId,
+  'tasks',
+  'v1',
+  archived ? 'archived' : 'active',
+].join(':');
+
+const buildTaskTagsCacheKey = (userId) => `user:${userId}:task-tags:v1`;
+
+const sendCachedJson = ({ res, payload, cacheStatus }) => {
+  res.set('Cache-Control', 'no-store');
+  res.set('X-Redis-Cache', cacheStatus);
+  res.set('X-Task-Cache-TTL', String(TASK_PAGE_CACHE_TTL_SECONDS));
+  res.json(payload);
+};
+
 const createTasksRouter = ({
   authRequired,
   allAsync,
   auditLogs,
+  cache = null,
   getAsync,
   runAsync,
   getUserById,
@@ -30,8 +49,16 @@ const createTasksRouter = ({
   router.get('/tasks', async (req, res) => {
     try {
       const archived = req.query.archived === 'true' ? 1 : 0;
+      const cacheKey = buildTaskListCacheKey({ userId: req.session.userId, archived });
+      const cached = await cache?.getJson?.(cacheKey);
+      if (cached) {
+        return sendCachedJson({ res, payload: cached, cacheStatus: 'HIT' });
+      }
+
       const rows = await tasks.listTasks({ userId: req.session.userId, archived });
-      res.json({ tasks: rows });
+      const payload = { tasks: rows };
+      const wroteCache = await cache?.setJson?.(cacheKey, payload, TASK_PAGE_CACHE_TTL_SECONDS);
+      sendCachedJson({ res, payload, cacheStatus: wroteCache ? 'MISS' : 'BYPASS' });
     } catch (error) {
       logger.error({ err: error }, 'Failed to load tasks');
       res.status(500).json({ error: 'Failed to load tasks' });
@@ -40,8 +67,16 @@ const createTasksRouter = ({
 
   router.get('/tags', async (req, res) => {
     try {
+      const cacheKey = buildTaskTagsCacheKey(req.session.userId);
+      const cached = await cache?.getJson?.(cacheKey);
+      if (cached) {
+        return sendCachedJson({ res, payload: cached, cacheStatus: 'HIT' });
+      }
+
       const tags = await tasks.listTags(req.session.userId);
-      res.json({ tags });
+      const payload = { tags };
+      const wroteCache = await cache?.setJson?.(cacheKey, payload, TASK_PAGE_CACHE_TTL_SECONDS);
+      sendCachedJson({ res, payload, cacheStatus: wroteCache ? 'MISS' : 'BYPASS' });
     } catch (error) {
       logger.error({ err: error }, 'Failed to load tags');
       res.status(500).json({ error: 'Failed to load tags' });
@@ -299,3 +334,5 @@ const createTasksRouter = ({
 };
 
 module.exports = createTasksRouter;
+module.exports.buildTaskListCacheKey = buildTaskListCacheKey;
+module.exports.buildTaskTagsCacheKey = buildTaskTagsCacheKey;
