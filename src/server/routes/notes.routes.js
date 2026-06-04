@@ -68,7 +68,7 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
     if (search) params.push(search);
 
     try {
-      const cachedPayload = await cache?.get(cacheKey);
+      const cachedPayload = await cache?.getJson?.(cacheKey);
       if (cachedPayload) {
         return sendCachedJson({ res, payload: cachedPayload, cacheStatus: 'HIT' });
       }
@@ -83,8 +83,8 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
         params
       );
       const payload = { notes };
-      await cache?.set(cacheKey, payload, NOTE_PAGE_CACHE_TTL_SECONDS);
-      sendCachedJson({ res, payload, cacheStatus: cache ? 'MISS' : 'BYPASS' });
+      const wroteCache = await cache?.setJson?.(cacheKey, payload, NOTE_PAGE_CACHE_TTL_SECONDS);
+      sendCachedJson({ res, payload, cacheStatus: wroteCache ? 'MISS' : 'BYPASS' });
     } catch (error) {
       logger.error({ err: error }, 'Failed to load notes');
       res.status(500).json({ error: 'Failed to load notes' });
@@ -317,7 +317,7 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
         page: requestedPage,
         limit,
       });
-      const cachedPayload = await cache?.get(cacheKey);
+      const cachedPayload = await cache?.getJson?.(cacheKey);
       if (cachedPayload) {
         return sendCachedJson({ res, payload: cachedPayload, cacheStatus: 'HIT' });
       }
@@ -354,8 +354,8 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
           hasNextPage: page < totalPages,
         },
       };
-      await cache?.set(cacheKey, payload, NOTE_PAGE_CACHE_TTL_SECONDS);
-      sendCachedJson({ res, payload, cacheStatus: cache ? 'MISS' : 'BYPASS' });
+      const wroteCache = await cache?.setJson?.(cacheKey, payload, NOTE_PAGE_CACHE_TTL_SECONDS);
+      sendCachedJson({ res, payload, cacheStatus: wroteCache ? 'MISS' : 'BYPASS' });
     } catch (error) {
       logger.error({ err: error }, 'Failed to load note history');
       res.status(500).json({ error: 'Failed to load note history' });

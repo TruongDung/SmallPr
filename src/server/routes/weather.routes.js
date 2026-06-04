@@ -42,7 +42,7 @@ const createWeatherRouter = ({ allAsync, authRequired, cache, queryAsync, runAsy
     const cacheKey = buildWeatherCitiesCacheKey(req.session.userId);
 
     try {
-      const cachedPayload = await cache?.get(cacheKey);
+      const cachedPayload = await cache?.getJson?.(cacheKey);
       if (cachedPayload) {
         return sendCachedJson({ res, payload: cachedPayload, cacheStatus: 'HIT' });
       }
@@ -55,8 +55,8 @@ const createWeatherRouter = ({ allAsync, authRequired, cache, queryAsync, runAsy
         [req.session.userId]
       );
       const payload = { cities };
-      await cache?.set(cacheKey, payload, WEATHER_PAGE_CACHE_TTL_SECONDS);
-      sendCachedJson({ res, payload, cacheStatus: cache ? 'MISS' : 'BYPASS' });
+      const wroteCache = await cache?.setJson?.(cacheKey, payload, WEATHER_PAGE_CACHE_TTL_SECONDS);
+      sendCachedJson({ res, payload, cacheStatus: wroteCache ? 'MISS' : 'BYPASS' });
     } catch (error) {
       logger.error({ err: error }, 'Failed to load weather cities');
       res.status(500).json({ error: 'Failed to load weather cities' });
