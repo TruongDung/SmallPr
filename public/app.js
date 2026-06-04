@@ -54,6 +54,7 @@ const userSettingsForm = document.getElementById('user-settings-form');
 const settingsNameInput = document.getElementById('settings-name');
 const settingsEmailInput = document.getElementById('settings-email');
 const settingsTimezoneInput = document.getElementById('settings-timezone');
+const timezoneSuggestions = document.getElementById('timezone-suggestions');
 const settingsLanguageInput = document.getElementById('settings-language');
 const userSettingsFormError = document.getElementById('user-settings-form-error');
 const cancelUserSettings = document.getElementById('cancel-user-settings');
@@ -117,6 +118,11 @@ const editTagTitle = document.getElementById('edit-tag-title');
 const editTagNameInput = document.getElementById('edit-tag-name-input');
 const editTagError = document.getElementById('edit-tag-error');
 const cancelEditTag = document.getElementById('cancel-edit-tag');
+const resetPasswordModal = document.getElementById('reset-password-modal');
+const resetPasswordForm = document.getElementById('reset-password-form');
+const resetPasswordInput = document.getElementById('reset-password-input');
+const resetPasswordError = document.getElementById('reset-password-error');
+const cancelResetPassword = document.getElementById('cancel-reset-password');
 const editTaskModal = document.getElementById('edit-task-modal');
 const editTaskForm = document.getElementById('edit-task-form');
 const editTaskTitle = document.getElementById('edit-task-title');
@@ -142,7 +148,6 @@ const previewTaskCommentDisplay = document.getElementById('preview-task-comment-
 const previewTaskCommentInput = document.getElementById('preview-task-comment-input');
 const editPreviewTask = document.getElementById('edit-preview-task');
 const sendPreviewTaskEmail = document.getElementById('send-preview-task-email');
-const savePreviewComment = document.getElementById('save-preview-comment');
 const deletePreviewTask = document.getElementById('delete-preview-task');
 const closePreviewTask = document.getElementById('close-preview-task');
 const attachmentPreviewModal = document.getElementById('attachment-preview-modal');
@@ -199,9 +204,11 @@ let pendingDeleteCard = null;
 let pendingDeleteFastAccessLink = null;
 let pendingDeleteNote = null;
 let pendingEditTag = null;
+let pendingResetPasswordUser = null;
 let pendingEditTask = null;
 let pendingPreviewTask = null;
 let statusToastTimer = null;
+let isPasswordSettingsSaving = false;
 let reminderAlertPreviousFocus = null;
 let preparedAttachment = null;
 let preparedEditAttachment = null;
@@ -418,6 +425,7 @@ const translations = {
     actions: 'Actions',
     welcome: 'Welcome, {name}',
     authRequired: 'Username and password are required.',
+    usernameNoSpaces: 'Username cannot contain spaces.',
     emailRequired: 'A valid email is required.',
     verificationEmailSent: 'Registration received. Please verify your email before logging in.',
     emailVerified: 'Email verified. You can log in now.',
@@ -759,6 +767,7 @@ const translations = {
     actions: 'Thao tác',
     welcome: 'Xin chào, {name}',
     authRequired: 'Vui lòng nhập tên đăng nhập và mật khẩu.',
+    usernameNoSpaces: 'Tên đăng nhập không được chứa khoảng trắng.',
     emailRequired: 'Vui lòng nhập email hợp lệ.',
     verificationEmailSent: 'Đã đăng ký. Vui lòng xác minh email trước khi đăng nhập.',
     emailVerified: 'Email đã được xác minh. Bạn có thể đăng nhập.',
@@ -1042,6 +1051,15 @@ const applyTranslations = () => {
     saveEditTagButton.setAttribute('aria-label', t('save'));
     saveEditTagButton.title = t('save');
   }
+  setText('#reset-password-title', t('resetPassword'));
+  setText('label[for="reset-password-input"]', t('newPassword'));
+  cancelResetPassword.setAttribute('aria-label', t('cancel'));
+  cancelResetPassword.title = t('cancel');
+  const saveResetPasswordButton = document.getElementById('save-reset-password');
+  if (saveResetPasswordButton) {
+    saveResetPasswordButton.setAttribute('aria-label', t('save'));
+    saveResetPasswordButton.title = t('save');
+  }
   setText('label[for="task-description"]', `${t('description')} ${t('max500')}`);
   document.getElementById('task-description').setAttribute('data-placeholder', t('descriptionPlaceholder'));
   setText('label[for="task-reminder"]', t('dateTimeAlert'));
@@ -1061,7 +1079,6 @@ const applyTranslations = () => {
   previewTaskCommentInput.setAttribute('data-placeholder', t('commentPlaceholder'));
   setActionIconButton(sendPreviewTaskEmail, t('sendEmail'), '✉');
   setActionIconButton(editPreviewTask, t('edit'), '✎');
-  setActionIconButton(savePreviewComment, t('save'), '✓');
   setActionIconButton(deletePreviewTask, t('delete'), '🗑');
   setActionIconButton(closePreviewTask, t('close'), '×');
   reminderAlertOk.textContent = t('ok');
@@ -1836,6 +1853,36 @@ const getBrowserTimezone = () => {
 
 const getActiveTimezone = () => currentTimezone || currentUser?.timezone || getBrowserTimezone();
 
+const populateTimezoneSuggestions = () => {
+  if (!timezoneSuggestions) return;
+  const fallbackTimezones = [
+    'UTC',
+    'America/New_York',
+    'America/Chicago',
+    'America/Denver',
+    'America/Los_Angeles',
+    'America/Phoenix',
+    'America/Anchorage',
+    'Pacific/Honolulu',
+    'Europe/London',
+    'Europe/Paris',
+    'Asia/Ho_Chi_Minh',
+    'Asia/Bangkok',
+    'Asia/Singapore',
+    'Asia/Tokyo',
+    'Australia/Sydney',
+  ];
+  const timezones = typeof Intl.supportedValuesOf === 'function'
+    ? Intl.supportedValuesOf('timeZone')
+    : fallbackTimezones;
+  timezoneSuggestions.innerHTML = '';
+  timezones.forEach((timezone) => {
+    const option = document.createElement('option');
+    option.value = timezone;
+    timezoneSuggestions.append(option);
+  });
+};
+
 const applyUserPreferences = (user) => {
   currentTimezone = user?.timezone || null;
   if (user?.language && translations[user.language]) {
@@ -1904,8 +1951,21 @@ const handleUserSettingsSubmit = async (event) => {
   showStatusToast(t('settingsSaved'));
 };
 
-const handlePasswordSettingsSubmit = async (event) => {
-  event.preventDefault();
+const updateRememberedPassword = (newPassword) => {
+  if (!rememberMeCheckbox?.checked || !currentUser?.username) return;
+  try {
+    const saved = JSON.parse(localStorage.getItem(REMEMBER_ME_KEY) || '{}') || {};
+    if (saved.username === currentUser.username) {
+      localStorage.setItem(REMEMBER_ME_KEY, JSON.stringify({ username: currentUser.username, password: newPassword }));
+    }
+  } catch (error) {
+    console.warn('Failed to update remembered password', error);
+  }
+};
+
+const submitPasswordSettings = async () => {
+  if (isPasswordSettingsSaving) return;
+  passwordSettingsFormError?.classList.remove('settings-success');
   setSettingsError(passwordSettingsFormError, '');
 
   const currentPassword = settingsCurrentPasswordInput.value;
@@ -1915,22 +1975,42 @@ const handlePasswordSettingsSubmit = async (event) => {
     return;
   }
 
-  const result = await request('/api/me/password', {
-    method: 'PUT',
-    body: JSON.stringify({
-      current_password: currentPassword,
-      new_password: newPassword,
-    }),
-  });
+  isPasswordSettingsSaving = true;
+  if (savePasswordSettings) savePasswordSettings.disabled = true;
+
+  let result;
+  try {
+    result = await request('/api/me/password', {
+      method: 'PUT',
+      body: JSON.stringify({
+        current_password: currentPassword,
+        new_password: newPassword,
+      }),
+    });
+  } catch (error) {
+    result = { error: error.message || 'Failed to update password' };
+  } finally {
+    isPasswordSettingsSaving = false;
+    if (savePasswordSettings) savePasswordSettings.disabled = false;
+  }
 
   if (result.error) {
+    passwordSettingsFormError?.classList.remove('settings-success');
     setSettingsError(passwordSettingsFormError, result.error);
     return;
   }
 
+  updateRememberedPassword(newPassword);
   passwordSettingsForm.reset();
   trackEvent('password_changed');
+  passwordSettingsFormError?.classList.add('settings-success');
+  setSettingsError(passwordSettingsFormError, t('passwordUpdated'));
   showStatusToast(t('passwordUpdated'));
+};
+
+const handlePasswordSettingsSubmit = async (event) => {
+  event.preventDefault();
+  await submitPasswordSettings();
 };
 
 const togglePasswordVisibility = () => {
@@ -2646,6 +2726,12 @@ const handleAdminUserSubmit = async (event) => {
     return;
   }
 
+  if (/\s/.test(username)) {
+    adminUserFormError.textContent = t('usernameNoSpaces');
+    adminUserFormError.classList.remove('hidden');
+    return;
+  }
+
   const result = await request(isEditing ? `/api/admin/users/${pendingAdminUser.id}` : '/api/admin/users', {
     method: isEditing ? 'PUT' : 'POST',
     body: JSON.stringify(isEditing
@@ -2664,11 +2750,35 @@ const handleAdminUserSubmit = async (event) => {
   loadUsers();
 };
 
-const resetUserPassword = async (user) => {
-  const password = prompt(t('newPasswordFor', { username: user.username }));
-  if (password === null) return;
+const clearResetPasswordError = () => {
+  resetPasswordError.textContent = '';
+  resetPasswordError.classList.add('hidden');
+};
+
+const showResetPasswordModal = (user) => {
+  pendingResetPasswordUser = user;
+  clearResetPasswordError();
+  resetPasswordForm.reset();
+  setText('#reset-password-title', t('newPasswordFor', { username: user.username }));
+  resetPasswordModal.classList.remove('hidden');
+  resetPasswordInput.focus();
+};
+
+const hideResetPasswordModal = () => {
+  pendingResetPasswordUser = null;
+  resetPasswordForm.reset();
+  clearResetPasswordError();
+  resetPasswordModal.classList.add('hidden');
+};
+
+const resetUserPassword = (user) => {
+  showResetPasswordModal(user);
+};
+
+const submitResetPassword = async (user, password) => {
   if (!password.trim()) {
-    alert(t('passwordRequired'));
+    resetPasswordError.textContent = t('passwordRequired');
+    resetPasswordError.classList.remove('hidden');
     return;
   }
 
@@ -2678,11 +2788,13 @@ const resetUserPassword = async (user) => {
   });
 
   if (result.error) {
-    alert(result.error);
+    resetPasswordError.textContent = result.error;
+    resetPasswordError.classList.remove('hidden');
     return;
   }
 
-  alert(t('passwordUpdated'));
+  hideResetPasswordModal();
+  showStatusToast(t('passwordUpdated'));
 };
 
 const startImpersonation = async (userId) => {
@@ -3366,6 +3478,15 @@ editTagForm.addEventListener('submit', async (event) => {
 
 cancelEditTag.addEventListener('click', hideEditTagModal);
 
+resetPasswordForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!pendingResetPasswordUser) return;
+  clearResetPasswordError();
+  await submitResetPassword(pendingResetPasswordUser, resetPasswordInput.value);
+});
+
+cancelResetPassword.addEventListener('click', hideResetPasswordModal);
+
 cancelAddTask.addEventListener('click', hideAddTaskModal);
 
 document.addEventListener('keydown', (event) => {
@@ -3375,6 +3496,10 @@ document.addEventListener('keydown', (event) => {
 
   if (event.key === 'Escape' && !editTagModal.classList.contains('hidden')) {
     hideEditTagModal();
+  }
+
+  if (event.key === 'Escape' && !resetPasswordModal.classList.contains('hidden')) {
+    hideResetPasswordModal();
   }
 
   if (event.key === 'Escape' && !addTaskModal.classList.contains('hidden')) {
@@ -3639,7 +3764,6 @@ const showPreviewTaskModal = (task) => {
   previewTaskCommentDisplay.classList.remove('hidden');
   previewTaskCommentInput.closest('.rich-editor')?.classList.add('hidden');
   openRichTextLinksWithModifier(previewTaskCommentDisplay);
-  savePreviewComment.classList.add('hidden');
   previewTaskModal.classList.remove('hidden');
 };
 
@@ -3652,7 +3776,6 @@ const hidePreviewTaskModal = () => {
   previewTaskCommentInput.closest('.rich-editor')?.classList.remove('hidden');
   previewTaskCommentInput.innerHTML = '';
   previewTaskCommentInput.contentEditable = 'true';
-  savePreviewComment.classList.remove('hidden');
 };
 
 const showAttachmentPreview = (task) => {
@@ -3692,21 +3815,6 @@ deletePreviewTask.addEventListener('click', () => {
   const task = pendingPreviewTask;
   hidePreviewTaskModal();
   showDeleteConfirm(task.id);
-});
-
-savePreviewComment.addEventListener('click', async () => {
-  if (!pendingPreviewTask) return;
-  const task = pendingPreviewTask;
-  const comment = getRichEditorValue(previewTaskCommentInput);
-  if (getRichTextPlainText(comment).length > MAX_TASK_TEXT_LENGTH) {
-    showStatusToast(t('commentTooLong'), 'error');
-    return;
-  }
-  hidePreviewTaskModal();
-  const result = await updateTask(task.id, { comment });
-  if (!result?.error) {
-    showStatusToast(t('taskSaved'));
-  }
 });
 
 sendPreviewTaskEmail.addEventListener('click', async () => {
@@ -3973,6 +4081,10 @@ auditLogNext?.addEventListener('click', () => loadAuditLogs(auditLogPage + 1));
 cancelAdminUser.addEventListener('click', hideAdminUserModal);
 userSettingsForm?.addEventListener('submit', handleUserSettingsSubmit);
 passwordSettingsForm?.addEventListener('submit', handlePasswordSettingsSubmit);
+savePasswordSettings?.addEventListener('click', async (event) => {
+  event.preventDefault();
+  await submitPasswordSettings();
+});
 cancelUserSettings?.addEventListener('click', hideUserSettingsModal);
 logoutButton.addEventListener('click', handleLogout);
 sendSummaryEmailButton.addEventListener('click', sendSummaryEmail);
@@ -3982,6 +4094,7 @@ if (exportWordButton) exportWordButton.addEventListener('click', exportsModule.e
 
 setMode('login');
 setupRichTextEditors();
+populateTimezoneSuggestions();
 applyTranslations();
 registerServiceWorker();
 init();

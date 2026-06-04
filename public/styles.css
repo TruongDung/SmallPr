@@ -721,6 +721,10 @@ textarea {
   font-weight: 500;
 }
 
+.field-error.settings-success {
+  color: var(--success-text);
+}
+
 button {
   background: var(--primary);
   color: white;
@@ -5190,6 +5194,26 @@ body.theme-dark .user-status-badge.disabled {
   border-radius: 8px;
   font-size: 0.8rem;
   font-weight: 700;
+}
+
+body.theme-dark .finance-export-button.secondary {
+  background: #172033;
+  color: #dbeafe;
+  border-color: #334155;
+}
+
+body.theme-dark .finance-export-button.secondary:hover:not(:disabled),
+body.theme-dark .finance-export-button.secondary:focus-visible:not(:disabled) {
+  background: #1e2b44;
+  color: #bfdbfe;
+  border-color: var(--primary);
+}
+
+body.theme-dark .finance-export-button.secondary:disabled {
+  background: #20283a;
+  color: #93a4c2;
+  border-color: #3b4963;
+  opacity: 1;
 }
 
 .fast-access-export-actions {

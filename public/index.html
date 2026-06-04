@@ -568,7 +568,7 @@
       <form id="admin-user-form" class="admin-user-form modal-user-form" novalidate>
         <div class="field">
           <label for="admin-username">Username</label>
-          <input id="admin-username" type="text" required />
+          <input id="admin-username" type="text" required pattern="\S+" title="Username cannot contain spaces." />
         </div>
         <div class="field">
           <label for="admin-name">Name</label>
@@ -616,7 +616,8 @@
         </div>
         <div class="field">
           <label for="settings-timezone">Timezone</label>
-          <input id="settings-timezone" type="text" placeholder="America/New_York" />
+          <input id="settings-timezone" type="text" placeholder="America/New_York" list="timezone-suggestions" autocomplete="off" />
+          <datalist id="timezone-suggestions"></datalist>
         </div>
         <div class="field">
           <label for="settings-language">Language</label>
@@ -780,6 +781,27 @@
         <div class="modal-actions">
           <button id="cancel-edit-tag" type="button" class="task-action-icon secondary" aria-label="Cancel" title="Cancel">×</button>
           <button id="save-edit-tag" type="submit" class="task-action-icon" aria-label="Save" title="Save">✓</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div id="reset-password-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="reset-password-title">
+    <div class="modal">
+      <h3 id="reset-password-title">Reset Password</h3>
+      <form id="reset-password-form" class="admin-user-form modal-user-form" novalidate>
+        <div class="field">
+          <label for="reset-password-input">New password</label>
+          <input id="reset-password-input" type="password" autocomplete="new-password" required />
+          <p id="reset-password-error" class="field-error hidden"></p>
+        </div>
+        <div class="modal-actions">
+          <button id="cancel-reset-password" type="button" class="secondary modal-icon-action" aria-label="Cancel" title="Cancel">
+            <span aria-hidden="true">×</span>
+          </button>
+          <button id="save-reset-password" type="submit" class="modal-icon-action modal-icon-action-primary" aria-label="Save" title="Save">
+            <span aria-hidden="true">✓</span>
+          </button>
         </div>
       </form>
     </div>
@@ -1083,7 +1105,6 @@
       <div class="modal-actions">
         <button id="send-preview-task-email" type="button" class="secondary task-action-icon" aria-label="Send Email" title="Send Email">✉</button>
         <button id="edit-preview-task" type="button" class="task-action-icon" aria-label="Edit" title="Edit">✎</button>
-        <button id="save-preview-comment" type="button" class="task-action-icon" aria-label="Save" title="Save">✓</button>
         <button id="delete-preview-task" type="button" class="task-action-icon danger" aria-label="Delete" title="Delete">🗑</button>
         <button id="close-preview-task" type="button" class="secondary task-action-icon" aria-label="Close" title="Close">×</button>
       </div>
