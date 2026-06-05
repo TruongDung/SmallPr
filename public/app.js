@@ -481,91 +481,18 @@ const applyTranslations = () => {
   if (currentUser && currentView === 'admin') renderAuditLogs(auditLogs);
 };
 
-const richTextAllowedTags = new Set(['A', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL', 'UL', 'OL', 'LI', 'P', 'DIV', 'BR', 'LABEL', 'INPUT', 'SPAN']);
-
-const hasRichTextMarkup = (value = '') => /<\/?(a|b|strong|i|em|u|s|strike|del|ul|ol|li|p|div|br|label|input|span)\b/i.test(value);
-
-const isSafeLinkHref = (href = '') => /^(https?:|mailto:)/i.test(href);
-
-const autolinkPlainUrls = (html = '') => html.replace(
-  /(^|[\s>])((https?:\/\/)[^\s<]+)/gi,
-  (match, prefix, url) => `${prefix}<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
-);
-
-const linkifyPlainText = (value = '') => autolinkPlainUrls(escapeHtml(value)).replace(/\n/g, '<br>');
-
-const renderStoredRichText = (value = '') => (
-  hasRichTextMarkup(value) ? sanitizeRichText(value) : linkifyPlainText(value)
-);
-
-const sanitizeRichText = (html = '') => {
-  const template = document.createElement('template');
-  template.innerHTML = autolinkPlainUrls(html);
-
-  template.content.querySelectorAll('*').forEach((element) => {
-    const style = element.getAttribute('style') || '';
-    if (element.tagName === 'SPAN' && /text-decoration[^;:]*:\s*[^;]*line-through|text-decoration-line[^;:]*:\s*[^;]*line-through/i.test(style)) {
-      const strike = document.createElement('s');
-      strike.append(...element.childNodes);
-      element.replaceWith(strike);
-      return;
-    }
-
-    const href = element.tagName === 'A' ? element.getAttribute('href') || '' : '';
-    const inputType = element.tagName === 'INPUT' ? (element.getAttribute('type') || '').toLowerCase() : '';
-    const isChecked = element.tagName === 'INPUT' && (element.checked || element.hasAttribute('checked'));
-    const className = element.getAttribute('class') || '';
-    [...element.attributes].forEach((attribute) => element.removeAttribute(attribute.name));
-
-    if (!richTextAllowedTags.has(element.tagName)) {
-      element.replaceWith(...element.childNodes);
-      return;
-    }
-
-    if (element.tagName === 'A') {
-      if (!isSafeLinkHref(href)) {
-        element.replaceWith(...element.childNodes);
-        return;
-      }
-      element.href = href;
-      element.target = '_blank';
-      element.rel = 'noopener noreferrer';
-    }
-
-    if (element.tagName === 'INPUT') {
-      if (inputType !== 'checkbox') {
-        element.remove();
-        return;
-      }
-      element.type = 'checkbox';
-      element.className = 'rich-check-input';
-      element.setAttribute('data-rich-checklist', 'true');
-      if (isChecked) element.setAttribute('checked', '');
-      return;
-    }
-
-    if ((element.tagName === 'LABEL' || element.tagName === 'SPAN') && className.includes('rich-check-item')) {
-      const item = document.createElement('span');
-      item.className = `rich-check-item${element.querySelector('input[type="checkbox"]:checked') ? ' checked' : ''}`;
-      item.append(...element.childNodes);
-      element.replaceWith(item);
-      return;
-    }
-
-    if (element.tagName === 'SPAN' && className.includes('rich-check-text')) {
-      element.className = 'rich-check-text';
-    }
-  });
-
-  return template.innerHTML.trim();
-};
-
-const getRichTextPlainText = (html = '') => {
-  if (!hasRichTextMarkup(html)) return String(html || '').trim();
-  const container = document.createElement('div');
-  container.innerHTML = sanitizeRichText(html);
-  return container.textContent.trim();
-};
+const richText = window.RichTextModule.create({ escapeHtml });
+const {
+  getRichEditorLength,
+  getRichEditorValue,
+  getRichTextPlainText,
+  hasRichTextMarkup,
+  renderStoredRichText,
+  sanitizeRichText,
+  setRichEditorValue,
+  setupRichTextEditors,
+  syncChecklistItem,
+} = richText;
 
 const taskHelpers = window.TasksModule.create({
   t,
@@ -593,28 +520,6 @@ const updateTaskSearchState = () => {
   clearTaskSearch.classList.toggle('hidden', !taskSearchInput.value.trim());
 };
 
-const setRichEditorValue = (editor, value = '') => {
-  if (hasRichTextMarkup(value)) {
-    editor.innerHTML = sanitizeRichText(value);
-    return;
-  }
-
-  editor.textContent = value;
-};
-
-const getRichEditorValue = (editor) => {
-  const html = sanitizeRichText(editor.innerHTML);
-  return getRichTextPlainText(html) ? html : '';
-};
-
-const getRichEditorLength = (editor) => getRichTextPlainText(editor.innerHTML).length;
-
-const syncChecklistItem = (checkbox) => {
-  const item = checkbox.closest('.rich-check-item');
-  checkbox.toggleAttribute('checked', checkbox.checked);
-  if (item) item.classList.toggle('checked', checkbox.checked);
-};
-
 const savePreviewChecklistField = async (field, container) => {
   if (!pendingPreviewTask) return;
   const value = sanitizeRichText(container.innerHTML);
@@ -632,218 +537,32 @@ const updatePreviewTaskModalTitle = () => {
   previewTaskTitle.textContent = getPreviewTaskModalTitle(pendingPreviewTask);
 };
 
-const getRelatedTaskIds = (task) => {
-  if (Array.isArray(task?.related_task_ids)) {
-    return task.related_task_ids.map((id) => Number(id)).filter((id) => Number.isInteger(id));
-  }
-  if (Array.isArray(task?.related_tasks)) {
-    return task.related_tasks.map((related) => Number(related.id)).filter((id) => Number.isInteger(id));
-  }
-  return [];
-};
-
-// Resolve a linked task's display data, preferring the live `tasks` list (fresh
-// title/status) and falling back to the snapshot stored on the task itself so
-// archived or filtered-out links still render.
-const resolveRelatedTask = (id, task) => {
-  const numericId = Number(id);
-  const live = tasks.find((candidate) => Number(candidate.id) === numericId);
-  if (live) return live;
-  const snapshot = Array.isArray(task?.related_tasks)
-    ? task.related_tasks.find((related) => Number(related.id) === numericId)
-    : null;
-  return snapshot || { id: numericId, title: '', status: 'todo' };
-};
-
-const relatedTaskPickers = {
-  edit: {
-    list: editRelatedTasksList,
-    count: editRelatedTasksCount,
-    search: editRelatedTasksSearch,
-    results: editRelatedTasksResults,
-    getTask: () => pendingEditTask,
+const relatedTasksModule = window.RelatedTasksModule.create({
+  elements: {
+    editList: editRelatedTasksList,
+    editCount: editRelatedTasksCount,
+    editSearch: editRelatedTasksSearch,
+    editResults: editRelatedTasksResults,
+    previewList: previewRelatedTasksList,
+    previewCount: previewRelatedTasksCount,
+    previewSearch: previewRelatedTasksSearch,
+    previewResults: previewRelatedTasksResults,
   },
-  preview: {
-    list: previewRelatedTasksList,
-    count: previewRelatedTasksCount,
-    search: previewRelatedTasksSearch,
-    results: previewRelatedTasksResults,
-    getTask: () => pendingPreviewTask,
-    readOnly: true,
-  },
-};
-
-const renderRelatedTaskPicker = (pickerName) => {
-  const picker = relatedTaskPickers[pickerName];
-  const task = picker?.getTask();
-  if (!picker?.list || !task) return;
-  picker.list.innerHTML = '';
-
-  const ids = getRelatedTaskIds(task);
-  if (picker.count) {
-    picker.count.textContent = t('relatedTasksCount', { count: ids.length });
-  }
-
-  if (!ids.length) {
-    const empty = document.createElement('div');
-    empty.className = 'related-tasks-empty';
-    empty.textContent = t('relatedTasksEmpty');
-    picker.list.append(empty);
-    return;
-  }
-
-  ids.forEach((id) => {
-    const related = resolveRelatedTask(id, task);
-    const chip = document.createElement('div');
-    chip.className = 'related-tasks-chip';
-
-    const meta = document.createElement('div');
-    meta.className = 'related-tasks-chip-meta';
-
-    const name = document.createElement('span');
-    name.className = 'related-tasks-chip-name';
-    name.textContent = related.title || t('previewTaskTitle');
-
-    const status = document.createElement('span');
-    status.className = `status-badge status-${related.status || 'todo'}`;
-    status.textContent = statusLabel(related.status);
-
-    meta.append(name, status);
-    chip.append(meta);
-
-    if (!picker.readOnly) {
-      const remove = document.createElement('button');
-      remove.type = 'button';
-      remove.className = 'related-tasks-chip-remove';
-      remove.dataset.relatedId = String(id);
-      remove.dataset.relatedPicker = pickerName;
-      remove.setAttribute('aria-label', t('relatedTaskRemove'));
-      remove.title = t('relatedTaskRemove');
-      remove.textContent = '×';
-      chip.append(remove);
-    }
-
-    picker.list.append(chip);
-  });
-};
-
-const hideRelatedTaskResults = (pickerName = 'preview') => {
-  const results = relatedTaskPickers[pickerName]?.results;
-  if (!results) return;
-  results.classList.add('hidden');
-  results.innerHTML = '';
-};
-
-const showRelatedTaskResults = (pickerName = 'preview') => {
-  const picker = relatedTaskPickers[pickerName];
-  const task = picker?.getTask();
-  if (!picker?.results || !task || picker.readOnly) return;
-  const query = (picker.search?.value || '').trim().toLowerCase();
-  const linked = new Set(getRelatedTaskIds(task));
-
-  const matches = tasks
-    .filter((candidate) => Number(candidate.id) !== Number(task.id))
-    .filter((candidate) => !linked.has(Number(candidate.id)))
-    .filter((candidate) => !query || (candidate.title || '').toLowerCase().includes(query))
-    .slice(0, 6);
-
-  picker.results.innerHTML = '';
-  if (!matches.length) {
-    const empty = document.createElement('div');
-    empty.className = 'related-tasks-result-empty';
-    empty.textContent = query ? t('relatedTasksNoMatches') : t('relatedTasksAllLinked');
-    picker.results.append(empty);
-    picker.results.classList.remove('hidden');
-    return;
-  }
-
-  matches.forEach((candidate) => {
-    const option = document.createElement('button');
-    option.type = 'button';
-    option.className = 'related-tasks-result-option';
-    option.setAttribute('role', 'option');
-
-    const name = document.createElement('span');
-    name.className = 'related-tasks-result-name';
-    name.textContent = candidate.title || t('previewTaskTitle');
-
-    const status = document.createElement('span');
-    status.className = `status-badge status-${candidate.status || 'todo'}`;
-    status.textContent = statusLabel(candidate.status);
-
-    option.append(name, status);
-    option.addEventListener('mousedown', (event) => event.preventDefault());
-    option.addEventListener('click', () => addRelatedTask(pickerName, candidate.id));
-    picker.results.append(option);
-  });
-
-  picker.results.classList.remove('hidden');
-};
-
-const savePreviewRelatedTaskIds = async (ids) => {
-  if (!pendingPreviewTask) return;
-  const result = await updateTask(pendingPreviewTask.id, { related_task_ids: ids });
-  if (result?.task) {
-    pendingPreviewTask = result.task;
-    renderRelatedTaskPicker('preview');
-    if (document.activeElement === previewRelatedTasksSearch) {
-      showRelatedTaskResults('preview');
-    } else {
-      hideRelatedTaskResults('preview');
-    }
-    showStatusToast(t('taskSaved'));
-  }
-};
-
-const setEditRelatedTaskIds = (ids) => {
-  if (!pendingEditTask) return;
-  pendingEditTask = {
-    ...pendingEditTask,
-    related_task_ids: ids,
-    related_tasks: ids.map((id) => resolveRelatedTask(id, pendingEditTask)),
-  };
-  renderRelatedTaskPicker('edit');
-  hideRelatedTaskResults('edit');
-};
-
-const addRelatedTask = (pickerName, id) => {
-  const picker = relatedTaskPickers[pickerName];
-  const task = picker?.getTask();
-  if (!task || picker.readOnly) return;
-  const next = [...new Set([...getRelatedTaskIds(task), Number(id)])];
-  if (picker.search) picker.search.value = '';
-  hideRelatedTaskResults(pickerName);
-  if (pickerName === 'edit') {
-    setEditRelatedTaskIds(next);
-    return;
-  }
-  savePreviewRelatedTaskIds(next);
-};
-
-const removeRelatedTask = (pickerName, id) => {
-  const picker = relatedTaskPickers[pickerName];
-  const task = picker?.getTask();
-  if (!task || picker.readOnly) return;
-  const next = getRelatedTaskIds(task).filter((existing) => existing !== Number(id));
-  if (pickerName === 'edit') {
-    setEditRelatedTaskIds(next);
-    return;
-  }
-  savePreviewRelatedTaskIds(next);
-};
-
-const insertChecklistItem = (editor) => {
-  editor.focus();
-  restoreRichEditorSelection(editor);
-  const id = `check-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-  document.execCommand(
-    'insertHTML',
-    false,
-    `<div><span class="rich-check-item"><input id="${id}" class="rich-check-input" data-rich-checklist="true" type="checkbox"> <span class="rich-check-text">Checklist item</span></span></div>`
-  );
-  editor.innerHTML = sanitizeRichText(editor.innerHTML);
-  saveRichEditorSelection(editor);
-};
+  getTasks: () => tasks,
+  getEditTask: () => pendingEditTask,
+  getPreviewTask: () => pendingPreviewTask,
+  setEditTask: (task) => { pendingEditTask = task; },
+  setPreviewTask: (task) => { pendingPreviewTask = task; },
+  statusLabel,
+  t,
+  updateTask: (...args) => updateTask(...args),
+  showStatusToast,
+});
+const {
+  getRelatedTaskIds,
+  hideResults: hideRelatedTaskResults,
+  render: renderRelatedTaskPicker,
+} = relatedTasksModule;
 
 const isPdfAttachment = (task) => {
   const type = String(task?.attachment_type || '').toLowerCase();
@@ -876,117 +595,6 @@ const openRichTextLinksWithModifier = (container) => {
       event.preventDefault();
       window.open(link.href, '_blank', 'noopener,noreferrer');
     }
-  });
-};
-
-const richEditorSelections = new WeakMap();
-
-const saveRichEditorSelection = (editor) => {
-  const selection = window.getSelection();
-  if (!selection || selection.rangeCount === 0) return;
-
-  const range = selection.getRangeAt(0);
-  if (editor.contains(range.commonAncestorContainer)) {
-    richEditorSelections.set(editor, range.cloneRange());
-  }
-};
-
-const restoreRichEditorSelection = (editor) => {
-  const range = richEditorSelections.get(editor);
-  if (!range) return false;
-
-  const selection = window.getSelection();
-  if (!selection) return false;
-
-  selection.removeAllRanges();
-  selection.addRange(range);
-  return true;
-};
-
-const placeCaretInside = (element) => {
-  const selection = window.getSelection();
-  if (!selection) return;
-
-  const range = document.createRange();
-  range.selectNodeContents(element);
-  range.collapse(true);
-  selection.removeAllRanges();
-  selection.addRange(range);
-};
-
-const getActiveChecklistBlock = (editor) => {
-  const selection = window.getSelection();
-  const selectedNode = selection?.rangeCount ? selection.getRangeAt(0).commonAncestorContainer : null;
-  const baseNode = selectedNode?.nodeType === Node.TEXT_NODE ? selectedNode.parentElement : selectedNode;
-  const checkItem = baseNode?.closest?.('.rich-check-item') || document.activeElement?.closest?.('.rich-check-item');
-  if (!checkItem || !editor.contains(checkItem)) return null;
-  return checkItem.closest('div') || checkItem;
-};
-
-const insertLineAfterChecklist = (editor) => {
-  const checklistBlock = getActiveChecklistBlock(editor);
-  if (!checklistBlock) return false;
-
-  const nextLine = document.createElement('div');
-  nextLine.append(document.createElement('br'));
-  checklistBlock.after(nextLine);
-  editor.focus();
-  placeCaretInside(nextLine);
-  saveRichEditorSelection(editor);
-  return true;
-};
-
-const setupRichTextEditors = () => {
-  document.querySelectorAll('.rich-editor-toolbar button').forEach((button) => {
-    button.addEventListener('mousedown', (event) => {
-      event.preventDefault();
-    });
-
-    button.addEventListener('click', () => {
-      const editor = document.getElementById(button.dataset.editor);
-      if (!editor) return;
-
-      editor.focus();
-      restoreRichEditorSelection(editor);
-      if (button.dataset.command === 'insertChecklist') {
-        insertChecklistItem(editor);
-        return;
-      }
-      document.execCommand(button.dataset.command, false, null);
-      saveRichEditorSelection(editor);
-    });
-  });
-
-  document.querySelectorAll('.rich-editor-surface').forEach((editor) => {
-    editor.addEventListener('keyup', () => saveRichEditorSelection(editor));
-    editor.addEventListener('mouseup', () => saveRichEditorSelection(editor));
-    editor.addEventListener('input', () => saveRichEditorSelection(editor));
-
-    editor.addEventListener('keydown', (event) => {
-      if (event.key !== 'Enter') return;
-      if (!event.target.closest('.rich-check-item') && !getActiveChecklistBlock(editor)) return;
-
-      event.preventDefault();
-      insertLineAfterChecklist(editor);
-    });
-
-    editor.addEventListener('change', (event) => {
-      if (event.target.matches('input[data-rich-checklist]')) {
-        syncChecklistItem(event.target);
-        saveRichEditorSelection(editor);
-      }
-    });
-
-    editor.addEventListener('blur', () => {
-      saveRichEditorSelection(editor);
-      editor.innerHTML = sanitizeRichText(editor.innerHTML);
-    });
-
-    editor.addEventListener('paste', (event) => {
-      event.preventDefault();
-      const text = event.clipboardData.getData('text/plain');
-      document.execCommand('insertText', false, text);
-    });
   });
 };
 
@@ -3381,26 +2989,7 @@ sendPreviewTaskEmail.addEventListener('click', async () => {
 
 closePreviewTask.addEventListener('click', hidePreviewTaskModal);
 
-const handleRelatedTaskListClick = (event) => {
-  const removeButton = event.target.closest('.related-tasks-chip-remove');
-  if (!removeButton) return;
-  removeRelatedTask(removeButton.dataset.relatedPicker || 'preview', removeButton.dataset.relatedId);
-};
-
-editRelatedTasksList?.addEventListener('click', handleRelatedTaskListClick);
-previewRelatedTasksList?.addEventListener('click', handleRelatedTaskListClick);
-
-editRelatedTasksSearch?.addEventListener('input', () => showRelatedTaskResults('edit'));
-editRelatedTasksSearch?.addEventListener('focus', () => showRelatedTaskResults('edit'));
-editRelatedTasksSearch?.addEventListener('blur', () => {
-  window.setTimeout(() => hideRelatedTaskResults('edit'), 120);
-});
-
-previewRelatedTasksSearch?.addEventListener('input', () => showRelatedTaskResults('preview'));
-previewRelatedTasksSearch?.addEventListener('focus', () => showRelatedTaskResults('preview'));
-previewRelatedTasksSearch?.addEventListener('blur', () => {
-  window.setTimeout(() => hideRelatedTaskResults('preview'), 120);
-});
+relatedTasksModule.bind();
 
 previewTaskModal.addEventListener('click', (event) => {
   if (event.target === previewTaskModal) {
