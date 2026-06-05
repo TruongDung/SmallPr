@@ -2395,6 +2395,10 @@ body.theme-dark .audit-log-pagination button.secondary:focus-visible:not(:disabl
   white-space: nowrap;
 }
 
+.audit-log-summary-cell {
+  cursor: help;
+}
+
 .audit-log-pagination {
   display: flex;
   align-items: center;
@@ -6135,146 +6139,6 @@ body.theme-dark .finance-export-button.secondary:disabled {
 .notes-editor-actions button {
   padding: 6px 12px;
   font-size: 0.9rem;
-}
-
-.note-history-modal {
-  max-width: 560px;
-}
-
-.note-history-list {
-  display: grid;
-  gap: 12px;
-  max-height: 50dvh;
-  overflow: auto;
-}
-
-.note-history-item {
-  display: grid;
-  gap: 6px;
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface-soft);
-}
-
-.note-history-item span,
-.note-history-item p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-
-.note-history-changes {
-  display: grid;
-  gap: 8px;
-  margin-top: 4px;
-  padding: 10px;
-  border: 1px solid color-mix(in srgb, var(--border) 75%, var(--primary));
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--surface) 72%, var(--surface-tint));
-}
-
-.note-history-changes-title {
-  color: var(--text);
-  font-size: 0.82rem;
-  font-weight: 800;
-}
-
-.note-history-diff-hint {
-  color: var(--muted);
-  font-size: 0.78rem;
-}
-
-.note-history-change {
-  display: grid;
-  gap: 4px;
-  padding-top: 8px;
-  border-top: 1px solid var(--border);
-}
-
-.note-history-change strong {
-  color: var(--primary-strong);
-  font-size: 0.82rem;
-}
-
-.note-history-change span {
-  color: var(--text);
-  overflow-wrap: anywhere;
-}
-
-.note-history-diff {
-  display: grid;
-  gap: 4px;
-  margin-top: 6px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-size: 0.82rem;
-}
-
-.note-history-diff-line {
-  display: grid;
-  grid-template-columns: 22px minmax(0, 1fr);
-  gap: 6px;
-  align-items: start;
-  padding: 6px 8px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-}
-
-.note-history-diff-line.added {
-  color: #166534;
-  background: color-mix(in srgb, #22c55e 15%, var(--surface));
-  border-color: color-mix(in srgb, #22c55e 35%, var(--border));
-}
-
-.note-history-diff-line.removed {
-  color: #991b1b;
-  background: color-mix(in srgb, #ef4444 14%, var(--surface));
-  border-color: color-mix(in srgb, #ef4444 35%, var(--border));
-}
-
-.note-history-diff-marker {
-  font-weight: 900;
-  color: currentColor;
-}
-
-.note-history-diff-text {
-  color: currentColor;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-.note-history-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 12px;
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-
-.note-history-pagination button {
-  min-width: 92px;
-}
-
-body.theme-dark .note-history-modal button.secondary {
-  background: color-mix(in srgb, var(--surface) 72%, white 8%);
-  color: var(--text);
-  border-color: color-mix(in srgb, var(--border) 65%, white 22%);
-}
-
-body.theme-dark .note-history-modal button.secondary:hover:not(:disabled),
-body.theme-dark .note-history-modal button.secondary:focus-visible:not(:disabled) {
-  background: color-mix(in srgb, var(--primary) 18%, var(--surface));
-  color: #f8fafc;
-  border-color: color-mix(in srgb, var(--primary) 58%, white 18%);
-}
-
-body.theme-dark .note-history-modal button.secondary:disabled {
-  opacity: 1;
-  background: color-mix(in srgb, var(--surface) 82%, white 5%);
-  color: color-mix(in srgb, var(--text) 58%, transparent);
-  border-color: color-mix(in srgb, var(--border) 75%, white 12%);
 }
 
 body:not(.theme-dark) .notes-editor-actions button.secondary {

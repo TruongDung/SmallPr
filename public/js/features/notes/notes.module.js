@@ -17,26 +17,13 @@
     const checkboxButton = document.getElementById('note-checkbox-button');
     const taskLabel = document.getElementById('note-task-label');
     const taskSelect = document.getElementById('note-task-select');
-    const historyButton = document.getElementById('note-history-button');
-    const historyModal = document.getElementById('note-history-modal');
-    const historyTitle = document.getElementById('note-history-title');
-    const historyMessage = document.getElementById('note-history-message');
-    const historyList = document.getElementById('note-history-list');
-    const historyPagination = document.getElementById('note-history-pagination');
-    const historyPreviousButton = document.getElementById('note-history-previous');
-    const historyNextButton = document.getElementById('note-history-next');
-    const historyPageInfo = document.getElementById('note-history-page-info');
-    const closeHistoryButton = document.getElementById('close-note-history');
-
     let notes = [];
     let tasks = [];
     let activeNoteId = null;
     let saveTimer = null;
     let pendingSave = false;
     let showPreview = false;
-    let historyPage = 1;
     let dataVersion = 0;
-    const historyPageSize = 10;
 
     // Pinned notes float to the top; within each group the most recently
     // updated comes first. Mirrors the server's ORDER BY so the optimistic
@@ -67,88 +54,6 @@
       if (!trimmed) return '';
       const firstLine = trimmed.split('\n').find((line) => line.trim()) || '';
       return firstLine.slice(0, 80);
-    };
-
-    const summarizeHistoryText = (value) => {
-      const normalized = String(value || '').replace(/\s+/g, ' ').trim();
-      if (!normalized) return '—';
-      return normalized.length > 140 ? `${normalized.slice(0, 137)}...` : normalized;
-    };
-
-    const normalizeDiffLines = (value = '') => String(value || '')
-      .replace(/\r\n/g, '\n')
-      .split('\n')
-      .map((line) => line.trimEnd());
-
-    const formatDiffLine = (value) => {
-      const normalized = String(value || '').trim();
-      return normalized || '—';
-    };
-
-    const buildLineDiff = (beforeValue = '', afterValue = '') => {
-      const beforeLines = normalizeDiffLines(beforeValue);
-      const afterLines = normalizeDiffLines(afterValue);
-      const maxLength = Math.max(beforeLines.length, afterLines.length);
-      const rows = [];
-
-      for (let index = 0; index < maxLength; index += 1) {
-        const beforeLine = beforeLines[index];
-        const afterLine = afterLines[index];
-        if (beforeLine === afterLine) continue;
-
-        if (beforeLine === undefined) {
-          rows.push({ type: 'added', text: formatDiffLine(afterLine) });
-        } else if (afterLine === undefined) {
-          rows.push({ type: 'removed', text: formatDiffLine(beforeLine) });
-        } else {
-          rows.push({ type: 'removed', text: formatDiffLine(beforeLine) });
-          rows.push({ type: 'added', text: formatDiffLine(afterLine) });
-        }
-      }
-
-      return rows.slice(0, 12);
-    };
-
-    const taskNameFor = (taskId, taskTitle) => {
-      if (taskTitle) return taskTitle;
-      const normalizedTaskId = normalizeTaskId(taskId);
-      if (!normalizedTaskId) return t('noLinkedTask');
-      return tasks.find((task) => Number(task.id) === normalizedTaskId)?.title || t('untitledNote');
-    };
-
-    const getHistoryChanges = (version, currentNote) => {
-      if (!currentNote) return [];
-
-      const changes = [];
-      const oldTitle = String(version.title || '').trim();
-      const newTitle = String(currentNote.title || '').trim();
-      if (oldTitle !== newTitle) {
-        changes.push({
-          label: t('title'),
-          before: oldTitle || t('untitledNote'),
-          after: newTitle || t('untitledNote'),
-        });
-      }
-
-      if (String(version.body || '') !== String(currentNote.body || '')) {
-        changes.push({
-          type: 'body',
-          label: t('noteHistoryBodyChanged'),
-          before: summarizeHistoryText(version.body),
-          after: summarizeHistoryText(currentNote.body),
-          diff: buildLineDiff(version.body, currentNote.body),
-        });
-      }
-
-      if (normalizeTaskId(version.task_id) !== normalizeTaskId(currentNote.task_id)) {
-        changes.push({
-          label: t('linkedTask'),
-          before: taskNameFor(version.task_id, version.task_title),
-          after: taskNameFor(currentNote.task_id, currentNote.task_title),
-        });
-      }
-
-      return changes;
     };
 
     const normalizeTaskId = (value) => {
@@ -462,11 +367,6 @@
       tasks = [];
       activeNoteId = null;
       pendingSave = false;
-      historyPage = 1;
-      closeHistory();
-      historyList.innerHTML = '';
-      historyMessage.textContent = '';
-      historyPagination?.classList.add('hidden');
       setMessage('');
       showEditor(null);
       renderList();
@@ -535,11 +435,6 @@
         checkboxButton.title = t('noteCheckbox');
       }
       if (taskLabel) taskLabel.textContent = t('linkedTask');
-      if (historyButton) historyButton.textContent = t('noteHistory');
-      if (historyTitle) historyTitle.textContent = t('noteHistory');
-      if (historyPreviousButton) historyPreviousButton.textContent = t('previousPage');
-      if (historyNextButton) historyNextButton.textContent = t('nextPage');
-      if (closeHistoryButton) closeHistoryButton.textContent = t('cancel');
       updateTaskOptions();
       searchInput.placeholder = t('searchNotes');
       const editorEmptyText = section.querySelector('#notes-editor-empty p');
@@ -564,13 +459,6 @@
       taskSelect?.addEventListener('change', scheduleSave);
       searchInput.addEventListener('input', renderList);
       window.addEventListener('beforeunload', flushSave);
-      historyButton?.addEventListener('click', openHistory);
-      historyPreviousButton?.addEventListener('click', () => loadHistoryPage(historyPage - 1));
-      historyNextButton?.addEventListener('click', () => loadHistoryPage(historyPage + 1));
-      closeHistoryButton?.addEventListener('click', closeHistory);
-      historyModal?.addEventListener('click', (event) => {
-        if (event.target === historyModal) closeHistory();
-      });
 
       // Toggle preview button
       if (togglePreviewButton) {
@@ -739,157 +627,6 @@
       bodyInput.value = lines.join('\n');
       scheduleSave();
       updatePreview();
-    };
-
-    const closeHistory = () => {
-      historyModal?.classList.add('hidden');
-    };
-
-    const restoreVersion = async (version) => {
-      if (!activeNoteId) return;
-      titleInput.value = version.title || '';
-      bodyInput.value = version.body || '';
-      if (taskSelect) taskSelect.value = version.task_id ? String(version.task_id) : '';
-      if (showPreview) updatePreview();
-      await saveActiveNote();
-      closeHistory();
-    };
-
-    const renderHistoryPagination = (pagination) => {
-      if (!historyPagination || !historyPageInfo || !historyPreviousButton || !historyNextButton) return;
-      if (!pagination || pagination.totalPages <= 1) {
-        historyPagination.classList.add('hidden');
-        return;
-      }
-
-      historyPagination.classList.remove('hidden');
-      historyPageInfo.textContent = t('pageStatus', {
-        page: pagination.page,
-        totalPages: pagination.totalPages,
-        total: pagination.total,
-      });
-      historyPreviousButton.disabled = !pagination.hasPreviousPage;
-      historyNextButton.disabled = !pagination.hasNextPage;
-    };
-
-    const loadHistoryPage = async (page = 1) => {
-      if (!activeNoteId || !historyModal || !historyList) return;
-      historyList.innerHTML = '';
-      historyMessage.textContent = '';
-      historyPagination?.classList.add('hidden');
-
-      const result = await request(`/api/notes/${activeNoteId}/versions?page=${page}&limit=${historyPageSize}`);
-      if (result.error) {
-        historyMessage.textContent = result.error;
-        return;
-      }
-
-      const versions = result.versions || [];
-      const pagination = result.pagination || {
-        page: 1,
-        total: versions.length,
-        totalPages: 1,
-        hasPreviousPage: false,
-        hasNextPage: false,
-      };
-      historyPage = pagination.page || 1;
-      renderHistoryPagination(pagination);
-
-      if (!versions.length) {
-        historyMessage.textContent = t('noteHistoryEmpty');
-        return;
-      }
-
-      const currentNote = notes.find((entry) => entry.id === activeNoteId);
-
-      versions.forEach((version) => {
-        const item = document.createElement('article');
-        item.className = 'note-history-item';
-
-        const heading = document.createElement('strong');
-        heading.textContent = version.title?.trim() || t('untitledNote');
-
-        const meta = document.createElement('span');
-        const date = formatRelativeDate(version.created_at);
-        const linkedTask = version.task_title ? `↔ ${version.task_title}` : '';
-        meta.textContent = [date, linkedTask].filter(Boolean).join(' · ');
-
-        const body = document.createElement('p');
-        body.textContent = previewBody(version.body) || '—';
-
-        const changes = getHistoryChanges(version, currentNote);
-        const changesWrap = document.createElement('div');
-        changesWrap.className = 'note-history-changes';
-
-        const changesTitle = document.createElement('span');
-        changesTitle.className = 'note-history-changes-title';
-        changesTitle.textContent = changes.length ? t('noteHistoryChangedFields') : t('noteHistoryNoChanges');
-        changesWrap.append(changesTitle);
-
-        if (changes.some((change) => change.type === 'body')) {
-          const diffHint = document.createElement('span');
-          diffHint.className = 'note-history-diff-hint';
-          diffHint.textContent = t('noteHistoryDiffHint');
-          changesWrap.append(diffHint);
-        }
-
-        changes.forEach((change) => {
-          const row = document.createElement('div');
-          row.className = 'note-history-change';
-
-          const label = document.createElement('strong');
-          label.textContent = change.label;
-
-          const before = document.createElement('span');
-          before.textContent = `${t('noteHistoryWas')}: ${change.before}`;
-
-          const after = document.createElement('span');
-          after.textContent = `${t('noteHistoryNow')}: ${change.after}`;
-
-          row.append(label, before, after);
-
-          if (change.type === 'body' && change.diff?.length) {
-            const diffList = document.createElement('div');
-            diffList.className = 'note-history-diff';
-
-            change.diff.forEach((line) => {
-              const diffLine = document.createElement('div');
-              diffLine.className = `note-history-diff-line ${line.type}`;
-
-              const marker = document.createElement('span');
-              marker.className = 'note-history-diff-marker';
-              marker.textContent = line.type === 'added' ? '+' : '−';
-
-              const text = document.createElement('span');
-              text.className = 'note-history-diff-text';
-              text.textContent = line.text;
-
-              diffLine.append(marker, text);
-              diffList.append(diffLine);
-            });
-
-            row.append(diffList);
-          }
-
-          changesWrap.append(row);
-        });
-
-        const restoreButton = document.createElement('button');
-        restoreButton.type = 'button';
-        restoreButton.className = 'secondary';
-        restoreButton.textContent = t('restoreVersion');
-        restoreButton.addEventListener('click', () => restoreVersion(version));
-
-        item.append(heading, meta, body, changesWrap, restoreButton);
-        historyList.append(item);
-      });
-    };
-
-    const openHistory = async () => {
-      if (!activeNoteId || !historyModal || !historyList) return;
-      historyPage = 1;
-      historyModal.classList.remove('hidden');
-      await loadHistoryPage(historyPage);
     };
 
     return { applyTranslations, bind, load, deleteNote, reset };

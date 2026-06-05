@@ -1810,6 +1810,10 @@ const renderAuditLogs = (logs) => {
     cells.forEach(([label, value]) => {
       const cell = document.createElement('td');
       cell.dataset.label = label;
+      if (label === t('summary') && value) {
+        cell.className = 'audit-log-summary-cell';
+        cell.title = value;
+      }
       cell.textContent = value;
       row.append(cell);
     });
