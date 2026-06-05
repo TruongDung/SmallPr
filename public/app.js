@@ -398,7 +398,7 @@ const applyTranslations = () => {
   if (editRelatedTasksHint) editRelatedTasksHint.textContent = t('relatedTasksHint');
   setText('#preview-related-tasks-label', t('relatedTasks'));
   if (previewRelatedTasksSearch) previewRelatedTasksSearch.placeholder = t('relatedTasksSearchPlaceholder');
-  if (previewRelatedTasksHint) previewRelatedTasksHint.textContent = t('relatedTasksHint');
+  if (previewRelatedTasksHint) previewRelatedTasksHint.textContent = t('relatedTasksViewOnlyHint');
   setText('label[for="preview-task-comment-input"]', t('comment'));
   previewTaskCommentInput.setAttribute('data-placeholder', t('commentPlaceholder'));
   setActionIconButton(sendPreviewTaskEmail, t('sendEmail'), '✉');
@@ -669,6 +669,7 @@ const relatedTaskPickers = {
     search: previewRelatedTasksSearch,
     results: previewRelatedTasksResults,
     getTask: () => pendingPreviewTask,
+    readOnly: true,
   },
 };
 
@@ -707,17 +708,21 @@ const renderRelatedTaskPicker = (pickerName) => {
     status.className = `status-badge status-${related.status || 'todo'}`;
     status.textContent = statusLabel(related.status);
 
-    const remove = document.createElement('button');
-    remove.type = 'button';
-    remove.className = 'related-tasks-chip-remove';
-    remove.dataset.relatedId = String(id);
-    remove.dataset.relatedPicker = pickerName;
-    remove.setAttribute('aria-label', t('relatedTaskRemove'));
-    remove.title = t('relatedTaskRemove');
-    remove.textContent = '×';
-
     meta.append(name, status);
-    chip.append(meta, remove);
+    chip.append(meta);
+
+    if (!picker.readOnly) {
+      const remove = document.createElement('button');
+      remove.type = 'button';
+      remove.className = 'related-tasks-chip-remove';
+      remove.dataset.relatedId = String(id);
+      remove.dataset.relatedPicker = pickerName;
+      remove.setAttribute('aria-label', t('relatedTaskRemove'));
+      remove.title = t('relatedTaskRemove');
+      remove.textContent = '×';
+      chip.append(remove);
+    }
+
     picker.list.append(chip);
   });
 };
@@ -732,7 +737,7 @@ const hideRelatedTaskResults = (pickerName = 'preview') => {
 const showRelatedTaskResults = (pickerName = 'preview') => {
   const picker = relatedTaskPickers[pickerName];
   const task = picker?.getTask();
-  if (!picker?.results || !task) return;
+  if (!picker?.results || !task || picker.readOnly) return;
   const query = (picker.search?.value || '').trim().toLowerCase();
   const linked = new Set(getRelatedTaskIds(task));
 
@@ -804,7 +809,7 @@ const setEditRelatedTaskIds = (ids) => {
 const addRelatedTask = (pickerName, id) => {
   const picker = relatedTaskPickers[pickerName];
   const task = picker?.getTask();
-  if (!task) return;
+  if (!task || picker.readOnly) return;
   const next = [...new Set([...getRelatedTaskIds(task), Number(id)])];
   if (picker.search) picker.search.value = '';
   hideRelatedTaskResults(pickerName);
@@ -818,7 +823,7 @@ const addRelatedTask = (pickerName, id) => {
 const removeRelatedTask = (pickerName, id) => {
   const picker = relatedTaskPickers[pickerName];
   const task = picker?.getTask();
-  if (!task) return;
+  if (!task || picker.readOnly) return;
   const next = getRelatedTaskIds(task).filter((existing) => existing !== Number(id));
   if (pickerName === 'edit') {
     setEditRelatedTaskIds(next);
