@@ -145,6 +145,7 @@ const previewTaskModal = document.getElementById('preview-task-modal');
 const previewTaskTitle = document.getElementById('preview-task-title');
 const previewTaskDescription = document.getElementById('preview-task-description');
 const previewRelatedTasksChips = document.getElementById('preview-related-tasks-chips');
+const previewRelatedTasksCount = document.getElementById('preview-related-tasks-count');
 const previewRelatedTasksSearch = document.getElementById('preview-related-tasks-search');
 const previewRelatedTasksResults = document.getElementById('preview-related-tasks-results');
 const previewRelatedTasksHint = document.getElementById('preview-related-tasks-hint');
@@ -387,7 +388,8 @@ const applyTranslations = () => {
   saveAddTask.title = t('addTask');
   editTaskTitle.textContent = t('editTaskTitle');
   updatePreviewTaskModalTitle();
-  setText('label[for="preview-related-tasks-input"]', t('relatedTasks'));
+  setText('#preview-related-tasks-label', t('relatedTasks'));
+  if (previewRelatedTasksSearch) previewRelatedTasksSearch.placeholder = t('relatedTasksSearchPlaceholder');
   if (previewRelatedTasksHint) previewRelatedTasksHint.textContent = t('relatedTasksHint');
   setText('label[for="preview-task-comment-input"]', t('comment'));
   previewTaskCommentInput.setAttribute('data-placeholder', t('commentPlaceholder'));
@@ -650,8 +652,12 @@ const renderPreviewRelatedChips = (task) => {
   previewRelatedTasksChips.innerHTML = '';
 
   const ids = getRelatedTaskIds(task);
+  if (previewRelatedTasksCount) {
+    previewRelatedTasksCount.textContent = t('relatedTasksCount', { count: ids.length });
+  }
+
   if (!ids.length) {
-    const empty = document.createElement('p');
+    const empty = document.createElement('div');
     empty.className = 'related-tasks-empty';
     empty.textContent = t('relatedTasksEmpty');
     previewRelatedTasksChips.append(empty);
@@ -660,8 +666,11 @@ const renderPreviewRelatedChips = (task) => {
 
   ids.forEach((id) => {
     const related = resolveRelatedTask(id, task);
-    const chip = document.createElement('span');
+    const chip = document.createElement('div');
     chip.className = 'related-tasks-chip';
+
+    const meta = document.createElement('div');
+    meta.className = 'related-tasks-chip-meta';
 
     const name = document.createElement('span');
     name.className = 'related-tasks-chip-name';
@@ -679,7 +688,8 @@ const renderPreviewRelatedChips = (task) => {
     remove.title = t('relatedTaskRemove');
     remove.textContent = '×';
 
-    chip.append(name, status, remove);
+    meta.append(name, status);
+    chip.append(meta, remove);
     previewRelatedTasksChips.append(chip);
   });
 };
@@ -703,7 +713,11 @@ const showRelatedTaskResults = () => {
 
   previewRelatedTasksResults.innerHTML = '';
   if (!matches.length) {
-    hideRelatedTaskResults();
+    const empty = document.createElement('div');
+    empty.className = 'related-tasks-result-empty';
+    empty.textContent = query ? t('relatedTasksNoMatches') : t('relatedTasksAllLinked');
+    previewRelatedTasksResults.append(empty);
+    previewRelatedTasksResults.classList.remove('hidden');
     return;
   }
 
@@ -736,6 +750,12 @@ const saveRelatedTaskIds = async (ids) => {
   if (result?.task) {
     pendingPreviewTask = result.task;
     renderPreviewRelatedChips(pendingPreviewTask);
+    if (document.activeElement === previewRelatedTasksSearch) {
+      showRelatedTaskResults();
+    } else {
+      hideRelatedTaskResults();
+    }
+    showStatusToast(t('taskSaved'));
   }
 };
 
@@ -3200,7 +3220,7 @@ previewTaskCommentDisplay.addEventListener('change', (event) => {
 const showPreviewTaskModal = (task) => {
   pendingPreviewTask = task;
   updatePreviewTaskModalTitle();
-  renderPreviewRelatedTasks(task);
+  renderPreviewRelatedChips(task);
   previewTaskDescription.innerHTML = task.description
     ? renderStoredRichText(task.description)
     : t('noDescription');
@@ -3221,7 +3241,9 @@ const hidePreviewTaskModal = () => {
   previewTaskModal.classList.add('hidden');
   updatePreviewTaskModalTitle();
   previewTaskDescription.textContent = '';
-  if (previewRelatedTasksInput) previewRelatedTasksInput.innerHTML = '';
+  if (previewRelatedTasksChips) previewRelatedTasksChips.innerHTML = '';
+  if (previewRelatedTasksSearch) previewRelatedTasksSearch.value = '';
+  hideRelatedTaskResults();
   previewTaskCommentDisplay.textContent = '';
   previewTaskCommentDisplay.classList.add('hidden');
   previewTaskCommentInput.closest('.rich-editor')?.classList.remove('hidden');
@@ -3292,7 +3314,18 @@ sendPreviewTaskEmail.addEventListener('click', async () => {
 });
 
 closePreviewTask.addEventListener('click', hidePreviewTaskModal);
-previewRelatedTasksInput?.addEventListener('change', savePreviewRelatedTasks);
+
+previewRelatedTasksChips?.addEventListener('click', (event) => {
+  const removeButton = event.target.closest('.related-tasks-chip-remove');
+  if (!removeButton) return;
+  removeRelatedTask(removeButton.dataset.relatedId);
+});
+
+previewRelatedTasksSearch?.addEventListener('input', showRelatedTaskResults);
+previewRelatedTasksSearch?.addEventListener('focus', showRelatedTaskResults);
+previewRelatedTasksSearch?.addEventListener('blur', () => {
+  window.setTimeout(hideRelatedTaskResults, 120);
+});
 
 previewTaskModal.addEventListener('click', (event) => {
   if (event.target === previewTaskModal) {

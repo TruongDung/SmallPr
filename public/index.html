@@ -1088,8 +1088,11 @@
       <h3 id="preview-task-title">Preview</h3>
       <div id="preview-task-description" class="preview-task-description"></div>
       <div class="field preview-related-tasks-field">
-        <label id="preview-related-tasks-label">Related tasks</label>
-        <div id="preview-related-tasks-chips" class="related-tasks-chips"></div>
+        <div class="related-tasks-header">
+          <label id="preview-related-tasks-label" for="preview-related-tasks-search">Related tasks</label>
+          <span id="preview-related-tasks-count" class="related-tasks-count">0 linked</span>
+        </div>
+        <div id="preview-related-tasks-chips" class="related-tasks-list"></div>
         <div class="related-tasks-search">
           <span class="task-search-icon" aria-hidden="true">⌕</span>
           <input id="preview-related-tasks-search" type="search" autocomplete="off" placeholder="Search tasks to link..." />
