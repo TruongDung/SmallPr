@@ -151,7 +151,7 @@
               <textarea id="note-body-input" class="notes-editor-body" placeholder="Start writing..." rows="14"></textarea>
               <div id="note-preview" class="note-preview hidden"></div>
               <div class="notes-editor-actions">
-                <button id="note-checkbox-button" type="button" class="secondary" title="Insert checkbox">☐ Checkbox</button>
+                <button id="note-checkbox-button" type="button" class="secondary" title="Insert checkbox">☐ Check</button>
                 <button id="note-paste-button" type="button" class="secondary" title="Paste clipboard to the last line">Paste</button>
                 <button id="toggle-preview-button" type="button" class="secondary">Preview</button>
                 <button id="note-history-button" type="button" class="secondary">History</button>
@@ -1088,9 +1088,14 @@
       <h3 id="preview-task-title">Preview</h3>
       <div id="preview-task-description" class="preview-task-description"></div>
       <div class="field preview-related-tasks-field">
-        <label for="preview-related-tasks-input">Related tasks</label>
-        <select id="preview-related-tasks-input" multiple></select>
-        <p id="preview-related-tasks-hint" class="field-hint">Select one or more related tasks.</p>
+        <label id="preview-related-tasks-label">Related tasks</label>
+        <div id="preview-related-tasks-chips" class="related-tasks-chips"></div>
+        <div class="related-tasks-search">
+          <span class="task-search-icon" aria-hidden="true">⌕</span>
+          <input id="preview-related-tasks-search" type="search" autocomplete="off" placeholder="Search tasks to link..." />
+          <div id="preview-related-tasks-results" class="related-tasks-results hidden" role="listbox"></div>
+        </div>
+        <p id="preview-related-tasks-hint" class="field-hint">Search and click a task to link it.</p>
       </div>
       <div class="field preview-task-comment-field">
         <label for="preview-task-comment-input">Add comment</label>

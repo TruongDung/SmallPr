@@ -144,7 +144,9 @@ const cancelEditTask = document.getElementById('cancel-edit-task');
 const previewTaskModal = document.getElementById('preview-task-modal');
 const previewTaskTitle = document.getElementById('preview-task-title');
 const previewTaskDescription = document.getElementById('preview-task-description');
-const previewRelatedTasksInput = document.getElementById('preview-related-tasks-input');
+const previewRelatedTasksChips = document.getElementById('preview-related-tasks-chips');
+const previewRelatedTasksSearch = document.getElementById('preview-related-tasks-search');
+const previewRelatedTasksResults = document.getElementById('preview-related-tasks-results');
 const previewRelatedTasksHint = document.getElementById('preview-related-tasks-hint');
 const previewTaskCommentDisplay = document.getElementById('preview-task-comment-display');
 const previewTaskCommentInput = document.getElementById('preview-task-comment-input');
@@ -630,37 +632,125 @@ const getRelatedTaskIds = (task) => {
   return [];
 };
 
-const renderPreviewRelatedTasks = (task) => {
-  if (!previewRelatedTasksInput) return;
-  previewRelatedTasksInput.innerHTML = '';
-
-  const selectedIds = new Set(getRelatedTaskIds(task));
-  tasks
-    .filter((candidate) => Number(candidate.id) !== Number(task?.id))
-    .forEach((candidate) => {
-      const option = document.createElement('option');
-      option.value = String(candidate.id);
-      option.textContent = candidate.title || t('previewTaskTitle');
-      option.selected = selectedIds.has(Number(candidate.id));
-      previewRelatedTasksInput.append(option);
-    });
+// Resolve a linked task's display data, preferring the live `tasks` list (fresh
+// title/status) and falling back to the snapshot stored on the task itself so
+// archived or filtered-out links still render.
+const resolveRelatedTask = (id, task) => {
+  const numericId = Number(id);
+  const live = tasks.find((candidate) => Number(candidate.id) === numericId);
+  if (live) return live;
+  const snapshot = Array.isArray(task?.related_tasks)
+    ? task.related_tasks.find((related) => Number(related.id) === numericId)
+    : null;
+  return snapshot || { id: numericId, title: '', status: 'todo' };
 };
 
-const getPreviewRelatedTaskSelection = () => (
-  Array.from(previewRelatedTasksInput?.selectedOptions || [])
-    .map((option) => Number(option.value))
-    .filter((id) => Number.isInteger(id) && id > 0)
-);
+const renderPreviewRelatedChips = (task) => {
+  if (!previewRelatedTasksChips) return;
+  previewRelatedTasksChips.innerHTML = '';
 
-const savePreviewRelatedTasks = async () => {
-  if (!pendingPreviewTask || !previewRelatedTasksInput) return;
-  const result = await updateTask(pendingPreviewTask.id, {
-    related_task_ids: getPreviewRelatedTaskSelection(),
+  const ids = getRelatedTaskIds(task);
+  if (!ids.length) {
+    const empty = document.createElement('p');
+    empty.className = 'related-tasks-empty';
+    empty.textContent = t('relatedTasksEmpty');
+    previewRelatedTasksChips.append(empty);
+    return;
+  }
+
+  ids.forEach((id) => {
+    const related = resolveRelatedTask(id, task);
+    const chip = document.createElement('span');
+    chip.className = 'related-tasks-chip';
+
+    const name = document.createElement('span');
+    name.className = 'related-tasks-chip-name';
+    name.textContent = related.title || t('previewTaskTitle');
+
+    const status = document.createElement('span');
+    status.className = `status-badge status-${related.status || 'todo'}`;
+    status.textContent = statusLabel(related.status);
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'related-tasks-chip-remove';
+    remove.dataset.relatedId = String(id);
+    remove.setAttribute('aria-label', t('relatedTaskRemove'));
+    remove.title = t('relatedTaskRemove');
+    remove.textContent = '×';
+
+    chip.append(name, status, remove);
+    previewRelatedTasksChips.append(chip);
   });
+};
+
+const hideRelatedTaskResults = () => {
+  if (!previewRelatedTasksResults) return;
+  previewRelatedTasksResults.classList.add('hidden');
+  previewRelatedTasksResults.innerHTML = '';
+};
+
+const showRelatedTaskResults = () => {
+  if (!previewRelatedTasksResults || !pendingPreviewTask) return;
+  const query = (previewRelatedTasksSearch?.value || '').trim().toLowerCase();
+  const linked = new Set(getRelatedTaskIds(pendingPreviewTask));
+
+  const matches = tasks
+    .filter((candidate) => Number(candidate.id) !== Number(pendingPreviewTask.id))
+    .filter((candidate) => !linked.has(Number(candidate.id)))
+    .filter((candidate) => !query || (candidate.title || '').toLowerCase().includes(query))
+    .slice(0, 6);
+
+  previewRelatedTasksResults.innerHTML = '';
+  if (!matches.length) {
+    hideRelatedTaskResults();
+    return;
+  }
+
+  matches.forEach((candidate) => {
+    const option = document.createElement('button');
+    option.type = 'button';
+    option.className = 'related-tasks-result-option';
+    option.setAttribute('role', 'option');
+
+    const name = document.createElement('span');
+    name.className = 'related-tasks-result-name';
+    name.textContent = candidate.title || t('previewTaskTitle');
+
+    const status = document.createElement('span');
+    status.className = `status-badge status-${candidate.status || 'todo'}`;
+    status.textContent = statusLabel(candidate.status);
+
+    option.append(name, status);
+    option.addEventListener('mousedown', (event) => event.preventDefault());
+    option.addEventListener('click', () => addRelatedTask(candidate.id));
+    previewRelatedTasksResults.append(option);
+  });
+
+  previewRelatedTasksResults.classList.remove('hidden');
+};
+
+const saveRelatedTaskIds = async (ids) => {
+  if (!pendingPreviewTask) return;
+  const result = await updateTask(pendingPreviewTask.id, { related_task_ids: ids });
   if (result?.task) {
     pendingPreviewTask = result.task;
-    renderPreviewRelatedTasks(pendingPreviewTask);
+    renderPreviewRelatedChips(pendingPreviewTask);
   }
+};
+
+const addRelatedTask = (id) => {
+  if (!pendingPreviewTask) return;
+  const next = [...new Set([...getRelatedTaskIds(pendingPreviewTask), Number(id)])];
+  if (previewRelatedTasksSearch) previewRelatedTasksSearch.value = '';
+  hideRelatedTaskResults();
+  saveRelatedTaskIds(next);
+};
+
+const removeRelatedTask = (id) => {
+  if (!pendingPreviewTask) return;
+  const next = getRelatedTaskIds(pendingPreviewTask).filter((existing) => existing !== Number(id));
+  saveRelatedTaskIds(next);
 };
 
 const insertChecklistItem = (editor) => {
