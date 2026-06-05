@@ -2,10 +2,13 @@
  * Audit Logging Decorator
  * 
  * Provides reusable functions to automatically log CRUD operations
- * to the audit log, reducing boilerplate code in route handlers.
+ * to the audit log with detailed change tracking, reducing boilerplate
+ * code in route handlers.
  * 
  * @module utils/auditDecorator
  */
+
+const { enhanceAuditEntry } = require('./auditChanges');
 
 /**
  * Create audit context from Express request
@@ -47,7 +50,7 @@ const logCreate = async ({ auditLogs, req, entityType, entityId, summary, after 
 };
 
 /**
- * Log update operation
+ * Log update operation with automatic change detection
  * 
  * @param {Object} params
  * @param {Object} params.auditLogs - Audit log service
@@ -60,7 +63,8 @@ const logCreate = async ({ auditLogs, req, entityType, entityId, summary, after 
  * @returns {Promise<void>}
  */
 const logUpdate = async ({ auditLogs, req, entityType, entityId, summary, before, after }) => {
-  await auditLogs.record({
+  // Enhance the audit entry with change details
+  const enhancedEntry = enhanceAuditEntry({
     ...createAuditContext(req),
     action: 'edit',
     entityType,
@@ -69,6 +73,8 @@ const logUpdate = async ({ auditLogs, req, entityType, entityId, summary, before
     before,
     after,
   });
+  
+  await auditLogs.record(enhancedEntry);
 };
 
 /**
