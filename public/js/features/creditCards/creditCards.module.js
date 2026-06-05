@@ -514,6 +514,7 @@
         event.preventDefault();
         await fastAccessBills.updateFromModal();
       });
+      elements.openAddFastAccessBillButton?.addEventListener('click', () => fastAccessBills.openEditModal(null));
       elements.cancelEditButton.addEventListener('click', closeEditModal);
       elements.cancelEditBillButton.addEventListener('click', fastAccessBills.closeEditModal);
       elements.exportCreditCardsCsvButton?.addEventListener('click', exportCreditCardsCsv);

@@ -194,11 +194,25 @@
       pendingEditBill = bill;
       clearEditBillError();
       elements.editBillForm.reset();
-      elements.editBillItemInput.value = bill.item || '';
-      elements.editBillAmountInput.value = formatters.formatBalanceInput(bill.amount);
-      elements.editBillDueDateInput.value = bill.due_date || '';
-      elements.editBillPayBeforeInput.value = bill.pay_before || '';
-      elements.editBillStatusInput.value = bill.status || 'Unpaid';
+      
+      if (bill) {
+        // Editing existing bill
+        elements.editBillItemInput.value = bill.item || '';
+        elements.editBillAmountInput.value = formatters.formatBalanceInput(bill.amount);
+        elements.editBillDueDateInput.value = bill.due_date || '';
+        elements.editBillPayBeforeInput.value = bill.pay_before || '';
+        elements.editBillStatusInput.value = bill.status || 'Unpaid';
+        document.getElementById('edit-fast-access-bill-title').textContent = t('editBill') || 'Edit bill';
+      } else {
+        // Adding new bill
+        elements.editBillItemInput.value = '';
+        elements.editBillAmountInput.value = '';
+        elements.editBillDueDateInput.value = '';
+        elements.editBillPayBeforeInput.value = '';
+        elements.editBillStatusInput.value = 'Unpaid';
+        document.getElementById('edit-fast-access-bill-title').textContent = t('addExpense') || 'Add Expense';
+      }
+      
       elements.editBillModal.classList.remove('hidden');
       elements.editBillItemInput.focus();
       elements.editBillItemInput.select();
@@ -240,8 +254,38 @@
       return result.bill;
     };
 
+    const createBill = async (billData, { showModalError = false } = {}) => {
+      const result = await request('/api/credit-cards/fast-access-bills', {
+        method: 'POST',
+        body: JSON.stringify({
+          item: billData.item,
+          amount: billData.amount,
+          due_date: billData.due_date,
+          pay_before: billData.pay_before,
+          status: billData.status,
+        }),
+      });
+
+      if (result.error) {
+        if (showModalError) {
+          showEditBillError(result.error);
+        } else {
+          elements.message.textContent = result.error;
+        }
+        render();
+        return null;
+      }
+
+      bills.push(result.bill);
+      elements.message.textContent = '';
+      render();
+      if (typeof showStatusToast === 'function') {
+        showStatusToast(t('expenseAdded') || 'Expense added', 'success');
+      }
+      return result.bill;
+    };
+
     const updateFromModal = async () => {
-      if (!pendingEditBill) return;
       clearEditBillError();
       elements.message.textContent = '';
 
@@ -259,15 +303,23 @@
         return;
       }
 
-      const updatedBill = await updateBill(pendingEditBill, {
+      const billData = {
         item,
         amount: Number(amount || 0),
         due_date: elements.editBillDueDateInput.value.trim(),
         pay_before: elements.editBillPayBeforeInput.value.trim(),
         status: elements.editBillStatusInput.value,
-      }, { showModalError: true });
+      };
 
-      if (updatedBill) closeEditModal();
+      if (pendingEditBill) {
+        // Update existing bill
+        const updatedBill = await updateBill(pendingEditBill, billData, { showModalError: true });
+        if (updatedBill) closeEditModal();
+      } else {
+        // Create new bill
+        const createdBill = await createBill(billData, { showModalError: true });
+        if (createdBill) closeEditModal();
+      }
     };
 
     const updateSortHeaders = () => {
@@ -397,6 +449,7 @@
         elements.exportFastAccessBillsExcelButton?.addEventListener('click', exportExcel);
       },
       closeEditModal,
+      openEditModal,
       render,
       renderHeaders,
       setBills,

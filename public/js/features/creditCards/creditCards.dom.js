@@ -38,6 +38,7 @@
     exportFastAccessBillsCsvButton: document.getElementById('export-fast-access-bills-csv'),
     exportFastAccessBillsPdfButton: document.getElementById('export-fast-access-bills-pdf'),
     exportFastAccessBillsExcelButton: document.getElementById('export-fast-access-bills-excel'),
+    openAddFastAccessBillButton: document.getElementById('open-add-fast-access-bill'),
     editBillModal: document.getElementById('edit-fast-access-bill-modal'),
     editBillForm: document.getElementById('edit-fast-access-bill-form'),
     editBillTitle: document.getElementById('edit-fast-access-bill-title'),

@@ -191,6 +191,33 @@ const createCreditCardsRouter = ({ authRequired, auditLogs, allAsync, getAsync, 
     }
   });
 
+  router.post('/fast-access-bills', async (req, res) => {
+    const validation = validateFastAccessBillDetails(req.body, {});
+    if (validation.error) {
+      return res.status(400).json({ error: validation.error });
+    }
+
+    try {
+      const bill = await creditCards.createFastAccessBill({
+        userId: req.session.userId,
+        ...validation.values,
+      });
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'create',
+        entityType: 'expense',
+        entityId: bill.id,
+        summary: bill.item,
+        after: bill,
+      });
+      emitToUser(req.session.userId, 'bill:created', { bill });
+      res.json({ bill });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to create expense');
+      res.status(500).json({ error: 'Failed to create expense' });
+    }
+  });
+
   router.get('/fast-access-links', async (req, res) => {
     try {
       const links = await creditCards.listFastAccessLinksForUser(req.session.userId);

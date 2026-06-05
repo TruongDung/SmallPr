@@ -163,8 +163,20 @@ const createCreditCardsService = ({ allAsync, getAsync, runAsync }) => {
     return findFastAccessBillById(id);
   };
 
+  const createFastAccessBill = async ({ userId, item, amount, dueDate, payBefore, status }) => {
+    const result = await runAsync(
+      `INSERT INTO fast_access_bills (user_id, item, amount, due_date, pay_before, status)
+       VALUES (?, ?, ?, ?, ?, ?)
+       RETURNING id`,
+      [userId, item, amount || 0, dueDate || '', payBefore || '', status || 'Unpaid']
+    );
+
+    return findFastAccessBillById(result.lastID);
+  };
+
   return {
     create,
+    createFastAccessBill,
     createFastAccessLink,
     findForUser,
     findFastAccessBillForUser,
