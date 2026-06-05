@@ -177,9 +177,13 @@
 
     result = processedLines.join('\n');
 
+    // Sequential counter shared across all rendered sections so each checkbox in
+    // the preview maps back to the Nth task-list line in the source body.
+    let checkboxIndex = 0;
+
     const renderMarkdownText = (section) => {
       const inlineCodeTokens = [];
-      const placeholder = (index) => `\uE100${index}\uE101`;
+      const placeholder = (index) => `${index}`;
       let rendered = escapeHtml(section);
 
       rendered = rendered.replace(/`([^`]+)`/g, (match, code) => {
@@ -191,6 +195,21 @@
       rendered = rendered.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/g, (match, label, url) => (
         `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`
       ));
+
+      // Task-list items (- [ ] / - [x]) become clickable checkboxes. Each gets a
+      // sequential data-check-index so a click can flip the matching source line.
+      // Must run before the generic list rule below so these lines aren't also
+      // captured as plain bullets.
+      rendered = rendered.replace(/^\s*[-*]\s+\[([ xX])\]\s+(.+)$/gm, (match, state, text) => {
+        const checked = state.toLowerCase() === 'x';
+        const index = checkboxIndex;
+        checkboxIndex += 1;
+        return (
+          `<label class="note-check-item${checked ? ' checked' : ''}" data-check-index="${index}">`
+          + `<input type="checkbox" class="note-check-input"${checked ? ' checked' : ''}> `
+          + `<span class="note-check-text">${text}</span></label>`
+        );
+      });
 
       rendered = rendered
         .replace(/^######\s+(.+)$/gm, '<h6>$1</h6>')

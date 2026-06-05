@@ -5903,6 +5903,37 @@ body.theme-dark .finance-export-button.secondary:disabled {
   padding-left: 1.3rem;
 }
 
+.note-preview .note-check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 2px 0;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.note-preview .note-check-input {
+  width: 16px;
+  height: 16px;
+  min-height: 0;
+  margin: 3px 0 0;
+  padding: 0;
+  flex: 0 0 auto;
+  border-radius: 4px;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.note-preview .note-check-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.note-preview .note-check-item.checked .note-check-text {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
 .note-preview blockquote {
   margin: 0.6em 0;
   padding-left: 12px;

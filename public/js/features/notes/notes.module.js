@@ -14,6 +14,7 @@
     const previewDiv = document.getElementById('note-preview');
     const togglePreviewButton = document.getElementById('toggle-preview-button');
     const pasteButton = document.getElementById('note-paste-button');
+    const checkboxButton = document.getElementById('note-checkbox-button');
     const taskLabel = document.getElementById('note-task-label');
     const taskSelect = document.getElementById('note-task-select');
     const historyButton = document.getElementById('note-history-button');
@@ -493,6 +494,10 @@
         pasteButton.textContent = t('notePaste');
         pasteButton.title = t('notePaste');
       }
+      if (checkboxButton) {
+        checkboxButton.textContent = `☐ ${t('noteCheckbox')}`;
+        checkboxButton.title = t('noteCheckbox');
+      }
       if (taskLabel) taskLabel.textContent = t('linkedTask');
       if (historyButton) historyButton.textContent = t('noteHistory');
       if (historyTitle) historyTitle.textContent = t('noteHistory');
@@ -541,6 +546,24 @@
           if (showPreview) {
             updatePreview();
           }
+        });
+      }
+
+      if (checkboxButton) {
+        checkboxButton.addEventListener('click', insertCheckbox);
+      }
+
+      // Toggle a task-list checkbox when its rendered counterpart is clicked in
+      // the preview. The input's checked state is driven by the source body, so
+      // prevent the default toggle and let toggleCheckboxLine re-render.
+      if (previewDiv) {
+        previewDiv.addEventListener('click', (event) => {
+          const input = event.target.closest('.note-check-input');
+          if (!input) return;
+          event.preventDefault();
+          const label = input.closest('[data-check-index]');
+          const index = Number(label?.dataset.checkIndex);
+          if (Number.isInteger(index)) toggleCheckboxLine(index);
         });
       }
 
@@ -637,6 +660,49 @@
       if (!previewDiv || !window.NotesCodeHighlighter) return;
       const highlighted = window.NotesCodeHighlighter.detectAndHighlightCodeBlocks(bodyInput.value);
       previewDiv.innerHTML = highlighted || '<p style="color: #999;">Nothing to preview</p>';
+    };
+
+    // Insert a `- [ ] ` task-list marker on its own line at the caret. Starts a
+    // fresh line when the caret isn't already at the beginning of one so the
+    // markdown checkbox renders correctly in preview.
+    const insertCheckbox = () => {
+      if (editorForm.classList.contains('hidden')) return;
+      const marker = '- [ ] ';
+      const value = bodyInput.value;
+      const start = bodyInput.selectionStart ?? value.length;
+      const end = bodyInput.selectionEnd ?? start;
+      const atLineStart = start === 0 || value[start - 1] === '\n';
+      const insertion = (atLineStart ? '' : '\n') + marker;
+
+      bodyInput.value = value.slice(0, start) + insertion + value.slice(end);
+      const caret = start + insertion.length;
+      bodyInput.focus();
+      bodyInput.setSelectionRange(caret, caret);
+
+      scheduleSave();
+      if (showPreview) updatePreview();
+    };
+
+    // Flip the Nth `- [ ] ` / `- [x] ` line in the body. Called when a checkbox
+    // in the rendered preview is clicked; data-check-index matches the order the
+    // highlighter assigned while rendering.
+    const toggleCheckboxLine = (index) => {
+      const lines = bodyInput.value.split('\n');
+      const pattern = /^(\s*[-*]\s+\[)([ xX])(\]\s+.*)$/;
+      let seen = -1;
+      for (let i = 0; i < lines.length; i += 1) {
+        const match = lines[i].match(pattern);
+        if (!match) continue;
+        seen += 1;
+        if (seen === index) {
+          const next = match[2].toLowerCase() === 'x' ? ' ' : 'x';
+          lines[i] = `${match[1]}${next}${match[3]}`;
+          break;
+        }
+      }
+      bodyInput.value = lines.join('\n');
+      scheduleSave();
+      updatePreview();
     };
 
     const closeHistory = () => {
