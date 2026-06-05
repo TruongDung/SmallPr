@@ -172,6 +172,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     priority,
     status,
     timeSpentMinutes,
+    dueDate,
     reminderAt,
     attachment,
     isRecurring,
@@ -184,10 +185,10 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
   }) => {
     const result = await runAsync(
       `INSERT INTO tasks (
-        user_id, title, tag, description, comment, priority, status, completed, time_spent_minutes, reminder_at,
+        user_id, title, tag, description, comment, priority, status, completed, time_spent_minutes, due_date, reminder_at,
         attachment_name, attachment_type, attachment_data, attachment_size,
         is_recurring, recurrence_pattern, recurrence_interval, recurrence_days, parent_task_id, next_occurrence_date
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       [
         userId,
         title,
@@ -198,6 +199,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         status,
         status === 'done' ? 1 : 0,
         timeSpentMinutes || 0,
+        dueDate || null,
         reminderAt || null,
         attachment?.name || null,
         attachment?.type || null,
@@ -229,6 +231,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     status,
     archived,
     timeSpentMinutes,
+    dueDate,
     reminderAt,
     hasAttachmentUpdate,
     attachment,
@@ -250,6 +253,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         archived = ?,
         completed = ?,
         time_spent_minutes = ?,
+        due_date = ?,
         reminder_at = ?,
         attachment_name = ?,
         attachment_type = ?,
@@ -271,6 +275,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         archived !== undefined ? (archived ? 1 : 0) : existingTask.archived,
         status === 'done' ? 1 : 0,
         timeSpentMinutes !== undefined ? timeSpentMinutes : existingTask.time_spent_minutes,
+        dueDate !== undefined ? dueDate || null : existingTask.due_date,
         reminderAt !== undefined ? reminderAt || null : existingTask.reminder_at,
         hasAttachmentUpdate ? attachment?.name || null : existingTask.attachment_name,
         hasAttachmentUpdate ? attachment?.type || null : existingTask.attachment_type,

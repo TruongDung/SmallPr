@@ -22,6 +22,11 @@ const buildTaskListCacheKey = ({ userId, archived }) => [
 
 const buildTaskTagsCacheKey = (userId) => `user:${userId}:task-tags:v1`;
 
+const clearTaskCaches = async (cache, userId) => {
+  await cache?.deleteByPattern?.(`user:${userId}:tasks:*`);
+  await cache?.deleteByPattern?.(buildTaskTagsCacheKey(userId));
+};
+
 const sendCachedJson = ({ res, payload, cacheStatus }) => {
   res.set('Cache-Control', 'no-store');
   res.set('X-Redis-Cache', cacheStatus);
@@ -92,6 +97,7 @@ const createTasksRouter = ({
 
     try {
       const tag = await tasks.ensureTaskTag(req.session.userId, name);
+      await clearTaskCaches(cache, req.session.userId);
       res.json({ tag });
     } catch (error) {
       logger.error({ err: error }, 'Failed to save tag');
@@ -123,6 +129,7 @@ const createTasksRouter = ({
           existingTag: existing,
           tagId: id,
         });
+        await clearTaskCaches(cache, req.session.userId);
         return res.json({ tag: mergedTag });
       }
 
@@ -132,6 +139,7 @@ const createTasksRouter = ({
         name,
         previousName: tag.name,
       });
+      await clearTaskCaches(cache, req.session.userId);
       res.json({ tag: updatedTag });
     } catch (error) {
       logger.error({ err: error }, 'Failed to update tag');
@@ -149,6 +157,7 @@ const createTasksRouter = ({
       }
 
       await tasks.deleteTag({ id, userId: req.session.userId, name: tag.name });
+      await clearTaskCaches(cache, req.session.userId);
       res.json({ success: true });
     } catch (error) {
       logger.error({ err: error }, 'Failed to delete tag');
@@ -215,6 +224,7 @@ const createTasksRouter = ({
         ...taskInput,
       });
       await tasks.ensureTaskTag(req.session.userId, taskInput.tag);
+      await clearTaskCaches(cache, req.session.userId);
       const user = await getUserById(req.session.userId);
       let emailSent = false;
 
@@ -266,6 +276,7 @@ const createTasksRouter = ({
       if (taskInput.hasTagUpdate) {
         await tasks.ensureTaskTag(req.session.userId, taskInput.tag);
       }
+      await clearTaskCaches(cache, req.session.userId);
 
       // If task was marked as done and is recurring, create next instance
       if (taskInput.status === 'done' && task.is_recurring && task.status !== 'done') {
@@ -314,6 +325,7 @@ const createTasksRouter = ({
       }
 
       await tasks.deleteTask(id, req.session.userId);
+      await clearTaskCaches(cache, req.session.userId);
       await auditLogs.record({
         ...createAuditContext(req),
         action: 'delete',

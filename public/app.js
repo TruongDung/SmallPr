@@ -66,6 +66,7 @@ const settingsNewPasswordInput = document.getElementById('settings-new-password'
 const passwordSettingsFormError = document.getElementById('password-settings-form-error');
 const savePasswordSettings = document.getElementById('save-password-settings');
 const taskList = document.getElementById('task-list');
+const calendarSection = document.getElementById('calendar-section');
 const tagList = document.getElementById('tag-list');
 const userList = document.getElementById('user-list');
 const auditLogList = document.getElementById('audit-log-list');
@@ -91,6 +92,7 @@ const taskPriorityInput = document.getElementById('task-priority');
 const taskStatusInput = document.getElementById('task-status');
 const taskTagInput = document.getElementById('task-tag');
 const taskTagSuggestions = document.getElementById('task-tag-suggestions');
+const taskDueDateInput = document.getElementById('task-due-date');
 const taskReminderInput = document.getElementById('task-reminder');
 const taskRecurringCheckbox = document.getElementById('task-recurring');
 const recurrenceOptions = document.getElementById('recurrence-options');
@@ -133,6 +135,7 @@ const editTaskTagInput = document.getElementById('edit-task-tag-input');
 const editTaskTagSuggestions = document.getElementById('edit-task-tag-suggestions');
 const editTaskDescriptionInput = document.getElementById('edit-task-description-input');
 const editTaskCommentInput = document.getElementById('edit-task-comment-input');
+const editTaskDueDateInput = document.getElementById('edit-task-due-date-input');
 const editTaskReminderInput = document.getElementById('edit-task-reminder-input');
 const editTaskAttachmentInput = document.getElementById('edit-task-attachment-input');
 const editCurrentAttachment = document.getElementById('edit-current-attachment');
@@ -186,7 +189,7 @@ const SAVED_VIEW_KEY = 'task-manager-current-view';
 const REMEMBER_ME_KEY = 'task-manager-remember-me';
 const rememberMeCheckbox = document.getElementById('remember-me');
 const rememberMeText = document.getElementById('remember-me-text');
-const VIEW_NAMES = new Set(['dashboard', 'notes', 'tasks', 'archived', 'tags', 'weather', 'credit-cards', 'admin']);
+const VIEW_NAMES = new Set(['dashboard', 'notes', 'tasks', 'calendar', 'archived', 'tags', 'weather', 'credit-cards', 'admin']);
 const isAdminUser = () => currentUser?.username === 'admin';
 const isImpersonating = () => Boolean(currentUser?.impersonator);
 const getSavedView = () => {
@@ -351,8 +354,16 @@ const applyTranslations = () => {
   taskTagInput.placeholder = t('tagPlaceholder');
   setText('#tag-manager-title', t('manageTags'));
   setText('#tasks-subtab', t('tasks'));
+  setText('#calendar-subtab', t('calendar'));
   setText('#archived-subtab', t('archive'));
   setText('#tag-subtab', t('tag'));
+  setText('#calendar-title', t('calendar'));
+  setText('#calendar-today', t('calendarToday'));
+  setText('[data-calendar-view="today"]', t('calendarToday'));
+  setText('[data-calendar-view="week"]', t('calendarWeek'));
+  setText('[data-calendar-view="month"]', t('calendarMonth'));
+  setText('#calendar-deadlines-title', t('upcomingDeadlines'));
+  setText('#calendar-overdue-title', t('overdueTasks'));
   setText('label[for="tag-name"]', t('tagName'));
   document.getElementById('tag-name').placeholder = t('tagPlaceholder');
   setText('#tag-form button[type="submit"]', t('addTag'));
@@ -381,6 +392,7 @@ const applyTranslations = () => {
   }
   setText('label[for="task-description"]', `${t('description')} ${t('max500')}`);
   document.getElementById('task-description').setAttribute('data-placeholder', t('descriptionPlaceholder'));
+  setText('label[for="task-due-date"]', t('dueDate'));
   setText('label[for="task-reminder"]', t('dateTimeAlert'));
   setText('label[for="task-attachment"]', t('uploadFile'));
   setText('#add-task-title', t('addTask'));
@@ -419,6 +431,7 @@ const applyTranslations = () => {
   editTaskDescriptionInput.setAttribute('data-placeholder', t('descriptionPlaceholder'));
   setText('label[for="edit-task-comment-input"]', t('addComment'));
   editTaskCommentInput.setAttribute('data-placeholder', t('commentPlaceholder'));
+  setText('label[for="edit-task-due-date-input"]', t('dueDate'));
   setText('label[for="edit-task-reminder-input"]', t('dateTimeAlert'));
   setText('label[for="edit-task-attachment-input"]', t('uploadFile'));
   renderEditAttachmentState();
@@ -476,6 +489,7 @@ const applyTranslations = () => {
   if (currentUser) setActiveTaskSubtab();
   if (currentUser) renderTags(tags);
   if (currentUser && (currentView === 'tasks' || currentView === 'archived')) renderTasks(tasks);
+  if (currentUser && currentView === 'calendar') calendarModule.render();
   if (currentUser && currentView === 'weather') weatherModule.render();
   if (currentUser && currentView === 'credit-cards') creditCardModule.render();
   if (currentUser && currentView === 'admin') renderUsers(users);
@@ -521,6 +535,20 @@ const updateTaskSearchState = () => {
   clearTaskSearch.classList.toggle('hidden', !taskSearchInput.value.trim());
 };
 
+const getTaskDueDateKey = (task) => String(task?.due_date || '').slice(0, 10);
+
+const getTodayDateKey = () => {
+  const today = new Date();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${today.getFullYear()}-${month}-${day}`;
+};
+
+const isTaskOverdue = (task) => {
+  const dueDate = getTaskDueDateKey(task);
+  return Boolean(dueDate && dueDate < getTodayDateKey() && taskStatus(task) !== 'done');
+};
+
 const savePreviewChecklistField = async (field, container) => {
   if (!pendingPreviewTask) return;
   const value = sanitizeRichText(container.innerHTML);
@@ -564,6 +592,15 @@ const {
   hideResults: hideRelatedTaskResults,
   render: renderRelatedTaskPicker,
 } = relatedTasksModule;
+
+const calendarModule = window.CalendarModule.create({
+  t,
+  getTasks: () => tasks,
+  taskStatus,
+  updateTask: (...args) => updateTask(...args),
+  showPreviewTaskModal: (...args) => showPreviewTaskModal(...args),
+  showEditTaskModal: (...args) => showEditTaskModal(...args),
+});
 
 const isPdfAttachment = (task) => {
   const type = String(task?.attachment_type || '').toLowerCase();
@@ -747,7 +784,7 @@ const scheduleTaskReminders = (loadedTasks) => {
   });
 };
 
-const isTaskWorkspaceView = () => ['tasks', 'archived', 'tags'].includes(currentView);
+const isTaskWorkspaceView = () => ['tasks', 'calendar', 'archived', 'tags'].includes(currentView);
 
 const setCurrentView = (view, { persist = true } = {}) => {
   const previousView = currentView;
@@ -826,12 +863,14 @@ const showSection = () => {
 
   const showWeather = currentView === 'weather';
   const showTags = currentView === 'tags';
+  const showCalendar = currentView === 'calendar';
   taskSubtabNav.classList.toggle('hidden', !showTaskWorkspace);
   setActiveTaskSubtab();
   weatherModule.hideQuoteWidget();
-  taskHeader.classList.toggle('hidden', showWeather || showTags);
+  taskHeader.classList.toggle('hidden', showWeather || showTags || showCalendar);
   tagManager.classList.toggle('hidden', !showTags);
-  taskList.classList.toggle('hidden', showWeather || showTags);
+  calendarSection.classList.toggle('hidden', !showCalendar);
+  taskList.classList.toggle('hidden', showWeather || showTags || showCalendar);
   weatherSection.classList.toggle('hidden', !showWeather);
 
   if (showWeather) {
@@ -843,6 +882,12 @@ const showSection = () => {
     weatherModule.hideQuoteWidget();
     taskForm.classList.add('hidden');
     loadTags();
+    loadTasks();
+    return;
+  }
+
+  if (showCalendar) {
+    taskForm.classList.add('hidden');
     loadTasks();
     return;
   }
@@ -2035,6 +2080,7 @@ const handleTaskSubmit = async (event) => {
   const tag = taskTagInput.value.trim();
   const descriptionEditor = document.getElementById('task-description');
   const description = getRichEditorValue(descriptionEditor);
+  const due_date = taskDueDateInput.value || null;
   const reminder_at = taskReminderInput.value || null;
   const attachmentFile = taskAttachmentInput.files[0] || null;
 
@@ -2099,7 +2145,7 @@ const handleTaskSubmit = async (event) => {
     const result = await request('/api/tasks', {
       method: 'POST',
       body: JSON.stringify({
-        title, tag, description, priority, status, reminder_at, attachment: preparedAttachment, language: currentLanguage,
+        title, tag, description, priority, status, due_date, reminder_at, attachment: preparedAttachment, language: currentLanguage,
         is_recurring, recurrence_pattern, recurrence_interval, recurrence_days
       }),
     });
@@ -2128,6 +2174,7 @@ const handleTaskSubmit = async (event) => {
         priority,
         status,
         has_tag: Boolean(tag),
+        has_due_date: Boolean(due_date),
         has_reminder: Boolean(reminder_at),
         has_attachment: Boolean(preparedAttachment),
         is_recurring: Boolean(is_recurring),
@@ -2151,6 +2198,9 @@ const loadTasks = async () => {
       renderTags(tags);
     }
     renderTasks(result.tasks);
+    if (currentView === 'calendar') {
+      calendarModule.render();
+    }
     if (!showingArchived) {
       scheduleTaskReminders(result.tasks);
     }
@@ -2273,6 +2323,7 @@ const createTaskCard = (task) => {
     card.className = [
       'task-item',
       isHighPriority ? 'priority-high-task' : '',
+      isTaskOverdue(task) ? 'overdue-task' : '',
       currentStatus === 'done' ? 'completed' : '',
       isArchived ? 'archived' : '',
     ].filter(Boolean).join(' ');
@@ -2333,6 +2384,10 @@ const createTaskCard = (task) => {
     reminder.className = 'task-reminder';
     reminder.textContent = `${t('alert')}: ${formatLocalDateTime(task.reminder_at)}`;
 
+    const dueDate = document.createElement('p');
+    dueDate.className = 'task-due-date';
+    dueDate.textContent = `${t('dueDate')}: ${getTaskDueDateKey(task)}`;
+
     const attachment = document.createElement('a');
     if (task.attachment_data && task.attachment_name) {
       attachment.className = 'task-attachment';
@@ -2386,6 +2441,9 @@ const createTaskCard = (task) => {
     card.append(hoverMessage, meta, description);
     if (task.comment) {
       card.append(comment);
+    }
+    if (task.due_date) {
+      card.append(dueDate);
     }
     if (task.reminder_at) {
       card.append(reminder);
@@ -2787,6 +2845,7 @@ const showEditTaskModal = (task) => {
   editTaskTagInput.value = task.tag || '';
   setRichEditorValue(editTaskDescriptionInput, task.description || '');
   setRichEditorValue(editTaskCommentInput, task.comment || '');
+  editTaskDueDateInput.value = String(task.due_date || '').slice(0, 10);
   editTaskReminderInput.value = formatDateTimeLocalValue(task.reminder_at);
   editTaskRecurringCheckbox.checked = Boolean(task.is_recurring);
   editTaskRecurrencePattern.value = task.recurrence_pattern || 'daily';
@@ -2842,6 +2901,7 @@ const handleEditTaskSubmit = async (event) => {
   const tag = editTaskTagInput.value.trim();
   const description = getRichEditorValue(editTaskDescriptionInput);
   const comment = getRichEditorValue(editTaskCommentInput);
+  const dueDate = editTaskDueDateInput.value || null;
   const reminderAt = editTaskReminderInput.value || null;
   const attachmentFile = editTaskAttachmentInput.files[0] || null;
   const isRecurring = editTaskRecurringCheckbox.checked;
@@ -2903,6 +2963,7 @@ const handleEditTaskSubmit = async (event) => {
     status,
     description,
     comment,
+    due_date: dueDate,
     reminder_at: reminderAt,
     is_recurring: isRecurring,
     recurrence_pattern: recurrencePattern,
@@ -3262,6 +3323,7 @@ transactionsModule.bind();
 window.transactionsModule = transactionsModule;
 notesModule.bind();
 dashboardModule.bind();
+calendarModule.bind();
 weatherModule.bind();
 editTaskForm.addEventListener('submit', handleEditTaskSubmit);
 adminUserForm.addEventListener('submit', handleAdminUserSubmit);

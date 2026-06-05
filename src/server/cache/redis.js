@@ -107,6 +107,7 @@ const clearUserCache = (userId) => deleteByPattern(`user:${userId}:*`);
 module.exports = {
   clearUserCache,
   connectRedis,
+  deleteByPattern,
   getJson,
   isEnabled,
   isReady,

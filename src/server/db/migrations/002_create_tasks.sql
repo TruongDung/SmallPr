@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   archived INTEGER NOT NULL DEFAULT 0,
   completed INTEGER NOT NULL DEFAULT 0,
   time_spent_minutes INTEGER DEFAULT 0,
+  due_date DATE,
   reminder_at TEXT,
   is_recurring BOOLEAN DEFAULT FALSE,
   recurrence_pattern TEXT,

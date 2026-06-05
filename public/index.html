@@ -177,6 +177,7 @@
 
         <div id="task-subtab-nav" class="task-subtabs" role="tablist" aria-label="Tasks">
           <button id="tasks-subtab" class="task-subtab active" type="button" role="tab" aria-selected="true" data-task-tab="tasks">Tasks</button>
+          <button id="calendar-subtab" class="task-subtab" type="button" role="tab" aria-selected="false" data-task-tab="calendar">Calendar</button>
           <button id="archived-subtab" class="task-subtab" type="button" role="tab" aria-selected="false" data-task-tab="archived">Archive</button>
           <button id="tag-subtab" class="task-subtab" type="button" role="tab" aria-selected="false" data-task-tab="tags">Tag</button>
         </div>
@@ -246,6 +247,10 @@
             <p id="description-error" class="field-error hidden"></p>
           </div>
           <div class="field">
+            <label for="task-due-date">Due Date</label>
+            <input id="task-due-date" type="date" />
+          </div>
+          <div class="field">
             <label for="task-reminder">Date Time Alert</label>
             <input id="task-reminder" type="datetime-local" />
           </div>
@@ -313,6 +318,38 @@
             <button type="submit" class="secondary">Add Tag</button>
           </form>
           <div id="tag-list" class="tag-list"></div>
+        </section>
+
+        <section id="calendar-section" class="calendar-section hidden" aria-labelledby="calendar-title" role="tabpanel">
+          <div class="calendar-toolbar">
+            <div>
+              <h2 id="calendar-title">Calendar</h2>
+              <p id="calendar-range-label" class="calendar-range-label"></p>
+            </div>
+            <div class="calendar-controls" role="group" aria-label="Calendar controls">
+              <button id="calendar-prev" class="secondary task-action-icon" type="button" aria-label="Previous" title="Previous">&lt;</button>
+              <button id="calendar-today" class="secondary" type="button">Today</button>
+              <button id="calendar-next" class="secondary task-action-icon" type="button" aria-label="Next" title="Next">&gt;</button>
+            </div>
+            <div class="calendar-view-switch" role="tablist" aria-label="Calendar view">
+              <button class="calendar-view-button" type="button" role="tab" aria-selected="false" data-calendar-view="today">Today</button>
+              <button class="calendar-view-button active" type="button" role="tab" aria-selected="true" data-calendar-view="week">Week</button>
+              <button class="calendar-view-button" type="button" role="tab" aria-selected="false" data-calendar-view="month">Month</button>
+            </div>
+          </div>
+          <div class="calendar-layout">
+            <div id="calendar-grid" class="calendar-grid"></div>
+            <aside class="calendar-deadline-panel" aria-labelledby="calendar-deadlines-title">
+              <section>
+                <h3 id="calendar-deadlines-title">Upcoming deadlines</h3>
+                <div id="calendar-upcoming-list" class="calendar-deadline-list"></div>
+              </section>
+              <section>
+                <h3 id="calendar-overdue-title">Overdue tasks</h3>
+                <div id="calendar-overdue-list" class="calendar-deadline-list"></div>
+              </section>
+            </aside>
+          </div>
         </section>
 
         <div id="task-list" class="task-list"></div>
@@ -1010,6 +1047,10 @@
           </div>
         </div>
         <div class="field">
+          <label for="edit-task-due-date-input">Due Date</label>
+          <input id="edit-task-due-date-input" type="date" />
+        </div>
+        <div class="field">
           <label for="edit-task-reminder-input">Date Time Alert</label>
           <input id="edit-task-reminder-input" type="datetime-local" />
         </div>
@@ -1193,6 +1234,7 @@
   <script src="js/features/notes/notes.module.js?v=cache-clear-20260605-1"></script>
   <script src="js/features/dashboard/dashboard.module.js?v=cache-clear-20260601-7"></script>
   <script src="js/tasks.js?v=cache-clear-20260604-1"></script>
+  <script src="js/features/tasks/calendar.module.js?v=cache-clear-20260605-1"></script>
   <script src="js/features/tasks/relatedTasks.module.js?v=cache-clear-20260605-1"></script>
   <script src="js/weather.js?v=cache-clear-20260604-1"></script>
   <script src="js/transactions.module.js?v=cache-clear-20260601-7"></script>
