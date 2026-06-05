@@ -75,6 +75,40 @@
       return normalized.length > 140 ? `${normalized.slice(0, 137)}...` : normalized;
     };
 
+    const normalizeDiffLines = (value = '') => String(value || '')
+      .replace(/\r\n/g, '\n')
+      .split('\n')
+      .map((line) => line.trimEnd());
+
+    const formatDiffLine = (value) => {
+      const normalized = String(value || '').trim();
+      return normalized || '—';
+    };
+
+    const buildLineDiff = (beforeValue = '', afterValue = '') => {
+      const beforeLines = normalizeDiffLines(beforeValue);
+      const afterLines = normalizeDiffLines(afterValue);
+      const maxLength = Math.max(beforeLines.length, afterLines.length);
+      const rows = [];
+
+      for (let index = 0; index < maxLength; index += 1) {
+        const beforeLine = beforeLines[index];
+        const afterLine = afterLines[index];
+        if (beforeLine === afterLine) continue;
+
+        if (beforeLine === undefined) {
+          rows.push({ type: 'added', text: formatDiffLine(afterLine) });
+        } else if (afterLine === undefined) {
+          rows.push({ type: 'removed', text: formatDiffLine(beforeLine) });
+        } else {
+          rows.push({ type: 'removed', text: formatDiffLine(beforeLine) });
+          rows.push({ type: 'added', text: formatDiffLine(afterLine) });
+        }
+      }
+
+      return rows.slice(0, 12);
+    };
+
     const taskNameFor = (taskId, taskTitle) => {
       if (taskTitle) return taskTitle;
       const normalizedTaskId = normalizeTaskId(taskId);
@@ -98,9 +132,11 @@
 
       if (String(version.body || '') !== String(currentNote.body || '')) {
         changes.push({
+          type: 'body',
           label: t('noteHistoryBodyChanged'),
           before: summarizeHistoryText(version.body),
           after: summarizeHistoryText(currentNote.body),
+          diff: buildLineDiff(version.body, currentNote.body),
         });
       }
 
@@ -790,6 +826,13 @@
         changesTitle.textContent = changes.length ? t('noteHistoryChangedFields') : t('noteHistoryNoChanges');
         changesWrap.append(changesTitle);
 
+        if (changes.some((change) => change.type === 'body')) {
+          const diffHint = document.createElement('span');
+          diffHint.className = 'note-history-diff-hint';
+          diffHint.textContent = t('noteHistoryDiffHint');
+          changesWrap.append(diffHint);
+        }
+
         changes.forEach((change) => {
           const row = document.createElement('div');
           row.className = 'note-history-change';
@@ -804,6 +847,30 @@
           after.textContent = `${t('noteHistoryNow')}: ${change.after}`;
 
           row.append(label, before, after);
+
+          if (change.type === 'body' && change.diff?.length) {
+            const diffList = document.createElement('div');
+            diffList.className = 'note-history-diff';
+
+            change.diff.forEach((line) => {
+              const diffLine = document.createElement('div');
+              diffLine.className = `note-history-diff-line ${line.type}`;
+
+              const marker = document.createElement('span');
+              marker.className = 'note-history-diff-marker';
+              marker.textContent = line.type === 'added' ? '+' : '−';
+
+              const text = document.createElement('span');
+              text.className = 'note-history-diff-text';
+              text.textContent = line.text;
+
+              diffLine.append(marker, text);
+              diffList.append(diffLine);
+            });
+
+            row.append(diffList);
+          }
+
           changesWrap.append(row);
         });
 

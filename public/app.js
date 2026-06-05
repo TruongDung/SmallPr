@@ -1762,6 +1762,22 @@ const formatAuditTarget = (log) => {
   return `${type} #${log.entity_id || ''}`.trim();
 };
 
+const formatAuditDateTime = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const year = String(date.getFullYear()).slice(-2);
+  const time = date.toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+
+  return `${month}/${day}/${year} ${time}`;
+};
+
 const renderAuditLogs = (logs) => {
   if (!auditLogList) return;
   auditLogList.innerHTML = '';
@@ -1783,7 +1799,7 @@ const renderAuditLogs = (logs) => {
       ? `${log.actor_username || ''} -> ${log.username || ''}`
       : (log.actor_username || log.username || '');
     const cells = [
-      [t('time'), formatLocalDateTime(log.created_at)],
+      [t('time'), formatAuditDateTime(log.created_at)],
       [t('actor'), actor],
       [t('actions'), formatAuditAction(log.action)],
       [t('target'), formatAuditTarget(log)],

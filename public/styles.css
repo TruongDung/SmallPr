@@ -6180,6 +6180,11 @@ body.theme-dark .finance-export-button.secondary:disabled {
   font-weight: 800;
 }
 
+.note-history-diff-hint {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
 .note-history-change {
   display: grid;
   gap: 4px;
@@ -6197,6 +6202,47 @@ body.theme-dark .finance-export-button.secondary:disabled {
   overflow-wrap: anywhere;
 }
 
+.note-history-diff {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.82rem;
+}
+
+.note-history-diff-line {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 6px;
+  align-items: start;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+
+.note-history-diff-line.added {
+  color: #166534;
+  background: color-mix(in srgb, #22c55e 15%, var(--surface));
+  border-color: color-mix(in srgb, #22c55e 35%, var(--border));
+}
+
+.note-history-diff-line.removed {
+  color: #991b1b;
+  background: color-mix(in srgb, #ef4444 14%, var(--surface));
+  border-color: color-mix(in srgb, #ef4444 35%, var(--border));
+}
+
+.note-history-diff-marker {
+  font-weight: 900;
+  color: currentColor;
+}
+
+.note-history-diff-text {
+  color: currentColor;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .note-history-pagination {
   display: flex;
   align-items: center;
@@ -6209,6 +6255,26 @@ body.theme-dark .finance-export-button.secondary:disabled {
 
 .note-history-pagination button {
   min-width: 92px;
+}
+
+body.theme-dark .note-history-modal button.secondary {
+  background: color-mix(in srgb, var(--surface) 72%, white 8%);
+  color: var(--text);
+  border-color: color-mix(in srgb, var(--border) 65%, white 22%);
+}
+
+body.theme-dark .note-history-modal button.secondary:hover:not(:disabled),
+body.theme-dark .note-history-modal button.secondary:focus-visible:not(:disabled) {
+  background: color-mix(in srgb, var(--primary) 18%, var(--surface));
+  color: #f8fafc;
+  border-color: color-mix(in srgb, var(--primary) 58%, white 18%);
+}
+
+body.theme-dark .note-history-modal button.secondary:disabled {
+  opacity: 1;
+  background: color-mix(in srgb, var(--surface) 82%, white 5%);
+  color: color-mix(in srgb, var(--text) 58%, transparent);
+  border-color: color-mix(in srgb, var(--border) 75%, white 12%);
 }
 
 body:not(.theme-dark) .notes-editor-actions button.secondary {
