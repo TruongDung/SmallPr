@@ -136,6 +136,11 @@ const editTaskCommentInput = document.getElementById('edit-task-comment-input');
 const editTaskReminderInput = document.getElementById('edit-task-reminder-input');
 const editTaskAttachmentInput = document.getElementById('edit-task-attachment-input');
 const editCurrentAttachment = document.getElementById('edit-current-attachment');
+const editRelatedTasksList = document.getElementById('edit-related-tasks-list');
+const editRelatedTasksCount = document.getElementById('edit-related-tasks-count');
+const editRelatedTasksSearch = document.getElementById('edit-related-tasks-search');
+const editRelatedTasksResults = document.getElementById('edit-related-tasks-results');
+const editRelatedTasksHint = document.getElementById('edit-related-tasks-hint');
 const editTitleError = document.getElementById('edit-title-error');
 const editDescriptionError = document.getElementById('edit-description-error');
 const editAttachmentError = document.getElementById('edit-attachment-error');
@@ -144,7 +149,7 @@ const cancelEditTask = document.getElementById('cancel-edit-task');
 const previewTaskModal = document.getElementById('preview-task-modal');
 const previewTaskTitle = document.getElementById('preview-task-title');
 const previewTaskDescription = document.getElementById('preview-task-description');
-const previewRelatedTasksChips = document.getElementById('preview-related-tasks-chips');
+const previewRelatedTasksList = document.getElementById('preview-related-tasks-list');
 const previewRelatedTasksCount = document.getElementById('preview-related-tasks-count');
 const previewRelatedTasksSearch = document.getElementById('preview-related-tasks-search');
 const previewRelatedTasksResults = document.getElementById('preview-related-tasks-results');
@@ -388,6 +393,9 @@ const applyTranslations = () => {
   saveAddTask.title = t('addTask');
   editTaskTitle.textContent = t('editTaskTitle');
   updatePreviewTaskModalTitle();
+  setText('#edit-related-tasks-label', t('relatedTasks'));
+  if (editRelatedTasksSearch) editRelatedTasksSearch.placeholder = t('relatedTasksSearchPlaceholder');
+  if (editRelatedTasksHint) editRelatedTasksHint.textContent = t('relatedTasksHint');
   setText('#preview-related-tasks-label', t('relatedTasks'));
   if (previewRelatedTasksSearch) previewRelatedTasksSearch.placeholder = t('relatedTasksSearchPlaceholder');
   if (previewRelatedTasksHint) previewRelatedTasksHint.textContent = t('relatedTasksHint');
@@ -647,20 +655,39 @@ const resolveRelatedTask = (id, task) => {
   return snapshot || { id: numericId, title: '', status: 'todo' };
 };
 
-const renderPreviewRelatedChips = (task) => {
-  if (!previewRelatedTasksChips) return;
-  previewRelatedTasksChips.innerHTML = '';
+const relatedTaskPickers = {
+  edit: {
+    list: editRelatedTasksList,
+    count: editRelatedTasksCount,
+    search: editRelatedTasksSearch,
+    results: editRelatedTasksResults,
+    getTask: () => pendingEditTask,
+  },
+  preview: {
+    list: previewRelatedTasksList,
+    count: previewRelatedTasksCount,
+    search: previewRelatedTasksSearch,
+    results: previewRelatedTasksResults,
+    getTask: () => pendingPreviewTask,
+  },
+};
+
+const renderRelatedTaskPicker = (pickerName) => {
+  const picker = relatedTaskPickers[pickerName];
+  const task = picker?.getTask();
+  if (!picker?.list || !task) return;
+  picker.list.innerHTML = '';
 
   const ids = getRelatedTaskIds(task);
-  if (previewRelatedTasksCount) {
-    previewRelatedTasksCount.textContent = t('relatedTasksCount', { count: ids.length });
+  if (picker.count) {
+    picker.count.textContent = t('relatedTasksCount', { count: ids.length });
   }
 
   if (!ids.length) {
     const empty = document.createElement('div');
     empty.className = 'related-tasks-empty';
     empty.textContent = t('relatedTasksEmpty');
-    previewRelatedTasksChips.append(empty);
+    picker.list.append(empty);
     return;
   }
 
@@ -684,40 +711,44 @@ const renderPreviewRelatedChips = (task) => {
     remove.type = 'button';
     remove.className = 'related-tasks-chip-remove';
     remove.dataset.relatedId = String(id);
+    remove.dataset.relatedPicker = pickerName;
     remove.setAttribute('aria-label', t('relatedTaskRemove'));
     remove.title = t('relatedTaskRemove');
     remove.textContent = '×';
 
     meta.append(name, status);
     chip.append(meta, remove);
-    previewRelatedTasksChips.append(chip);
+    picker.list.append(chip);
   });
 };
 
-const hideRelatedTaskResults = () => {
-  if (!previewRelatedTasksResults) return;
-  previewRelatedTasksResults.classList.add('hidden');
-  previewRelatedTasksResults.innerHTML = '';
+const hideRelatedTaskResults = (pickerName = 'preview') => {
+  const results = relatedTaskPickers[pickerName]?.results;
+  if (!results) return;
+  results.classList.add('hidden');
+  results.innerHTML = '';
 };
 
-const showRelatedTaskResults = () => {
-  if (!previewRelatedTasksResults || !pendingPreviewTask) return;
-  const query = (previewRelatedTasksSearch?.value || '').trim().toLowerCase();
-  const linked = new Set(getRelatedTaskIds(pendingPreviewTask));
+const showRelatedTaskResults = (pickerName = 'preview') => {
+  const picker = relatedTaskPickers[pickerName];
+  const task = picker?.getTask();
+  if (!picker?.results || !task) return;
+  const query = (picker.search?.value || '').trim().toLowerCase();
+  const linked = new Set(getRelatedTaskIds(task));
 
   const matches = tasks
-    .filter((candidate) => Number(candidate.id) !== Number(pendingPreviewTask.id))
+    .filter((candidate) => Number(candidate.id) !== Number(task.id))
     .filter((candidate) => !linked.has(Number(candidate.id)))
     .filter((candidate) => !query || (candidate.title || '').toLowerCase().includes(query))
     .slice(0, 6);
 
-  previewRelatedTasksResults.innerHTML = '';
+  picker.results.innerHTML = '';
   if (!matches.length) {
     const empty = document.createElement('div');
     empty.className = 'related-tasks-result-empty';
     empty.textContent = query ? t('relatedTasksNoMatches') : t('relatedTasksAllLinked');
-    previewRelatedTasksResults.append(empty);
-    previewRelatedTasksResults.classList.remove('hidden');
+    picker.results.append(empty);
+    picker.results.classList.remove('hidden');
     return;
   }
 
@@ -737,40 +768,63 @@ const showRelatedTaskResults = () => {
 
     option.append(name, status);
     option.addEventListener('mousedown', (event) => event.preventDefault());
-    option.addEventListener('click', () => addRelatedTask(candidate.id));
-    previewRelatedTasksResults.append(option);
+    option.addEventListener('click', () => addRelatedTask(pickerName, candidate.id));
+    picker.results.append(option);
   });
 
-  previewRelatedTasksResults.classList.remove('hidden');
+  picker.results.classList.remove('hidden');
 };
 
-const saveRelatedTaskIds = async (ids) => {
+const savePreviewRelatedTaskIds = async (ids) => {
   if (!pendingPreviewTask) return;
   const result = await updateTask(pendingPreviewTask.id, { related_task_ids: ids });
   if (result?.task) {
     pendingPreviewTask = result.task;
-    renderPreviewRelatedChips(pendingPreviewTask);
+    renderRelatedTaskPicker('preview');
     if (document.activeElement === previewRelatedTasksSearch) {
-      showRelatedTaskResults();
+      showRelatedTaskResults('preview');
     } else {
-      hideRelatedTaskResults();
+      hideRelatedTaskResults('preview');
     }
     showStatusToast(t('taskSaved'));
   }
 };
 
-const addRelatedTask = (id) => {
-  if (!pendingPreviewTask) return;
-  const next = [...new Set([...getRelatedTaskIds(pendingPreviewTask), Number(id)])];
-  if (previewRelatedTasksSearch) previewRelatedTasksSearch.value = '';
-  hideRelatedTaskResults();
-  saveRelatedTaskIds(next);
+const setEditRelatedTaskIds = (ids) => {
+  if (!pendingEditTask) return;
+  pendingEditTask = {
+    ...pendingEditTask,
+    related_task_ids: ids,
+    related_tasks: ids.map((id) => resolveRelatedTask(id, pendingEditTask)),
+  };
+  renderRelatedTaskPicker('edit');
+  hideRelatedTaskResults('edit');
 };
 
-const removeRelatedTask = (id) => {
-  if (!pendingPreviewTask) return;
-  const next = getRelatedTaskIds(pendingPreviewTask).filter((existing) => existing !== Number(id));
-  saveRelatedTaskIds(next);
+const addRelatedTask = (pickerName, id) => {
+  const picker = relatedTaskPickers[pickerName];
+  const task = picker?.getTask();
+  if (!task) return;
+  const next = [...new Set([...getRelatedTaskIds(task), Number(id)])];
+  if (picker.search) picker.search.value = '';
+  hideRelatedTaskResults(pickerName);
+  if (pickerName === 'edit') {
+    setEditRelatedTaskIds(next);
+    return;
+  }
+  savePreviewRelatedTaskIds(next);
+};
+
+const removeRelatedTask = (pickerName, id) => {
+  const picker = relatedTaskPickers[pickerName];
+  const task = picker?.getTask();
+  if (!task) return;
+  const next = getRelatedTaskIds(task).filter((existing) => existing !== Number(id));
+  if (pickerName === 'edit') {
+    setEditRelatedTaskIds(next);
+    return;
+  }
+  savePreviewRelatedTaskIds(next);
 };
 
 const insertChecklistItem = (editor) => {
@@ -3087,6 +3141,9 @@ const showEditTaskModal = (task) => {
   });
   editTaskAttachmentInput.value = '';
   renderEditAttachmentState();
+  if (editRelatedTasksSearch) editRelatedTasksSearch.value = '';
+  hideRelatedTaskResults('edit');
+  renderRelatedTaskPicker('edit');
 
   editTaskModal.classList.remove('hidden');
   editTaskTitleInput.focus();
@@ -3106,6 +3163,9 @@ const hideEditTaskModal = () => {
   setSelectedWeekdays(editWeeklyOptions);
   editCurrentAttachment.innerHTML = '';
   editCurrentAttachment.classList.add('hidden');
+  if (editRelatedTasksList) editRelatedTasksList.innerHTML = '';
+  if (editRelatedTasksSearch) editRelatedTasksSearch.value = '';
+  hideRelatedTaskResults('edit');
   clearEditTaskErrors();
   editTaskModal.classList.add('hidden');
 };
@@ -3187,7 +3247,8 @@ const handleEditTaskSubmit = async (event) => {
     is_recurring: isRecurring,
     recurrence_pattern: recurrencePattern,
     recurrence_interval: recurrenceInterval,
-    recurrence_days: recurrenceDays
+    recurrence_days: recurrenceDays,
+    related_task_ids: getRelatedTaskIds(pendingEditTask),
   };
 
   if (preparedEditAttachment) {
@@ -3220,7 +3281,7 @@ previewTaskCommentDisplay.addEventListener('change', (event) => {
 const showPreviewTaskModal = (task) => {
   pendingPreviewTask = task;
   updatePreviewTaskModalTitle();
-  renderPreviewRelatedChips(task);
+  renderRelatedTaskPicker('preview');
   previewTaskDescription.innerHTML = task.description
     ? renderStoredRichText(task.description)
     : t('noDescription');
@@ -3241,9 +3302,9 @@ const hidePreviewTaskModal = () => {
   previewTaskModal.classList.add('hidden');
   updatePreviewTaskModalTitle();
   previewTaskDescription.textContent = '';
-  if (previewRelatedTasksChips) previewRelatedTasksChips.innerHTML = '';
+  if (previewRelatedTasksList) previewRelatedTasksList.innerHTML = '';
   if (previewRelatedTasksSearch) previewRelatedTasksSearch.value = '';
-  hideRelatedTaskResults();
+  hideRelatedTaskResults('preview');
   previewTaskCommentDisplay.textContent = '';
   previewTaskCommentDisplay.classList.add('hidden');
   previewTaskCommentInput.closest('.rich-editor')?.classList.remove('hidden');
@@ -3315,16 +3376,25 @@ sendPreviewTaskEmail.addEventListener('click', async () => {
 
 closePreviewTask.addEventListener('click', hidePreviewTaskModal);
 
-previewRelatedTasksChips?.addEventListener('click', (event) => {
+const handleRelatedTaskListClick = (event) => {
   const removeButton = event.target.closest('.related-tasks-chip-remove');
   if (!removeButton) return;
-  removeRelatedTask(removeButton.dataset.relatedId);
+  removeRelatedTask(removeButton.dataset.relatedPicker || 'preview', removeButton.dataset.relatedId);
+};
+
+editRelatedTasksList?.addEventListener('click', handleRelatedTaskListClick);
+previewRelatedTasksList?.addEventListener('click', handleRelatedTaskListClick);
+
+editRelatedTasksSearch?.addEventListener('input', () => showRelatedTaskResults('edit'));
+editRelatedTasksSearch?.addEventListener('focus', () => showRelatedTaskResults('edit'));
+editRelatedTasksSearch?.addEventListener('blur', () => {
+  window.setTimeout(() => hideRelatedTaskResults('edit'), 120);
 });
 
-previewRelatedTasksSearch?.addEventListener('input', showRelatedTaskResults);
-previewRelatedTasksSearch?.addEventListener('focus', showRelatedTaskResults);
+previewRelatedTasksSearch?.addEventListener('input', () => showRelatedTaskResults('preview'));
+previewRelatedTasksSearch?.addEventListener('focus', () => showRelatedTaskResults('preview'));
 previewRelatedTasksSearch?.addEventListener('blur', () => {
-  window.setTimeout(hideRelatedTaskResults, 120);
+  window.setTimeout(() => hideRelatedTaskResults('preview'), 120);
 });
 
 previewTaskModal.addEventListener('click', (event) => {

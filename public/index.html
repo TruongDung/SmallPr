@@ -1070,6 +1070,19 @@
           <input id="edit-task-attachment-input" type="file" />
           <p id="edit-attachment-error" class="field-error hidden"></p>
         </div>
+        <div class="field related-tasks-field">
+          <div class="related-tasks-header">
+            <label id="edit-related-tasks-label" for="edit-related-tasks-search">Related tasks</label>
+            <span id="edit-related-tasks-count" class="related-tasks-count">0 linked</span>
+          </div>
+          <div id="edit-related-tasks-list" class="related-tasks-list"></div>
+          <div class="related-tasks-search">
+            <span class="task-search-icon" aria-hidden="true">⌕</span>
+            <input id="edit-related-tasks-search" type="search" autocomplete="off" placeholder="Search tasks to link..." />
+            <div id="edit-related-tasks-results" class="related-tasks-results hidden" role="listbox"></div>
+          </div>
+          <p id="edit-related-tasks-hint" class="field-hint">Search and click a task to link it.</p>
+        </div>
         <p id="edit-form-error" class="field-error hidden"></p>
         <div class="modal-actions">
           <button id="cancel-edit-task" type="button" class="secondary modal-icon-action" aria-label="Cancel" title="Cancel">
@@ -1087,19 +1100,6 @@
     <div class="modal preview-task-modal">
       <h3 id="preview-task-title">Preview</h3>
       <div id="preview-task-description" class="preview-task-description"></div>
-      <div class="field preview-related-tasks-field">
-        <div class="related-tasks-header">
-          <label id="preview-related-tasks-label" for="preview-related-tasks-search">Related tasks</label>
-          <span id="preview-related-tasks-count" class="related-tasks-count">0 linked</span>
-        </div>
-        <div id="preview-related-tasks-chips" class="related-tasks-list"></div>
-        <div class="related-tasks-search">
-          <span class="task-search-icon" aria-hidden="true">⌕</span>
-          <input id="preview-related-tasks-search" type="search" autocomplete="off" placeholder="Search tasks to link..." />
-          <div id="preview-related-tasks-results" class="related-tasks-results hidden" role="listbox"></div>
-        </div>
-        <p id="preview-related-tasks-hint" class="field-hint">Search and click a task to link it.</p>
-      </div>
       <div class="field preview-task-comment-field">
         <label for="preview-task-comment-input">Add comment</label>
         <div id="preview-task-comment-display" class="preview-task-comment-display hidden"></div>
@@ -1115,6 +1115,19 @@
           </div>
           <div id="preview-task-comment-input" class="rich-editor-surface" contenteditable="true" role="textbox" aria-multiline="true"></div>
         </div>
+      </div>
+      <div class="field related-tasks-field preview-related-tasks-field">
+        <div class="related-tasks-header">
+          <label id="preview-related-tasks-label" for="preview-related-tasks-search">Related tasks</label>
+          <span id="preview-related-tasks-count" class="related-tasks-count">0 linked</span>
+        </div>
+        <div id="preview-related-tasks-list" class="related-tasks-list"></div>
+        <div class="related-tasks-search">
+          <span class="task-search-icon" aria-hidden="true">⌕</span>
+          <input id="preview-related-tasks-search" type="search" autocomplete="off" placeholder="Search tasks to link..." />
+          <div id="preview-related-tasks-results" class="related-tasks-results hidden" role="listbox"></div>
+        </div>
+        <p id="preview-related-tasks-hint" class="field-hint">Search and click a task to link it.</p>
       </div>
       <div class="modal-actions">
         <button id="send-preview-task-email" type="button" class="secondary task-action-icon" aria-label="Send Email" title="Send Email">✉</button>

@@ -489,6 +489,22 @@ describe('Task API', () => {
       'Related one',
       'Related two',
     ]));
+
+    const relatedOneTask = listResponse.body.tasks.find((task) => task.id === relatedOneResponse.body.task.id);
+    expect(relatedOneTask.related_task_ids).toContain(mainResponse.body.task.id);
+
+    const unlinkResponse = await agent
+      .put(`/api/tasks/${mainResponse.body.task.id}`)
+      .send({
+        related_task_ids: [
+          relatedTwoResponse.body.task.id,
+        ],
+      });
+    expect(unlinkResponse.statusCode).toBe(200);
+
+    const updatedListResponse = await agent.get('/api/tasks');
+    const unlinkedRelatedOne = updatedListResponse.body.tasks.find((task) => task.id === relatedOneResponse.body.task.id);
+    expect(unlinkedRelatedOne.related_task_ids).not.toContain(mainResponse.body.task.id);
   });
 
   test('lists higher priority tasks first', async () => {

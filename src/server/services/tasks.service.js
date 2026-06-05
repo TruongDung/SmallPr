@@ -8,12 +8,19 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     const taskIds = rows.map((task) => Number(task.id));
     const placeholders = taskIds.map(() => '?').join(', ');
     const relatedRows = await allAsync(
-      `SELECT relation.task_id, related.id, related.title, related.status, related.archived
-       FROM task_related_tasks relation
-       JOIN tasks related ON related.id = relation.related_task_id AND related.user_id = relation.user_id
-       WHERE relation.user_id = ? AND relation.task_id IN (${placeholders})
-       ORDER BY LOWER(related.title), related.id`,
-      [userId, ...taskIds]
+      `SELECT * FROM (
+         SELECT relation.task_id, related.id, related.title, related.status, related.archived
+         FROM task_related_tasks relation
+         JOIN tasks related ON related.id = relation.related_task_id AND related.user_id = relation.user_id
+         WHERE relation.user_id = ? AND relation.task_id IN (${placeholders})
+         UNION
+         SELECT relation.related_task_id AS task_id, related.id, related.title, related.status, related.archived
+         FROM task_related_tasks relation
+         JOIN tasks related ON related.id = relation.task_id AND related.user_id = relation.user_id
+         WHERE relation.user_id = ? AND relation.related_task_id IN (${placeholders})
+       ) related_union
+       ORDER BY task_id, LOWER(title), id`,
+      [userId, ...taskIds, userId, ...taskIds]
     );
 
     const relatedByTaskId = relatedRows.reduce((map, row) => {
@@ -69,8 +76,8 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
       .filter((id) => Number.isInteger(id) && id > 0 && Number(id) !== Number(taskId)))];
 
     await runAsync(
-      'DELETE FROM task_related_tasks WHERE user_id = ? AND task_id = ?',
-      [userId, taskId]
+      'DELETE FROM task_related_tasks WHERE user_id = ? AND (task_id = ? OR related_task_id = ?)',
+      [userId, taskId, taskId]
     );
 
     if (!normalizedIds.length) return;
@@ -89,6 +96,13 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
          ON CONFLICT (task_id, related_task_id) DO NOTHING
          RETURNING task_id`,
         [userId, taskId, relatedTaskId]
+      );
+      await runAsync(
+        `INSERT INTO task_related_tasks (user_id, task_id, related_task_id)
+         VALUES (?, ?, ?)
+         ON CONFLICT (task_id, related_task_id) DO NOTHING
+         RETURNING task_id`,
+        [userId, relatedTaskId, taskId]
       );
     }
   };
