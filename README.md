@@ -1,171 +1,302 @@
-# Task Management App
+# 📋 Task Manager Application
 
-A simple Node.js task management application with user authentication.
+A modern, full-stack task management application with real-time collaboration, built with Node.js, React, and PostgreSQL.
 
-## Features
+![Build Status](https://img.shields.io/github/workflow/status/yourusername/task-manager/Node.js%20CI)
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
-- User signup and login
-- Session-based authentication
-- Create, read, update, delete tasks
-- Task completion tracking
+## ✨ Features
 
-## Setup
+- 🔐 **User Authentication** - Secure login with bcrypt password hashing
+- ⚡ **Real-time Updates** - Live task updates across all connected clients via WebSocket
+- 🎨 **Rich Text Editing** - Full-featured rich text editor for task descriptions
+- 🖱️ **Drag & Drop** - Intuitive task organization with drag-and-drop
+- 📊 **Admin Dashboard** - Comprehensive audit logs and user management
+- 🚀 **Performance** - Redis caching for optimized response times
+- 📱 **iOS App** - Native iOS wrapper for mobile access
+- 🌍 **Internationalization** - Multi-language support
+- 🎯 **Tag System** - Organize tasks with custom tags
+- 📧 **Email Notifications** - Task alerts and summaries
 
-1. Install dependencies:
+## 🚀 Quick Start
 
-```bash
-npm install
+### Prerequisites
+
+Ensure you have the following installed:
+- **Node.js** v18 or higher ([Download](https://nodejs.org/))
+- **PostgreSQL** v16 or higher ([Download](https://www.postgresql.org/download/))
+- **Redis** v6 or higher ([Download](https://redis.io/download))
+- **npm** or **yarn**
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd SmallPr
+   ```
+
+2. **Install dependencies**
+   ```bash
+   # Install backend dependencies
+   npm install
+
+   # Install frontend dependencies
+   cd client
+   npm install
+   cd ..
+   ```
+
+3. **Set up environment variables**
+   
+   Create a `.env` file in the root directory:
+   ```bash
+   # Database Configuration
+   DATABASE_URL=postgresql://username:password@localhost:5432/taskmanager
+
+   # Session Configuration
+   SESSION_SECRET=your-random-secret-key-change-this-in-production
+   NODE_ENV=development
+
+   # Redis Configuration
+   REDIS_URL=redis://localhost:6379
+
+   # Admin Account
+   DEFAULT_ADMIN_PASSWORD=admin123
+
+   # Optional: Email Configuration
+   SMTP_HOST=smtp.gmail.com
+   SMTP_PORT=587
+   SMTP_USER=your-email@gmail.com
+   SMTP_PASS=your-app-password
+   ```
+
+4. **Set up the database**
+   ```bash
+   # Create database
+   createdb taskmanager
+
+   # Migrations run automatically on server start
+   ```
+
+5. **Start the application**
+
+   **Option A: Development mode (recommended)**
+   ```bash
+   # Terminal 1: Start backend server with auto-reload
+   npm run dev
+
+   # Terminal 2: Start frontend dev server
+   cd client
+   npm run dev
+   ```
+
+   **Option B: Production mode**
+   ```bash
+   # Build frontend
+   cd client
+   npm run build
+   cd ..
+
+   # Start server (serves built frontend)
+   npm start
+   ```
+
+6. **Access the application**
+   - Frontend: http://localhost:5173 (dev) or https://small-pr.vercel.app/ (production)
+   - Backend API: http://localhost:3000/api
+   - Default admin login: Use the password from `DEFAULT_ADMIN_PASSWORD`
+
+## 📖 Documentation
+
+- **[Architecture Guide](./ARCHITECTURE.md)** - Detailed system architecture and design patterns
+- **[API Documentation](./docs/API.md)** - REST API endpoints (coming soon)
+- **[iOS App Guide](./ios/TaskManager/README.md)** - Building and deploying the iOS app
+
+## 🏗️ Project Structure
+
+```
+SmallPr/
+├── src/server/           # Backend application
+│   ├── bootstrap/        # App initialization
+│   ├── routes/           # API endpoints
+│   ├── services/         # Business logic
+│   ├── middleware/       # Express middleware
+│   ├── db/              # Database & migrations
+│   └── cache/           # Redis caching
+│
+├── client/              # Frontend application
+│   └── src/
+│       ├── api/         # API client
+│       ├── components/  # Reusable components
+│       ├── features/    # Feature modules
+│       └── hooks/       # Custom React hooks
+│
+├── ios/                 # iOS native app
+├── public/              # Static assets
+└── .github/workflows/   # CI/CD pipelines
 ```
 
-2. Start the app:
+## 🛠️ Tech Stack
+
+### Backend
+- **Node.js** + **Express.js** - Server framework
+- **PostgreSQL** - Primary database
+- **Redis** - Caching layer
+- **Socket.IO** - Real-time communication
+- **Pino** - Structured logging
+- **Zod** - Schema validation
+- **bcrypt** - Password hashing
+
+### Frontend
+- **React 18** - UI framework
+- **TypeScript** - Type safety
+- **Vite** - Build tool
+- **TanStack Query** - Data fetching & caching
+- **React Router** - Client-side routing
+- **@dnd-kit** - Drag and drop
+
+### Mobile
+- **Swift** + **SwiftUI** - iOS native wrapper
+
+## 🧪 Testing
 
 ```bash
+# Backend tests
+npm test
+
+# Frontend tests
+cd client
+npm test
+
+# Watch mode
+cd client
+npm run test:watch
+```
+
+## 📦 Building for Production
+
+### Backend
+```bash
+# The backend doesn't require a build step
+# Just ensure NODE_ENV=production
+export NODE_ENV=production
 npm start
 ```
 
-3. Configure Supabase Postgres in `.env`:
-
+### Frontend
 ```bash
-DATABASE_URL=postgresql://postgres:<url-encoded-password>@db.your-project-ref.supabase.co:5432/postgres
+cd client
+npm run build
+# Built files will be in client/dist/
 ```
 
-If your password contains special characters like `#` or `@`, URL-encode them before putting the password in `DATABASE_URL`.
-
-Optional Redis caching can be enabled with:
-
+### Docker (Optional)
 ```bash
-REDIS_URL=redis://localhost:6379
-CACHE_TTL_SECONDS=30
-DASHBOARD_CACHE_TTL_SECONDS=60
-TASK_PAGE_CACHE_TTL_SECONDS=30
-NOTE_PAGE_CACHE_TTL_SECONDS=30
-WEATHER_PAGE_CACHE_TTL_SECONDS=30
+# Coming soon
+docker-compose up
 ```
 
-Redis is used for short-lived server-side cache entries. `DASHBOARD_CACHE_TTL_SECONDS` controls the `/api/dashboard` payload TTL, including today's tasks, task status summaries, bills, credit card summaries, recent notes, weather city metadata, and the daily quote. `TASK_PAGE_CACHE_TTL_SECONDS` controls the task page's `/api/tasks` and `/api/tags` payload TTL. `NOTE_PAGE_CACHE_TTL_SECONDS` controls the note page's `/api/notes` and `/api/notes/:id/versions` payload TTL. `WEATHER_PAGE_CACHE_TTL_SECONDS` controls the weather page's `/api/weather-cities` payload TTL. These route-specific TTLs fall back to `CACHE_TTL_SECONDS` when omitted. Successful API mutations automatically clear the current user's Redis entries, so dashboard, task page, note page, and weather page data refreshes after tasks, transactions, notes, financial records, weather cities, or preferences change. If Redis is not configured or temporarily unavailable, the app falls back to Postgres reads and keeps running.
+## 🚢 Deployment
 
-4. To send an email alert when a task is added, set these environment variables before starting the app:
+### Deploy to Vercel (Recommended for quick start)
+1. Push code to GitHub
+2. Import project in Vercel
+3. Add environment variables
+4. Deploy
 
+### Deploy to your own server
+1. Build the frontend: `cd client && npm run build`
+2. Set up PostgreSQL and Redis
+3. Configure environment variables
+4. Start the server: `NODE_ENV=production npm start`
+5. Use a process manager like PM2: `pm2 start server.js`
+
+## 🔧 Configuration
+
+### Environment Variables
+
+| Variable | Description | Required | Default |
+|----------|-------------|----------|---------|
+| `DATABASE_URL` | PostgreSQL connection string | Yes | - |
+| `REDIS_URL` | Redis connection string | Yes | - |
+| `SESSION_SECRET` | Secret key for session encryption | Yes | - |
+| `NODE_ENV` | Environment (development/production) | No | development |
+| `PORT` | Server port | No | 3000 |
+| `DEFAULT_ADMIN_PASSWORD` | Initial admin password | No | - |
+
+## 🤝 Contributing
+
+Contributions are welcome! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+### Development Guidelines
+- Follow existing code style and patterns
+- Write tests for new features
+- Update documentation
+- Ensure all tests pass before submitting PR
+
+## 🐛 Troubleshooting
+
+### Port 3000 already in use
 ```bash
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=465
-SMTP_SECURE=true
-SMTP_USER=<smtp-username>
-SMTP_PASS=<smtp-password>
-MAIL_FROM=<sender-email>
-TASK_ALERT_TO=<recipient-email>
-DEFAULT_ADMIN_PASSWORD=<admin-password>
-PUBLIC_SENTRY_DSN=<sentry-browser-dsn>
-SENTRY_ENVIRONMENT=production
-SENTRY_RELEASE=<release-name>
-PUBLIC_POSTHOG_API_KEY=<posthog-project-api-key>
-PUBLIC_POSTHOG_HOST=https://us.i.posthog.com
-LOG_LEVEL=info
-BETTER_STACK_SOURCE_TOKEN=<better-stack-source-token>
-BETTER_STACK_ENDPOINT=https://in.logs.betterstack.com
+# Windows
+netstat -ano | findstr :3000
+taskkill /PID <PID> /F
+
+# Mac/Linux
+lsof -ti:3000 | xargs kill -9
 ```
 
-Set `TASK_ALERT_TO` only when task alerts should go to a fallback recipient. Set `DEFAULT_ADMIN_PASSWORD` only when bootstrapping a fresh database that does not already have an admin user.
-Set the Sentry and PostHog variables only when frontend monitoring and analytics should be enabled.
-Set `BETTER_STACK_SOURCE_TOKEN` only when backend logs should be forwarded to Better Stack. Without it, Pino writes structured JSON logs to stdout.
+### Database connection errors
+- Ensure PostgreSQL is running
+- Check DATABASE_URL format
+- Verify database exists: `psql -l`
 
-5. Backend uptime monitoring:
+### Redis connection errors
+- Ensure Redis is running: `redis-cli ping` (should return PONG)
+- Check REDIS_URL configuration
 
-- Liveness endpoint: `GET /healthz` returns `200` when the Node process is running.
-- Readiness endpoint: `GET /readyz` returns dependency status and returns `503` if Postgres is unavailable.
-- API alias: `GET /api/health` returns the same readiness payload for external monitors.
-- Uptime Kuma: create an HTTP(s) monitor for `https://<your-domain>/readyz`, expect status `200`, and optionally add keyword `status`.
-- Better Stack Uptime: create an HTTP monitor for `https://<your-domain>/readyz`; use the same Better Stack project as logs if desired.
+### Frontend build errors
+```bash
+cd client
+rm -rf node_modules package-lock.json
+npm install
+npm run build
+```
 
-6. To automatically star and label task alert emails in Gmail, create a Gmail filter in ``:
+## 📝 Scripts Reference
 
-- Search query: `from:<sender-email> "Task Manager"`
-- Filter actions: `Star it` and `Apply the label: Task Manager`
+### Backend
+- `npm start` - Start production server
+- `npm run dev` - Start development server with auto-reload
+- `npm test` - Run tests
+- `npm run seed:audit-logs` - Seed audit log data
 
-The app adds `Task Manager` to every Add Task email body and header so the filter can reliably find it without adding `[Task Manager]` to the email title.
+### Frontend
+- `npm run dev` - Start Vite dev server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm test` - Run tests
 
-7. Open http://localhost:3000 in your browser.
+## 📄 License
 
-8. Test link: https://small-pr.vercel.app/
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-## iOS App
+## 🙏 Acknowledgments
 
-An iOS wrapper project is available at `ios/TaskManager/TaskManager.xcodeproj`.
+- Built with ❤️ using modern web technologies
+- Icons and assets from various open-source projects
 
-Open it in Xcode on a Mac, set your Apple signing team, connect your iPhone, and press Run. The app loads the deployed Task Manager URL from `ios/TaskManager/TaskManager/AppConfig.swift`.
+## 📧 Contact
 
-## Default Credentials
+For questions or support, please open an issue on GitHub.
 
-- Username: `admin`
-- Password: `123456`
+---
 
-You can use these credentials to log in, or create a new account via the signup form.
-
-
-## Recommended Refactoring Priorities
-
-### 1. Split `server.js` Immediately
-
-`server.js` is currently handling database schema creation, migrations, seed data, email services, session management, Socket.IO, and route registration in a single file of approximately 1,194 lines.
-
-It should be separated into:
-
-- `app.js`
-- `server.js`
-- `db/migrations/*`
-- `services/email/*`
-- `services/auth/*`
-- `routes/*`
-- `middleware/*`
-
-This will improve maintainability, testability, and overall project structure.
-
-### 2. Use Proper Database Migrations Instead of Runtime Schema Changes
-
-The application currently creates tables and alters the database schema during server startup.
-
-A more maintainable approach is to use a dedicated migration framework such as:
-
-- Knex
-- Prisma
-- Drizzle
-- node-pg-migrate
-
-This provides clear schema versioning, safer deployments, and easier rollback capabilities.
-
-### 3. Standardize the Database Layer
-
-The current `client.js` converts `?` placeholders into `$1`, `$2`, etc. to emulate SQLite-style queries on PostgreSQL.
-
-A better approach is to use native PostgreSQL parameterized queries consistently or adopt an ORM/query builder. This reduces hidden complexity and makes database issues easier to debug.
-
-### 4. Move Validation Out of Route Handlers
-
-`tasks.routes.js` is currently responsible for validation, business logic execution, email notifications, and real-time event emission.
-
-Validation should be extracted into dedicated schema files using a validation library such as:
-
-- Zod
-- Joi
-
-For example:
-
-- `task.schema.js`
-- `task.service.js`
-- `task.controller.js`
-
-Routes should focus only on request orchestration.
-
-### 5. Modularize the Frontend
-
-`public/index.html` has grown significantly and currently contains functionality for dashboards, notes, tasks, weather, exports, modals, finance, and more.
-
-Consider migrating the frontend to React + Vite. If a full migration is not yet feasible, split the codebase into modules such as:
-
-- `tasks.js`
-- `notes.js`
-- `dashboard.js`
-- `finance.js`
-- `apiClient.js`
-
-This will improve code organization, readability, and long-term scalability.
+**Happy Task Managing! 🎉**
