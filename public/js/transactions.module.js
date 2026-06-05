@@ -1,5 +1,5 @@
 (function () {
-  const create = ({ request, t, showStatusToast, getLanguage }) => {
+  const create = ({ request, t, showStatusToast, getLanguage, confirmDelete: showDeleteConfirm }) => {
     const panel = document.getElementById('transactions-panel');
     const list = document.getElementById('transactions-list');
     const modal = document.getElementById('transaction-modal');
@@ -514,12 +514,18 @@
       const transaction = transactions.find(t => t.id === id);
       if (!transaction) return;
 
+      if (showDeleteConfirm) {
+        showDeleteConfirm(transaction);
+        return;
+      }
+
       if (confirm(t('confirmDeleteTransaction') || `Delete this ${transaction.kind} transaction of ${formatCurrency(transaction.amount)}?`)) {
-        deleteTransaction(id);
+        deleteTransaction(transaction);
       }
     };
 
-    const deleteTransaction = async (id) => {
+    const deleteTransaction = async (transaction) => {
+      const id = typeof transaction === 'object' ? transaction.id : transaction;
       try {
         await request(`/api/transactions/${id}`, { method: 'DELETE' });
         showStatusToast(t('transactionDeleted') || 'Transaction deleted', 'success');
@@ -968,6 +974,7 @@
       applyTranslations,
       edit: editTransaction,
       confirmDelete,
+      deleteTransaction,
     };
   };
 

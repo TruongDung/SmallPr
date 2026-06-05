@@ -97,7 +97,7 @@ Open it in Xcode on a Mac, set your Apple signing team, connect your iPhone, and
 ## Default Credentials
 
 - Username: `admin`
-- Password: `admin`
+- Password: `123456`
 
 You can use these credentials to log in, or create a new account via the signup form.
 

@@ -213,6 +213,7 @@ let pendingDeleteTag = null;
 let pendingDeleteCard = null;
 let pendingDeleteFastAccessLink = null;
 let pendingDeleteNote = null;
+let pendingDeleteTransaction = null;
 let pendingEditTag = null;
 let pendingResetPasswordUser = null;
 let pendingEditTask = null;
@@ -556,7 +557,7 @@ const relatedTasksModule = window.RelatedTasksModule.create({
   statusLabel,
   t,
   updateTask: (...args) => updateTask(...args),
-  showStatusToast,
+  showStatusToast: (...args) => showStatusToast(...args),
 });
 const {
   getRelatedTaskIds,
@@ -2482,6 +2483,7 @@ const showDeleteConfirm = (id) => {
   pendingDeleteCard = null;
   pendingDeleteFastAccessLink = null;
   pendingDeleteNote = null;
+  pendingDeleteTransaction = null;
   deleteConfirmTitle.textContent = t('deleteTaskTitle');
   deleteConfirmMessage.textContent = t('deleteTaskMessage');
   deleteConfirmModal.classList.remove('hidden');
@@ -2495,6 +2497,7 @@ const showUserDeleteConfirm = (user) => {
   pendingDeleteCard = null;
   pendingDeleteFastAccessLink = null;
   pendingDeleteNote = null;
+  pendingDeleteTransaction = null;
   deleteConfirmTitle.textContent = t('deleteUserTitle');
   deleteConfirmMessage.textContent = t('deleteUserMessage', { username: user.username });
   deleteConfirmModal.classList.remove('hidden');
@@ -2508,6 +2511,7 @@ const showTagDeleteConfirm = (tag) => {
   pendingDeleteCard = null;
   pendingDeleteFastAccessLink = null;
   pendingDeleteNote = null;
+  pendingDeleteTransaction = null;
   deleteConfirmTitle.textContent = t('deleteTagTitle');
   deleteConfirmMessage.textContent = t('deleteTagMessage', { tag: tag.name });
   deleteConfirmModal.classList.remove('hidden');
@@ -2521,6 +2525,7 @@ const showCreditCardDeleteConfirm = (card) => {
   pendingDeleteCard = card;
   pendingDeleteFastAccessLink = null;
   pendingDeleteNote = null;
+  pendingDeleteTransaction = null;
   deleteConfirmTitle.textContent = t('deleteCreditCardTitle');
   deleteConfirmMessage.textContent = t('deleteCreditCardMessage', { name: card.name });
   deleteConfirmModal.classList.remove('hidden');
@@ -2534,6 +2539,7 @@ const showFastAccessLinkDeleteConfirm = (link) => {
   pendingDeleteCard = null;
   pendingDeleteFastAccessLink = link;
   pendingDeleteNote = null;
+  pendingDeleteTransaction = null;
   deleteConfirmTitle.textContent = t('deleteFastAccessLinkTitle');
   deleteConfirmMessage.textContent = t('deleteFastAccessLinkMessage', { label: link.label || t('fastAccessLinks') });
   deleteConfirmModal.classList.remove('hidden');
@@ -2547,8 +2553,23 @@ const showNoteDeleteConfirm = (note) => {
   pendingDeleteCard = null;
   pendingDeleteFastAccessLink = null;
   pendingDeleteNote = note;
+  pendingDeleteTransaction = null;
   deleteConfirmTitle.textContent = t('deleteNoteTitle');
   deleteConfirmMessage.textContent = t('deleteNoteMessage');
+  deleteConfirmModal.classList.remove('hidden');
+  confirmDeleteNo.focus();
+};
+
+const showTransactionDeleteConfirm = (transaction) => {
+  pendingDeleteTaskId = null;
+  pendingDeleteUser = null;
+  pendingDeleteTag = null;
+  pendingDeleteCard = null;
+  pendingDeleteFastAccessLink = null;
+  pendingDeleteNote = null;
+  pendingDeleteTransaction = transaction;
+  deleteConfirmTitle.textContent = t('confirmDeleteTransaction');
+  deleteConfirmMessage.textContent = t('confirmDeleteTransaction');
   deleteConfirmModal.classList.remove('hidden');
   confirmDeleteNo.focus();
 };
@@ -2560,19 +2581,21 @@ const hideDeleteConfirm = () => {
   pendingDeleteCard = null;
   pendingDeleteFastAccessLink = null;
   pendingDeleteNote = null;
+  pendingDeleteTransaction = null;
   deleteConfirmModal.classList.add('hidden');
 };
 
 confirmDeleteNo.addEventListener('click', hideDeleteConfirm);
 
 confirmDeleteYes.addEventListener('click', async () => {
-  if (!pendingDeleteTaskId && !pendingDeleteUser && !pendingDeleteTag && !pendingDeleteCard && !pendingDeleteFastAccessLink && !pendingDeleteNote) return;
+  if (!pendingDeleteTaskId && !pendingDeleteUser && !pendingDeleteTag && !pendingDeleteCard && !pendingDeleteFastAccessLink && !pendingDeleteNote && !pendingDeleteTransaction) return;
   const taskId = pendingDeleteTaskId;
   const user = pendingDeleteUser;
   const tag = pendingDeleteTag;
   const card = pendingDeleteCard;
   const fastAccessLink = pendingDeleteFastAccessLink;
   const note = pendingDeleteNote;
+  const transaction = pendingDeleteTransaction;
   hideDeleteConfirm();
   if (taskId) {
     await deleteTask(taskId);
@@ -2592,6 +2615,10 @@ confirmDeleteYes.addEventListener('click', async () => {
   }
   if (note) {
     await notesModule.deleteNote(note);
+    return;
+  }
+  if (transaction) {
+    await transactionsModule.deleteTransaction(transaction);
     return;
   }
   await deleteUser(user);
@@ -3082,6 +3109,7 @@ const transactionsModule = window.TransactionsModule.create({
   t,
   showStatusToast,
   getLanguage: () => currentLanguage,
+  confirmDelete: showTransactionDeleteConfirm,
 });
 
 const notesModule = window.NotesModule.create({
