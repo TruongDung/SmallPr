@@ -751,6 +751,7 @@
 
         const visible = document.createElement('input');
         visible.type = 'checkbox';
+        visible.className = 'dashboard-customize-checkbox';
         visible.checked = entry.visible !== false;
         visible.setAttribute('aria-label', def.titleKey ? t(def.titleKey) : entry.id);
 
@@ -760,7 +761,7 @@
 
         const upBtn = document.createElement('button');
         upBtn.type = 'button';
-        upBtn.className = 'task-action-icon secondary';
+        upBtn.className = 'task-action-icon secondary dashboard-customize-move dashboard-customize-move-up';
         upBtn.textContent = '▲';
         upBtn.setAttribute('aria-label', t('moveUp'));
         upBtn.title = t('moveUp');
@@ -768,7 +769,7 @@
 
         const downBtn = document.createElement('button');
         downBtn.type = 'button';
-        downBtn.className = 'task-action-icon secondary';
+        downBtn.className = 'task-action-icon secondary dashboard-customize-move dashboard-customize-move-down';
         downBtn.textContent = '▼';
         downBtn.setAttribute('aria-label', t('moveDown'));
         downBtn.title = t('moveDown');
@@ -790,7 +791,11 @@
           entry.visible = visible.checked;
         });
 
-        li.append(visible, label, upBtn, downBtn);
+        const moveGroup = document.createElement('div');
+        moveGroup.className = 'dashboard-customize-move-group';
+        moveGroup.append(upBtn, downBtn);
+
+        li.append(visible, label, moveGroup);
         customizeList.append(li);
       });
       // Stash the in-progress prefs on the modal element so save can read it.
