@@ -2109,7 +2109,7 @@ const handleTaskSubmit = async (event) => {
   const descriptionEditor = document.getElementById('task-description');
   const description = getRichEditorValue(descriptionEditor);
   const due_date = taskDueDateInput.value || null;
-  const reminder_at = taskReminderInput.value || null;
+  const reminder_at = taskReminderInput?.value || null;
   const attachmentFile = taskAttachmentInput.files[0] || null;
 
   // Recurrence data
@@ -2878,7 +2878,7 @@ const showEditTaskModal = (task) => {
   setRichEditorValue(editTaskDescriptionInput, task.description || '');
   setRichEditorValue(editTaskCommentInput, task.comment || '');
   editTaskDueDateInput.value = String(task.due_date || '').slice(0, 10);
-  editTaskReminderInput.value = formatDateTimeLocalValue(task.reminder_at);
+  if (editTaskReminderInput) editTaskReminderInput.value = formatDateTimeLocalValue(task.reminder_at);
   editTaskRecurringCheckbox.checked = Boolean(task.is_recurring);
   editTaskRecurrencePattern.value = task.recurrence_pattern || 'daily';
   editTaskRecurrenceInterval.value = task.recurrence_interval || 1;
@@ -2934,7 +2934,7 @@ const handleEditTaskSubmit = async (event) => {
   const description = getRichEditorValue(editTaskDescriptionInput);
   const comment = getRichEditorValue(editTaskCommentInput);
   const dueDate = editTaskDueDateInput.value || null;
-  const reminderAt = editTaskReminderInput.value || null;
+  const reminderAt = editTaskReminderInput?.value || null;
   const attachmentFile = editTaskAttachmentInput.files[0] || null;
   const isRecurring = editTaskRecurringCheckbox.checked;
   const recurrencePattern = isRecurring ? editTaskRecurrencePattern.value : null;
