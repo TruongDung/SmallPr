@@ -1,0 +1,24 @@
+{
+  "name": "Amex basic purchase lines",
+  "inputText": "Statement Period Jan 01 2025 - Jan 31 2025\n01/03 WHOLE FOODS MARKET 10245 AUSTIN TX $84.23\n01/05 UBER TRIP HELP.UBER.COM CA 18.90\n01/07 PAYMENT RECEIVED - THANK YOU $500.00\nJan 12 TARGET T-2331 DALLAS TX $42.17\nNew Balance $355.30",
+  "expectedTransactions": [
+    {
+      "date": "2025-01-03",
+      "amount": 84.23,
+      "merchant": "WHOLE FOODS MARKET 10245 AUSTIN TX",
+      "category": "WHOLE FOODS MARKET 10245 AUSTIN TX"
+    },
+    {
+      "date": "2025-01-05",
+      "amount": 18.9,
+      "merchant": "UBER TRIP HELP.UBER.COM CA",
+      "category": "UBER TRIP HELP.UBER.COM CA"
+    },
+    {
+      "date": "2025-01-12",
+      "amount": 42.17,
+      "merchant": "TARGET T-2331 DALLAS TX",
+      "category": "TARGET T-2331 DALLAS TX"
+    }
+  ]
+}

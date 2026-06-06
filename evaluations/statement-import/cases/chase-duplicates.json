@@ -1,0 +1,31 @@
+{
+  "name": "Chase duplicate purchase line",
+  "inputText": "Billing Cycle 02/01/2025 - 02/28/2025\n02/02 COSTCO WHSE #0681 PLANO TX 126.44\n02/02 COSTCO WHSE #0681 PLANO TX 126.44\n02/14 SPOTIFY USA NEW YORK NY $11.99\n02/20 INTEREST CHARGE PURCHASES $3.25\n2025-02-22 SQ *LOCAL COFFEE SHOP 7.50",
+  "expectedTransactions": [
+    {
+      "date": "2025-02-02",
+      "amount": 126.44,
+      "merchant": "COSTCO WHSE #0681 PLANO TX",
+      "category": "COSTCO WHSE #0681 PLANO TX"
+    },
+    {
+      "date": "2025-02-02",
+      "amount": 126.44,
+      "merchant": "COSTCO WHSE #0681 PLANO TX",
+      "category": "COSTCO WHSE #0681 PLANO TX",
+      "duplicate": true
+    },
+    {
+      "date": "2025-02-14",
+      "amount": 11.99,
+      "merchant": "SPOTIFY USA NEW YORK NY",
+      "category": "SPOTIFY USA NEW YORK NY"
+    },
+    {
+      "date": "2025-02-22",
+      "amount": 7.5,
+      "merchant": "SQ *LOCAL COFFEE SHOP",
+      "category": "SQ *LOCAL COFFEE SHOP"
+    }
+  ]
+}

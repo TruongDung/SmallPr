@@ -3,6 +3,7 @@ const createAuthRouter = require('../routes/auth.routes');
 const createCreditCardsRouter = require('../routes/creditCards.routes');
 const createDailyQuoteRouter = require('../routes/dailyQuote.routes');
 const createDashboardRouter = require('../routes/dashboard.routes');
+const createEvaluationsRouter = require('../routes/evaluations.routes');
 const createNotesRouter = require('../routes/notes.routes');
 const createTasksRouter = require('../routes/tasks.routes');
 const createTransactionsRouter = require('../routes/transactions.routes');
@@ -106,6 +107,14 @@ const registerRoutes = (app, {
     adminRequired,
     auditLogs,
     bcrypt,
+    allAsync,
+    getAsync,
+    runAsync,
+  }));
+
+  // AI evaluation harness routes
+  app.use('/api/admin', createEvaluationsRouter({
+    adminRequired,
     allAsync,
     getAsync,
     runAsync,

@@ -180,65 +180,86 @@ const normalizeItems = (rawItems) => (Array.isArray(rawItems) ? rawItems : [])
 
 // --- Public API -----------------------------------------------------------
 
+const inferStatementYear = (text) => {
+  const yearMatch = String(text).match(/(?:statement\s+period|statement\s+date|for\s+period|billing\s+cycle).*?(\d{4})/i)
+    || String(text).match(/\b(20\d{2})\b/);
+  return yearMatch ? Number(yearMatch[1]) : new Date().getFullYear();
+};
+
+const parseStatementText = (text) => {
+  if (!text || String(text).trim().length === 0) {
+    return { error: 'Could not read any text from this statement.' };
+  }
+
+  const fallbackYear = inferStatementYear(text);
+  const rawItems = extractTransactions(String(text), fallbackYear);
+
+  if (!rawItems.length) {
+    return { error: 'No purchases were found in this statement.' };
+  }
+
+  const items = normalizeItems(rawItems);
+
+  if (!items.length) {
+    return { error: 'Could not read any transactions from this statement.' };
+  }
+
+  return { items };
+};
+
+const extractPdfText = async (base64Pdf) => {
+  // Decode the base64 PDF into a buffer
+  let buffer;
+  try {
+    buffer = Buffer.from(base64Pdf, 'base64');
+  } catch (_error) {
+    return { error: 'Invalid PDF data.' };
+  }
+
+  // Extract text from the PDF using unpdf (pdf.js under the hood)
+  let text;
+  let pdf;
+  try {
+    pdf = await getDocumentProxy(new Uint8Array(buffer));
+    const result = await extractText(pdf, { mergePages: true });
+    text = result.text;
+  } catch (error) {
+    logger.error({ err: error }, 'Failed to extract text from PDF');
+    return { error: 'Failed to read the statement. Please try again or enter the items manually.' };
+  } finally {
+    if (pdf) {
+      try { pdf.destroy(); } catch (_error) { /* ignore */ }
+    }
+  }
+
+  return { text };
+};
+
 const createStatementImportService = () => {
+  const parseStatementTextForEvaluation = async ({ text }) => parseStatementText(text);
+
   const parseStatement = async ({ base64Pdf }) => {
     if (!base64Pdf) {
       return { error: 'No PDF provided.' };
     }
 
-    // Decode the base64 PDF into a buffer
-    let buffer;
-    try {
-      buffer = Buffer.from(base64Pdf, 'base64');
-    } catch (_error) {
-      return { error: 'Invalid PDF data.' };
-    }
+    const extracted = await extractPdfText(base64Pdf);
+    if (extracted.error) return extracted;
 
-    // Extract text from the PDF using unpdf (pdf.js under the hood)
-    let text;
-    let pdf;
-    try {
-      pdf = await getDocumentProxy(new Uint8Array(buffer));
-      const result = await extractText(pdf, { mergePages: true });
-      text = result.text;
-    } catch (error) {
-      logger.error({ err: error }, 'Failed to extract text from PDF');
-      return { error: 'Failed to read the statement. Please try again or enter the items manually.' };
-    } finally {
-      if (pdf) {
-        try { pdf.destroy(); } catch (_error) { /* ignore */ }
-      }
-    }
-
-    if (!text || String(text).trim().length === 0) {
-      return { error: 'Could not read any text from this statement.' };
-    }
-
-    // Try to infer the statement year from header text
-    const fallbackYear = (() => {
-      const yearMatch = String(text).match(/(?:statement\s+period|statement\s+date|for\s+period|billing\s+cycle).*?(\d{4})/i)
-        || String(text).match(/\b(20\d{2})\b/);
-      return yearMatch ? Number(yearMatch[1]) : new Date().getFullYear();
-    })();
-
-    const rawItems = extractTransactions(String(text), fallbackYear);
-
-    if (!rawItems.length) {
-      return { error: 'No purchases were found in this statement.' };
-    }
-
-    const items = normalizeItems(rawItems);
-
-    if (!items.length) {
-      return { error: 'Could not read any transactions from this statement.' };
-    }
-
-    return { items };
+    return parseStatementText(extracted.text);
   };
 
-  return { parseStatement };
+  return {
+    parseStatement,
+    parseStatementTextForEvaluation,
+  };
 };
 
 module.exports = {
   createStatementImportService,
+  extractPdfText,
+  extractTransactions,
+  inferStatementYear,
+  normalizeItems,
+  parseStatementText,
 };
