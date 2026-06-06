@@ -3136,7 +3136,9 @@ document.querySelectorAll('[data-related-trigger]').forEach((button) => {
     const pickerName = button.dataset.relatedTrigger || 'edit';
     const search = pickerName === 'add' ? addRelatedTasksSearch : editRelatedTasksSearch;
     if (!search) return;
-    search.closest('.related-tasks-field')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    const field = search.closest('.related-tasks-field');
+    field?.classList.remove('hidden');
+    field?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     search.focus();
     showRelatedTaskResults(pickerName);
   });
