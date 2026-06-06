@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=cache-clear-20260606-6" />
+  <link rel="stylesheet" href="styles.css?v=cache-clear-20260606-9" />
 </head>
 <body>
   <div class="container">
@@ -1142,7 +1142,7 @@
     <div class="modal preview-task-modal">
       <h3 id="preview-task-title">Preview</h3>
       <div id="preview-task-description" class="preview-task-description"></div>
-      <div class="field preview-task-comment-field">
+      <div class="field preview-task-comment-field hidden">
         <label for="preview-task-comment-input">Add comment</label>
         <div id="preview-task-comment-display" class="preview-task-comment-display hidden"></div>
         <div class="rich-editor">
@@ -1171,6 +1171,19 @@
         </div>
         <p id="preview-related-tasks-hint" class="field-hint">Related tasks are view-only here. Use edit to change links.</p>
       </div>
+      <section class="task-activity-section" aria-labelledby="task-activity-title">
+        <h4 id="task-activity-title" class="task-activity-title">
+          <span aria-hidden="true">⌄</span>
+          <span>Activity</span>
+        </h4>
+        <div class="task-activity-tabs" role="tablist" aria-label="Activity">
+          <button type="button" class="active" data-activity-filter="all" role="tab" aria-selected="true">All</button>
+          <button type="button" data-activity-filter="comments" role="tab" aria-selected="false">Comments</button>
+          <button type="button" data-activity-filter="history" role="tab" aria-selected="false">History</button>
+          <button type="button" data-activity-filter="worklog" role="tab" aria-selected="false">Work log</button>
+        </div>
+        <div id="task-activity-list" class="task-activity-list"></div>
+      </section>
       <div class="modal-actions">
         <button id="send-preview-task-email" type="button" class="secondary task-action-icon" aria-label="Send Email" title="Send Email">✉</button>
         <button id="edit-preview-task" type="button" class="task-action-icon" aria-label="Edit" title="Edit">✎</button>
@@ -1257,7 +1270,7 @@
   <script src="js/notes-code-highlighter.js?v=cache-clear-20260601-7"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="js/monitoring.js?v=cache-clear-20260603-1"></script>
-  <script src="js/i18n.js?v=cache-clear-20260606-3"></script>
-  <script src="app.js?v=cache-clear-20260606-6"></script>
+  <script src="js/i18n.js?v=cache-clear-20260606-7"></script>
+  <script src="app.js?v=cache-clear-20260606-8"></script>
 </body>
 </html>

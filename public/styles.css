@@ -3810,6 +3810,222 @@ body.theme-dark .user-status-badge.disabled {
   scrollbar-width: thin;
 }
 
+.task-activity-section {
+  margin-top: 22px;
+  padding-top: 8px;
+}
+
+.task-activity-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 16px;
+  color: var(--text);
+  font-size: 1.18rem;
+  font-weight: 850;
+  line-height: 1.1;
+}
+
+.task-activity-title [aria-hidden="true"] {
+  color: #3f454f;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.task-activity-tabs {
+  display: inline-flex;
+  max-width: 100%;
+  margin-bottom: 30px;
+  border: 1px solid #d6d9de;
+  border-radius: 6px;
+  background: var(--surface);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.task-activity-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.task-activity-tabs button {
+  flex: 0 0 auto;
+  min-width: 88px;
+  height: 44px;
+  padding: 0 20px;
+  border: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: #4c515b;
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.task-activity-tabs button:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.task-activity-tabs button:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.task-activity-tabs button.active {
+  border: 2px solid #1f6feb;
+  background: #eaf2ff;
+  color: #155fd0;
+}
+
+.task-activity-list {
+  display: grid;
+  gap: 28px;
+}
+
+.task-activity-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr);
+  column-gap: 16px;
+  align-items: start;
+}
+
+.task-activity-item:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 23px;
+  top: 54px;
+  bottom: -26px;
+  width: 2px;
+  background: #eceef2;
+}
+
+.task-activity-avatar {
+  position: relative;
+  z-index: 1;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #00875a;
+  color: #fff;
+  font-size: 0.96rem;
+  font-weight: 850;
+  box-shadow: 0 0 0 4px var(--surface);
+}
+
+.task-activity-body {
+  min-width: 0;
+}
+
+.task-activity-message {
+  margin: 0 0 7px;
+  color: #252a33;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.task-activity-message strong {
+  font-weight: 850;
+}
+
+.task-activity-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.task-activity-when {
+  margin: 0;
+  color: #555b66;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.task-activity-badge,
+.task-activity-diff span:not([aria-hidden="true"]) {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 2px 6px;
+  border: 1px solid #b7bbc2;
+  border-radius: 4px;
+  background: var(--surface);
+  color: #2d323b;
+  font-size: 0.68rem;
+  font-weight: 850;
+  line-height: 1;
+}
+
+.task-activity-diff {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  color: #555b66;
+}
+
+.task-activity-comment {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.task-activity-empty {
+  margin: 0;
+  padding: 20px 18px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .task-activity-title {
+    font-size: 1.05rem;
+  }
+
+  .task-activity-tabs {
+    display: flex;
+    width: 100%;
+  }
+
+  .task-activity-tabs button {
+    min-width: max-content;
+    height: 40px;
+    padding: 0 14px;
+    font-size: 0.84rem;
+  }
+
+  .task-activity-item {
+    grid-template-columns: 42px minmax(0, 1fr);
+    column-gap: 12px;
+  }
+
+  .task-activity-item:not(:last-child)::after {
+    left: 19px;
+    top: 46px;
+  }
+
+  .task-activity-avatar {
+    width: 40px;
+    height: 40px;
+    font-size: 0.86rem;
+  }
+}
+
 .modal.attachment-preview-modal {
   width: min(100%, 900px);
   height: min(100%, 820px);

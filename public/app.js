@@ -164,6 +164,9 @@ const previewRelatedTasksResults = document.getElementById('preview-related-task
 const previewRelatedTasksHint = document.getElementById('preview-related-tasks-hint');
 const previewTaskCommentDisplay = document.getElementById('preview-task-comment-display');
 const previewTaskCommentInput = document.getElementById('preview-task-comment-input');
+const taskActivityTitle = document.getElementById('task-activity-title');
+const taskActivityTabs = Array.from(document.querySelectorAll('[data-activity-filter]'));
+const taskActivityList = document.getElementById('task-activity-list');
 const editPreviewTask = document.getElementById('edit-preview-task');
 const sendPreviewTaskEmail = document.getElementById('send-preview-task-email');
 const deletePreviewTask = document.getElementById('delete-preview-task');
@@ -226,6 +229,7 @@ let pendingEditTag = null;
 let pendingResetPasswordUser = null;
 let pendingEditTask = null;
 let pendingPreviewTask = null;
+let activeActivityFilter = 'all';
 let pendingAddTask = { related_task_ids: [], related_tasks: [] };
 let statusToastTimer = null;
 let isPasswordSettingsSaving = false;
@@ -425,6 +429,22 @@ const applyTranslations = () => {
   setText('#preview-related-tasks-label', t('relatedTasks'));
   if (previewRelatedTasksSearch) previewRelatedTasksSearch.placeholder = t('relatedTasksSearchPlaceholder');
   if (previewRelatedTasksHint) previewRelatedTasksHint.textContent = t('relatedTasksViewOnlyHint');
+  if (taskActivityTitle) {
+    const icon = taskActivityTitle.querySelector('[aria-hidden="true"]');
+    taskActivityTitle.textContent = '';
+    if (icon) taskActivityTitle.append(icon, ' ');
+    taskActivityTitle.append(t('activity'));
+  }
+  taskActivityTabs.forEach((button) => {
+    const filter = button.dataset.activityFilter;
+    const labels = {
+      all: t('activityAll'),
+      comments: t('activityComments'),
+      history: t('activityHistoryTab'),
+      worklog: t('activityWorkLogTab'),
+    };
+    button.textContent = labels[filter] || button.textContent;
+  });
   setText('label[for="preview-task-comment-input"]', t('comment'));
   previewTaskCommentInput.setAttribute('data-placeholder', t('commentPlaceholder'));
   setActionIconButton(sendPreviewTaskEmail, t('sendEmail'), '✉');
@@ -577,6 +597,166 @@ const getPreviewTaskModalTitle = (task) => String(task?.title || '').trim() || t
 const updatePreviewTaskModalTitle = () => {
   if (!previewTaskTitle) return;
   previewTaskTitle.textContent = getPreviewTaskModalTitle(pendingPreviewTask);
+};
+
+const getActivityActor = () => currentUser?.name || currentUser?.username || 'User';
+
+const getActivityInitials = (name) => {
+  const words = String(name || '').trim().split(/\s+/).filter(Boolean);
+  const initials = words.length > 1
+    ? `${words[0][0]}${words[words.length - 1][0]}`
+    : String(words[0] || 'U').slice(0, 2);
+  return initials.toUpperCase();
+};
+
+const formatActivityWhen = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const today = new Date();
+  const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const startOfDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const days = Math.round((startOfToday - startOfDate) / 86400000);
+  if (days === 0) return t('today');
+  if (days === 1) return t('yesterday');
+  if (days > 1 && days < 7) return t('daysAgo', { count: days });
+  return formatLocalDateTime(value);
+};
+
+const formatWorkLogDuration = (minutes) => {
+  const total = Number(minutes) || 0;
+  const hours = Math.floor(total / 60);
+  const remainingMinutes = total % 60;
+  if (hours && remainingMinutes) return `${hours}h ${remainingMinutes}m`;
+  if (hours) return `${hours}h`;
+  return `${remainingMinutes}m`;
+};
+
+const getTaskActivityItems = (task) => {
+  if (!task) return [];
+  const actor = getActivityActor();
+  const createdAt = task.created_at || task.createdAt;
+  const updatedAt = task.updated_at || task.updatedAt;
+  const items = [];
+
+  if (createdAt) {
+    items.push({
+      type: 'history',
+      actor,
+      when: formatActivityWhen(createdAt),
+      message: t('activityCreatedWorkItem'),
+      badge: t('activityHistory'),
+    });
+  }
+
+  if (updatedAt && updatedAt !== createdAt) {
+    items.push({
+      type: 'history',
+      actor,
+      when: formatActivityWhen(updatedAt),
+      message: t('activityChangedStatus'),
+      badge: t('activityHistory'),
+      diff: {
+        from: t('todo').toUpperCase(),
+        to: statusLabel(taskStatus(task)).toUpperCase(),
+      },
+    });
+  }
+
+  if (task.comment && getRichTextPlainText(task.comment).trim()) {
+    items.push({
+      type: 'comments',
+      actor,
+      when: formatActivityWhen(updatedAt || createdAt),
+      message: t('activityCommented'),
+      badge: t('activityComment'),
+      html: renderStoredRichText(task.comment),
+    });
+  }
+
+  if (Number(task.time_spent_minutes) > 0) {
+    items.push({
+      type: 'worklog',
+      actor,
+      when: formatActivityWhen(updatedAt || createdAt),
+      message: t('activityLoggedWork', { duration: formatWorkLogDuration(task.time_spent_minutes) }),
+      badge: t('activityWorkLog'),
+    });
+  }
+
+  return items;
+};
+
+const renderTaskActivity = () => {
+  if (!taskActivityList) return;
+  const items = getTaskActivityItems(pendingPreviewTask)
+    .filter((item) => activeActivityFilter === 'all' || item.type === activeActivityFilter);
+
+  taskActivityList.innerHTML = '';
+
+  taskActivityTabs.forEach((tab) => {
+    const isActive = tab.dataset.activityFilter === activeActivityFilter;
+    tab.classList.toggle('active', isActive);
+    tab.setAttribute('aria-selected', String(isActive));
+  });
+
+  if (!items.length) {
+    const empty = document.createElement('p');
+    empty.className = 'task-activity-empty';
+    empty.textContent = t('activityEmpty');
+    taskActivityList.append(empty);
+    return;
+  }
+
+  items.forEach((item) => {
+    const entry = document.createElement('article');
+    entry.className = `task-activity-item task-activity-${item.type}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'task-activity-avatar';
+    avatar.textContent = getActivityInitials(item.actor);
+
+    const body = document.createElement('div');
+    body.className = 'task-activity-body';
+
+    const message = document.createElement('p');
+    message.className = 'task-activity-message';
+    const actor = document.createElement('strong');
+    actor.textContent = item.actor;
+    message.append(actor, ` ${item.message}`);
+
+    const when = document.createElement('p');
+    when.className = 'task-activity-when';
+    when.textContent = item.when;
+
+    const badge = document.createElement('span');
+    badge.className = 'task-activity-badge';
+    badge.textContent = item.badge;
+
+    const meta = document.createElement('div');
+    meta.className = 'task-activity-meta';
+    meta.append(when, badge);
+
+    body.append(message, meta);
+
+    if (item.diff) {
+      const diff = document.createElement('div');
+      diff.className = 'task-activity-diff';
+      diff.innerHTML = `<span>${escapeHtml(item.diff.from)}</span><span aria-hidden="true">→</span><span>${escapeHtml(item.diff.to)}</span>`;
+      body.append(diff);
+    }
+
+    if (item.html) {
+      const comment = document.createElement('div');
+      comment.className = 'task-activity-comment';
+      comment.innerHTML = item.html;
+      openRichTextLinksWithModifier(comment);
+      body.append(comment);
+    }
+
+    entry.append(avatar, body);
+    taskActivityList.append(entry);
+  });
 };
 
 const relatedTasksModule = window.RelatedTasksModule.create({
@@ -3047,6 +3227,7 @@ const showPreviewTaskModal = (task) => {
   previewTaskCommentDisplay.classList.remove('hidden');
   previewTaskCommentInput.closest('.rich-editor')?.classList.add('hidden');
   openRichTextLinksWithModifier(previewTaskCommentDisplay);
+  renderTaskActivity();
   previewTaskModal.classList.remove('hidden');
 };
 
@@ -3063,6 +3244,8 @@ const hidePreviewTaskModal = () => {
   previewTaskCommentInput.closest('.rich-editor')?.classList.remove('hidden');
   previewTaskCommentInput.innerHTML = '';
   previewTaskCommentInput.contentEditable = 'true';
+  activeActivityFilter = 'all';
+  if (taskActivityList) taskActivityList.innerHTML = '';
 };
 
 const showAttachmentPreview = (task) => {
@@ -3130,6 +3313,13 @@ sendPreviewTaskEmail.addEventListener('click', async () => {
 closePreviewTask.addEventListener('click', hidePreviewTaskModal);
 
 relatedTasksModule.bind();
+
+taskActivityTabs.forEach((button) => {
+  button.addEventListener('click', () => {
+    activeActivityFilter = button.dataset.activityFilter || 'all';
+    renderTaskActivity();
+  });
+});
 
 document.querySelectorAll('[data-related-trigger]').forEach((button) => {
   button.addEventListener('click', () => {
