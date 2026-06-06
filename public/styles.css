@@ -3587,6 +3587,99 @@ body.theme-dark .user-status-badge.disabled {
   min-height: 118px;
 }
 
+.task-detail-field {
+  grid-column: 1 / -1;
+}
+
+.task-detail-editor {
+  border-color: #8f969f;
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.add-task-modal .task-detail-editor,
+.edit-task-modal .task-detail-editor {
+  border-radius: 10px;
+}
+
+.task-detail-editor:focus-within {
+  border-color: #68707a;
+  box-shadow: 0 0 0 3px rgba(104, 112, 122, 0.14);
+}
+
+.task-detail-editor .rich-editor-toolbar {
+  align-items: center;
+  gap: 12px;
+  min-height: 54px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.task-detail-editor .rich-editor-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: color-mix(in srgb, var(--text) 72%, var(--muted));
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.task-detail-editor .rich-editor-toolbar .task-detail-related-trigger {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1.35rem;
+}
+
+.task-detail-editor .rich-editor-toolbar button:hover,
+.task-detail-editor .rich-editor-toolbar button:focus-visible {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.task-detail-editor .rich-editor-surface {
+  min-height: 156px;
+  padding: 34px 34px 42px;
+  color: var(--text);
+  font-size: 1.04rem;
+  line-height: 1.65;
+}
+
+.task-detail-editor .rich-editor-surface:focus {
+  box-shadow: none;
+}
+
+.task-detail-editor .rich-editor-surface:empty::before {
+  color: var(--muted);
+  font-size: 1.12rem;
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .task-detail-editor .rich-editor-toolbar {
+    gap: 6px;
+    padding: 8px 10px;
+  }
+
+  .task-detail-editor .rich-editor-surface {
+    min-height: 132px;
+    padding: 24px 18px 30px;
+    font-size: 1rem;
+  }
+
+  .task-detail-editor .rich-editor-surface:empty::before {
+    font-size: 1rem;
+  }
+}
+
 .add-task-modal .checkbox-label,
 .edit-task-modal .recurring-toggle {
   width: 100%;
@@ -3927,6 +4020,7 @@ body.theme-dark .user-status-badge.disabled {
 }
 
 .related-tasks-field {
+  grid-column: 1 / -1;
   margin-top: 14px;
 }
 

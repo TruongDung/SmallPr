@@ -230,17 +230,20 @@
             <input id="task-tag" type="text" maxlength="40" placeholder="Work, personal, urgent..." autocomplete="off" />
             <div id="task-tag-suggestions" class="tag-suggestions hidden" role="listbox"></div>
           </div>
-          <div class="field">
-            <label for="task-description">Description <span class="field-max">(max 10000 characters)</span></label>
-            <div class="rich-editor">
+          <div class="field task-detail-field">
+            <label for="task-description">Task detail <span class="field-max">(max 10000 characters)</span></label>
+            <div class="rich-editor task-detail-editor">
               <div class="rich-editor-toolbar" aria-label="Description formatting">
-                <button type="button" data-editor="task-description" data-command="bold"><strong>B</strong></button>
-                <button type="button" data-editor="task-description" data-command="italic"><em>I</em></button>
-                <button type="button" data-editor="task-description" data-command="underline"><u>U</u></button>
-                <button type="button" data-editor="task-description" data-command="strikeThrough"><s>S</s></button>
-                <button type="button" data-editor="task-description" data-command="insertChecklist">☐ Check</button>
-                <button type="button" data-editor="task-description" data-command="insertUnorderedList">• List</button>
-                <button type="button" data-editor="task-description" data-command="insertOrderedList">1. List</button>
+                <button type="button" class="task-detail-related-trigger" data-related-trigger="add" title="Add related task" aria-label="Add related task">
+                  <span aria-hidden="true">+</span>
+                </button>
+                <button type="button" title="Bold" data-editor="task-description" data-command="bold"><strong>B</strong></button>
+                <button type="button" title="Italic" data-editor="task-description" data-command="italic"><em>I</em></button>
+                <button type="button" title="Underline" data-editor="task-description" data-command="underline"><u>U</u></button>
+                <button type="button" title="Strikethrough" data-editor="task-description" data-command="strikeThrough"><s>S</s></button>
+                <button type="button" title="Checklist" data-editor="task-description" data-command="insertChecklist">☑</button>
+                <button type="button" title="Bullet list" data-editor="task-description" data-command="insertUnorderedList">•</button>
+                <button type="button" title="Numbered list" data-editor="task-description" data-command="insertOrderedList">1.</button>
               </div>
               <div id="task-description" class="rich-editor-surface" contenteditable="true" role="textbox" aria-multiline="true"></div>
             </div>
@@ -296,11 +299,24 @@
             <input id="task-attachment" type="file" />
             <p id="attachment-error" class="field-error hidden"></p>
           </div>
-              <p id="form-error" class="field-error hidden"></p>
-              <div class="modal-actions">
-                <button id="cancel-add-task" type="button" class="secondary modal-text-action" aria-label="Cancel" title="Cancel">Cancel</button>
-                <button type="submit" class="modal-text-action modal-text-action-primary" aria-label="Add Task" title="Add Task">Add Task</button>
-              </div>
+          <div class="field related-tasks-field">
+            <div class="related-tasks-header">
+              <label id="add-related-tasks-label" for="add-related-tasks-search">Related tasks</label>
+              <span id="add-related-tasks-count" class="related-tasks-count">0 linked</span>
+            </div>
+            <div id="add-related-tasks-list" class="related-tasks-list"></div>
+            <div class="related-tasks-search">
+              <span class="task-search-icon" aria-hidden="true">⌕</span>
+              <input id="add-related-tasks-search" type="search" autocomplete="off" placeholder="Search tasks to link..." />
+              <div id="add-related-tasks-results" class="related-tasks-results hidden" role="listbox"></div>
+            </div>
+            <p id="add-related-tasks-hint" class="field-hint">Search and click a task to link it.</p>
+          </div>
+          <p id="form-error" class="field-error hidden"></p>
+          <div class="modal-actions">
+            <button id="cancel-add-task" type="button" class="secondary modal-text-action" aria-label="Cancel" title="Cancel">Cancel</button>
+            <button type="submit" class="modal-text-action modal-text-action-primary" aria-label="Add Task" title="Add Task">Add Task</button>
+          </div>
             </form>
           </div>
         </div>
@@ -1015,17 +1031,20 @@
           <input id="edit-task-tag-input" type="text" maxlength="40" placeholder="Work, personal, urgent..." autocomplete="off" />
           <div id="edit-task-tag-suggestions" class="tag-suggestions hidden" role="listbox"></div>
         </div>
-        <div class="field">
-          <label for="edit-task-description-input">Description <span class="field-max">(max 10000 characters)</span></label>
-          <div class="rich-editor">
+        <div class="field task-detail-field">
+          <label for="edit-task-description-input">Task detail <span class="field-max">(max 10000 characters)</span></label>
+          <div class="rich-editor task-detail-editor">
             <div class="rich-editor-toolbar" aria-label="Description formatting">
-              <button type="button" data-editor="edit-task-description-input" data-command="bold"><strong>B</strong></button>
-              <button type="button" data-editor="edit-task-description-input" data-command="italic"><em>I</em></button>
-              <button type="button" data-editor="edit-task-description-input" data-command="underline"><u>U</u></button>
-              <button type="button" data-editor="edit-task-description-input" data-command="strikeThrough"><s>S</s></button>
-              <button type="button" data-editor="edit-task-description-input" data-command="insertChecklist">☐ Check</button>
-              <button type="button" data-editor="edit-task-description-input" data-command="insertUnorderedList">• List</button>
-              <button type="button" data-editor="edit-task-description-input" data-command="insertOrderedList">1. List</button>
+              <button type="button" class="task-detail-related-trigger" data-related-trigger="edit" title="Add related task" aria-label="Add related task">
+                <span aria-hidden="true">+</span>
+              </button>
+              <button type="button" title="Bold" data-editor="edit-task-description-input" data-command="bold"><strong>B</strong></button>
+              <button type="button" title="Italic" data-editor="edit-task-description-input" data-command="italic"><em>I</em></button>
+              <button type="button" title="Underline" data-editor="edit-task-description-input" data-command="underline"><u>U</u></button>
+              <button type="button" title="Strikethrough" data-editor="edit-task-description-input" data-command="strikeThrough"><s>S</s></button>
+              <button type="button" title="Checklist" data-editor="edit-task-description-input" data-command="insertChecklist">☑</button>
+              <button type="button" title="Bullet list" data-editor="edit-task-description-input" data-command="insertUnorderedList">•</button>
+              <button type="button" title="Numbered list" data-editor="edit-task-description-input" data-command="insertOrderedList">1.</button>
             </div>
             <div id="edit-task-description-input" class="rich-editor-surface" contenteditable="true" role="textbox" aria-multiline="true"></div>
           </div>

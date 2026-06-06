@@ -100,6 +100,11 @@ const taskRecurrencePattern = document.getElementById('task-recurrence-pattern')
 const taskRecurrenceInterval = document.getElementById('task-recurrence-interval');
 const dailyOptions = document.getElementById('daily-options');
 const weeklyOptions = document.getElementById('weekly-options');
+const addRelatedTasksList = document.getElementById('add-related-tasks-list');
+const addRelatedTasksCount = document.getElementById('add-related-tasks-count');
+const addRelatedTasksSearch = document.getElementById('add-related-tasks-search');
+const addRelatedTasksResults = document.getElementById('add-related-tasks-results');
+const addRelatedTasksHint = document.getElementById('add-related-tasks-hint');
 const editTaskRecurringCheckbox = document.getElementById('edit-task-recurring');
 const editRecurrenceOptions = document.getElementById('edit-recurrence-options');
 const editTaskRecurrencePattern = document.getElementById('edit-task-recurrence-pattern');
@@ -221,6 +226,7 @@ let pendingEditTag = null;
 let pendingResetPasswordUser = null;
 let pendingEditTask = null;
 let pendingPreviewTask = null;
+let pendingAddTask = { related_task_ids: [], related_tasks: [] };
 let statusToastTimer = null;
 let isPasswordSettingsSaving = false;
 let reminderAlertPreviousFocus = null;
@@ -390,8 +396,8 @@ const applyTranslations = () => {
     saveResetPasswordButton.setAttribute('aria-label', t('save'));
     saveResetPasswordButton.title = t('save');
   }
-  setText('label[for="task-description"]', `${t('description')} ${t('max500')}`);
-  document.getElementById('task-description').setAttribute('data-placeholder', t('descriptionPlaceholder'));
+  setText('label[for="task-description"]', `${t('taskDetail')} ${t('max500')}`);
+  document.getElementById('task-description').setAttribute('data-placeholder', t('taskDetailPlaceholder'));
   setText('label[for="task-due-date"]', t('dueDate'));
   setText('label[for="task-reminder"]', t('dateTimeAlert'));
   setText('label[for="task-attachment"]', t('uploadFile'));
@@ -404,6 +410,13 @@ const applyTranslations = () => {
   saveAddTask.textContent = t('addTask');
   saveAddTask.setAttribute('aria-label', t('addTask'));
   saveAddTask.title = t('addTask');
+  setText('#add-related-tasks-label', t('relatedTasks'));
+  if (addRelatedTasksSearch) addRelatedTasksSearch.placeholder = t('relatedTasksSearchPlaceholder');
+  if (addRelatedTasksHint) addRelatedTasksHint.textContent = t('relatedTasksHint');
+  document.querySelectorAll('[data-related-trigger]').forEach((button) => {
+    button.setAttribute('aria-label', t('addRelatedTask'));
+    button.title = t('addRelatedTask');
+  });
   editTaskTitle.textContent = t('editTaskTitle');
   updatePreviewTaskModalTitle();
   setText('#edit-related-tasks-label', t('relatedTasks'));
@@ -427,8 +440,8 @@ const applyTranslations = () => {
   updateStatusOptions(editTaskStatusInput);
   setText('label[for="edit-task-tag-input"]', t('tag'));
   editTaskTagInput.placeholder = t('tagPlaceholder');
-  setText('label[for="edit-task-description-input"]', `${t('description')} ${t('max500')}`);
-  editTaskDescriptionInput.setAttribute('data-placeholder', t('descriptionPlaceholder'));
+  setText('label[for="edit-task-description-input"]', `${t('taskDetail')} ${t('max500')}`);
+  editTaskDescriptionInput.setAttribute('data-placeholder', t('taskDetailPlaceholder'));
   setText('label[for="edit-task-comment-input"]', t('addComment'));
   editTaskCommentInput.setAttribute('data-placeholder', t('commentPlaceholder'));
   setText('label[for="edit-task-due-date-input"]', t('dueDate'));
@@ -568,6 +581,10 @@ const updatePreviewTaskModalTitle = () => {
 
 const relatedTasksModule = window.RelatedTasksModule.create({
   elements: {
+    addList: addRelatedTasksList,
+    addCount: addRelatedTasksCount,
+    addSearch: addRelatedTasksSearch,
+    addResults: addRelatedTasksResults,
     editList: editRelatedTasksList,
     editCount: editRelatedTasksCount,
     editSearch: editRelatedTasksSearch,
@@ -578,8 +595,10 @@ const relatedTasksModule = window.RelatedTasksModule.create({
     previewResults: previewRelatedTasksResults,
   },
   getTasks: () => tasks,
+  getAddTask: () => pendingAddTask,
   getEditTask: () => pendingEditTask,
   getPreviewTask: () => pendingPreviewTask,
+  setAddTask: (task) => { pendingAddTask = task; },
   setEditTask: (task) => { pendingEditTask = task; },
   setPreviewTask: (task) => { pendingPreviewTask = task; },
   statusLabel,
@@ -591,6 +610,7 @@ const {
   getRelatedTaskIds,
   hideResults: hideRelatedTaskResults,
   render: renderRelatedTaskPicker,
+  showResults: showRelatedTaskResults,
 } = relatedTasksModule;
 
 const calendarModule = window.CalendarModule.create({
@@ -899,6 +919,10 @@ const showSection = () => {
 
 const showAddTaskModal = () => {
   taskPriorityInput.value = DEFAULT_TASK_PRIORITY;
+  pendingAddTask = { related_task_ids: [], related_tasks: [] };
+  if (addRelatedTasksSearch) addRelatedTasksSearch.value = '';
+  hideRelatedTaskResults('add');
+  renderRelatedTaskPicker('add');
   addTaskModal.classList.remove('hidden');
   document.getElementById('task-title').focus();
 };
@@ -910,6 +934,10 @@ const openAddTaskFlow = () => {
 };
 
 const hideAddTaskModal = () => {
+  pendingAddTask = { related_task_ids: [], related_tasks: [] };
+  if (addRelatedTasksList) addRelatedTasksList.innerHTML = '';
+  if (addRelatedTasksSearch) addRelatedTasksSearch.value = '';
+  hideRelatedTaskResults('add');
   addTaskModal.classList.add('hidden');
 };
 
@@ -2146,6 +2174,7 @@ const handleTaskSubmit = async (event) => {
       method: 'POST',
       body: JSON.stringify({
         title, tag, description, priority, status, due_date, reminder_at, attachment: preparedAttachment, language: currentLanguage,
+        related_task_ids: getRelatedTaskIds(pendingAddTask),
         is_recurring, recurrence_pattern, recurrence_interval, recurrence_days
       }),
     });
@@ -2163,6 +2192,9 @@ const handleTaskSubmit = async (event) => {
       taskStatusInput.value = 'todo';
       descriptionEditor.innerHTML = '';
       preparedAttachment = null;
+      pendingAddTask = { related_task_ids: [], related_tasks: [] };
+      if (addRelatedTasksSearch) addRelatedTasksSearch.value = '';
+      renderRelatedTaskPicker('add');
       taskRecurringCheckbox.checked = false;
       recurrenceOptions.classList.add('hidden');
       titleError.classList.add('hidden');
@@ -3098,6 +3130,17 @@ sendPreviewTaskEmail.addEventListener('click', async () => {
 closePreviewTask.addEventListener('click', hidePreviewTaskModal);
 
 relatedTasksModule.bind();
+
+document.querySelectorAll('[data-related-trigger]').forEach((button) => {
+  button.addEventListener('click', () => {
+    const pickerName = button.dataset.relatedTrigger || 'edit';
+    const search = pickerName === 'add' ? addRelatedTasksSearch : editRelatedTasksSearch;
+    if (!search) return;
+    search.closest('.related-tasks-field')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    search.focus();
+    showRelatedTaskResults(pickerName);
+  });
+});
 
 previewTaskModal.addEventListener('click', (event) => {
   if (event.target === previewTaskModal) {

@@ -13,8 +13,10 @@
   const create = ({
     elements,
     getTasks,
+    getAddTask,
     getEditTask,
     getPreviewTask,
+    setAddTask,
     setEditTask,
     setPreviewTask,
     statusLabel,
@@ -33,6 +35,13 @@
     };
 
     const pickers = {
+      add: {
+        list: elements.addList,
+        count: elements.addCount,
+        search: elements.addSearch,
+        results: elements.addResults,
+        getTask: getAddTask,
+      },
       edit: {
         list: elements.editList,
         count: elements.editCount,
@@ -119,7 +128,7 @@
       const linked = new Set(getRelatedTaskIds(task));
 
       const matches = getTasks()
-        .filter((candidate) => Number(candidate.id) !== Number(task.id))
+        .filter((candidate) => !task.id || Number(candidate.id) !== Number(task.id))
         .filter((candidate) => !linked.has(Number(candidate.id)))
         .filter((candidate) => !query || (candidate.title || '').toLowerCase().includes(query))
         .slice(0, 6);
@@ -192,6 +201,16 @@
       const next = [...new Set([...getRelatedTaskIds(task), Number(id)])];
       if (picker.search) picker.search.value = '';
       hideResults(pickerName);
+      if (pickerName === 'add') {
+        setAddTask({
+          ...task,
+          related_task_ids: next,
+          related_tasks: next.map((relatedId) => resolveRelatedTask(relatedId, task)),
+        });
+        render('add');
+        hideResults('add');
+        return;
+      }
       if (pickerName === 'edit') {
         setEditIds(next);
         return;
@@ -204,6 +223,15 @@
       const task = picker?.getTask();
       if (!task || picker.readOnly) return;
       const next = getRelatedTaskIds(task).filter((existing) => existing !== Number(id));
+      if (pickerName === 'add') {
+        setAddTask({
+          ...task,
+          related_task_ids: next,
+          related_tasks: next.map((relatedId) => resolveRelatedTask(relatedId, task)),
+        });
+        render('add');
+        return;
+      }
       if (pickerName === 'edit') {
         setEditIds(next);
         return;
@@ -219,7 +247,14 @@
 
     const bind = () => {
       elements.editList?.addEventListener('click', handleListClick);
+      elements.addList?.addEventListener('click', handleListClick);
       elements.previewList?.addEventListener('click', handleListClick);
+
+      elements.addSearch?.addEventListener('input', () => showResults('add'));
+      elements.addSearch?.addEventListener('focus', () => showResults('add'));
+      elements.addSearch?.addEventListener('blur', () => {
+        window.setTimeout(() => hideResults('add'), 120);
+      });
 
       elements.editSearch?.addEventListener('input', () => showResults('edit'));
       elements.editSearch?.addEventListener('focus', () => showResults('edit'));
