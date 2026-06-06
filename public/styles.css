@@ -3632,11 +3632,33 @@ body.theme-dark .user-status-badge.disabled {
   line-height: 1;
 }
 
-.task-detail-editor .rich-editor-toolbar .task-detail-related-trigger {
+.task-detail-footer-actions {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 2px;
+}
+
+.task-detail-related-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  min-width: 58px;
+  height: 58px;
+  padding: 0;
   border: 1px solid var(--border);
+  border-radius: 5px;
   background: var(--surface);
   color: var(--text);
   font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.task-detail-related-trigger:hover,
+.task-detail-related-trigger:focus-visible {
+  background: var(--surface-soft);
+  color: var(--text);
 }
 
 .task-detail-editor .rich-editor-toolbar button:hover,
