@@ -646,6 +646,42 @@ const formatWorkLogDuration = (minutes) => {
   return `${remainingMinutes}m`;
 };
 
+const parseActivitySnapshot = (snapshot) => {
+  if (!snapshot) return null;
+  if (typeof snapshot === 'object') return snapshot;
+  try {
+    return JSON.parse(snapshot);
+  } catch {
+    return null;
+  }
+};
+
+const getTaskStatusHistoryItems = (task, fallbackActor) => {
+  const history = Array.isArray(task?.activity_history) ? task.activity_history : [];
+  return history
+    .map((entry) => {
+      const before = parseActivitySnapshot(entry.before);
+      const after = parseActivitySnapshot(entry.after);
+      const fromStatus = before?.status;
+      const toStatus = after?.status;
+      if (entry.action !== 'edit' || !fromStatus || !toStatus || fromStatus === toStatus) return null;
+
+      return {
+        type: 'history',
+        actor: entry.actor || fallbackActor,
+        timestamp: entry.created_at,
+        when: formatActivityWhen(entry.created_at),
+        message: t('activityChangedStatus'),
+        badge: t('activityHistory'),
+        diff: {
+          from: statusLabel(fromStatus).toUpperCase(),
+          to: statusLabel(toStatus).toUpperCase(),
+        },
+      };
+    })
+    .filter(Boolean);
+};
+
 const getTaskActivityItems = (task) => {
   if (!task) return [];
   const actor = getActivityActor();
@@ -657,16 +693,21 @@ const getTaskActivityItems = (task) => {
     items.push({
       type: 'history',
       actor,
+      timestamp: createdAt,
       when: formatActivityWhen(createdAt),
       message: t('activityCreatedWorkItem'),
       badge: t('activityHistory'),
     });
   }
 
-  if (updatedAt && updatedAt !== createdAt) {
+  const statusHistoryItems = getTaskStatusHistoryItems(task, actor);
+  if (statusHistoryItems.length) {
+    items.push(...statusHistoryItems);
+  } else if (updatedAt && updatedAt !== createdAt) {
     items.push({
       type: 'history',
       actor,
+      timestamp: updatedAt,
       when: formatActivityWhen(updatedAt),
       message: t('activityChangedStatus'),
       badge: t('activityHistory'),
@@ -681,6 +722,7 @@ const getTaskActivityItems = (task) => {
     items.push({
       type: 'comments',
       actor,
+      timestamp: updatedAt || createdAt,
       when: formatActivityWhen(updatedAt || createdAt),
       message: t('activityCommented'),
       badge: t('activityComment'),
@@ -692,13 +734,18 @@ const getTaskActivityItems = (task) => {
     items.push({
       type: 'worklog',
       actor,
+      timestamp: updatedAt || createdAt,
       when: formatActivityWhen(updatedAt || createdAt),
       message: t('activityLoggedWork', { duration: formatWorkLogDuration(task.time_spent_minutes) }),
       badge: t('activityWorkLog'),
     });
   }
 
-  return items;
+  return items.sort((a, b) => {
+    const aTime = new Date(a.timestamp || 0).getTime();
+    const bTime = new Date(b.timestamp || 0).getTime();
+    return aTime - bTime;
+  });
 };
 
 const renderTaskActivity = () => {

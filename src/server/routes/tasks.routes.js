@@ -350,8 +350,9 @@ const createTasksRouter = ({
         before: task,
         after: updatedTask,
       });
-      emitToUser(req.session.userId, 'task:updated', { task: updatedTask });
-      res.json({ task: updatedTask });
+      const taskWithHistory = await tasks.getTaskForUser(id, req.session.userId);
+      emitToUser(req.session.userId, 'task:updated', { task: taskWithHistory });
+      res.json({ task: taskWithHistory });
     } catch (error) {
       logger.error({ err: error }, 'Failed to update task');
       res.status(500).json({ error: 'Failed to update task' });

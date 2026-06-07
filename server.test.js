@@ -783,6 +783,35 @@ describe('Task API', () => {
     });
   });
 
+  test('returns all task status changes in activity history', async () => {
+    const agent = await createAgent(testUsername('status-history-owner'));
+
+    const createResponse = await agent
+      .post('/api/tasks')
+      .send({ title: 'Track status history' });
+
+    const taskId = createResponse.body.task.id;
+    const inProgressResponse = await agent
+      .put(`/api/tasks/${taskId}`)
+      .send({ status: 'in_progress' });
+    expect(inProgressResponse.statusCode).toBe(200);
+
+    const doneResponse = await agent
+      .put(`/api/tasks/${taskId}`)
+      .send({ status: 'done' });
+
+    expect(doneResponse.statusCode).toBe(200);
+    const statusChanges = doneResponse.body.task.activity_history
+      .filter((entry) => entry.action === 'edit')
+      .filter((entry) => entry.before?.status !== entry.after?.status)
+      .map((entry) => [entry.before.status, entry.after.status]);
+
+    expect(statusChanges).toEqual([
+      ['todo', 'in_progress'],
+      ['in_progress', 'done'],
+    ]);
+  });
+
   test('saves a comment-only task update', async () => {
     const agent = await createAgent(testUsername('comment-only-owner'));
 

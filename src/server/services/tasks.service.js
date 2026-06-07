@@ -2,6 +2,50 @@ const { TASK_PRIORITY_ORDER_SQL } = require('../constants/tasks');
 const { normalizeTag } = require('../utils/tasks');
 
 const createTasksService = ({ allAsync, getAsync, runAsync }) => {
+  const attachActivityHistory = async (userId, rows) => {
+    if (!rows.length) return rows;
+
+    const taskIds = rows.map((task) => Number(task.id));
+    const placeholders = taskIds.map(() => '?').join(', ');
+    const historyRows = await allAsync(
+      `SELECT
+         audit_logs.entity_id AS task_id,
+         audit_logs.action,
+         audit_logs.summary,
+         audit_logs.before_data,
+         audit_logs.after_data,
+         audit_logs.created_at,
+         actor.username AS actor_username,
+         actor.name AS actor_name
+       FROM audit_logs
+       LEFT JOIN users actor ON actor.id = audit_logs.actor_user_id
+       WHERE audit_logs.user_id = ?
+         AND audit_logs.entity_type = 'task'
+         AND audit_logs.entity_id IN (${placeholders})
+       ORDER BY audit_logs.created_at ASC, audit_logs.id ASC`,
+      [userId, ...taskIds]
+    );
+
+    const historyByTaskId = historyRows.reduce((map, row) => {
+      const key = Number(row.task_id);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push({
+        action: row.action,
+        summary: row.summary,
+        before: row.before_data || null,
+        after: row.after_data || null,
+        created_at: row.created_at,
+        actor: row.actor_name || row.actor_username || '',
+      });
+      return map;
+    }, new Map());
+
+    return rows.map((task) => ({
+      ...task,
+      activity_history: historyByTaskId.get(Number(task.id)) || [],
+    }));
+  };
+
   const attachRelatedTasks = async (userId, rows) => {
     if (!rows.length) return rows;
 
@@ -35,11 +79,13 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
       return map;
     }, new Map());
 
-    return rows.map((task) => ({
+    const withRelatedTasks = rows.map((task) => ({
       ...task,
       related_tasks: relatedByTaskId.get(Number(task.id)) || [],
       related_task_ids: (relatedByTaskId.get(Number(task.id)) || []).map((related) => related.id),
     }));
+
+    return attachActivityHistory(userId, withRelatedTasks);
   };
 
   const listTasks = async ({ userId, archived = 0 }) => {
