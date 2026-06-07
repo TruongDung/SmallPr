@@ -170,9 +170,13 @@ const previewRelatedTasksCount = document.getElementById('preview-related-tasks-
 const previewRelatedTasksSearch = document.getElementById('preview-related-tasks-search');
 const previewRelatedTasksResults = document.getElementById('preview-related-tasks-results');
 const previewRelatedTasksHint = document.getElementById('preview-related-tasks-hint');
+const previewRelatedTasksToggle = document.getElementById('preview-related-tasks-toggle');
+const previewRelatedTasksContent = document.getElementById('preview-related-tasks-content');
 const previewTaskCommentDisplay = document.getElementById('preview-task-comment-display');
 const previewTaskCommentInput = document.getElementById('preview-task-comment-input');
 const taskActivityTitle = document.getElementById('task-activity-title');
+const taskActivityToggle = document.getElementById('task-activity-toggle');
+const taskActivityContent = document.getElementById('task-activity-content');
 const taskActivityTabs = Array.from(document.querySelectorAll('[data-activity-filter]'));
 const taskActivityList = document.getElementById('task-activity-list');
 const editPreviewTask = document.getElementById('edit-preview-task');
@@ -433,15 +437,19 @@ const applyTranslations = () => {
   setText('#edit-related-tasks-label', t('relatedTasks'));
   if (editRelatedTasksSearch) editRelatedTasksSearch.placeholder = t('relatedTasksSearchPlaceholder');
   if (editRelatedTasksHint) editRelatedTasksHint.textContent = t('relatedTasksHint');
-  setText('#preview-related-tasks-label', t('relatedTasks'));
+  const previewRelatedTasksLabel = document.querySelector('#preview-related-tasks-label[data-related-tasks-title-label]');
+  if (previewRelatedTasksLabel) previewRelatedTasksLabel.textContent = t('relatedTasks');
   if (previewRelatedTasksSearch) previewRelatedTasksSearch.placeholder = t('relatedTasksSearchPlaceholder');
   if (previewRelatedTasksHint) previewRelatedTasksHint.textContent = t('relatedTasksViewOnlyHint');
-  if (taskActivityTitle) {
-    const icon = taskActivityTitle.querySelector('[aria-hidden="true"]');
-    taskActivityTitle.textContent = '';
-    if (icon) taskActivityTitle.append(icon, ' ');
-    taskActivityTitle.append(t('activity'));
+  if (previewRelatedTasksToggle) {
+    previewRelatedTasksToggle.title = t('relatedTasks');
+    previewRelatedTasksToggle.setAttribute('aria-label', t('relatedTasks'));
   }
+  if (taskActivityTitle) {
+    const label = taskActivityTitle.querySelector('[data-activity-title-label]');
+    if (label) label.textContent = t('activity');
+  }
+  if (taskActivityToggle) taskActivityToggle.title = t('activity');
   taskActivityTabs.forEach((button) => {
     const filter = button.dataset.activityFilter;
     const labels = {
@@ -763,6 +771,30 @@ const renderTaskActivity = () => {
     entry.append(avatar, body);
     taskActivityList.append(entry);
   });
+};
+
+const setTaskActivityExpanded = (expanded) => {
+  if (!taskActivityToggle || !taskActivityContent) return;
+  taskActivityContent.classList.toggle('hidden', !expanded);
+  taskActivityToggle.setAttribute('aria-expanded', String(expanded));
+  taskActivityToggle.classList.toggle('collapsed', !expanded);
+};
+
+const toggleTaskActivity = () => {
+  const expanded = taskActivityToggle?.getAttribute('aria-expanded') !== 'false';
+  setTaskActivityExpanded(!expanded);
+};
+
+const setPreviewRelatedTasksExpanded = (expanded) => {
+  if (!previewRelatedTasksToggle || !previewRelatedTasksContent) return;
+  previewRelatedTasksContent.classList.toggle('hidden', !expanded);
+  previewRelatedTasksToggle.setAttribute('aria-expanded', String(expanded));
+  previewRelatedTasksToggle.classList.toggle('collapsed', !expanded);
+};
+
+const togglePreviewRelatedTasks = () => {
+  const expanded = previewRelatedTasksToggle?.getAttribute('aria-expanded') !== 'false';
+  setPreviewRelatedTasksExpanded(!expanded);
 };
 
 const relatedTasksModule = window.RelatedTasksModule.create({
@@ -3300,6 +3332,8 @@ const showPreviewTaskModal = (task) => {
   previewTaskCommentDisplay.classList.remove('hidden');
   previewTaskCommentInput.closest('.rich-editor')?.classList.add('hidden');
   openRichTextLinksWithModifier(previewTaskCommentDisplay);
+  setPreviewRelatedTasksExpanded(true);
+  setTaskActivityExpanded(true);
   renderTaskActivity();
   previewTaskModal.classList.remove('hidden');
 };
@@ -3318,6 +3352,8 @@ const hidePreviewTaskModal = () => {
   previewTaskCommentInput.innerHTML = '';
   previewTaskCommentInput.contentEditable = 'true';
   activeActivityFilter = 'all';
+  setPreviewRelatedTasksExpanded(true);
+  setTaskActivityExpanded(true);
   if (taskActivityList) taskActivityList.innerHTML = '';
 };
 
@@ -3386,6 +3422,9 @@ taskActivityTabs.forEach((button) => {
     renderTaskActivity();
   });
 });
+
+taskActivityToggle?.addEventListener('click', toggleTaskActivity);
+previewRelatedTasksToggle?.addEventListener('click', togglePreviewRelatedTasks);
 
 document.querySelectorAll('[data-related-trigger]').forEach((button) => {
   button.addEventListener('click', () => {

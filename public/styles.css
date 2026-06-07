@@ -3843,6 +3843,33 @@ body.theme-dark .user-status-badge.disabled {
   line-height: 1;
 }
 
+.task-activity-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #3f454f;
+  cursor: pointer;
+}
+
+.task-activity-toggle:hover,
+.task-activity-toggle:focus-visible {
+  border-color: var(--border);
+  background: var(--surface-soft);
+}
+
+.task-activity-toggle [aria-hidden="true"] {
+  transition: transform 0.16s ease;
+}
+
+.task-activity-toggle.collapsed [aria-hidden="true"] {
+  transform: rotate(-90deg);
+}
+
 .task-activity-tabs {
   display: inline-flex;
   max-width: 100%;
@@ -4279,6 +4306,12 @@ body.theme-dark .user-status-badge.disabled {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 8px;
+}
+
+.preview-related-tasks-field .related-tasks-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .related-tasks-count {

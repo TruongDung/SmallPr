@@ -1188,29 +1188,40 @@
       </div>
       <div class="field related-tasks-field preview-related-tasks-field">
         <div class="related-tasks-header">
-          <label id="preview-related-tasks-label" for="preview-related-tasks-search">Related tasks</label>
+          <div class="related-tasks-title">
+            <button id="preview-related-tasks-toggle" class="task-activity-toggle" type="button" aria-expanded="true" aria-controls="preview-related-tasks-content" title="Toggle related tasks" aria-label="Toggle related tasks">
+              <span aria-hidden="true">⌄</span>
+            </button>
+            <label id="preview-related-tasks-label" for="preview-related-tasks-search" data-related-tasks-title-label>Related tasks</label>
+          </div>
           <span id="preview-related-tasks-count" class="related-tasks-count">0 linked</span>
         </div>
-        <div id="preview-related-tasks-list" class="related-tasks-list"></div>
-        <div class="related-tasks-search hidden">
-          <span class="task-search-icon" aria-hidden="true">⌕</span>
-          <input id="preview-related-tasks-search" type="search" autocomplete="off" placeholder="Search tasks to link..." />
-          <div id="preview-related-tasks-results" class="related-tasks-results hidden" role="listbox"></div>
+        <div id="preview-related-tasks-content">
+          <div id="preview-related-tasks-list" class="related-tasks-list"></div>
+          <div class="related-tasks-search hidden">
+            <span class="task-search-icon" aria-hidden="true">⌕</span>
+            <input id="preview-related-tasks-search" type="search" autocomplete="off" placeholder="Search tasks to link..." />
+            <div id="preview-related-tasks-results" class="related-tasks-results hidden" role="listbox"></div>
+          </div>
+          <p id="preview-related-tasks-hint" class="field-hint">Related tasks are view-only here. Use edit to change links.</p>
         </div>
-        <p id="preview-related-tasks-hint" class="field-hint">Related tasks are view-only here. Use edit to change links.</p>
       </div>
       <section class="task-activity-section" aria-labelledby="task-activity-title">
         <h4 id="task-activity-title" class="task-activity-title">
-          <span aria-hidden="true">⌄</span>
-          <span>Activity</span>
+          <button id="task-activity-toggle" class="task-activity-toggle" type="button" aria-expanded="true" aria-controls="task-activity-content" title="Toggle activity">
+            <span aria-hidden="true">⌄</span>
+          </button>
+          <span data-activity-title-label>Activity</span>
         </h4>
-        <div class="task-activity-tabs" role="tablist" aria-label="Activity">
-          <button type="button" class="active" data-activity-filter="all" role="tab" aria-selected="true">All</button>
-          <button type="button" data-activity-filter="comments" role="tab" aria-selected="false">Comments</button>
-          <button type="button" data-activity-filter="history" role="tab" aria-selected="false">History</button>
-          <button type="button" data-activity-filter="worklog" role="tab" aria-selected="false">Work log</button>
+        <div id="task-activity-content">
+          <div class="task-activity-tabs" role="tablist" aria-label="Activity">
+            <button type="button" class="active" data-activity-filter="all" role="tab" aria-selected="true">All</button>
+            <button type="button" data-activity-filter="comments" role="tab" aria-selected="false">Comments</button>
+            <button type="button" data-activity-filter="history" role="tab" aria-selected="false">History</button>
+            <button type="button" data-activity-filter="worklog" role="tab" aria-selected="false">Work log</button>
+          </div>
+          <div id="task-activity-list" class="task-activity-list"></div>
         </div>
-        <div id="task-activity-list" class="task-activity-list"></div>
       </section>
       <div class="modal-actions">
         <button id="send-preview-task-email" type="button" class="secondary task-action-icon" aria-label="Send Email" title="Send Email">✉</button>

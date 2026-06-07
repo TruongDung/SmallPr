@@ -1,5 +1,7 @@
 // Related-task picker used by edit and preview task modals.
 (function () {
+  const MAX_RELATED_TASK_RESULTS = 2;
+
   const getRelatedTaskIds = (task) => {
     if (Array.isArray(task?.related_task_ids)) {
       return task.related_task_ids.map((id) => Number(id)).filter((id) => Number.isInteger(id));
@@ -131,7 +133,7 @@
         .filter((candidate) => !task.id || Number(candidate.id) !== Number(task.id))
         .filter((candidate) => !linked.has(Number(candidate.id)))
         .filter((candidate) => !query || (candidate.title || '').toLowerCase().includes(query))
-        .slice(0, 6);
+        .slice(0, MAX_RELATED_TASK_RESULTS);
 
       picker.results.innerHTML = '';
       if (!matches.length) {
