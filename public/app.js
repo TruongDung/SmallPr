@@ -169,7 +169,6 @@ const taskActivityTabs = Array.from(document.querySelectorAll('[data-activity-fi
 const taskActivityList = document.getElementById('task-activity-list');
 const editPreviewTask = document.getElementById('edit-preview-task');
 const sendPreviewTaskEmail = document.getElementById('send-preview-task-email');
-const deletePreviewTask = document.getElementById('delete-preview-task');
 const closePreviewTask = document.getElementById('close-preview-task');
 const attachmentPreviewModal = document.getElementById('attachment-preview-modal');
 const attachmentPreviewTitle = document.getElementById('attachment-preview-title');
@@ -449,7 +448,6 @@ const applyTranslations = () => {
   previewTaskCommentInput.setAttribute('data-placeholder', t('commentPlaceholder'));
   setActionIconButton(sendPreviewTaskEmail, t('sendEmail'), '✉');
   setActionIconButton(editPreviewTask, t('edit'), '✎');
-  setActionIconButton(deletePreviewTask, t('delete'), '🗑');
   setActionIconButton(closePreviewTask, t('close'), '×');
   reminderAlertOk.textContent = t('ok');
   setText('.reminder-alert-kicker', t('dateTimeAlert'));
@@ -3278,13 +3276,6 @@ editPreviewTask.addEventListener('click', () => {
   const task = pendingPreviewTask;
   hidePreviewTaskModal();
   showEditTaskModal(task);
-});
-
-deletePreviewTask.addEventListener('click', () => {
-  if (!pendingPreviewTask) return;
-  const task = pendingPreviewTask;
-  hidePreviewTaskModal();
-  showDeleteConfirm(task.id);
 });
 
 sendPreviewTaskEmail.addEventListener('click', async () => {
