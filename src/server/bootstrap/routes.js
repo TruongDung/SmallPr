@@ -68,6 +68,7 @@ const registerRoutes = (app, {
     allAsync,
     cache: redisCache,
     getAsync,
+    queryAsync,
     runAsync,
     getUserById,
     sendTaskAlertEmail,

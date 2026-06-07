@@ -12,6 +12,110 @@ const {
 } = require('../utils/tasks');
 
 const taskError = (message) => ({ error: message });
+const RECURRENCE_PATTERNS = new Set(['daily', 'weekly', 'monthly', 'yearly']);
+
+const isSupportedTimezone = (timezone) => {
+  if (!timezone) return true;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: timezone }).format(new Date());
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const normalizeDate = (value) => {
+  if (!value) return null;
+  return String(value).slice(0, 10);
+};
+
+const normalizeWeekdays = (value) => {
+  if (value === undefined || value === null || value === '') return null;
+  const entries = Array.isArray(value) ? value : String(value).split(',');
+  const days = [...new Set(entries
+    .map((entry) => Number(entry))
+    .filter((entry) => Number.isInteger(entry) && entry >= 0 && entry <= 6))]
+    .sort((a, b) => a - b);
+  return days.length ? days.join(',') : null;
+};
+
+const normalizeRecurrence = ({
+  isRecurring,
+  recurrencePattern,
+  recurrenceInterval,
+  recurrenceDays,
+  recurrenceTimezone,
+  recurrenceEndDate,
+  recurrenceOccurrenceLimit,
+  dueDate,
+  allowUndefined = false,
+}) => {
+  if (allowUndefined && isRecurring === undefined) {
+    return {
+      isRecurring,
+      recurrencePattern,
+      recurrenceInterval,
+      recurrenceDays,
+      recurrenceTimezone,
+      recurrenceEndDate,
+      recurrenceOccurrenceLimit,
+    };
+  }
+
+  if (!isRecurring) {
+    return {
+      isRecurring: Boolean(isRecurring),
+      recurrencePattern: null,
+      recurrenceInterval: null,
+      recurrenceDays: null,
+      recurrenceTimezone: null,
+      recurrenceEndDate: null,
+      recurrenceOccurrenceLimit: null,
+    };
+  }
+
+  const pattern = String(recurrencePattern || '').trim();
+  if (!RECURRENCE_PATTERNS.has(pattern)) {
+    return taskError('Recurrence frequency must be daily, weekly, monthly, or yearly');
+  }
+
+  const interval = Math.max(1, Number(recurrenceInterval || 1) || 1);
+  if (interval > 365) {
+    return taskError('Recurrence interval must be 365 or less');
+  }
+
+  const weekdays = normalizeWeekdays(recurrenceDays);
+  if (pattern === 'weekly' && !weekdays) {
+    return taskError('Weekly recurrence requires at least one weekday');
+  }
+
+  const timezone = String(recurrenceTimezone || '').trim() || 'UTC';
+  if (!isSupportedTimezone(timezone)) {
+    return taskError('Recurrence timezone is invalid');
+  }
+
+  const startDate = normalizeDate(dueDate);
+  if (!startDate) {
+    return taskError('Due date is required for recurring tasks');
+  }
+
+  const occurrenceLimit = recurrenceOccurrenceLimit === undefined || recurrenceOccurrenceLimit === null || recurrenceOccurrenceLimit === ''
+    ? null
+    : Number(recurrenceOccurrenceLimit);
+  if (occurrenceLimit !== null && (!Number.isInteger(occurrenceLimit) || occurrenceLimit <= 0)) {
+    return taskError('Recurrence occurrence limit must be a positive number');
+  }
+
+  return {
+    isRecurring: true,
+    recurrencePattern: pattern,
+    recurrenceInterval: interval,
+    recurrenceDays: pattern === 'weekly' ? weekdays : null,
+    recurrenceTimezone: timezone,
+    recurrenceEndDate: normalizeDate(recurrenceEndDate),
+    recurrenceOccurrenceLimit: occurrenceLimit,
+  };
+};
 
 const normalizeRelatedTaskIds = (value) => {
   if (value === undefined) {
@@ -65,6 +169,9 @@ const validateCreateTask = (body = {}) => {
     recurrence_pattern,
     recurrence_interval,
     recurrence_days,
+    recurrence_timezone,
+    recurrence_end_date,
+    recurrence_occurrence_limit,
     related_task_ids,
   } = body;
 
@@ -111,6 +218,20 @@ const validateCreateTask = (body = {}) => {
     return taskError(relatedTasks.error);
   }
 
+  const recurrence = normalizeRecurrence({
+    isRecurring: is_recurring,
+    recurrencePattern: recurrence_pattern,
+    recurrenceInterval: recurrence_interval,
+    recurrenceDays: recurrence_days,
+    recurrenceTimezone: recurrence_timezone,
+    recurrenceEndDate: recurrence_end_date,
+    recurrenceOccurrenceLimit: recurrence_occurrence_limit,
+    dueDate: due_date,
+  });
+  if (recurrence.error) {
+    return taskError(recurrence.error);
+  }
+
   return {
     value: {
       title,
@@ -124,10 +245,7 @@ const validateCreateTask = (body = {}) => {
       reminderAt: reminder_at,
       attachment: parsedAttachment,
       language,
-      isRecurring: is_recurring || false,
-      recurrencePattern: recurrence_pattern || null,
-      recurrenceInterval: recurrence_interval || null,
-      recurrenceDays: recurrence_days || null,
+      ...recurrence,
       relatedTaskIds: relatedTasks.relatedTaskIds || [],
     },
   };
@@ -151,6 +269,9 @@ const validateUpdateTask = (body = {}, existingTask) => {
     recurrence_pattern,
     recurrence_interval,
     recurrence_days,
+    recurrence_timezone,
+    recurrence_end_date,
+    recurrence_occurrence_limit,
     related_task_ids,
   } = body;
   const hasAttachmentUpdate = Object.prototype.hasOwnProperty.call(body, 'attachment');
@@ -201,6 +322,22 @@ const validateUpdateTask = (body = {}, existingTask) => {
     return taskError(relatedTasks.error);
   }
 
+  const hasRecurringUpdate = Object.prototype.hasOwnProperty.call(body, 'is_recurring');
+  const recurrence = normalizeRecurrence({
+    isRecurring: is_recurring,
+    recurrencePattern: recurrence_pattern,
+    recurrenceInterval: recurrence_interval,
+    recurrenceDays: recurrence_days,
+    recurrenceTimezone: recurrence_timezone,
+    recurrenceEndDate: recurrence_end_date,
+    recurrenceOccurrenceLimit: recurrence_occurrence_limit,
+    dueDate: due_date !== undefined ? due_date : existingTask.due_date,
+    allowUndefined: !hasRecurringUpdate,
+  });
+  if (recurrence.error) {
+    return taskError(recurrence.error);
+  }
+
   return {
     value: {
       title,
@@ -216,10 +353,8 @@ const validateUpdateTask = (body = {}, existingTask) => {
       reminderAt: reminder_at,
       hasAttachmentUpdate,
       attachment: parsedAttachment,
-      isRecurring: is_recurring,
-      recurrencePattern: recurrence_pattern,
-      recurrenceInterval: recurrence_interval,
-      recurrenceDays: recurrence_days,
+      ...recurrence,
+      recurrenceScope: body.recurrence_scope === 'single' ? 'single' : 'future',
       hasRelatedTaskUpdate: relatedTasks.hasRelatedTaskUpdate,
       relatedTaskIds: relatedTasks.relatedTaskIds,
     },

@@ -31,6 +31,8 @@ const verifyRegistration = async (token) => {
 
 const bcrypt = require('bcrypt');
 const { app, db, dbReady } = require('./server');
+const dbClient = require('./src/server/db/client');
+const { createRecurrenceService } = require('./src/server/services/recurrence.service');
 const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 jest.setTimeout(30000);
 let originalAdminPasswordHash = null;
@@ -77,6 +79,21 @@ const attachment = (name = 'notes.txt', data = 'hello') => ({
   data: `data:text/plain;base64,${Buffer.from(data).toString('base64')}`,
   size: Buffer.byteLength(data),
 });
+
+const ymdFromOffset = (offsetDays) => {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + offsetDays);
+  return date.toISOString().slice(0, 10);
+};
+
+const dbDateYmd = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  const text = String(value);
+  return /^\d{4}-\d{2}-\d{2}/.test(text)
+    ? text.slice(0, 10)
+    : new Date(text).toISOString().slice(0, 10);
+};
 
 beforeAll(async () => {
   await dbReady;
@@ -505,6 +522,73 @@ describe('Task API', () => {
     const updatedListResponse = await agent.get('/api/tasks');
     const unlinkedRelatedOne = updatedListResponse.body.tasks.find((task) => task.id === relatedOneResponse.body.task.id);
     expect(unlinkedRelatedOne.related_task_ids).not.toContain(mainResponse.body.task.id);
+  });
+
+  test('creates recurring rules and generates due occurrences idempotently', async () => {
+    const agent = await createAgent(testUsername('recurring-owner'));
+    const startDate = ymdFromOffset(-1);
+    const expectedNextDate = ymdFromOffset(0);
+
+    const createResponse = await agent
+      .post('/api/tasks')
+      .send({
+        title: 'Water plants',
+        priority: 'low',
+        due_date: startDate,
+        is_recurring: true,
+        recurrence_pattern: 'daily',
+        recurrence_interval: 1,
+        recurrence_timezone: 'UTC',
+        recurrence_occurrence_limit: 3,
+      });
+
+    expect(createResponse.statusCode).toBe(200);
+
+    const rule = await dbClient.getAsync(
+      `SELECT rules.*
+       FROM recurring_task_rules rules
+       JOIN tasks ON tasks.id = rules.template_task_id
+       WHERE tasks.id = ?`,
+      [createResponse.body.task.id]
+    );
+    expect(rule).toMatchObject({
+      frequency: 'daily',
+      interval: 1,
+      timezone: 'UTC',
+      status: 'active',
+      generated_count: 1,
+    });
+    expect(dbDateYmd(rule.next_due_date)).toBe(expectedNextDate);
+
+    const recurrence = createRecurrenceService({
+      allAsync: dbClient.allAsync,
+      getAsync: dbClient.getAsync,
+      queryAsync: dbClient.queryAsync,
+      runAsync: dbClient.runAsync,
+    });
+
+    const firstRuleSnapshot = await dbClient.getAsync('SELECT * FROM recurring_task_rules WHERE id = ?', [rule.id]);
+    const generatedTask = await recurrence.generateNextTaskForRule(firstRuleSnapshot);
+    expect(generatedTask).toMatchObject({
+      title: 'Water plants',
+      status: 'todo',
+      recurring_rule_id: rule.id,
+      recurrence_occurrence_index: 2,
+    });
+    expect(dbDateYmd(generatedTask.due_date)).toBe(expectedNextDate);
+
+    const secondRuleSnapshot = await dbClient.getAsync('SELECT * FROM recurring_task_rules WHERE id = ?', [rule.id]);
+    await recurrence.generateNextTaskForRule({ ...secondRuleSnapshot, next_due_date: expectedNextDate });
+
+    const generatedRows = await dbClient.allAsync(
+      'SELECT id FROM tasks WHERE recurring_rule_id = ? AND due_date = ?',
+      [rule.id, expectedNextDate]
+    );
+    expect(generatedRows).toHaveLength(1);
+
+    const updatedRule = await dbClient.getAsync('SELECT * FROM recurring_task_rules WHERE id = ?', [rule.id]);
+    expect(updatedRule.generated_count).toBe(2);
+    expect(dbDateYmd(updatedRule.last_generated_due_date)).toBe(expectedNextDate);
   });
 
   test('lists higher priority tasks first', async () => {

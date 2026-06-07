@@ -44,8 +44,10 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
 
   const listTasks = async ({ userId, archived = 0 }) => {
     const rows = await allAsync(
-      `SELECT * FROM tasks
-       WHERE user_id = ? AND archived = ?
+      `SELECT tasks.*, rules.status AS recurrence_rule_status
+       FROM tasks
+       LEFT JOIN recurring_task_rules rules ON rules.id = tasks.recurring_rule_id
+       WHERE tasks.user_id = ? AND tasks.archived = ?
        ORDER BY ${TASK_PRIORITY_ORDER_SQL}`,
       [userId, archived]
     );
@@ -61,7 +63,10 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
 
   const getTaskForUser = async (id, userId) => {
     const task = await getAsync(
-      'SELECT * FROM tasks WHERE id = ? AND user_id = ?',
+      `SELECT tasks.*, rules.status AS recurrence_rule_status
+       FROM tasks
+       LEFT JOIN recurring_task_rules rules ON rules.id = tasks.recurring_rule_id
+       WHERE tasks.id = ? AND tasks.user_id = ?`,
       [id, userId]
     );
     if (!task) return null;
@@ -179,6 +184,11 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     recurrencePattern,
     recurrenceInterval,
     recurrenceDays,
+    recurrenceTimezone,
+    recurrenceEndDate,
+    recurrenceOccurrenceLimit,
+    recurringRuleId,
+    recurrenceOccurrenceIndex,
     parentTaskId,
     nextOccurrenceDate,
     relatedTaskIds,
@@ -187,8 +197,10 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
       `INSERT INTO tasks (
         user_id, title, tag, description, comment, priority, status, completed, time_spent_minutes, due_date, reminder_at,
         attachment_name, attachment_type, attachment_data, attachment_size,
-        is_recurring, recurrence_pattern, recurrence_interval, recurrence_days, parent_task_id, next_occurrence_date
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+        is_recurring, recurrence_pattern, recurrence_interval, recurrence_days, recurrence_timezone,
+        recurrence_end_date, recurrence_occurrence_limit, recurring_rule_id, recurrence_occurrence_index,
+        parent_task_id, next_occurrence_date
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       [
         userId,
         title,
@@ -209,6 +221,11 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         recurrencePattern || null,
         recurrenceInterval || null,
         recurrenceDays || null,
+        recurrenceTimezone || null,
+        recurrenceEndDate || null,
+        recurrenceOccurrenceLimit || null,
+        recurringRuleId || null,
+        recurrenceOccurrenceIndex || null,
         parentTaskId || null,
         nextOccurrenceDate || null
       ]
@@ -239,6 +256,9 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     recurrencePattern,
     recurrenceInterval,
     recurrenceDays,
+    recurrenceTimezone,
+    recurrenceEndDate,
+    recurrenceOccurrenceLimit,
     hasRelatedTaskUpdate,
     relatedTaskIds
   }) => {
@@ -263,6 +283,9 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         recurrence_pattern = ?,
         recurrence_interval = ?,
         recurrence_days = ?,
+        recurrence_timezone = ?,
+        recurrence_end_date = ?,
+        recurrence_occurrence_limit = ?,
         updated_at = CURRENT_TIMESTAMP
        WHERE id = ? AND user_id = ?`,
       [
@@ -285,6 +308,9 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         recurrencePattern !== undefined ? recurrencePattern : existingTask.recurrence_pattern,
         recurrenceInterval !== undefined ? recurrenceInterval : existingTask.recurrence_interval,
         recurrenceDays !== undefined ? recurrenceDays : existingTask.recurrence_days,
+        recurrenceTimezone !== undefined ? recurrenceTimezone : existingTask.recurrence_timezone,
+        recurrenceEndDate !== undefined ? recurrenceEndDate : existingTask.recurrence_end_date,
+        recurrenceOccurrenceLimit !== undefined ? recurrenceOccurrenceLimit : existingTask.recurrence_occurrence_limit,
         id,
         userId
       ]

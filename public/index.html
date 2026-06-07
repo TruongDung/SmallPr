@@ -265,13 +265,15 @@
               <select id="task-recurrence-pattern">
                 <option value="daily">Daily</option>
                 <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
               </select>
             </div>
             <div id="daily-options" class="field">
               <label for="task-recurrence-interval">Every</label>
               <div class="inline-field">
                 <input type="number" id="task-recurrence-interval" min="1" max="365" value="1" />
-                <span>day(s)</span>
+                <span id="task-recurrence-interval-unit">day(s)</span>
               </div>
             </div>
             <div id="weekly-options" class="field hidden">
@@ -285,6 +287,18 @@
                 <label><input type="checkbox" name="weekday" value="5" /> Fri</label>
                 <label><input type="checkbox" name="weekday" value="6" /> Sat</label>
               </div>
+            </div>
+            <div class="field">
+              <label for="task-recurrence-timezone">Timezone</label>
+              <input id="task-recurrence-timezone" type="text" list="timezone-suggestions" placeholder="America/New_York" />
+            </div>
+            <div class="field">
+              <label for="task-recurrence-end-date">End Date</label>
+              <input id="task-recurrence-end-date" type="date" />
+            </div>
+            <div class="field">
+              <label for="task-recurrence-occurrences">Occurrences</label>
+              <input id="task-recurrence-occurrences" type="number" min="1" max="1000" placeholder="No limit" />
             </div>
           </div>
           <div class="field">
@@ -1079,13 +1093,15 @@
             <select id="edit-task-recurrence-pattern">
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
             </select>
           </div>
           <div id="edit-daily-options" class="field">
             <label for="edit-task-recurrence-interval">Every</label>
             <div class="inline-field">
               <input type="number" id="edit-task-recurrence-interval" min="1" max="365" value="1" />
-              <span>day(s)</span>
+              <span id="edit-task-recurrence-interval-unit">day(s)</span>
             </div>
           </div>
           <div id="edit-weekly-options" class="field hidden">
@@ -1099,6 +1115,18 @@
               <label><input type="checkbox" name="edit-weekday" value="5" /> Fri</label>
               <label><input type="checkbox" name="edit-weekday" value="6" /> Sat</label>
             </div>
+          </div>
+          <div class="field">
+            <label for="edit-task-recurrence-timezone">Timezone</label>
+            <input id="edit-task-recurrence-timezone" type="text" list="timezone-suggestions" placeholder="America/New_York" />
+          </div>
+          <div class="field">
+            <label for="edit-task-recurrence-end-date">End Date</label>
+            <input id="edit-task-recurrence-end-date" type="date" />
+          </div>
+          <div class="field">
+            <label for="edit-task-recurrence-occurrences">Occurrences</label>
+            <input id="edit-task-recurrence-occurrences" type="number" min="1" max="1000" placeholder="No limit" />
           </div>
         </div>
         <div class="field">

@@ -138,6 +138,7 @@ New to the project? Follow this path:
 
 ### Features & Capabilities
 - [Authentication](./ARCHITECTURE.md#authentication-flow)
+- [Recurring Tasks](./RECURRING_TASKS.md)
 - [Real-time Updates](./ARCHITECTURE.md#real-time-task-updates)
 - [Caching Strategy](./ARCHITECTURE.md#caching-strategy)
 - [Email Notifications](./README.md#-features)

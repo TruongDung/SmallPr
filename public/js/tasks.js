@@ -101,12 +101,19 @@
       });
     };
 
-    const syncRecurrenceOptions = ({ checkbox, options, pattern, daily, weekly }) => {
+    const syncRecurrenceOptions = ({ checkbox, options, pattern, daily, weekly, intervalUnit }) => {
       const isRecurring = checkbox.checked;
       const currentPattern = pattern.value;
+      const units = {
+        daily: 'day(s)',
+        weekly: 'week(s)',
+        monthly: 'month(s)',
+        yearly: 'year(s)',
+      };
       options.classList.toggle('hidden', !isRecurring);
-      daily.classList.toggle('hidden', !isRecurring || currentPattern !== 'daily');
+      daily.classList.toggle('hidden', !isRecurring);
       weekly.classList.toggle('hidden', !isRecurring || currentPattern !== 'weekly');
+      if (intervalUnit) intervalUnit.textContent = units[currentPattern] || units.daily;
     };
 
     const formatDateTimeLocalValue = (dateString) => {

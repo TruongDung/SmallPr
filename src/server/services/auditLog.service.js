@@ -1,5 +1,17 @@
-const AUDIT_ENTITY_TYPES = new Set(['task', 'transaction', 'note', 'credit_card', 'expense', 'user']);
-const AUDIT_ACTIONS = new Set(['create', 'edit', 'delete', 'login', 'register']);
+const AUDIT_ENTITY_TYPES = new Set(['task', 'transaction', 'note', 'credit_card', 'expense', 'user', 'recurrence']);
+const AUDIT_ACTIONS = new Set([
+  'create',
+  'edit',
+  'delete',
+  'login',
+  'register',
+  'recurrence_created',
+  'recurrence_updated',
+  'recurrence_paused',
+  'recurrence_resumed',
+  'recurrence_deleted',
+  'task_auto_generated',
+]);
 
 const createAuditLogService = ({ allAsync, runAsync }) => {
   const record = async ({

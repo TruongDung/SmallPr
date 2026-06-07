@@ -31,6 +31,7 @@ const logger = require('./src/server/logger');
 const { createAuditLogService } = require('./src/server/services/auditLog.service');
 const { createAuthService } = require('./src/server/services/auth/auth.service');
 const { sendTaskAlertEmail, sendTaskSummaryEmail, sendVerificationEmail } = require('./src/server/services/email/email.service');
+const { createRecurringTaskWorker } = require('./src/server/workers/recurringTask.worker');
 
 // ===== Middleware Layer =====
 const { createAuthMiddleware } = require('./src/server/middleware/auth');
@@ -171,6 +172,22 @@ registerRoutes(app, {
   redisCache,         // Service: Redis cache operations
 });
 
+const recurringTaskWorker = createRecurringTaskWorker({
+  allAsync,
+  auditLogs,
+  getAsync,
+  getUserById,
+  queryAsync,
+  runAsync,
+  sendTaskAlertEmail,
+});
+
+if (process.env.NODE_ENV !== 'test' && process.env.DISABLE_RECURRING_TASK_WORKER !== 'true') {
+  dbReady.then(() => recurringTaskWorker.start()).catch((error) => {
+    logger.error({ err: error }, 'Failed to start recurring task worker');
+  });
+}
+
 // ===== Public Configuration =====
 
 /**
@@ -217,3 +234,4 @@ module.exports.db = pool;
 module.exports.dbReady = dbReady;
 module.exports.httpServer = httpServer;
 module.exports.io = io;
+module.exports.recurringTaskWorker = recurringTaskWorker;

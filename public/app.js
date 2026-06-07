@@ -98,6 +98,10 @@ const taskRecurringCheckbox = document.getElementById('task-recurring');
 const recurrenceOptions = document.getElementById('recurrence-options');
 const taskRecurrencePattern = document.getElementById('task-recurrence-pattern');
 const taskRecurrenceInterval = document.getElementById('task-recurrence-interval');
+const taskRecurrenceIntervalUnit = document.getElementById('task-recurrence-interval-unit');
+const taskRecurrenceTimezone = document.getElementById('task-recurrence-timezone');
+const taskRecurrenceEndDate = document.getElementById('task-recurrence-end-date');
+const taskRecurrenceOccurrences = document.getElementById('task-recurrence-occurrences');
 const dailyOptions = document.getElementById('daily-options');
 const weeklyOptions = document.getElementById('weekly-options');
 const addRelatedTasksList = document.getElementById('add-related-tasks-list');
@@ -109,6 +113,10 @@ const editTaskRecurringCheckbox = document.getElementById('edit-task-recurring')
 const editRecurrenceOptions = document.getElementById('edit-recurrence-options');
 const editTaskRecurrencePattern = document.getElementById('edit-task-recurrence-pattern');
 const editTaskRecurrenceInterval = document.getElementById('edit-task-recurrence-interval');
+const editTaskRecurrenceIntervalUnit = document.getElementById('edit-task-recurrence-interval-unit');
+const editTaskRecurrenceTimezone = document.getElementById('edit-task-recurrence-timezone');
+const editTaskRecurrenceEndDate = document.getElementById('edit-task-recurrence-end-date');
+const editTaskRecurrenceOccurrences = document.getElementById('edit-task-recurrence-occurrences');
 const editDailyOptions = document.getElementById('edit-daily-options');
 const editWeeklyOptions = document.getElementById('edit-weekly-options');
 const taskAttachmentInput = document.getElementById('task-attachment');
@@ -1098,6 +1106,15 @@ const showSection = () => {
 const showAddTaskModal = () => {
   taskPriorityInput.value = DEFAULT_TASK_PRIORITY;
   pendingAddTask = { related_task_ids: [], related_tasks: [] };
+  taskRecurrenceTimezone.value = getActiveTimezone();
+  syncRecurrenceOptions({
+    checkbox: taskRecurringCheckbox,
+    options: recurrenceOptions,
+    pattern: taskRecurrencePattern,
+    daily: dailyOptions,
+    weekly: weeklyOptions,
+    intervalUnit: taskRecurrenceIntervalUnit,
+  });
   if (addRelatedTasksSearch) addRelatedTasksSearch.value = '';
   hideRelatedTaskResults('add');
   renderRelatedTaskPicker('add');
@@ -2293,10 +2310,16 @@ const handleTaskSubmit = async (event) => {
   // Recurrence data
   const is_recurring = taskRecurringCheckbox.checked;
   const recurrence_pattern = is_recurring ? taskRecurrencePattern.value : null;
-  const recurrence_interval = is_recurring && recurrence_pattern === 'daily' ?
-    parseInt(taskRecurrenceInterval.value) : null;
+  const recurrence_interval = is_recurring ? parseInt(taskRecurrenceInterval.value, 10) : null;
   const recurrence_days = is_recurring && recurrence_pattern === 'weekly' ?
     getSelectedWeekdays() : null;
+  const recurrence_timezone = is_recurring
+    ? (taskRecurrenceTimezone.value.trim() || getActiveTimezone())
+    : null;
+  const recurrence_end_date = is_recurring ? taskRecurrenceEndDate.value || null : null;
+  const recurrence_occurrence_limit = is_recurring && taskRecurrenceOccurrences.value
+    ? parseInt(taskRecurrenceOccurrences.value, 10)
+    : null;
 
   const titleError = document.getElementById('title-error');
   const descriptionError = document.getElementById('description-error');
@@ -2353,7 +2376,13 @@ const handleTaskSubmit = async (event) => {
       body: JSON.stringify({
         title, tag, description, priority, status, due_date, reminder_at, attachment: preparedAttachment, language: currentLanguage,
         related_task_ids: getRelatedTaskIds(pendingAddTask),
-        is_recurring, recurrence_pattern, recurrence_interval, recurrence_days
+        is_recurring,
+        recurrence_pattern,
+        recurrence_interval,
+        recurrence_days,
+        recurrence_timezone,
+        recurrence_end_date,
+        recurrence_occurrence_limit,
       }),
     });
 
@@ -2374,6 +2403,9 @@ const handleTaskSubmit = async (event) => {
       if (addRelatedTasksSearch) addRelatedTasksSearch.value = '';
       renderRelatedTaskPicker('add');
       taskRecurringCheckbox.checked = false;
+      taskRecurrenceTimezone.value = getActiveTimezone();
+      taskRecurrenceEndDate.value = '';
+      taskRecurrenceOccurrences.value = '';
       recurrenceOptions.classList.add('hidden');
       titleError.classList.add('hidden');
       descriptionError.classList.add('hidden');
@@ -2558,8 +2590,8 @@ const createTaskCard = (task) => {
     if (task.is_recurring) {
       const recurringBadge = document.createElement('span');
       recurringBadge.className = 'recurring-badge';
-      recurringBadge.textContent = '🔄';
-      recurringBadge.title = 'Recurring task';
+      recurringBadge.textContent = task.recurrence_rule_status === 'paused' ? '⏸' : '🔄';
+      recurringBadge.title = task.recurrence_rule_status === 'paused' ? 'Recurring task paused' : 'Recurring task';
       title.append(' ', recurringBadge);
     }
     const badges = document.createElement('div');
@@ -2628,6 +2660,18 @@ const createTaskCard = (task) => {
     setActionIconButton(archiveButton, isArchived ? t('restore') : t('archive'), isArchived ? '↥' : '▣');
     archiveButton.addEventListener('click', () => updateTask(task.id, { archived: !isArchived }));
 
+    const recurrenceButton = document.createElement('button');
+    const recurrencePaused = task.recurrence_rule_status === 'paused';
+    setActionIconButton(
+      recurrenceButton,
+      recurrencePaused ? 'Resume recurrence' : 'Pause recurrence',
+      recurrencePaused ? '▶' : 'Ⅱ'
+    );
+    recurrenceButton.addEventListener('click', () => updateTaskRecurrenceStatus(
+      task.id,
+      recurrencePaused ? 'resume' : 'pause'
+    ));
+
     const previewButton = document.createElement('button');
     setActionIconButton(previewButton, t('preview'), '👁');
     previewButton.addEventListener('click', () => showPreviewTaskModal(task));
@@ -2646,6 +2690,9 @@ const createTaskCard = (task) => {
     }
     if ((task.description && getRichTextPlainText(task.description).length > 180) || task.comment) {
       actions.append(previewButton);
+    }
+    if (task.is_recurring && task.recurring_rule_id) {
+      actions.append(recurrenceButton);
     }
     actions.append(editButton, archiveButton, deleteButton);
     card.append(hoverMessage, meta, description);
@@ -2725,6 +2772,19 @@ const updateTask = async (id, updates) => {
     await loadTags();
   }
   await loadTasks();
+  return result;
+};
+
+const updateTaskRecurrenceStatus = async (id, action) => {
+  const result = await request(`/api/tasks/${id}/recurrence/${action}`, {
+    method: 'POST',
+  });
+  if (result.error) {
+    showStatusToast(result.error, 'error');
+    return result;
+  }
+  await loadTasks();
+  showStatusToast(action === 'pause' ? 'Recurrence paused' : 'Recurrence resumed');
   return result;
 };
 
@@ -3060,6 +3120,9 @@ const showEditTaskModal = (task) => {
   editTaskRecurringCheckbox.checked = Boolean(task.is_recurring);
   editTaskRecurrencePattern.value = task.recurrence_pattern || 'daily';
   editTaskRecurrenceInterval.value = task.recurrence_interval || 1;
+  editTaskRecurrenceTimezone.value = task.recurrence_timezone || getActiveTimezone();
+  editTaskRecurrenceEndDate.value = String(task.recurrence_end_date || '').slice(0, 10);
+  editTaskRecurrenceOccurrences.value = task.recurrence_occurrence_limit || '';
   setSelectedWeekdays(editWeeklyOptions, task.recurrence_days);
   syncRecurrenceOptions({
     checkbox: editTaskRecurringCheckbox,
@@ -3067,6 +3130,7 @@ const showEditTaskModal = (task) => {
     pattern: editTaskRecurrencePattern,
     daily: editDailyOptions,
     weekly: editWeeklyOptions,
+    intervalUnit: editTaskRecurrenceIntervalUnit,
   });
   editTaskAttachmentInput.value = '';
   renderEditAttachmentState();
@@ -3089,6 +3153,9 @@ const hideEditTaskModal = () => {
   editRecurrenceOptions.classList.add('hidden');
   editDailyOptions.classList.remove('hidden');
   editWeeklyOptions.classList.add('hidden');
+  editTaskRecurrenceTimezone.value = '';
+  editTaskRecurrenceEndDate.value = '';
+  editTaskRecurrenceOccurrences.value = '';
   setSelectedWeekdays(editWeeklyOptions);
   editCurrentAttachment.innerHTML = '';
   editCurrentAttachment.classList.add('hidden');
@@ -3116,11 +3183,16 @@ const handleEditTaskSubmit = async (event) => {
   const attachmentFile = editTaskAttachmentInput.files[0] || null;
   const isRecurring = editTaskRecurringCheckbox.checked;
   const recurrencePattern = isRecurring ? editTaskRecurrencePattern.value : null;
-  const recurrenceInterval = isRecurring && recurrencePattern === 'daily'
-    ? parseInt(editTaskRecurrenceInterval.value, 10)
-    : null;
+  const recurrenceInterval = isRecurring ? parseInt(editTaskRecurrenceInterval.value, 10) : null;
   const recurrenceDays = isRecurring && recurrencePattern === 'weekly'
     ? getSelectedWeekdays(editWeeklyOptions)
+    : null;
+  const recurrenceTimezone = isRecurring
+    ? (editTaskRecurrenceTimezone.value.trim() || getActiveTimezone())
+    : null;
+  const recurrenceEndDate = isRecurring ? editTaskRecurrenceEndDate.value || null : null;
+  const recurrenceOccurrenceLimit = isRecurring && editTaskRecurrenceOccurrences.value
+    ? parseInt(editTaskRecurrenceOccurrences.value, 10)
     : null;
 
   if (!title.trim()) {
@@ -3179,6 +3251,9 @@ const handleEditTaskSubmit = async (event) => {
     recurrence_pattern: recurrencePattern,
     recurrence_interval: recurrenceInterval,
     recurrence_days: recurrenceDays,
+    recurrence_timezone: recurrenceTimezone,
+    recurrence_end_date: recurrenceEndDate,
+    recurrence_occurrence_limit: recurrenceOccurrenceLimit,
     related_task_ids: getRelatedTaskIds(pendingEditTask),
   };
 
@@ -3496,6 +3571,7 @@ taskRecurringCheckbox.addEventListener('change', () => {
     pattern: taskRecurrencePattern,
     daily: dailyOptions,
     weekly: weeklyOptions,
+    intervalUnit: taskRecurrenceIntervalUnit,
   });
 });
 
@@ -3506,6 +3582,7 @@ taskRecurrencePattern.addEventListener('change', () => {
     pattern: taskRecurrencePattern,
     daily: dailyOptions,
     weekly: weeklyOptions,
+    intervalUnit: taskRecurrenceIntervalUnit,
   });
 });
 
@@ -3516,6 +3593,7 @@ editTaskRecurringCheckbox.addEventListener('change', () => {
     pattern: editTaskRecurrencePattern,
     daily: editDailyOptions,
     weekly: editWeeklyOptions,
+    intervalUnit: editTaskRecurrenceIntervalUnit,
   });
 });
 
@@ -3526,6 +3604,7 @@ editTaskRecurrencePattern.addEventListener('change', () => {
     pattern: editTaskRecurrencePattern,
     daily: editDailyOptions,
     weekly: editWeeklyOptions,
+    intervalUnit: editTaskRecurrenceIntervalUnit,
   });
 });
 

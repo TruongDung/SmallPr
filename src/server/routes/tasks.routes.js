@@ -40,6 +40,7 @@ const createTasksRouter = ({
   auditLogs,
   cache = null,
   getAsync,
+  queryAsync,
   runAsync,
   getUserById,
   sendTaskAlertEmail,
@@ -47,7 +48,20 @@ const createTasksRouter = ({
 }) => {
   const router = express.Router();
   const tasks = createTasksService({ allAsync, getAsync, runAsync });
-  const recurrence = createRecurrenceService({ createTask: tasks.createTask });
+  const recurrence = createRecurrenceService({
+    allAsync,
+    auditLogs,
+    getAsync,
+    getUserById,
+    queryAsync,
+    runAsync,
+    sendTaskAlertEmail,
+  });
+
+  const buildActorContext = (req) => ({
+    actorUserId: req.session.impersonatorUserId || req.session.userId,
+    impersonatorUserId: req.session.impersonatorUserId || null,
+  });
 
   router.use(['/tasks', '/tags'], authRequired);
 
@@ -244,6 +258,24 @@ const createTasksRouter = ({
         summary: task.title,
         after: task,
       });
+      if (taskInput.isRecurring) {
+        const ruleResult = await recurrence.createRuleForTask({
+          task,
+          input: {
+            frequency: taskInput.recurrencePattern,
+            interval: taskInput.recurrenceInterval,
+            weekdays: taskInput.recurrenceDays,
+            timezone: taskInput.recurrenceTimezone,
+            endDate: taskInput.recurrenceEndDate,
+            occurrenceLimit: taskInput.recurrenceOccurrenceLimit,
+            startDate: taskInput.dueDate,
+          },
+          actor: buildActorContext(req),
+        });
+        if (ruleResult.error) {
+          return res.status(400).json({ error: ruleResult.error });
+        }
+      }
       emitToUser(req.session.userId, 'task:created', { task });
       res.json({ task, emailSent });
     } catch (error) {
@@ -278,23 +310,34 @@ const createTasksRouter = ({
       }
       await clearTaskCaches(cache, req.session.userId);
 
-      // If task was marked as done and is recurring, create next instance
-      if (taskInput.status === 'done' && task.is_recurring && task.status !== 'done') {
-        try {
-          const nextTask = await recurrence.createNextRecurringInstance(updatedTask);
-          if (nextTask) {
-            await auditLogs.record({
-              ...createAuditContext(req),
-              action: 'create',
-              entityType: 'task',
-              entityId: nextTask.id,
-              summary: nextTask.title,
-              after: nextTask,
-            });
-            emitToUser(req.session.userId, 'task:created', { task: nextTask });
+      if (taskInput.isRecurring !== undefined) {
+        if (taskInput.isRecurring) {
+          const ruleResult = await recurrence.updateRuleForTask({
+            task: updatedTask,
+            input: {
+              frequency: taskInput.recurrencePattern,
+              interval: taskInput.recurrenceInterval,
+              weekdays: taskInput.recurrenceDays,
+              timezone: taskInput.recurrenceTimezone,
+              endDate: taskInput.recurrenceEndDate,
+              occurrenceLimit: taskInput.recurrenceOccurrenceLimit,
+              startDate: updatedTask.due_date,
+            },
+            actor: buildActorContext(req),
+            scope: taskInput.recurrenceScope,
+          });
+          if (ruleResult.error) {
+            return res.status(400).json({ error: ruleResult.error });
           }
-        } catch (recurrenceError) {
-          logger.error({ err: recurrenceError }, 'Failed to create next recurring instance');
+        } else if (task.recurring_rule_id) {
+          const ruleResult = await recurrence.setRuleStatusForTask({
+            task,
+            status: 'deleted',
+            actor: buildActorContext(req),
+          });
+          if (ruleResult.error) {
+            return res.status(400).json({ error: ruleResult.error });
+          }
         }
       }
 
@@ -339,6 +382,42 @@ const createTasksRouter = ({
     } catch (error) {
       logger.error({ err: error }, 'Failed to delete task');
       res.status(500).json({ error: 'Failed to delete task' });
+    }
+  });
+
+  router.post('/tasks/:id/recurrence/:action', async (req, res) => {
+    const { id, action } = req.params;
+    const statusByAction = {
+      pause: 'paused',
+      resume: 'active',
+      delete: 'deleted',
+    };
+    const status = statusByAction[action];
+    if (!status) {
+      return res.status(400).json({ error: 'Unsupported recurrence action' });
+    }
+
+    try {
+      const task = await tasks.getTaskForUser(id, req.session.userId);
+      if (!task) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+
+      const result = await recurrence.setRuleStatusForTask({
+        task,
+        status,
+        actor: buildActorContext(req),
+      });
+      if (result.error) {
+        return res.status(400).json({ error: result.error });
+      }
+
+      await clearTaskCaches(cache, req.session.userId);
+      emitToUser(req.session.userId, 'task:recurrence-updated', { taskId: Number(id), rule: result.rule });
+      res.json({ rule: result.rule });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to update recurrence status');
+      res.status(500).json({ error: 'Failed to update recurrence status' });
     }
   });
 
