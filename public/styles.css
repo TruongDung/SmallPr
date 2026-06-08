@@ -5512,19 +5512,20 @@ body.theme-dark .user-status-badge.disabled {
    ========================================================================= */
 
 #dashboard-section {
-  padding: clamp(14px, 3vw, 24px);
-  padding-top: max(clamp(14px, 3vw, 24px), env(safe-area-inset-top));
-  padding-bottom: max(clamp(18px, 4vw, 32px), env(safe-area-inset-bottom));
-  padding-left: max(clamp(14px, 3vw, 24px), env(safe-area-inset-left));
-  padding-right: max(clamp(14px, 3vw, 24px), env(safe-area-inset-right));
+  --dashboard-section-pad: clamp(14px, 3vw, 24px);
+  padding: var(--dashboard-section-pad);
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .dashboard-header {
   position: sticky;
   top: 0;
   z-index: 5;
-  margin: -16px -16px 16px;
-  padding: 14px 16px 12px;
+  margin: calc(-1 * var(--dashboard-section-pad)) calc(-1 * var(--dashboard-section-pad)) 16px;
+  padding: 14px var(--dashboard-section-pad) 12px;
   background: color-mix(in srgb, var(--surface) 80%, transparent);
   backdrop-filter: blur(8px) saturate(140%);
   -webkit-backdrop-filter: blur(8px) saturate(140%);
@@ -5590,6 +5591,7 @@ body.theme-dark .user-status-badge.disabled {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-width: 0;
   padding: 16px;
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -5722,6 +5724,7 @@ body.theme-dark .user-status-badge.disabled {
   grid-template-columns: 1fr auto auto;
   align-items: center;
   gap: 10px;
+  min-width: 0;
   padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
   border-radius: 10px;
@@ -5743,7 +5746,7 @@ body.theme-dark .user-status-badge.disabled {
 .dashboard-task-row[data-status="done"]        { box-shadow: inset 4px 0 0 var(--status-done-accent, var(--primary)); }
 
 .dashboard-task-title { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dashboard-task-meta  { font-size: 0.78rem; color: var(--muted); }
+.dashboard-task-meta  { min-width: 0; font-size: 0.78rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dashboard-task-done  { min-width: 36px; }
 
 /* Status Summary -------------------------------------------------------- */
@@ -5833,7 +5836,7 @@ body.theme-dark .user-status-badge.disabled {
 }
 .dashboard-bill-item   { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dashboard-bill-amount { font-weight: 700; color: var(--text); }
-.dashboard-bill-meta   { font-size: 0.78rem; color: var(--muted); }
+.dashboard-bill-meta   { min-width: 0; font-size: 0.78rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Credit Cards ---------------------------------------------------------- */
 
@@ -5856,9 +5859,9 @@ body.theme-dark .user-status-badge.disabled {
 .dashboard-cc-total-row strong { color: var(--primary-strong); }
 .dashboard-cc-empty { margin: 4px 0 0; font-size: 0.86rem; color: var(--muted); }
 .dashboard-cc-row { grid-template-columns: 1fr auto auto; }
-.dashboard-cc-name   { font-weight: 600; color: var(--text); }
+.dashboard-cc-name   { min-width: 0; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dashboard-cc-amount { font-weight: 700; color: var(--text); }
-.dashboard-cc-closes { font-size: 0.78rem; color: var(--muted); }
+.dashboard-cc-closes { min-width: 0; font-size: 0.78rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Weather --------------------------------------------------------------- */
 
@@ -6061,6 +6064,26 @@ body.theme-dark .dashboard-customize-card {
 /* Mobile tightening ----------------------------------------------------- */
 
 @media (max-width: 640px) {
+  #dashboard-section {
+    --dashboard-section-pad: 12px;
+    margin-inline: -12px;
+    padding-top: 0;
+    padding-bottom: 16px;
+  }
+
+  .dashboard-header {
+    margin-top: 0;
+    padding-top: 12px;
+  }
+
+  .dashboard-header-row {
+    flex-wrap: nowrap;
+  }
+
+  #dashboard-title {
+    min-width: 0;
+  }
+
   .dashboard-status-grid { gap: 8px; }
   .dashboard-status-count { font-size: 1.3rem; }
   .dashboard-task-row,
@@ -6070,6 +6093,33 @@ body.theme-dark .dashboard-customize-card {
     padding: 12px;
   }
   .dashboard-card { padding: 14px; }
+  .dashboard-task-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .dashboard-task-meta {
+    grid-column: 1 / 2;
+  }
+  .dashboard-task-done {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+  .dashboard-bill-row,
+  .dashboard-cc-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .dashboard-bill-meta {
+    grid-column: 1 / 2;
+    white-space: normal;
+  }
+  .dashboard-bill-row .task-action-icon {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+  }
+  .dashboard-cc-closes {
+    grid-column: 1 / -1;
+    white-space: normal;
+  }
   #dashboard-customize-modal.modal-backdrop {
     align-items: start;
     padding: max(14px, env(safe-area-inset-top)) 12px max(14px, env(safe-area-inset-bottom));
