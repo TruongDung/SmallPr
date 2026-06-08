@@ -178,6 +178,10 @@
     };
 
     const setupRichTextEditors = () => {
+      const notifyEditorInput = (editor) => {
+        editor.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'formatSet' }));
+      };
+
       document.querySelectorAll('.rich-editor-toolbar button').forEach((button) => {
         button.addEventListener('mousedown', (event) => {
           event.preventDefault();
@@ -191,10 +195,12 @@
           restoreRichEditorSelection(editor);
           if (button.dataset.command === 'insertChecklist') {
             insertChecklistItem(editor);
+            notifyEditorInput(editor);
             return;
           }
           document.execCommand(button.dataset.command, false, null);
           saveRichEditorSelection(editor);
+          notifyEditorInput(editor);
         });
       });
 
@@ -209,12 +215,14 @@
 
           event.preventDefault();
           insertLineAfterChecklist(editor);
+          notifyEditorInput(editor);
         });
 
         editor.addEventListener('change', (event) => {
           if (event.target.matches('input[data-rich-checklist]')) {
             syncChecklistItem(event.target);
             saveRichEditorSelection(editor);
+            notifyEditorInput(editor);
           }
         });
 
@@ -227,6 +235,7 @@
           event.preventDefault();
           const text = event.clipboardData.getData('text/plain');
           document.execCommand('insertText', false, text);
+          notifyEditorInput(editor);
         });
       });
     };

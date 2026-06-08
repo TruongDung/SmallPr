@@ -3649,6 +3649,49 @@ body.theme-dark .user-status-badge.disabled {
   margin-top: 2px;
 }
 
+.rich-editor-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 12px;
+}
+
+.rich-editor-actions.hidden {
+  display: none;
+}
+
+.rich-editor-save {
+  min-height: 40px;
+  padding: 0 18px;
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.rich-editor-save:hover,
+.rich-editor-save:focus-visible {
+  background: var(--primary-strong);
+  border-color: var(--primary-strong);
+}
+
+.rich-editor-cancel {
+  min-height: 40px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.rich-editor-cancel:hover,
+.rich-editor-cancel:focus-visible {
+  color: var(--text);
+}
+
 .autosave-status {
   grid-column: 1 / -1;
   min-height: 1.2em;

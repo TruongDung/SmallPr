@@ -34,11 +34,8 @@ const pool = new Pool({
   idle_in_transaction_session_timeout: parsePositiveInt(process.env.PG_IDLE_IN_TRANSACTION_TIMEOUT_MS, 30000),
 });
 
-pool.on('error', (error, client) => {
+pool.on('error', (error) => {
   logger.error({ err: error }, 'Unexpected Postgres pool error');
-  if (client) {
-    client.release(true);
-  }
 });
 
 const toPostgresSql = (sql) => {

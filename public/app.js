@@ -148,6 +148,12 @@ const editTaskTagInput = document.getElementById('edit-task-tag-input');
 const editTaskTagSuggestions = document.getElementById('edit-task-tag-suggestions');
 const editTaskDescriptionInput = document.getElementById('edit-task-description-input');
 const editTaskCommentInput = document.getElementById('edit-task-comment-input');
+const editTaskDescriptionActions = document.getElementById('edit-task-description-actions');
+const saveEditTaskDescription = document.getElementById('save-edit-task-description');
+const cancelEditTaskDescription = document.getElementById('cancel-edit-task-description');
+const editTaskCommentActions = document.getElementById('edit-task-comment-actions');
+const saveEditTaskComment = document.getElementById('save-edit-task-comment');
+const cancelEditTaskComment = document.getElementById('cancel-edit-task-comment');
 const editTaskDueDateInput = document.getElementById('edit-task-due-date-input');
 const editTaskReminderInput = document.getElementById('edit-task-reminder-input');
 const editTaskAttachmentInput = document.getElementById('edit-task-attachment-input');
@@ -251,6 +257,8 @@ let isPopulatingEditTaskForm = false;
 let editTaskAutosaveTimer = null;
 let editTaskAutosaveQueue = Promise.resolve();
 let editTaskAutosaveStatusTimer = null;
+let editTaskDescriptionSavedValue = '';
+let editTaskCommentSavedValue = '';
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const MAX_TASK_TEXT_LENGTH = 10000;
 const DEFAULT_TASK_PRIORITY = 'low';
@@ -465,8 +473,12 @@ const applyTranslations = () => {
   editTaskTagInput.placeholder = t('tagPlaceholder');
   setText('label[for="edit-task-description-input"]', `${t('taskDetail')} ${t('max500')}`);
   editTaskDescriptionInput.setAttribute('data-placeholder', t('taskDetailPlaceholder'));
+  if (saveEditTaskDescription) saveEditTaskDescription.textContent = t('save');
+  if (cancelEditTaskDescription) cancelEditTaskDescription.textContent = t('cancel');
   setText('label[for="edit-task-comment-input"]', t('addComment'));
   editTaskCommentInput.setAttribute('data-placeholder', t('commentPlaceholder'));
+  if (saveEditTaskComment) saveEditTaskComment.textContent = t('save');
+  if (cancelEditTaskComment) cancelEditTaskComment.textContent = t('cancel');
   setText('label[for="edit-task-due-date-input"]', t('dueDate'));
   setText('label[for="edit-task-reminder-input"]', t('dateTimeAlert'));
   setText('label[for="edit-task-attachment-input"]', t('uploadFile'));
@@ -3000,13 +3012,13 @@ const setEditTaskAutosaveStatus = (message = '') => {
   }
 };
 
-const buildEditTaskUpdates = () => {
+const buildEditTaskUpdates = ({ includeDescription = false, includeComment = false } = {}) => {
   const title = editTaskTitleInput.value.trim();
   const priority = editTaskPriorityInput.value;
   const status = editTaskStatusInput.value;
   const tag = editTaskTagInput.value.trim();
-  const description = getRichEditorValue(editTaskDescriptionInput);
-  const comment = getRichEditorValue(editTaskCommentInput);
+  const description = includeDescription ? getRichEditorValue(editTaskDescriptionInput) : null;
+  const comment = includeComment ? getRichEditorValue(editTaskCommentInput) : null;
   const dueDate = editTaskDueDateInput.value || null;
   const reminderAt = editTaskReminderInput?.value || null;
   const attachmentFile = editTaskAttachmentInput.files[0] || null;
@@ -3036,13 +3048,13 @@ const buildEditTaskUpdates = () => {
     return null;
   }
 
-  if (getRichEditorLength(editTaskDescriptionInput) > MAX_TASK_TEXT_LENGTH) {
+  if (includeDescription && getRichEditorLength(editTaskDescriptionInput) > MAX_TASK_TEXT_LENGTH) {
     editDescriptionError.textContent = t('descriptionTooLong');
     editDescriptionError.classList.remove('hidden');
     return null;
   }
 
-  if (getRichTextPlainText(comment).length > MAX_TASK_TEXT_LENGTH) {
+  if (includeComment && getRichTextPlainText(comment).length > MAX_TASK_TEXT_LENGTH) {
     editFormError.textContent = t('commentTooLong');
     editFormError.classList.remove('hidden');
     return null;
@@ -3071,8 +3083,6 @@ const buildEditTaskUpdates = () => {
     tag,
     priority,
     status,
-    description,
-    comment,
     due_date: dueDate,
     reminder_at: reminderAt,
     is_recurring: isRecurring,
@@ -3085,6 +3095,14 @@ const buildEditTaskUpdates = () => {
     related_task_ids: getRelatedTaskIds(pendingEditTask),
   };
 
+  if (includeDescription) {
+    updates.description = description;
+  }
+
+  if (includeComment) {
+    updates.comment = comment;
+  }
+
   if (preparedEditAttachment) {
     updates.attachment = preparedEditAttachment;
   } else if (removeEditAttachment) {
@@ -3094,12 +3112,12 @@ const buildEditTaskUpdates = () => {
   return updates;
 };
 
-const saveEditTaskNow = async () => {
+const saveEditTaskNow = async (options = {}) => {
   if (!pendingEditTask || isPopulatingEditTaskForm) return null;
 
   clearEditTaskErrors();
   const task = pendingEditTask;
-  const updates = buildEditTaskUpdates();
+  const updates = buildEditTaskUpdates(options);
   if (!updates) return null;
 
   setEditTaskAutosaveStatus(t('savingTask'));
@@ -3113,6 +3131,16 @@ const saveEditTaskNow = async () => {
 
   if (result?.task) {
     pendingEditTask = result.task;
+    if (options.includeDescription) {
+      editTaskDescriptionSavedValue = result.task.description || '';
+      setRichEditorActionsVisible('description', false);
+      showStatusToast(t('taskSaved'));
+    }
+    if (options.includeComment) {
+      editTaskCommentSavedValue = result.task.comment || '';
+      setRichEditorActionsVisible('comment', false);
+      showStatusToast(t('taskSaved'));
+    }
     preparedEditAttachment = null;
     removeEditAttachment = false;
     editTaskAttachmentInput.value = '';
@@ -3132,7 +3160,7 @@ const scheduleEditTaskAutosave = ({ immediate = false } = {}) => {
     editTaskAutosaveTimer = null;
     editTaskAutosaveQueue = editTaskAutosaveQueue
       .catch(() => {})
-      .then(saveEditTaskNow);
+      .then(() => saveEditTaskNow());
   }, delayMs);
 };
 
@@ -3140,8 +3168,6 @@ const bindEditTaskAutosave = () => {
   [
     editTaskTitleInput,
     editTaskTagInput,
-    editTaskDescriptionInput,
-    editTaskCommentInput,
     editTaskRecurrenceTimezone,
   ].forEach((input) => {
     input?.addEventListener('input', () => scheduleEditTaskAutosave());
@@ -3167,6 +3193,132 @@ const bindEditTaskAutosave = () => {
   });
 };
 
+const setRichTextSavePending = (field, pending) => {
+  const saveButton = field === 'description' ? saveEditTaskDescription : saveEditTaskComment;
+  const cancelButton = field === 'description' ? cancelEditTaskDescription : cancelEditTaskComment;
+  if (saveButton) saveButton.disabled = pending;
+  if (cancelButton) cancelButton.disabled = pending;
+};
+
+const saveEditRichTextField = async (field) => {
+  if (!pendingEditTask) return;
+
+  const editor = field === 'description' ? editTaskDescriptionInput : editTaskCommentInput;
+  const actionsField = field === 'description' ? 'description' : 'comment';
+  const value = getRichEditorValue(editor);
+
+  clearEditTaskErrors();
+
+  if (field === 'description' && getRichEditorLength(editTaskDescriptionInput) > MAX_TASK_TEXT_LENGTH) {
+    editDescriptionError.textContent = t('descriptionTooLong');
+    editDescriptionError.classList.remove('hidden');
+    return;
+  }
+
+  if (field === 'comment' && getRichTextPlainText(value).length > MAX_TASK_TEXT_LENGTH) {
+    editFormError.textContent = t('commentTooLong');
+    editFormError.classList.remove('hidden');
+    return;
+  }
+
+  clearEditTaskAutosaveTimer();
+  setRichTextSavePending(field, true);
+  setEditTaskAutosaveStatus(t('savingTask'));
+
+  try {
+    const result = await request(`/api/tasks/${pendingEditTask.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ [field]: value }),
+    });
+
+    if (result?.error) {
+      showStatusToast(result.error, 'error');
+      editFormError.textContent = result.error;
+      editFormError.classList.remove('hidden');
+      setEditTaskAutosaveStatus('');
+      return;
+    }
+
+    if (result?.task) {
+      pendingEditTask = result.task;
+      tasks = tasks.map((task) => (Number(task.id) === Number(result.task.id) ? result.task : task));
+
+      if (field === 'description') {
+        editTaskDescriptionSavedValue = result.task.description || '';
+      } else {
+        editTaskCommentSavedValue = result.task.comment || '';
+      }
+
+      setRichEditorActionsVisible(actionsField, false);
+      setEditTaskAutosaveStatus(t('taskSaved'));
+      showStatusToast(t('taskSaved'));
+      return;
+    }
+
+    setEditTaskAutosaveStatus('');
+    showStatusToast('Failed to save task', 'error');
+  } catch (error) {
+    const message = error?.message || 'Failed to save task';
+    editFormError.textContent = message;
+    editFormError.classList.remove('hidden');
+    setEditTaskAutosaveStatus('');
+    showStatusToast(message, 'error');
+  } finally {
+    setRichTextSavePending(field, false);
+  }
+};
+
+const cancelEditRichTextField = (field) => {
+  if (field === 'description') {
+    setRichEditorValue(editTaskDescriptionInput, editTaskDescriptionSavedValue);
+    editDescriptionError.classList.add('hidden');
+    setRichEditorActionsVisible('description', false);
+    return;
+  }
+
+  setRichEditorValue(editTaskCommentInput, editTaskCommentSavedValue);
+  editFormError.classList.add('hidden');
+  setRichEditorActionsVisible('comment', false);
+};
+
+const setRichEditorActionsVisible = (field, visible) => {
+  const actions = field === 'description' ? editTaskDescriptionActions : editTaskCommentActions;
+  actions?.classList.toggle('hidden', !visible);
+};
+
+const bindRichEditorActionVisibility = (field, editor, actions) => {
+  let hideTimer = null;
+  const editorShell = editor?.closest('.rich-editor');
+  const show = () => {
+    if (hideTimer) {
+      clearTimeout(hideTimer);
+      hideTimer = null;
+    }
+    setRichEditorActionsVisible(field, true);
+  };
+  const hideIfFocusLeft = () => {
+    hideTimer = setTimeout(() => {
+      const active = document.activeElement;
+      if (editorShell?.contains(active) || actions?.contains(active)) return;
+      setRichEditorActionsVisible(field, false);
+      hideTimer = null;
+    }, 120);
+  };
+
+  editorShell?.addEventListener('focusin', show);
+  editorShell?.addEventListener('mousedown', show);
+  editorShell?.addEventListener('focusout', hideIfFocusLeft);
+  editor?.addEventListener('input', show);
+  actions?.addEventListener('focusin', show);
+  actions?.addEventListener('mousedown', show);
+  actions?.addEventListener('focusout', hideIfFocusLeft);
+};
+
+const bindEditRichEditorActions = () => {
+  bindRichEditorActionVisibility('description', editTaskDescriptionInput, editTaskDescriptionActions);
+  bindRichEditorActionVisibility('comment', editTaskCommentInput, editTaskCommentActions);
+};
+
 const showEditTaskModal = (task) => {
   isPopulatingEditTaskForm = true;
   clearEditTaskAutosaveTimer();
@@ -3179,6 +3331,8 @@ const showEditTaskModal = (task) => {
   editTaskPriorityInput.value = task.priority || 'medium';
   editTaskStatusInput.value = taskStatus(task);
   editTaskTagInput.value = task.tag || '';
+  editTaskDescriptionSavedValue = task.description || '';
+  editTaskCommentSavedValue = task.comment || '';
   setRichEditorValue(editTaskDescriptionInput, task.description || '');
   setRichEditorValue(editTaskCommentInput, task.comment || '');
   editTaskDueDateInput.value = String(task.due_date || '').slice(0, 10);
@@ -3203,6 +3357,8 @@ const showEditTaskModal = (task) => {
   if (editRelatedTasksSearch) editRelatedTasksSearch.value = '';
   hideRelatedTaskResults('edit');
   renderRelatedTaskPicker('edit');
+  setRichEditorActionsVisible('description', false);
+  setRichEditorActionsVisible('comment', false);
 
   editTaskModal.classList.remove('hidden');
   editTaskTitleInput.focus();
@@ -3219,9 +3375,13 @@ const hideEditTaskModal = () => {
   pendingEditTask = null;
   preparedEditAttachment = null;
   removeEditAttachment = false;
+  editTaskDescriptionSavedValue = '';
+  editTaskCommentSavedValue = '';
   editTaskForm.reset();
   editTaskDescriptionInput.innerHTML = '';
   editTaskCommentInput.innerHTML = '';
+  setRichEditorActionsVisible('description', false);
+  setRichEditorActionsVisible('comment', false);
   editRecurrenceOptions.classList.add('hidden');
   editDailyOptions.classList.remove('hidden');
   editWeeklyOptions.classList.add('hidden');
@@ -3357,6 +3517,15 @@ closePreviewTask.addEventListener('click', hidePreviewTaskModal);
 relatedTasksModule.bind();
 taskActivityModule.bind();
 bindEditTaskAutosave();
+bindEditRichEditorActions();
+saveEditTaskDescription?.addEventListener('click', () => {
+  void saveEditRichTextField('description');
+});
+cancelEditTaskDescription?.addEventListener('click', () => cancelEditRichTextField('description'));
+saveEditTaskComment?.addEventListener('click', () => {
+  void saveEditRichTextField('comment');
+});
+cancelEditTaskComment?.addEventListener('click', () => cancelEditRichTextField('comment'));
 previewRelatedTasksToggle?.addEventListener('click', togglePreviewRelatedTasks);
 
 document.querySelectorAll('[data-related-trigger]').forEach((button) => {

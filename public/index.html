@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=cache-clear-20260607-autosave-1" />
+  <link rel="stylesheet" href="styles.css?v=cache-clear-20260608-rich-actions-visibility-1" />
 </head>
 <body>
   <div class="container">
@@ -1057,6 +1057,10 @@
             </div>
             <div id="edit-task-description-input" class="rich-editor-surface" contenteditable="true" role="textbox" aria-multiline="true"></div>
           </div>
+          <div id="edit-task-description-actions" class="rich-editor-actions hidden">
+            <button id="save-edit-task-description" type="button" class="rich-editor-save">Save</button>
+            <button id="cancel-edit-task-description" type="button" class="rich-editor-cancel">Cancel</button>
+          </div>
           <p id="edit-description-error" class="field-error hidden"></p>
         </div>
         <div class="field">
@@ -1072,6 +1076,10 @@
               <button type="button" data-editor="edit-task-comment-input" data-command="insertOrderedList">1. List</button>
             </div>
             <div id="edit-task-comment-input" class="rich-editor-surface" contenteditable="true" role="textbox" aria-multiline="true"></div>
+          </div>
+          <div id="edit-task-comment-actions" class="rich-editor-actions hidden">
+            <button id="save-edit-task-comment" type="button" class="rich-editor-save">Save</button>
+            <button id="cancel-edit-task-comment" type="button" class="rich-editor-cancel">Cancel</button>
           </div>
         </div>
         <div class="field">
@@ -1281,7 +1289,7 @@
   <script src="js/state.js?v=cache-clear-20260603-1"></script>
   <script src="js/apiClient.js?v=cache-clear-20260603-1"></script>
   <script src="js/ui/toast.js?v=cache-clear-20260603-1"></script>
-  <script src="js/richText.js?v=cache-clear-20260605-1"></script>
+  <script src="js/richText.js?v=cache-clear-20260607-rich-actions-1"></script>
   <!-- Feature modules -->
   <script src="js/features/creditCards/creditCards.dom.js?v=cache-clear-20260601-7"></script>
   <script src="js/features/creditCards/creditCards.formatters.js?v=cache-clear-20260601-7"></script>
@@ -1303,6 +1311,6 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="js/monitoring.js?v=cache-clear-20260603-1"></script>
   <script src="js/i18n.js?v=cache-clear-20260606-7"></script>
-  <script src="app.js?v=cache-clear-20260607-autosave-1"></script>
+  <script src="app.js?v=cache-clear-20260608-rich-actions-save-3"></script>
 </body>
 </html>
