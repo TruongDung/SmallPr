@@ -4,6 +4,7 @@ const { TASK_PAGE_CACHE_TTL_SECONDS } = require('../config/env');
 const logger = require('../logger');
 const { createAuditContext } = require('../services/auditLog.service');
 const { createTasksService } = require('../services/tasks.service');
+const { createEmailImportService } = require('../services/emailImport.service');
 const { createRecurrenceService } = require('../services/recurrence.service');
 const { emitToUser } = require('../realtime');
 const {
@@ -48,6 +49,7 @@ const createTasksRouter = ({
 }) => {
   const router = express.Router();
   const tasks = createTasksService({ allAsync, getAsync, runAsync });
+  const emailImport = createEmailImportService();
   const recurrence = createRecurrenceService({
     allAsync,
     auditLogs,
@@ -235,6 +237,53 @@ const createTasksRouter = ({
         error: 'Failed to send email',
         detail: error.code || error.message || 'unknown',
       });
+    }
+  });
+
+  // Import a saved email (.eml) and immediately create a task from it. The
+  // file arrives base64-encoded in JSON, so a route-scoped parser allows a
+  // larger payload than the global limit. The parsed draft reuses the same
+  // validation and creation path as a normal task POST, so audit logging,
+  // tag handling, cache invalidation, and realtime events all stay consistent.
+  router.post('/tasks/import-email', express.json({ limit: '20mb' }), async (req, res) => {
+    const base64Eml = String(req.body?.eml || '');
+    if (!base64Eml) {
+      return res.status(400).json({ error: 'No email file provided.' });
+    }
+
+    try {
+      const parsed = emailImport.parseEmailToTask({ base64Eml });
+      if (parsed.error) {
+        return res.status(422).json({ error: parsed.error });
+      }
+
+      const validation = validateCreateTask(parsed.task);
+      if (validation.error) {
+        return res.status(400).json({ error: validation.error });
+      }
+      const taskInput = validation.value;
+
+      const task = await tasks.createTask({
+        userId: req.session.userId,
+        ...taskInput,
+      });
+      await tasks.ensureTaskTag(req.session.userId, taskInput.tag);
+      await clearTaskCaches(cache, req.session.userId);
+
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'create',
+        entityType: 'task',
+        entityId: task.id,
+        summary: task.title,
+        after: task,
+      });
+
+      emitToUser(req.session.userId, 'task:created', { task });
+      res.json({ task });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to import email');
+      res.status(500).json({ error: 'Failed to import email' });
     }
   });
 

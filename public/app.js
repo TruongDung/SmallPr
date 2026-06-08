@@ -81,6 +81,8 @@ const showLogin = document.getElementById('show-login');
 const showSignup = document.getElementById('show-signup');
 const logoutButton = document.getElementById('logout-button');
 const sendSummaryEmailButton = document.getElementById('send-summary-email');
+const importEmailButton = document.getElementById('import-email');
+const importEmailFileInput = document.getElementById('import-email-file');
 const exportExcelButton = document.getElementById('export-excel');
 const exportPdfButton = document.getElementById('export-pdf');
 const exportWordButton = document.getElementById('export-word');
@@ -3506,6 +3508,49 @@ const sendSummaryEmail = async () => {
   }
 };
 
+// Read a File into raw base64 (without the data-URL prefix) so it can be sent
+// as JSON to the import-email endpoint.
+const readEmailFileAsBase64 = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => {
+    const result = String(reader.result || '');
+    resolve(result.slice(result.indexOf(',') + 1));
+  };
+  reader.onerror = () => reject(reader.error || new Error('Unable to read file'));
+  reader.readAsDataURL(file);
+});
+
+// Import a saved .eml file and let the server auto-create a task from it.
+const importTaskFromEmail = async (event) => {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+
+  importEmailButton.disabled = true;
+  showStatusToast(t('importEmailParsing'), 'success', { persist: true });
+
+  try {
+    const base64Eml = await readEmailFileAsBase64(file);
+    const result = await request('/api/tasks/import-email', {
+      method: 'POST',
+      body: JSON.stringify({ eml: base64Eml }),
+    });
+
+    if (result.error) {
+      showStatusToast(result.error, 'error');
+      return;
+    }
+
+    showStatusToast(t('importEmailCreated'));
+    await loadTasks();
+  } catch (error) {
+    showStatusToast(error.message || t('importEmailFailed'), 'error');
+  } finally {
+    importEmailButton.disabled = false;
+    // Allow re-selecting the same file later.
+    importEmailFileInput.value = '';
+  }
+};
+
 const weatherModule = window.WeatherModule.create({
   request,
   t,
@@ -3690,6 +3735,11 @@ savePasswordSettings?.addEventListener('click', async (event) => {
 cancelUserSettings?.addEventListener('click', hideUserSettingsModal);
 logoutButton.addEventListener('click', handleLogout);
 sendSummaryEmailButton.addEventListener('click', sendSummaryEmail);
+importEmailButton?.addEventListener('click', () => {
+  importEmailFileInput.value = '';
+  importEmailFileInput.click();
+});
+importEmailFileInput?.addEventListener('change', importTaskFromEmail);
 exportExcelButton.addEventListener('click', exportsModule.exportToExcel);
 exportPdfButton.addEventListener('click', exportsModule.exportToPdf);
 if (exportWordButton) exportWordButton.addEventListener('click', exportsModule.exportToWord);

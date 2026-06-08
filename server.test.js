@@ -802,16 +802,34 @@ describe('Task API', () => {
 
     expect(doneResponse.statusCode).toBe(200);
 
-    // Activity history is not bundled into the PUT response (lightweight for
-    // performance). Fetch the task detail endpoint to verify history.
+    // Verify the audit records were inserted in the DB with the right before/after status.
+    // before_data / after_data are JSONB columns so pg deserialises them automatically.
+    const auditRows = await dbClient.allAsync(
+      `SELECT action, before_data, after_data
+       FROM audit_logs
+       WHERE entity_type = 'task' AND entity_id = ? AND action = 'edit'
+       ORDER BY created_at ASC`,
+      [taskId]
+    );
+
+    const statusChanges = auditRows
+      .filter((row) => row.before_data?.status !== row.after_data?.status)
+      .map((row) => [row.before_data?.status, row.after_data?.status]);
+
+    expect(statusChanges).toEqual([
+      ['todo', 'in_progress'],
+      ['in_progress', 'done'],
+    ]);
+
+    // Also verify the task detail endpoint surfaces the history correctly.
     const detailResponse = await agent.get(`/api/tasks/${taskId}`);
     expect(detailResponse.statusCode).toBe(200);
-    const statusChanges = detailResponse.body.task.activity_history
+    const apiStatusChanges = (detailResponse.body.task.activity_history || [])
       .filter((entry) => entry.action === 'edit')
       .filter((entry) => entry.before?.status !== entry.after?.status)
       .map((entry) => [entry.before.status, entry.after.status]);
 
-    expect(statusChanges).toEqual([
+    expect(apiStatusChanges).toEqual([
       ['todo', 'in_progress'],
       ['in_progress', 'done'],
     ]);
@@ -1397,6 +1415,119 @@ describe('Task API', () => {
     process.env.SMTP_HOST = originalEnv.SMTP_HOST;
     process.env.SMTP_USER = originalEnv.SMTP_USER;
     process.env.SMTP_PASS = originalEnv.SMTP_PASS;
+  });
+
+  test('imports an .eml file and auto-creates a task', async () => {
+    const agent = await createAgent(testUsername('eml-import-owner'));
+
+    const eml = [
+      'From: Jane Sender <jane@example.com>',
+      'To: me@example.com',
+      'Subject: Quarterly planning follow-up',
+      'Date: Mon, 1 Jan 2024 10:00:00 +0000',
+      'Content-Type: text/plain; charset=utf-8',
+      '',
+      'Please prepare the Q1 roadmap.',
+      'Include the hiring plan.',
+    ].join('\r\n');
+    const base64Eml = Buffer.from(eml, 'utf8').toString('base64');
+
+    const response = await agent
+      .post('/api/tasks/import-email')
+      .send({ eml: base64Eml });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.task).toBeDefined();
+    // Title is the subject truncated to the task title limit (20 chars).
+    expect(response.body.task.title).toBe('Quarterly planning f');
+    // Description carries the email context and body.
+    expect(response.body.task.description).toContain('jane@example.com');
+    expect(response.body.task.description).toContain('Please prepare the Q1 roadmap.');
+    expect(response.body.task.description).toContain('Include the hiring plan.');
+    expect(response.body.task.status).toBe('todo');
+
+    // The task is persisted and shows up in the list.
+    const listResponse = await agent.get('/api/tasks');
+    expect(listResponse.body.tasks.find((task) => task.id === response.body.task.id)).toBeDefined();
+  });
+
+  test('decodes a quoted-printable .eml subject and body', async () => {
+    const agent = await createAgent(testUsername('eml-qp-owner'));
+
+    const eml = [
+      'From: =?UTF-8?Q?Caf=C3=A9?= <cafe@example.com>',
+      'Subject: =?UTF-8?Q?Caf=C3=A9_meeting?=',
+      'Date: Tue, 2 Jan 2024 09:00:00 +0000',
+      'Content-Type: text/plain; charset=utf-8',
+      'Content-Transfer-Encoding: quoted-printable',
+      '',
+      'R=C3=A9sum=C3=A9 attached.',
+    ].join('\r\n');
+    const base64Eml = Buffer.from(eml, 'utf8').toString('base64');
+
+    const response = await agent
+      .post('/api/tasks/import-email')
+      .send({ eml: base64Eml });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.task.title).toContain('Café');
+    expect(response.body.task.description).toContain('Résumé attached.');
+  });
+
+  test('extracts the text/plain part from a multipart .eml', async () => {
+    const agent = await createAgent(testUsername('eml-multipart-owner'));
+
+    const eml = [
+      'From: multi@example.com',
+      'Subject: Multipart note',
+      'Date: Wed, 3 Jan 2024 09:00:00 +0000',
+      'MIME-Version: 1.0',
+      'Content-Type: multipart/alternative; boundary="BOUNDARY123"',
+      '',
+      '--BOUNDARY123',
+      'Content-Type: text/plain; charset=utf-8',
+      '',
+      'Plain text body wins.',
+      '',
+      '--BOUNDARY123',
+      'Content-Type: text/html; charset=utf-8',
+      '',
+      '<p>HTML body loses.</p>',
+      '',
+      '--BOUNDARY123--',
+    ].join('\r\n');
+    const base64Eml = Buffer.from(eml, 'utf8').toString('base64');
+
+    const response = await agent
+      .post('/api/tasks/import-email')
+      .send({ eml: base64Eml });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body.task.description).toContain('Plain text body wins.');
+    expect(response.body.task.description).not.toContain('HTML body loses.');
+  });
+
+  test('rejects a file that is not a valid email', async () => {
+    const agent = await createAgent(testUsername('eml-invalid-owner'));
+
+    const base64Eml = Buffer.from('this is just some random text', 'utf8').toString('base64');
+    const response = await agent
+      .post('/api/tasks/import-email')
+      .send({ eml: base64Eml });
+
+    expect(response.statusCode).toBe(422);
+    expect(response.body.error).toMatch(/valid email/i);
+  });
+
+  test('requires an email payload for import', async () => {
+    const agent = await createAgent(testUsername('eml-empty-owner'));
+
+    const response = await agent
+      .post('/api/tasks/import-email')
+      .send({});
+
+    expect(response.statusCode).toBe(400);
+    expect(response.body.error).toMatch(/no email file/i);
   });
 });
 
