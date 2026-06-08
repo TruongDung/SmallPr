@@ -1015,7 +1015,10 @@
 
   <div id="edit-task-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="edit-task-title">
     <div class="modal edit-task-modal">
-      <h3 id="edit-task-title">Edit task</h3>
+      <div class="edit-task-modal-header">
+        <h3 id="edit-task-title">Edit task</h3>
+        <button id="close-edit-task" type="button" class="task-action-icon secondary" aria-label="Close" title="Close">×</button>
+      </div>
       <form id="edit-task-form">
         <div class="field title-field">
           <label for="edit-task-title-input">Title <span class="field-max">(max 20 characters)</span></label>
@@ -1057,7 +1060,7 @@
             </div>
             <div id="edit-task-description-input" class="rich-editor-surface" contenteditable="true" role="textbox" aria-multiline="true"></div>
           </div>
-          <div id="edit-task-description-actions" class="rich-editor-actions hidden">
+          <div id="edit-task-description-actions" class="rich-editor-actions">
             <button id="save-edit-task-description" type="button" class="rich-editor-save">Save</button>
             <button id="cancel-edit-task-description" type="button" class="rich-editor-cancel">Cancel</button>
           </div>
@@ -1077,10 +1080,11 @@
             </div>
             <div id="edit-task-comment-input" class="rich-editor-surface" contenteditable="true" role="textbox" aria-multiline="true"></div>
           </div>
-          <div id="edit-task-comment-actions" class="rich-editor-actions hidden">
+          <div id="edit-task-comment-actions" class="rich-editor-actions">
             <button id="save-edit-task-comment" type="button" class="rich-editor-save">Save</button>
             <button id="cancel-edit-task-comment" type="button" class="rich-editor-cancel">Cancel</button>
           </div>
+          <p id="edit-comment-error" class="field-error hidden"></p>
         </div>
         <div class="field">
           <label for="edit-task-due-date-input">Due Date</label>
@@ -1162,7 +1166,7 @@
           </button>
         </div>
         <p id="edit-form-error" class="field-error hidden"></p>
-        <p id="edit-task-autosave-status" class="autosave-status hidden" role="status" aria-live="polite"></p>
+        <p id="edit-task-autosave-status" class="autosave-status" role="status" aria-live="polite"></p>
       </form>
     </div>
   </div>

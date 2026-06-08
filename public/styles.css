@@ -3537,6 +3537,21 @@ body.theme-dark .user-status-badge.disabled {
   scrollbar-width: thin;
 }
 
+.edit-task-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.edit-task-modal-header h3 {
+  margin: 0;
+}
+
+.edit-task-modal-header #close-edit-task {
+  flex: 0 0 auto;
+}
+
 .modal.add-task-modal {
   width: min(100%, 640px);
   padding: 0;
@@ -3654,10 +3669,16 @@ body.theme-dark .user-status-badge.disabled {
   align-items: center;
   gap: 18px;
   margin-top: 12px;
+  /* Always reserve the row so showing/hiding Save/Cancel doesn't shift the
+     modal. Visibility is controlled via opacity, not display. */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
 }
 
-.rich-editor-actions.hidden {
-  display: none;
+.rich-editor-actions.is-visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .rich-editor-save {
@@ -3700,6 +3721,14 @@ body.theme-dark .user-status-badge.disabled {
   font-size: 0.82rem;
   font-weight: 700;
   text-align: right;
+  /* Always reserve the row so showing/hiding the message doesn't shift the
+     modal. Visibility is controlled via opacity, not display. */
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.autosave-status.is-visible {
+  opacity: 1;
 }
 
 .task-detail-related-trigger {
@@ -4397,8 +4426,8 @@ body.theme-dark .user-status-badge.disabled {
   justify-content: space-between;
   gap: 10px;
   min-width: 0;
-  min-height: 38px;
-  padding: 6px 7px 6px 9px;
+  min-height: 30px;
+  padding: 4px 7px 4px 9px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
@@ -4407,14 +4436,16 @@ body.theme-dark .user-status-badge.disabled {
 .related-tasks-chip-meta {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 8px;
   min-width: 0;
 }
 
 .related-tasks-chip-name {
-  min-width: min(100%, 180px);
-  overflow-wrap: anywhere;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--text);
   font-size: 0.86rem;
   font-weight: 700;

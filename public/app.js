@@ -164,6 +164,7 @@ const editRelatedTasksResults = document.getElementById('edit-related-tasks-resu
 const editRelatedTasksHint = document.getElementById('edit-related-tasks-hint');
 const editTitleError = document.getElementById('edit-title-error');
 const editDescriptionError = document.getElementById('edit-description-error');
+const editCommentError = document.getElementById('edit-comment-error');
 const editAttachmentError = document.getElementById('edit-attachment-error');
 const editFormError = document.getElementById('edit-form-error');
 const previewTaskModal = document.getElementById('preview-task-modal');
@@ -2768,6 +2769,7 @@ document.addEventListener('paste', savePastedAttachmentToOpenTask);
 const clearEditTaskErrors = () => {
   editTitleError.classList.add('hidden');
   editDescriptionError.classList.add('hidden');
+  editCommentError.classList.add('hidden');
   editAttachmentError.classList.add('hidden');
   editFormError.classList.add('hidden');
 };
@@ -2852,11 +2854,14 @@ const setEditTaskAutosaveStatus = (message = '') => {
     editTaskAutosaveStatusTimer = null;
   }
   editTaskAutosaveStatus.textContent = message;
-  editTaskAutosaveStatus.classList.toggle('hidden', !message);
+  // Keep the element in the layout at all times (it always reserves its height)
+  // and only fade the text in/out. Toggling `hidden` (display:none) would
+  // collapse the row and make the modal jump when the message appears.
+  editTaskAutosaveStatus.classList.toggle('is-visible', Boolean(message));
   if (message === t('taskSaved')) {
     editTaskAutosaveStatusTimer = setTimeout(() => {
       editTaskAutosaveStatus.textContent = '';
-      editTaskAutosaveStatus.classList.add('hidden');
+      editTaskAutosaveStatus.classList.remove('is-visible');
       editTaskAutosaveStatusTimer = null;
     }, 1600);
   }
@@ -2905,8 +2910,8 @@ const buildEditTaskUpdates = ({ includeDescription = false, includeComment = fal
   }
 
   if (includeComment && getRichTextPlainText(comment).length > MAX_TASK_TEXT_LENGTH) {
-    editFormError.textContent = t('commentTooLong');
-    editFormError.classList.remove('hidden');
+    editCommentError.textContent = t('commentTooLong');
+    editCommentError.classList.remove('hidden');
     return null;
   }
 
@@ -3064,8 +3069,8 @@ const saveEditRichTextField = async (field) => {
   }
 
   if (field === 'comment' && getRichTextPlainText(value).length > MAX_TASK_TEXT_LENGTH) {
-    editFormError.textContent = t('commentTooLong');
-    editFormError.classList.remove('hidden');
+    editCommentError.textContent = t('commentTooLong');
+    editCommentError.classList.remove('hidden');
     return;
   }
 
@@ -3125,13 +3130,16 @@ const cancelEditRichTextField = (field) => {
   }
 
   setRichEditorValue(editTaskCommentInput, editTaskCommentSavedValue);
-  editFormError.classList.add('hidden');
+  editCommentError.classList.add('hidden');
   setRichEditorActionsVisible('comment', false);
 };
 
 const setRichEditorActionsVisible = (field, visible) => {
   const actions = field === 'description' ? editTaskDescriptionActions : editTaskCommentActions;
-  actions?.classList.toggle('hidden', !visible);
+  // Keep the actions row in the layout at all times and fade it in/out, so the
+  // modal doesn't shift when Save/Cancel appear or disappear (matches the
+  // autosave status behaviour).
+  actions?.classList.toggle('is-visible', Boolean(visible));
 };
 
 const bindRichEditorActionVisibility = (field, editor, actions) => {
@@ -3433,6 +3441,8 @@ editTaskModal.addEventListener('click', (event) => {
     hideEditTaskModal();
   }
 });
+
+document.getElementById('close-edit-task')?.addEventListener('click', hideEditTaskModal);
 
 closeAttachmentPreview.addEventListener('click', hideAttachmentPreview);
 
