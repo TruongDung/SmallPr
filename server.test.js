@@ -801,7 +801,12 @@ describe('Task API', () => {
       .send({ status: 'done' });
 
     expect(doneResponse.statusCode).toBe(200);
-    const statusChanges = doneResponse.body.task.activity_history
+
+    // Activity history is not bundled into the PUT response (lightweight for
+    // performance). Fetch the task detail endpoint to verify history.
+    const detailResponse = await agent.get(`/api/tasks/${taskId}`);
+    expect(detailResponse.statusCode).toBe(200);
+    const statusChanges = detailResponse.body.task.activity_history
       .filter((entry) => entry.action === 'edit')
       .filter((entry) => entry.before?.status !== entry.after?.status)
       .map((entry) => [entry.before.status, entry.after.status]);
