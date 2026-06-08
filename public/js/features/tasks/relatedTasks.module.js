@@ -25,6 +25,7 @@
     t,
     updateTask,
     showStatusToast,
+    onEditRelatedTasksChange,
   }) => {
     const resolveRelatedTask = (id, task) => {
       const numericId = Number(id);
@@ -194,6 +195,7 @@
       });
       render('edit');
       hideResults('edit');
+      onEditRelatedTasksChange?.(ids);
     };
 
     const add = (pickerName, id) => {

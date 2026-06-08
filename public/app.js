@@ -152,6 +152,7 @@ const editTaskDueDateInput = document.getElementById('edit-task-due-date-input')
 const editTaskReminderInput = document.getElementById('edit-task-reminder-input');
 const editTaskAttachmentInput = document.getElementById('edit-task-attachment-input');
 const editCurrentAttachment = document.getElementById('edit-current-attachment');
+const editTaskAutosaveStatus = document.getElementById('edit-task-autosave-status');
 const editRelatedTasksList = document.getElementById('edit-related-tasks-list');
 const editRelatedTasksCount = document.getElementById('edit-related-tasks-count');
 const editRelatedTasksSearch = document.getElementById('edit-related-tasks-search');
@@ -161,7 +162,6 @@ const editTitleError = document.getElementById('edit-title-error');
 const editDescriptionError = document.getElementById('edit-description-error');
 const editAttachmentError = document.getElementById('edit-attachment-error');
 const editFormError = document.getElementById('edit-form-error');
-const cancelEditTask = document.getElementById('cancel-edit-task');
 const previewTaskModal = document.getElementById('preview-task-modal');
 const previewTaskTitle = document.getElementById('preview-task-title');
 const previewTaskDescription = document.getElementById('preview-task-description');
@@ -247,6 +247,10 @@ let reminderAlertPreviousFocus = null;
 let preparedAttachment = null;
 let preparedEditAttachment = null;
 let removeEditAttachment = false;
+let isPopulatingEditTaskForm = false;
+let editTaskAutosaveTimer = null;
+let editTaskAutosaveQueue = Promise.resolve();
+let editTaskAutosaveStatusTimer = null;
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const MAX_TASK_TEXT_LENGTH = 10000;
 const DEFAULT_TASK_PRIORITY = 'low';
@@ -467,8 +471,6 @@ const applyTranslations = () => {
   setText('label[for="edit-task-reminder-input"]', t('dateTimeAlert'));
   setText('label[for="edit-task-attachment-input"]', t('uploadFile'));
   renderEditAttachmentState();
-  setActionIconButton(cancelEditTask, t('cancel'), '×');
-  setActionIconButton(document.getElementById('save-edit-task'), t('save'), '✓');
   setText('#admin-section h2', t('manageUsers'));
   setText('#open-add-user-modal', t('addUser'));
   if (impersonateUserSelect) {
@@ -636,6 +638,7 @@ const relatedTasksModule = window.RelatedTasksModule.create({
   t,
   updateTask: (...args) => updateTask(...args),
   showStatusToast: (...args) => showStatusToast(...args),
+  onEditRelatedTasksChange: () => scheduleEditTaskAutosave({ immediate: true }),
 });
 const {
   getRelatedTaskIds,
@@ -800,6 +803,9 @@ const handleEditTaskAttachmentChange = async () => {
     editAttachmentError.classList.remove('hidden');
   } finally {
     renderEditAttachmentState();
+    if (preparedEditAttachment) {
+      scheduleEditTaskAutosave({ immediate: true });
+    }
     setTimeout(hideUploadProgress, 250);
   }
 };
@@ -2964,12 +2970,207 @@ const renderEditAttachmentState = () => {
       preparedEditAttachment = null;
       editTaskAttachmentInput.value = '';
       renderEditAttachmentState();
+      scheduleEditTaskAutosave({ immediate: true });
     });
     editCurrentAttachment.append(removeButton);
   }
 };
 
+const clearEditTaskAutosaveTimer = () => {
+  if (editTaskAutosaveTimer) {
+    clearTimeout(editTaskAutosaveTimer);
+    editTaskAutosaveTimer = null;
+  }
+};
+
+const setEditTaskAutosaveStatus = (message = '') => {
+  if (!editTaskAutosaveStatus) return;
+  if (editTaskAutosaveStatusTimer) {
+    clearTimeout(editTaskAutosaveStatusTimer);
+    editTaskAutosaveStatusTimer = null;
+  }
+  editTaskAutosaveStatus.textContent = message;
+  editTaskAutosaveStatus.classList.toggle('hidden', !message);
+  if (message === t('taskSaved')) {
+    editTaskAutosaveStatusTimer = setTimeout(() => {
+      editTaskAutosaveStatus.textContent = '';
+      editTaskAutosaveStatus.classList.add('hidden');
+      editTaskAutosaveStatusTimer = null;
+    }, 1600);
+  }
+};
+
+const buildEditTaskUpdates = () => {
+  const title = editTaskTitleInput.value.trim();
+  const priority = editTaskPriorityInput.value;
+  const status = editTaskStatusInput.value;
+  const tag = editTaskTagInput.value.trim();
+  const description = getRichEditorValue(editTaskDescriptionInput);
+  const comment = getRichEditorValue(editTaskCommentInput);
+  const dueDate = editTaskDueDateInput.value || null;
+  const reminderAt = editTaskReminderInput?.value || null;
+  const attachmentFile = editTaskAttachmentInput.files[0] || null;
+  const isRecurring = editTaskRecurringCheckbox.checked;
+  const recurrencePattern = isRecurring ? editTaskRecurrencePattern.value : null;
+  const recurrenceInterval = isRecurring ? parseInt(editTaskRecurrenceInterval.value, 10) : null;
+  const recurrenceDays = isRecurring && recurrencePattern === 'weekly'
+    ? getSelectedWeekdays(editWeeklyOptions)
+    : null;
+  const recurrenceTimezone = isRecurring
+    ? (editTaskRecurrenceTimezone.value.trim() || getActiveTimezone())
+    : null;
+  const recurrenceEndDate = isRecurring ? editTaskRecurrenceEndDate.value || null : null;
+  const recurrenceOccurrenceLimit = isRecurring && editTaskRecurrenceOccurrences.value
+    ? parseInt(editTaskRecurrenceOccurrences.value, 10)
+    : null;
+
+  if (!title) {
+    editFormError.textContent = t('titleEmpty');
+    editFormError.classList.remove('hidden');
+    return null;
+  }
+
+  if (title.length > 20) {
+    editTitleError.textContent = t('titleTooLong');
+    editTitleError.classList.remove('hidden');
+    return null;
+  }
+
+  if (getRichEditorLength(editTaskDescriptionInput) > MAX_TASK_TEXT_LENGTH) {
+    editDescriptionError.textContent = t('descriptionTooLong');
+    editDescriptionError.classList.remove('hidden');
+    return null;
+  }
+
+  if (getRichTextPlainText(comment).length > MAX_TASK_TEXT_LENGTH) {
+    editFormError.textContent = t('commentTooLong');
+    editFormError.classList.remove('hidden');
+    return null;
+  }
+
+  if (attachmentFile && attachmentFile.size > MAX_ATTACHMENT_BYTES) {
+    editAttachmentError.textContent = t('attachmentTooLarge');
+    editAttachmentError.classList.remove('hidden');
+    return null;
+  }
+
+  if (attachmentFile && !preparedEditAttachment) {
+    editAttachmentError.textContent = t('attachmentNotReady');
+    editAttachmentError.classList.remove('hidden');
+    return null;
+  }
+
+  if (isRecurring && recurrencePattern === 'weekly' && !recurrenceDays) {
+    editFormError.textContent = t('weeklyRecurrenceNeedsDays') || 'Please select at least one day for weekly recurrence';
+    editFormError.classList.remove('hidden');
+    return null;
+  }
+
+  const updates = {
+    title,
+    tag,
+    priority,
+    status,
+    description,
+    comment,
+    due_date: dueDate,
+    reminder_at: reminderAt,
+    is_recurring: isRecurring,
+    recurrence_pattern: recurrencePattern,
+    recurrence_interval: recurrenceInterval,
+    recurrence_days: recurrenceDays,
+    recurrence_timezone: recurrenceTimezone,
+    recurrence_end_date: recurrenceEndDate,
+    recurrence_occurrence_limit: recurrenceOccurrenceLimit,
+    related_task_ids: getRelatedTaskIds(pendingEditTask),
+  };
+
+  if (preparedEditAttachment) {
+    updates.attachment = preparedEditAttachment;
+  } else if (removeEditAttachment) {
+    updates.attachment = null;
+  }
+
+  return updates;
+};
+
+const saveEditTaskNow = async () => {
+  if (!pendingEditTask || isPopulatingEditTaskForm) return null;
+
+  clearEditTaskErrors();
+  const task = pendingEditTask;
+  const updates = buildEditTaskUpdates();
+  if (!updates) return null;
+
+  setEditTaskAutosaveStatus(t('savingTask'));
+  const result = await updateTask(task.id, updates);
+  if (result?.error) {
+    editFormError.textContent = result.error;
+    editFormError.classList.remove('hidden');
+    setEditTaskAutosaveStatus('');
+    return result;
+  }
+
+  if (result?.task) {
+    pendingEditTask = result.task;
+    preparedEditAttachment = null;
+    removeEditAttachment = false;
+    editTaskAttachmentInput.value = '';
+    renderEditAttachmentState();
+    renderRelatedTaskPicker('edit');
+  }
+
+  setEditTaskAutosaveStatus(t('taskSaved'));
+  return result;
+};
+
+const scheduleEditTaskAutosave = ({ immediate = false } = {}) => {
+  if (!pendingEditTask || isPopulatingEditTaskForm) return;
+  clearEditTaskAutosaveTimer();
+  const delayMs = immediate ? 0 : 550;
+  editTaskAutosaveTimer = setTimeout(() => {
+    editTaskAutosaveTimer = null;
+    editTaskAutosaveQueue = editTaskAutosaveQueue
+      .catch(() => {})
+      .then(saveEditTaskNow);
+  }, delayMs);
+};
+
+const bindEditTaskAutosave = () => {
+  [
+    editTaskTitleInput,
+    editTaskTagInput,
+    editTaskDescriptionInput,
+    editTaskCommentInput,
+    editTaskRecurrenceTimezone,
+  ].forEach((input) => {
+    input?.addEventListener('input', () => scheduleEditTaskAutosave());
+    input?.addEventListener('blur', () => scheduleEditTaskAutosave({ immediate: true }));
+  });
+
+  [
+    editTaskPriorityInput,
+    editTaskStatusInput,
+    editTaskDueDateInput,
+    editTaskReminderInput,
+    editTaskRecurringCheckbox,
+    editTaskRecurrencePattern,
+    editTaskRecurrenceInterval,
+    editTaskRecurrenceEndDate,
+    editTaskRecurrenceOccurrences,
+  ].forEach((input) => {
+    input?.addEventListener('change', () => scheduleEditTaskAutosave({ immediate: true }));
+  });
+
+  editWeeklyOptions?.querySelectorAll('input[name="edit-weekday"]').forEach((input) => {
+    input.addEventListener('change', () => scheduleEditTaskAutosave({ immediate: true }));
+  });
+};
+
 const showEditTaskModal = (task) => {
+  isPopulatingEditTaskForm = true;
+  clearEditTaskAutosaveTimer();
+  setEditTaskAutosaveStatus('');
   pendingEditTask = task;
   preparedEditAttachment = null;
   removeEditAttachment = false;
@@ -3006,9 +3207,15 @@ const showEditTaskModal = (task) => {
   editTaskModal.classList.remove('hidden');
   editTaskTitleInput.focus();
   editTaskTitleInput.select();
+  setTimeout(() => {
+    isPopulatingEditTaskForm = false;
+  }, 0);
 };
 
 const hideEditTaskModal = () => {
+  clearEditTaskAutosaveTimer();
+  setEditTaskAutosaveStatus('');
+  isPopulatingEditTaskForm = false;
   pendingEditTask = null;
   preparedEditAttachment = null;
   removeEditAttachment = false;
@@ -3033,109 +3240,11 @@ const hideEditTaskModal = () => {
 
 const handleEditTaskSubmit = async (event) => {
   event.preventDefault();
-  if (!pendingEditTask) return;
-
-  clearEditTaskErrors();
-
-  const title = editTaskTitleInput.value.trim();
-  const priority = editTaskPriorityInput.value;
-  const status = editTaskStatusInput.value;
-  const tag = editTaskTagInput.value.trim();
-  const description = getRichEditorValue(editTaskDescriptionInput);
-  const comment = getRichEditorValue(editTaskCommentInput);
-  const dueDate = editTaskDueDateInput.value || null;
-  const reminderAt = editTaskReminderInput?.value || null;
-  const attachmentFile = editTaskAttachmentInput.files[0] || null;
-  const isRecurring = editTaskRecurringCheckbox.checked;
-  const recurrencePattern = isRecurring ? editTaskRecurrencePattern.value : null;
-  const recurrenceInterval = isRecurring ? parseInt(editTaskRecurrenceInterval.value, 10) : null;
-  const recurrenceDays = isRecurring && recurrencePattern === 'weekly'
-    ? getSelectedWeekdays(editWeeklyOptions)
-    : null;
-  const recurrenceTimezone = isRecurring
-    ? (editTaskRecurrenceTimezone.value.trim() || getActiveTimezone())
-    : null;
-  const recurrenceEndDate = isRecurring ? editTaskRecurrenceEndDate.value || null : null;
-  const recurrenceOccurrenceLimit = isRecurring && editTaskRecurrenceOccurrences.value
-    ? parseInt(editTaskRecurrenceOccurrences.value, 10)
-    : null;
-
-  if (!title.trim()) {
-    editFormError.textContent = t('titleEmpty');
-    editFormError.classList.remove('hidden');
-    return;
-  }
-  
-  if (title.length > 20) {
-    editTitleError.textContent = t('titleTooLong');
-    editTitleError.classList.remove('hidden');
-    return;
-  }
-  
-  if (getRichEditorLength(editTaskDescriptionInput) > MAX_TASK_TEXT_LENGTH) {
-    editDescriptionError.textContent = t('descriptionTooLong');
-    editDescriptionError.classList.remove('hidden');
-    return;
-  }
-
-  if (getRichTextPlainText(comment).length > MAX_TASK_TEXT_LENGTH) {
-    editFormError.textContent = t('commentTooLong');
-    editFormError.classList.remove('hidden');
-    return;
-  }
-
-  if (attachmentFile && attachmentFile.size > MAX_ATTACHMENT_BYTES) {
-    editAttachmentError.textContent = t('attachmentTooLarge');
-    editAttachmentError.classList.remove('hidden');
-    return;
-  }
-
-  if (attachmentFile && !preparedEditAttachment) {
-    editAttachmentError.textContent = t('attachmentNotReady');
-    editAttachmentError.classList.remove('hidden');
-    return;
-  }
-
-  if (isRecurring && recurrencePattern === 'weekly' && !recurrenceDays) {
-    editFormError.textContent = t('weeklyRecurrenceNeedsDays') || 'Please select at least one day for weekly recurrence';
-    editFormError.classList.remove('hidden');
-    return;
-  }
-
-  const task = pendingEditTask;
-  const updates = {
-    title,
-    tag,
-    priority,
-    status,
-    description,
-    comment,
-    due_date: dueDate,
-    reminder_at: reminderAt,
-    is_recurring: isRecurring,
-    recurrence_pattern: recurrencePattern,
-    recurrence_interval: recurrenceInterval,
-    recurrence_days: recurrenceDays,
-    recurrence_timezone: recurrenceTimezone,
-    recurrence_end_date: recurrenceEndDate,
-    recurrence_occurrence_limit: recurrenceOccurrenceLimit,
-    related_task_ids: getRelatedTaskIds(pendingEditTask),
-  };
-
-  if (preparedEditAttachment) {
-    updates.attachment = preparedEditAttachment;
-  } else if (removeEditAttachment) {
-    updates.attachment = null;
-  }
-
-  hideEditTaskModal();
-  const result = await updateTask(task.id, updates);
-  if (!result?.error) {
-    showStatusToast(t('taskSaved'));
-  }
+  clearEditTaskAutosaveTimer();
+  editTaskAutosaveQueue = editTaskAutosaveQueue
+    .catch(() => {})
+    .then(saveEditTaskNow);
 };
-
-cancelEditTask.addEventListener('click', hideEditTaskModal);
 
 previewTaskDescription.addEventListener('change', (event) => {
   if (!event.target.matches('input[data-rich-checklist]')) return;
@@ -3247,6 +3356,7 @@ closePreviewTask.addEventListener('click', hidePreviewTaskModal);
 
 relatedTasksModule.bind();
 taskActivityModule.bind();
+bindEditTaskAutosave();
 previewRelatedTasksToggle?.addEventListener('click', togglePreviewRelatedTasks);
 
 document.querySelectorAll('[data-related-trigger]').forEach((button) => {
@@ -3265,6 +3375,12 @@ document.querySelectorAll('[data-related-trigger]').forEach((button) => {
 previewTaskModal.addEventListener('click', (event) => {
   if (event.target === previewTaskModal) {
     hidePreviewTaskModal();
+  }
+});
+
+editTaskModal.addEventListener('click', (event) => {
+  if (event.target === editTaskModal) {
+    hideEditTaskModal();
   }
 });
 
