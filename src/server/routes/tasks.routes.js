@@ -84,6 +84,19 @@ const createTasksRouter = ({
     }
   });
 
+  router.get('/tasks/:id', async (req, res) => {
+    try {
+      const task = await tasks.getTaskForUser(req.params.id, req.session.userId);
+      if (!task) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+      res.json({ task });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to load task');
+      res.status(500).json({ error: 'Failed to load task' });
+    }
+  });
+
   router.get('/tags', async (req, res) => {
     try {
       const cacheKey = buildTaskTagsCacheKey(req.session.userId);

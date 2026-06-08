@@ -46,7 +46,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     }));
   };
 
-  const attachRelatedTasks = async (userId, rows) => {
+  const attachRelatedTasks = async (userId, rows, { includeActivityHistory = true } = {}) => {
     if (!rows.length) return rows;
 
     const taskIds = rows.map((task) => Number(task.id));
@@ -85,6 +85,13 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
       related_task_ids: (relatedByTaskId.get(Number(task.id)) || []).map((related) => related.id),
     }));
 
+    // Activity history (audit log before/after snapshots) can be very large and
+    // is only needed in the task detail/preview view, so it is skipped for the
+    // task list to keep the response small.
+    if (!includeActivityHistory) {
+      return withRelatedTasks.map((task) => ({ ...task, activity_history: [] }));
+    }
+
     return attachActivityHistory(userId, withRelatedTasks);
   };
 
@@ -97,7 +104,18 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
        ORDER BY ${TASK_PRIORITY_ORDER_SQL}`,
       [userId, archived]
     );
-    return attachRelatedTasks(userId, rows);
+
+    // Strip the heavy attachment_data (base64 file contents) from the list.
+    // Returning it for every task can balloon the response to tens of MB and
+    // stall other requests in the browser (connection limit). The list keeps
+    // attachment metadata via a has_attachment flag; the actual file data is
+    // fetched on demand through getTaskForUser (GET /api/tasks/:id).
+    const lightRows = rows.map(({ attachment_data, ...rest }) => ({
+      ...rest,
+      has_attachment: Boolean(attachment_data),
+    }));
+
+    return attachRelatedTasks(userId, lightRows, { includeActivityHistory: false });
   };
 
   const listAllTasksForEmail = (userId) => allAsync(

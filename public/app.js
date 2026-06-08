@@ -677,12 +677,33 @@ const isImageAttachment = (task) => {
   return type.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
 };
 
+// Attachment data (base64) is no longer included in the task list response to
+// keep it small. We fetch the full task on demand the first time the user wants
+// to preview or download an attachment, and cache the data on the task object.
+const ensureAttachmentData = async (task) => {
+  if (!task) return null;
+  if (task.attachment_data) return task.attachment_data;
+  if (!task.id) return null;
+
+  const result = await request(`/api/tasks/${task.id}`);
+  if (result?.error || !result?.task) {
+    showStatusToast(result?.error || t('taskSaveFailed') || 'Failed to load attachment', 'error');
+    return null;
+  }
+
+  // Cache the fetched blob on the in-memory task so repeat opens are instant.
+  task.attachment_data = result.task.attachment_data || null;
+  return task.attachment_data;
+};
+
 const attachAttachmentPreviewHandler = (link, task) => {
   if (!isPdfAttachment(task) && !isImageAttachment(task)) return;
 
   link.removeAttribute('download');
-  link.addEventListener('click', (event) => {
+  link.addEventListener('click', async (event) => {
     event.preventDefault();
+    const data = await ensureAttachmentData(task);
+    if (!data) return;
     showAttachmentPreview(task);
   });
 };
@@ -2319,12 +2340,27 @@ const createTaskCard = (task) => {
     dueDate.textContent = `${t('dueDate')}: ${getTaskDueDateKey(task)}`;
 
     const attachment = document.createElement('a');
-    if (task.attachment_data && task.attachment_name) {
+    if ((task.attachment_data || task.has_attachment) && task.attachment_name) {
       attachment.className = 'task-attachment';
-      attachment.href = task.attachment_data;
+      attachment.href = task.attachment_data || '#';
       attachment.download = task.attachment_name;
       attachment.textContent = `${t('attachment')}: ${task.attachment_name}`;
-      attachAttachmentPreviewHandler(attachment, task);
+      if (isPdfAttachment(task) || isImageAttachment(task)) {
+        attachAttachmentPreviewHandler(attachment, task);
+      } else if (!task.attachment_data) {
+        // Non-previewable file without loaded data: fetch on click, then download.
+        attachment.addEventListener('click', async (event) => {
+          event.preventDefault();
+          const data = await ensureAttachmentData(task);
+          if (!data) return;
+          const link = document.createElement('a');
+          link.href = data;
+          link.download = task.attachment_name;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        });
+      }
     }
 
     const actions = document.createElement('div');
@@ -2742,7 +2778,7 @@ const renderEditAttachmentState = () => {
   editCurrentAttachment.innerHTML = '';
 
   const task = pendingEditTask;
-  const hasExistingAttachment = Boolean(task?.attachment_data && task?.attachment_name);
+  const hasExistingAttachment = Boolean((task?.attachment_data || task?.has_attachment) && task?.attachment_name);
   const hasNewAttachment = Boolean(preparedEditAttachment);
   if (!hasExistingAttachment && !hasNewAttachment && !removeEditAttachment) {
     editCurrentAttachment.classList.add('hidden');
@@ -2762,10 +2798,24 @@ const renderEditAttachmentState = () => {
   if (hasNewAttachment) {
     fileName.textContent = preparedEditAttachment.name;
   } else if (showsExistingAttachment) {
-    fileName.href = task.attachment_data;
+    fileName.href = task.attachment_data || '#';
     fileName.download = task.attachment_name;
     fileName.textContent = task.attachment_name;
-    attachAttachmentPreviewHandler(fileName, task);
+    if (isPdfAttachment(task) || isImageAttachment(task)) {
+      attachAttachmentPreviewHandler(fileName, task);
+    } else if (!task.attachment_data) {
+      fileName.addEventListener('click', async (event) => {
+        event.preventDefault();
+        const data = await ensureAttachmentData(task);
+        if (!data) return;
+        const link = document.createElement('a');
+        link.href = data;
+        link.download = task.attachment_name;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      });
+    }
   } else {
     fileName.textContent = t('noAttachment');
   }
@@ -2934,12 +2984,10 @@ const saveEditTaskNow = async (options = {}) => {
     if (options.includeDescription) {
       editTaskDescriptionSavedValue = result.task.description || '';
       setRichEditorActionsVisible('description', false);
-      showStatusToast(t('taskSaved'));
     }
     if (options.includeComment) {
       editTaskCommentSavedValue = result.task.comment || '';
       setRichEditorActionsVisible('comment', false);
-      showStatusToast(t('taskSaved'));
     }
     preparedEditAttachment = null;
     removeEditAttachment = false;
@@ -3110,7 +3158,13 @@ const bindRichEditorActionVisibility = (field, editor, actions) => {
   editorShell?.addEventListener('focusout', hideIfFocusLeft);
   editor?.addEventListener('input', show);
   actions?.addEventListener('focusin', show);
-  actions?.addEventListener('mousedown', show);
+  // Prevent the contenteditable from losing focus when the Save/Cancel buttons
+  // are pressed. Without this the editor blurs on mousedown, the hide-timer can
+  // run, and the click lands on an element being hidden — so it never fires.
+  actions?.addEventListener('mousedown', (event) => {
+    event.preventDefault();
+    show();
+  });
   actions?.addEventListener('focusout', hideIfFocusLeft);
 };
 
@@ -3201,9 +3255,25 @@ const hideEditTaskModal = () => {
 const handleEditTaskSubmit = async (event) => {
   event.preventDefault();
   clearEditTaskAutosaveTimer();
+
+  // Save immediately (title, metadata, description and comment) and wait for it
+  // to settle so we can give the user clear success/failure feedback.
   editTaskAutosaveQueue = editTaskAutosaveQueue
     .catch(() => {})
-    .then(saveEditTaskNow);
+    .then(() => saveEditTaskNow({ includeDescription: true, includeComment: true }));
+
+  const result = await editTaskAutosaveQueue;
+
+  // A null result means client-side validation failed; the inline error is
+  // already shown, so leave the modal open for the user to fix it.
+  if (!result) return;
+
+  // On a server error, updateTask() has already surfaced an error toast and
+  // saveEditTaskNow() left the inline error visible, so keep the modal open.
+  if (result.error) return;
+
+  showStatusToast(t('taskSaved'), 'success');
+  hideEditTaskModal();
 };
 
 previewTaskDescription.addEventListener('change', (event) => {
@@ -3218,7 +3288,7 @@ previewTaskCommentDisplay.addEventListener('change', (event) => {
   savePreviewChecklistField('comment', previewTaskCommentDisplay);
 });
 
-const showPreviewTaskModal = (task) => {
+const showPreviewTaskModal = async (task) => {
   pendingPreviewTask = task;
   updatePreviewTaskModalTitle();
   renderRelatedTaskPicker('preview');
@@ -3238,6 +3308,17 @@ const showPreviewTaskModal = (task) => {
   taskActivityModule.setExpanded(true);
   taskActivityModule.render();
   previewTaskModal.classList.remove('hidden');
+
+  // Activity history and attachment data are not included in the task list to
+  // keep it lightweight, so load the full task on demand and re-render once it
+  // arrives. Guard against the modal being closed/switched in the meantime.
+  if (task.id && (!Array.isArray(task.activity_history) || task.activity_history.length === 0)) {
+    const result = await request(`/api/tasks/${task.id}`);
+    if (!result?.error && result?.task && pendingPreviewTask?.id === task.id) {
+      pendingPreviewTask = result.task;
+      taskActivityModule.render();
+    }
+  }
 };
 
 const hidePreviewTaskModal = () => {

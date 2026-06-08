@@ -32,9 +32,12 @@ export const request = async <T = unknown>(
   }
 
   if (!response.ok || (body && typeof body === 'object' && 'error' in body)) {
+    const errorMessage =
+      body && typeof body === 'object' && 'error' in body
+        ? String((body as { error: unknown }).error)
+        : '';
     const message =
-      (body && typeof body === 'object' && 'error' in body && String((body as { error: unknown }).error)) ||
-      `Request failed (${response.status} ${response.statusText || ''})`.trim();
+      errorMessage || `Request failed (${response.status} ${response.statusText || ''})`.trim();
     throw new ApiRequestError(message, response.status);
   }
 

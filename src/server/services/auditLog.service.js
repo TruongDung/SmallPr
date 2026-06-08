@@ -14,6 +14,18 @@ const AUDIT_ACTIONS = new Set([
 ]);
 
 const createAuditLogService = ({ allAsync, runAsync }) => {
+  // Audit snapshots should capture the entity's own fields, not large derived
+  // or binary data. Stripping these keeps the audit_logs table from ballooning
+  // (e.g. a task snapshot embedding its full activity_history would compound on
+  // every edit) and keeps detail views fast.
+  const HEAVY_SNAPSHOT_KEYS = ['activity_history', 'attachment_data', 'related_tasks'];
+  const stripHeavySnapshot = (data) => {
+    if (!data || typeof data !== 'object') return data;
+    const clone = { ...data };
+    HEAVY_SNAPSHOT_KEYS.forEach((key) => { delete clone[key]; });
+    return clone;
+  };
+
   const record = async ({
     userId,
     actorUserId,
@@ -29,6 +41,9 @@ const createAuditLogService = ({ allAsync, runAsync }) => {
       throw new Error('Invalid audit log event');
     }
 
+    const beforeSnapshot = stripHeavySnapshot(before);
+    const afterSnapshot = stripHeavySnapshot(after);
+
     await runAsync(
       `INSERT INTO audit_logs (
         user_id, actor_user_id, impersonator_user_id, action, entity_type,
@@ -43,8 +58,8 @@ const createAuditLogService = ({ allAsync, runAsync }) => {
         entityType,
         entityId ? Number(entityId) : null,
         summary || '',
-        before ? JSON.stringify(before) : null,
-        after ? JSON.stringify(after) : null,
+        beforeSnapshot ? JSON.stringify(beforeSnapshot) : null,
+        afterSnapshot ? JSON.stringify(afterSnapshot) : null,
       ]
     );
   };
