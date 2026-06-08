@@ -67,7 +67,6 @@ const passwordSettingsFormError = document.getElementById('password-settings-for
 const savePasswordSettings = document.getElementById('save-password-settings');
 const taskList = document.getElementById('task-list');
 const calendarSection = document.getElementById('calendar-section');
-const tagList = document.getElementById('tag-list');
 const userList = document.getElementById('user-list');
 const auditLogList = document.getElementById('audit-log-list');
 const refreshAuditLog = document.getElementById('refresh-audit-log');
@@ -77,7 +76,6 @@ const auditLogNext = document.getElementById('audit-log-next');
 const auditLogPageInfo = document.getElementById('audit-log-page-info');
 const auditLogSearchInput = document.getElementById('audit-log-search-input');
 const authMessage = document.getElementById('auth-message');
-const tagMessage = document.getElementById('tag-message');
 const adminMessage = document.getElementById('admin-message');
 const showLogin = document.getElementById('show-login');
 const showSignup = document.getElementById('show-signup');
@@ -242,7 +240,6 @@ let pendingDeleteCard = null;
 let pendingDeleteFastAccessLink = null;
 let pendingDeleteNote = null;
 let pendingDeleteTransaction = null;
-let pendingEditTag = null;
 let pendingResetPasswordUser = null;
 let pendingEditTask = null;
 let pendingPreviewTask = null;
@@ -1495,225 +1492,33 @@ const handleAuthSubmit = async (event) => {
   connectRealtime();
 };
 
-const loadTags = async () => {
-  tagMessage.textContent = '';
-  const result = await request('/api/tags');
-  if (result.error) {
-    tagMessage.textContent = result.error;
-    return;
-  }
-  tags = result.tags || [];
-  if (currentTagFilter && !tags.some((tag) => tag.name.toLowerCase() === currentTagFilter.toLowerCase())) {
-    currentTagFilter = '';
-  }
-  renderTags(tags);
-};
-
-const hideTagSuggestions = (panel) => {
-  panel.classList.add('hidden');
-  panel.innerHTML = '';
-};
-
-const showTagSuggestions = (input, panel) => {
-  const query = input.value.trim().toLowerCase();
-  const matches = tags
-    .filter((tag) => !query || tag.name.toLowerCase().includes(query))
-    .slice(0, 6);
-
-  panel.innerHTML = '';
-  if (!matches.length) {
-    hideTagSuggestions(panel);
-    return;
-  }
-
-  matches.forEach((tag) => {
-    const option = document.createElement('button');
-    option.type = 'button';
-    option.className = 'tag-suggestion-option';
-    option.setAttribute('role', 'option');
-    option.textContent = tag.name;
-    option.addEventListener('mousedown', (event) => event.preventDefault());
-    option.addEventListener('click', () => {
-      input.value = tag.name;
-      hideTagSuggestions(panel);
-      input.focus();
-    });
-    panel.append(option);
-  });
-
-  panel.classList.remove('hidden');
-};
-
-const setupTagSuggestions = (input, panel) => {
-  input.addEventListener('input', () => showTagSuggestions(input, panel));
-  input.addEventListener('focus', () => showTagSuggestions(input, panel));
-  input.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      hideTagSuggestions(panel);
-    }
-  });
-  input.addEventListener('blur', () => {
-    setTimeout(() => hideTagSuggestions(panel), 120);
-  });
-};
-
-const renderTags = (tags) => {
-  tagList.innerHTML = '';
-  hideTagSuggestions(taskTagSuggestions);
-  hideTagSuggestions(editTaskTagSuggestions);
-
-  if (!tags.length) {
-    const empty = document.createElement('p');
-    empty.className = 'tag-empty';
-    empty.textContent = t('noTags');
-    tagList.append(empty);
-    return;
-  }
-
-  tags.forEach((tag) => {
-    const item = document.createElement('div');
-    item.className = 'tag-manager-item';
-    const tagTaskCount = tasks.filter((task) => (task.tag || '').toLowerCase() === tag.name.toLowerCase()).length;
-
-    const name = document.createElement('button');
-    name.type = 'button';
-    name.className = `tag-manager-name ${currentTagFilter.toLowerCase() === tag.name.toLowerCase() ? 'active' : ''}`;
-    const nameText = document.createElement('span');
-    nameText.textContent = tag.name;
-    name.append(nameText);
-    if (tagTaskCount > 1) {
-      const count = document.createElement('span');
-      count.className = 'tag-manager-count';
-      count.textContent = tagTaskCount;
-      name.append(count);
-    }
-    name.addEventListener('click', () => {
-      currentTagFilter = tag.name;
-      setCurrentView('tasks');
-      showSection();
-    });
-
-    const editButton = document.createElement('button');
-    editButton.type = 'button';
-    editButton.className = 'secondary';
-    editButton.textContent = t('edit');
-    editButton.addEventListener('click', () => showEditTagModal(tag));
-
-    const deleteButton = document.createElement('button');
-    deleteButton.type = 'button';
-    deleteButton.className = 'danger';
-    deleteButton.textContent = t('delete');
-    deleteButton.addEventListener('click', () => showTagDeleteConfirm(tag));
-
-    const actions = document.createElement('div');
-    actions.className = 'tag-manager-actions';
-    actions.append(editButton, deleteButton);
-    item.append(name, actions);
-    tagList.append(item);
-  });
-};
-
-const handleTagSubmit = async (event) => {
-  event.preventDefault();
-  tagMessage.textContent = '';
-
-  const tagNameInput = document.getElementById('tag-name');
-  const name = tagNameInput.value.trim();
-  if (!name) {
-    tagMessage.textContent = t('tagRequired');
-    return;
-  }
-  if (name.length > 40) {
-    tagMessage.textContent = t('tagTooLong');
-    return;
-  }
-
-  const result = await request('/api/tags', {
-    method: 'POST',
-    body: JSON.stringify({ name }),
-  });
-
-  if (result.error) {
-    tagMessage.textContent = result.error;
-    return;
-  }
-
-  tagForm.reset();
-  showStatusToast(t('tagAdded'));
-  loadTags();
-};
-
-const clearEditTagError = () => {
-  editTagError.textContent = '';
-  editTagError.classList.add('hidden');
-};
-
-const showEditTagModal = (tag) => {
-  pendingEditTag = tag;
-  clearEditTagError();
-  editTagNameInput.value = tag.name;
-  editTagModal.classList.remove('hidden');
-  editTagNameInput.focus();
-  editTagNameInput.select();
-};
-
-const hideEditTagModal = () => {
-  pendingEditTag = null;
-  editTagForm.reset();
-  clearEditTagError();
-  editTagModal.classList.add('hidden');
-};
-
-const renameTag = async (tag, name) => {
-  const normalizedName = name.trim();
-  if (!normalizedName) {
-    editTagError.textContent = t('tagRequired');
-    editTagError.classList.remove('hidden');
-    return;
-  }
-  if (normalizedName.length > 40) {
-    editTagError.textContent = t('tagTooLong');
-    editTagError.classList.remove('hidden');
-    return;
-  }
-
-  const result = await request(`/api/tags/${tag.id}`, {
-    method: 'PUT',
-    body: JSON.stringify({ name: normalizedName }),
-  });
-
-  if (result.error) {
-    editTagError.textContent = result.error;
-    editTagError.classList.remove('hidden');
-    return;
-  }
-
-  if (currentTagFilter.toLowerCase() === tag.name.toLowerCase()) {
-    currentTagFilter = normalizedName;
-  }
-  hideEditTagModal();
-  showStatusToast(t('tagUpdated'));
-  await loadTags();
-  loadTasks();
-};
-
-const deleteTag = async (tag) => {
-  const result = await request(`/api/tags/${tag.id}`, {
-    method: 'DELETE',
-  });
-
-  if (result.error) {
-    alert(result.error);
-    return;
-  }
-
-  if (currentTagFilter.toLowerCase() === tag.name.toLowerCase()) {
-    currentTagFilter = '';
-  }
-  showStatusToast(t('tagDeleted'));
-  await loadTags();
-  loadTasks();
-};
+// Tag management extracted to js/tags/tags.module.js (window.TagsModule).
+// Shared mutable state (tags, currentTagFilter) stays owned here and is
+// accessed through getters/setters. Functions defined later in this file
+// (loadTasks, showStatusToast, showTagDeleteConfirm) are late-bound.
+const tagsModule = window.TagsModule.create({
+  request,
+  t,
+  showStatusToast: (...args) => showStatusToast(...args),
+  getTasks: () => tasks,
+  getTags: () => tags,
+  setTags: (value) => { tags = value; },
+  getTagFilter: () => currentTagFilter,
+  setTagFilter: (value) => { currentTagFilter = value; },
+  setCurrentView: (...args) => setCurrentView(...args),
+  showSection: (...args) => showSection(...args),
+  loadTasks: (...args) => loadTasks(...args),
+  confirmDeleteTag: (...args) => showTagDeleteConfirm(...args),
+});
+const {
+  loadTags,
+  renderTags,
+  setupTagSuggestions,
+  handleTagSubmit,
+  hideEditTagModal,
+  handleEditTagSubmit,
+  deleteTag,
+} = tagsModule;
 
 const loadUsers = async () => {
   adminMessage.textContent = '';
@@ -2861,12 +2666,7 @@ deleteConfirmModal.addEventListener('click', (event) => {
   }
 });
 
-editTagForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  if (!pendingEditTag) return;
-  clearEditTagError();
-  await renameTag(pendingEditTag, editTagNameInput.value);
-});
+editTagForm.addEventListener('submit', handleEditTagSubmit);
 
 cancelEditTag.addEventListener('click', hideEditTagModal);
 
