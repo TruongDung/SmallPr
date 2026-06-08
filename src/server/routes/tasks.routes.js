@@ -301,7 +301,7 @@ const createTasksRouter = ({
     const { id } = req.params;
 
     try {
-      const task = await tasks.getTaskForUser(id, req.session.userId);
+      const task = await tasks.getTaskForUser(id, req.session.userId, { includeActivityHistory: false });
       if (!task) {
         return res.status(404).json({ error: 'Task not found' });
       }
@@ -363,7 +363,7 @@ const createTasksRouter = ({
         before: task,
         after: updatedTask,
       });
-      const taskWithHistory = await tasks.getTaskForUser(id, req.session.userId);
+      const taskWithHistory = await tasks.getTaskForUser(id, req.session.userId, { includeActivityHistory: false });
       emitToUser(req.session.userId, 'task:updated', { task: taskWithHistory });
       res.json({ task: taskWithHistory });
     } catch (error) {

@@ -125,7 +125,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     [userId]
   );
 
-  const getTaskForUser = async (id, userId) => {
+  const getTaskForUser = async (id, userId, { includeActivityHistory = true } = {}) => {
     const task = await getAsync(
       `SELECT tasks.*, rules.status AS recurrence_rule_status
        FROM tasks
@@ -134,7 +134,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
       [id, userId]
     );
     if (!task) return null;
-    return (await attachRelatedTasks(userId, [task]))[0];
+    return (await attachRelatedTasks(userId, [task], { includeActivityHistory }))[0];
   };
 
   const getTaskById = (id) => getAsync('SELECT * FROM tasks WHERE id = ?', [id]);
@@ -384,7 +384,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
       await setRelatedTasks({ userId, taskId: id, relatedTaskIds });
     }
 
-    return getTaskForUser(id, userId);
+    return getTaskForUser(id, userId, { includeActivityHistory: false });
   };
 
   const deleteTask = (id, userId) => runAsync('DELETE FROM tasks WHERE id = ? AND user_id = ?', [id, userId]);
