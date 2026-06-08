@@ -1451,6 +1451,32 @@ describe('Task API', () => {
     expect(listResponse.body.tasks.find((task) => task.id === response.body.task.id)).toBeDefined();
   });
 
+  test('sets the task due date from a travel date in the .eml body', async () => {
+    const agent = await createAgent(testUsername('eml-duedate-owner'));
+
+    const eml = [
+      'From: airline@example.com',
+      'To: me@example.com',
+      'Subject: Your trip is booked',
+      'Date: Mon, 1 Jan 2024 10:00:00 +0000',
+      'Content-Type: text/plain; charset=utf-8',
+      '',
+      'Thanks for booking with us.',
+      'Travel date: 2024-03-15.',
+      'Have a great trip!',
+    ].join('\r\n');
+    const base64Eml = Buffer.from(eml, 'utf8').toString('base64');
+
+    const response = await agent
+      .post('/api/tasks/import-email')
+      .send({ eml: base64Eml });
+
+    expect(response.statusCode).toBe(200);
+    // The travel date in the body becomes the due date (not the email's own
+    // Date header, which is when the message was sent).
+    expect(dbDateYmd(response.body.task.due_date)).toBe('2024-03-15');
+  });
+
   test('decodes a quoted-printable .eml subject and body', async () => {
     const agent = await createAgent(testUsername('eml-qp-owner'));
 

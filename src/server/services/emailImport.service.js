@@ -173,6 +173,136 @@ const extractBody = (body, headers) => {
   return decoded.trim();
 };
 
+// --- Due-date extraction --------------------------------------------------
+
+const MONTHS = {
+  january: '01', jan: '01',
+  february: '02', feb: '02',
+  march: '03', mar: '03',
+  april: '04', apr: '04',
+  may: '05',
+  june: '06', jun: '06',
+  july: '07', jul: '07',
+  august: '08', aug: '08',
+  september: '09', sep: '09', sept: '09',
+  october: '10', oct: '10',
+  november: '11', nov: '11',
+  december: '12', dec: '12',
+};
+
+// Words that hint a nearby date is the relevant travel/deadline date. The
+// extractor prefers dates closest to one of these. Kept travel/deadline
+// specific (with word boundaries) so generic prose like "dated" doesn't match.
+const DATE_KEYWORD_RE = /\b(travel(?:l?ing)?|depart(?:ure|ing)?|flight|trip|check[\s-]?in|check[\s-]?out|arriv(?:al|ing)|itinerary|boarding|booking|reservation|due|deadline)\b/gi;
+
+// Build a validated YYYY-MM-DD string, rejecting impossible dates (e.g. Feb 30)
+// by round-tripping through Date.
+const buildYmd = (year, month, day) => {
+  const y = String(year).padStart(4, '0');
+  const mo = String(Number(month)).padStart(2, '0');
+  const d = String(Number(day)).padStart(2, '0');
+  if (Number(mo) < 1 || Number(mo) > 12) return null;
+  if (Number(d) < 1 || Number(d) > 31) return null;
+  const parsed = new Date(`${y}-${mo}-${d}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime())) return null;
+  if (parsed.getUTCMonth() + 1 !== Number(mo) || parsed.getUTCDate() !== Number(d)) {
+    return null;
+  }
+  return `${y}-${mo}-${d}`;
+};
+
+// Collect every date-looking token in the text along with its position, so the
+// caller can rank them by proximity to a keyword.
+const collectDateCandidates = (text) => {
+  const candidates = [];
+  const push = (date, index) => {
+    if (date) candidates.push({ date, index });
+  };
+  let match;
+
+  // ISO: 2024-03-15
+  const isoRe = /\b(\d{4})-(\d{1,2})-(\d{1,2})\b/g;
+  while ((match = isoRe.exec(text)) !== null) {
+    push(buildYmd(match[1], match[2], match[3]), match.index);
+  }
+
+  // Numeric slash/dot: MM/DD/YYYY or MM/DD/YY (US-style, matching the
+  // statement importer's convention).
+  const slashRe = /\b(\d{1,2})[/.](\d{1,2})[/.](\d{2,4})\b/g;
+  while ((match = slashRe.exec(text)) !== null) {
+    let year = match[3];
+    if (year.length === 2) year = `20${year}`;
+    push(buildYmd(year, match[1], match[2]), match.index);
+  }
+
+  // Month DD, YYYY  (e.g. "March 15, 2024" or "Mar 15 2024")
+  const monthDayYearRe = /\b([A-Za-z]{3,9})\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})\b/g;
+  while ((match = monthDayYearRe.exec(text)) !== null) {
+    const month = MONTHS[match[1].toLowerCase()];
+    push(month ? buildYmd(match[3], month, match[2]) : null, match.index);
+  }
+
+  // DD Month YYYY  (e.g. "15 March 2024" or "15th Mar, 2024")
+  const dayMonthYearRe = /\b(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,9}),?\s+(\d{4})\b/g;
+  while ((match = dayMonthYearRe.exec(text)) !== null) {
+    const month = MONTHS[match[2].toLowerCase()];
+    push(month ? buildYmd(match[3], month, match[1]) : null, match.index);
+  }
+
+  return candidates;
+};
+
+// Pick the most likely due date from free text. Dates near a travel/deadline
+// keyword win; otherwise the first date found is used. Returns YYYY-MM-DD or
+// null when no date is present.
+const extractDueDate = (text) => {
+  const source = String(text || '');
+  const candidates = collectDateCandidates(source);
+  if (!candidates.length) return null;
+
+  const keywordPositions = [];
+  let keywordMatch;
+  DATE_KEYWORD_RE.lastIndex = 0;
+  while ((keywordMatch = DATE_KEYWORD_RE.exec(source)) !== null) {
+    keywordPositions.push(keywordMatch.index);
+  }
+
+  if (!keywordPositions.length) {
+    return candidates[0].date;
+  }
+
+  // Prefer a date that appears just after a keyword (the common
+  // "Travel date: <date>" shape), choosing the smallest forward gap.
+  let bestForward = null;
+  let bestForwardDistance = Infinity;
+  for (const candidate of candidates) {
+    for (const position of keywordPositions) {
+      if (position <= candidate.index) {
+        const distance = candidate.index - position;
+        if (distance < bestForwardDistance) {
+          bestForwardDistance = distance;
+          bestForward = candidate;
+        }
+      }
+    }
+  }
+  if (bestForward) return bestForward.date;
+
+  // Otherwise fall back to absolute proximity to any keyword.
+  let best = candidates[0];
+  let bestDistance = Infinity;
+  for (const candidate of candidates) {
+    for (const position of keywordPositions) {
+      const distance = Math.abs(candidate.index - position);
+      if (distance < bestDistance) {
+        bestDistance = distance;
+        best = candidate;
+      }
+    }
+  }
+  return best.date;
+};
+
 // --- Task draft assembly --------------------------------------------------
 
 const escapeHtml = (value = '') => String(value)
@@ -216,7 +346,12 @@ const buildTaskDraft = ({ subject, from, date, body }) => {
 
   const description = `${meta}${separator}${bodyHtml}`.trim();
 
-  return { title, description };
+  // Pull a travel/deadline date out of the subject + body, if present, and use
+  // it as the task due date. The email's own Date header is intentionally not
+  // used here since that's when the message was sent, not the travel date.
+  const dueDate = extractDueDate(`${cleanSubject}\n${body}`);
+
+  return { title, description, due_date: dueDate || null };
 };
 
 // --- Public API -----------------------------------------------------------
@@ -276,6 +411,7 @@ module.exports = {
   decodeQuotedPrintable,
   decodeBase64,
   extractBody,
+  extractDueDate,
   parseHeaders,
   splitHeadersAndBody,
 };
