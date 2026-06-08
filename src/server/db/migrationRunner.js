@@ -32,7 +32,11 @@ const runMigrations = async (pool) => {
       );
       await client.query('COMMIT');
     } catch (error) {
-      await client.query('ROLLBACK');
+      try {
+        await client.query('ROLLBACK');
+      } catch (rollbackError) {
+        error.rollbackError = rollbackError;
+      }
       throw error;
     } finally {
       client.release();

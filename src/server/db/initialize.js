@@ -4,7 +4,60 @@ const { getAsync, pool, runAsync } = require('./client');
 const { runMigrations } = require('./migrationRunner');
 const logger = require('../logger');
 
-const initializeDatabase = async () => {
+const parsePositiveInt = (value, fallback) => {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const isTransientDatabaseError = (error) => {
+  const message = `${error?.message || ''} ${error?.cause?.message || ''} ${error?.rollbackError?.message || ''}`;
+  return [
+    'Connection terminated',
+    'Connection terminated unexpectedly',
+    'connection timeout',
+    'timeout',
+    'ECONNRESET',
+    'ECONNREFUSED',
+    'ETIMEDOUT',
+    'ENOTFOUND',
+    'server closed the connection',
+    'remaining connection slots',
+    'too many clients',
+  ].some((fragment) => message.toLowerCase().includes(fragment.toLowerCase()))
+    || ['08000', '08001', '08003', '08006', '53300', '57P01', '57P02', '57P03'].includes(error?.code);
+};
+
+const withDatabaseInitRetry = async (operation) => {
+  const maxAttempts = parsePositiveInt(
+    process.env.DB_INIT_MAX_ATTEMPTS,
+    process.env.NODE_ENV === 'production' ? 4 : 1
+  );
+  const baseDelayMs = parsePositiveInt(process.env.DB_INIT_RETRY_DELAY_MS, 750);
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      const canRetry = attempt < maxAttempts && isTransientDatabaseError(error);
+      if (!canRetry) {
+        throw error;
+      }
+
+      const retryDelayMs = baseDelayMs * attempt;
+      logger.warn(
+        { err: error, attempt, maxAttempts, retryDelayMs },
+        'Database initialization failed transiently; retrying'
+      );
+      await delay(retryDelayMs);
+    }
+  }
+
+  return undefined;
+};
+
+const runDatabaseInitialization = async () => {
   // Run all SQL migrations from dedicated migration files
   await runMigrations(pool);
 
@@ -55,6 +108,9 @@ const initializeDatabase = async () => {
   }
 };
 
+const initializeDatabase = () => withDatabaseInitRetry(runDatabaseInitialization);
+
 module.exports = {
+  isTransientDatabaseError,
   initializeDatabase,
 };
