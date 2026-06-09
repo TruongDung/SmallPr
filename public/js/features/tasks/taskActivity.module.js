@@ -22,6 +22,7 @@
     renderStoredRichText,
     openRichTextLinksWithModifier,
     escapeHtml,
+    renderRelatedTasks,
   }) => {
     let activeFilter = 'all';
 
@@ -166,6 +167,7 @@
           comments: t('activityComments'),
           history: t('activityHistoryTab'),
           worklog: t('activityWorkLogTab'),
+          related: t('relatedTasks'),
         };
         button.textContent = labels[filter] || button.textContent;
       });
@@ -173,16 +175,32 @@
 
     const render = () => {
       if (!elements.list) return;
-      const items = getItems(getTask())
-        .filter((item) => activeFilter === 'all' || item.type === activeFilter);
 
-      elements.list.innerHTML = '';
+      // Toggle visibility between activity list and related tasks panel
+      const isRelatedTab = activeFilter === 'related';
+      elements.list.classList.toggle('hidden', isRelatedTab);
+      if (elements.relatedPanel) {
+        elements.relatedPanel.classList.toggle('hidden', !isRelatedTab);
+      }
 
       elements.tabs.forEach((tab) => {
         const isActive = tab.dataset.activityFilter === activeFilter;
         tab.classList.toggle('active', isActive);
         tab.setAttribute('aria-selected', String(isActive));
       });
+
+      // If showing related tab, render related tasks and return
+      if (isRelatedTab) {
+        if (typeof renderRelatedTasks === 'function') {
+          renderRelatedTasks();
+        }
+        return;
+      }
+
+      const items = getItems(getTask())
+        .filter((item) => activeFilter === 'all' || item.type === activeFilter);
+
+      elements.list.innerHTML = '';
 
       if (!items.length) {
         const empty = document.createElement('p');

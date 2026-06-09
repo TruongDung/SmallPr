@@ -4000,6 +4000,22 @@ body.theme-dark .user-status-badge.disabled {
   gap: 28px;
 }
 
+.task-activity-list.hidden {
+  display: none;
+}
+
+.task-activity-related {
+  padding: 8px 0;
+}
+
+.task-activity-related .related-tasks-list {
+  gap: 8px;
+}
+
+.task-activity-related .field-hint {
+  margin-top: 12px;
+}
+
 .task-activity-item {
   position: relative;
   display: grid;

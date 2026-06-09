@@ -174,12 +174,8 @@ const previewTaskTitle = document.getElementById('preview-task-title');
 const previewTaskMeta = document.getElementById('preview-task-meta');
 const previewTaskDescription = document.getElementById('preview-task-description');
 const previewRelatedTasksList = document.getElementById('preview-related-tasks-list');
-const previewRelatedTasksCount = document.getElementById('preview-related-tasks-count');
-const previewRelatedTasksSearch = document.getElementById('preview-related-tasks-search');
-const previewRelatedTasksResults = document.getElementById('preview-related-tasks-results');
 const previewRelatedTasksHint = document.getElementById('preview-related-tasks-hint');
-const previewRelatedTasksToggle = document.getElementById('preview-related-tasks-toggle');
-const previewRelatedTasksContent = document.getElementById('preview-related-tasks-content');
+const taskActivityRelated = document.getElementById('task-activity-related');
 const previewTaskCommentDisplay = document.getElementById('preview-task-comment-display');
 const previewTaskCommentInput = document.getElementById('preview-task-comment-input');
 const taskActivityTitle = document.getElementById('task-activity-title');
@@ -449,14 +445,7 @@ const applyTranslations = () => {
   setText('#edit-related-tasks-label', t('relatedTasks'));
   if (editRelatedTasksSearch) editRelatedTasksSearch.placeholder = t('relatedTasksSearchPlaceholder');
   if (editRelatedTasksHint) editRelatedTasksHint.textContent = t('relatedTasksHint');
-  const previewRelatedTasksLabel = document.querySelector('#preview-related-tasks-label[data-related-tasks-title-label]');
-  if (previewRelatedTasksLabel) previewRelatedTasksLabel.textContent = t('relatedTasks');
-  if (previewRelatedTasksSearch) previewRelatedTasksSearch.placeholder = t('relatedTasksSearchPlaceholder');
   if (previewRelatedTasksHint) previewRelatedTasksHint.textContent = t('relatedTasksViewOnlyHint');
-  if (previewRelatedTasksToggle) {
-    previewRelatedTasksToggle.title = t('relatedTasks');
-    previewRelatedTasksToggle.setAttribute('aria-label', t('relatedTasks'));
-  }
   taskActivityModule.applyTranslations();
   setText('label[for="preview-task-comment-input"]', t('comment'));
   previewTaskCommentInput.setAttribute('data-placeholder', t('commentPlaceholder'));
@@ -676,18 +665,6 @@ const clearPreviewTaskMeta = () => {
   previewTaskMeta.classList.add('hidden');
 };
 
-const setPreviewRelatedTasksExpanded = (expanded) => {
-  if (!previewRelatedTasksToggle || !previewRelatedTasksContent) return;
-  previewRelatedTasksContent.classList.toggle('hidden', !expanded);
-  previewRelatedTasksToggle.setAttribute('aria-expanded', String(expanded));
-  previewRelatedTasksToggle.classList.toggle('collapsed', !expanded);
-};
-
-const togglePreviewRelatedTasks = () => {
-  const expanded = previewRelatedTasksToggle?.getAttribute('aria-expanded') !== 'false';
-  setPreviewRelatedTasksExpanded(!expanded);
-};
-
 const relatedTasksModule = window.RelatedTasksModule.create({
   elements: {
     addList: addRelatedTasksList,
@@ -699,9 +676,6 @@ const relatedTasksModule = window.RelatedTasksModule.create({
     editSearch: editRelatedTasksSearch,
     editResults: editRelatedTasksResults,
     previewList: previewRelatedTasksList,
-    previewCount: previewRelatedTasksCount,
-    previewSearch: previewRelatedTasksSearch,
-    previewResults: previewRelatedTasksResults,
   },
   getTasks: () => tasks,
   getAddTask: () => pendingAddTask,
@@ -805,6 +779,7 @@ const taskActivityModule = window.TaskActivityModule.create({
     content: taskActivityContent,
     tabs: taskActivityTabs,
     list: taskActivityList,
+    relatedPanel: taskActivityRelated,
   },
   getCurrentUser: () => currentUser,
   getTask: () => pendingPreviewTask,
@@ -816,6 +791,7 @@ const taskActivityModule = window.TaskActivityModule.create({
   renderStoredRichText,
   openRichTextLinksWithModifier,
   escapeHtml,
+  renderRelatedTasks: () => renderRelatedTaskPicker('preview'),
 });
 
 const readAttachmentFile = (file, onProgress = () => {}) => new Promise((resolve, reject) => {
@@ -3274,7 +3250,7 @@ const showEditTaskModal = (task) => {
   editTaskCommentSavedValue = task.comment || '';
   setRichEditorValue(editTaskDescriptionInput, task.description || '');
   setRichEditorValue(editTaskCommentInput, task.comment || '');
-  editTaskDueDateInput.value = String(task.due_date || '').slice(0, 10);
+  editTaskDueDateInput.value = formatDateTimeLocalValue(task.due_date);
   if (editTaskReminderInput) editTaskReminderInput.value = formatDateTimeLocalValue(task.reminder_at);
   editTaskRecurringCheckbox.checked = Boolean(task.is_recurring);
   editTaskRecurrencePattern.value = task.recurrence_pattern || 'daily';
@@ -3390,7 +3366,6 @@ const showPreviewTaskModal = async (task) => {
   previewTaskCommentDisplay.classList.remove('hidden');
   previewTaskCommentInput.closest('.rich-editor')?.classList.add('hidden');
   openRichTextLinksWithModifier(previewTaskCommentDisplay);
-  setPreviewRelatedTasksExpanded(true);
   taskActivityModule.setExpanded(true);
   taskActivityModule.render();
   previewTaskModal.classList.remove('hidden');
@@ -3421,7 +3396,6 @@ const hidePreviewTaskModal = () => {
   previewTaskCommentInput.closest('.rich-editor')?.classList.remove('hidden');
   previewTaskCommentInput.innerHTML = '';
   previewTaskCommentInput.contentEditable = 'true';
-  setPreviewRelatedTasksExpanded(true);
   taskActivityModule.reset();
 };
 
@@ -3494,7 +3468,6 @@ saveEditTaskComment?.addEventListener('click', () => {
   void saveEditRichTextField('comment');
 });
 cancelEditTaskComment?.addEventListener('click', () => cancelEditRichTextField('comment'));
-previewRelatedTasksToggle?.addEventListener('click', togglePreviewRelatedTasks);
 
 document.querySelectorAll('[data-related-trigger]').forEach((button) => {
   button.addEventListener('click', () => {
