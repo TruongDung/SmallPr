@@ -2578,15 +2578,47 @@ body.theme-dark .status-in_progress {
 
 .admin-header-actions > button {
   flex-shrink: 0;
-  padding: 12px 24px;
-  font-weight: 500;
-  box-shadow: 0 2px 8px rgba(47, 112, 255, 0.2);
-  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 22px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--primary) 92%, white) 0%,
+    var(--primary) 100%);
+  box-shadow: 0 2px 8px rgba(47, 112, 255, 0.25);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
 }
 
 .admin-header-actions > button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(47, 112, 255, 0.3);
+  box-shadow: 0 6px 16px rgba(47, 112, 255, 0.32);
+  filter: brightness(1.03);
+}
+
+.admin-header-actions > button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(47, 112, 255, 0.28);
+}
+
+.admin-header-actions > button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+.admin-add-user-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .admin-user-form {
@@ -3707,7 +3739,7 @@ body.theme-dark .user-status-badge.disabled {
 }
 
 .modal.edit-task-modal {
-  width: min(100%, 520px);
+  width: min(100%, 640px);
   max-height: calc(100dvh - 40px);
   overflow-y: auto;
   overscroll-behavior: contain;

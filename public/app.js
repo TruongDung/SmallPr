@@ -474,7 +474,7 @@ const applyTranslations = () => {
   setText('label[for="edit-task-attachment-input"]', t('uploadFile'));
   renderEditAttachmentState();
   setText('#admin-section h2', t('manageUsers'));
-  setText('#open-add-user-modal', t('addUser'));
+  setText('#open-add-user-modal .admin-add-user-label', t('addUser'));
   if (impersonateUserSelect) {
     impersonateUserSelect.setAttribute('aria-label', t('impersonateUser'));
     const placeholder = impersonateUserSelect.querySelector('option[value=""]');
@@ -689,9 +689,23 @@ const relatedTasksModule = window.RelatedTasksModule.create({
   updateTask: (...args) => updateTask(...args),
   showStatusToast: (...args) => showStatusToast(...args),
   onEditRelatedTasksChange: () => scheduleEditTaskAutosave({ immediate: true }),
-  onOpenRelatedTask: (id) => {
+  onOpenRelatedTask: (id, pickerName = 'preview') => {
     const numericId = Number(id);
     const fromList = tasks.find((task) => Number(task.id) === numericId);
+
+    if (pickerName === 'edit') {
+      const snapshot = Array.isArray(pendingEditTask?.related_tasks)
+        ? pendingEditTask.related_tasks.find((related) => Number(related.id) === numericId)
+        : null;
+      const target = fromList || snapshot;
+      if (!target) return;
+      // Close the current task being edited and jump straight into editing the
+      // related task.
+      hideEditTaskModal();
+      showEditTaskModal(target);
+      return;
+    }
+
     const snapshot = Array.isArray(pendingPreviewTask?.related_tasks)
       ? pendingPreviewTask.related_tasks.find((related) => Number(related.id) === numericId)
       : null;
@@ -2463,12 +2477,13 @@ const createTaskCard = (task) => {
     deleteButton.classList.add('danger');
     deleteButton.addEventListener('click', () => showDeleteConfirm(task.id));
 
-    if (!isArchived) {
+    if (!isArchived && currentStatus === 'done') {
+      // Only show the toggle on completed cards so it can be reopened.
+      // Todo / In Progress cards no longer show a "Mark done" button.
       actions.append(toggleButton);
     }
-    if ((task.description && getRichTextPlainText(task.description).length > 180) || task.comment) {
-      actions.append(previewButton);
-    }
+    // Always show the View button on every task card.
+    actions.append(previewButton);
     if (task.is_recurring && task.recurring_rule_id) {
       actions.append(recurrenceButton);
     }

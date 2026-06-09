@@ -109,7 +109,10 @@
       const statusHistoryItems = getStatusHistoryItems(task, actor);
       if (statusHistoryItems.length) {
         items.push(...statusHistoryItems);
-      } else if (updatedAt && updatedAt !== createdAt) {
+      } else if (updatedAt && updatedAt !== createdAt && taskStatus(task) !== 'todo') {
+        // Only synthesize a status-change entry when the current status differs
+        // from the default ("todo"). Otherwise a non-status edit (e.g. editing
+        // the description) would render a misleading "TODO -> TODO" change.
         items.push({
           type: 'history',
           actor,

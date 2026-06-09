@@ -59,7 +59,6 @@
         search: elements.previewSearch,
         results: elements.previewResults,
         getTask: getPreviewTask,
-        readOnly: true,
       },
     };
 
@@ -91,7 +90,9 @@
         meta.className = 'related-tasks-chip-meta';
 
         const isPreview = pickerName === 'preview';
-        const canOpen = isPreview && typeof onOpenRelatedTask === 'function' && Number.isInteger(Number(id));
+        const canOpen = (isPreview || pickerName === 'edit')
+          && typeof onOpenRelatedTask === 'function'
+          && Number.isInteger(Number(id));
         const name = document.createElement(canOpen ? 'button' : 'span');
         name.className = 'related-tasks-chip-name';
         if (canOpen) {
@@ -291,7 +292,7 @@
       if (openButton && typeof onOpenRelatedTask === 'function') {
         const id = Number(openButton.dataset.relatedId);
         if (Number.isInteger(id)) {
-          onOpenRelatedTask(id);
+          onOpenRelatedTask(id, openButton.dataset.relatedPicker || 'preview');
         }
       }
     };
