@@ -4598,6 +4598,31 @@ body.theme-dark .preview-meta-chip.priority-chip.priority-medium {
   line-height: 1.25;
 }
 
+button.related-tasks-chip-name-link {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  cursor: pointer;
+  color: var(--primary-strong);
+  text-decoration: none;
+  border-radius: 4px;
+  transition: color 0.12s ease, text-decoration-color 0.12s ease;
+}
+
+button.related-tasks-chip-name-link:hover,
+button.related-tasks-chip-name-link:focus-visible {
+  color: var(--primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  outline: none;
+}
+
+button.related-tasks-chip-name-link:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
 .related-tasks-chip .status-badge,
 .related-tasks-result-option .status-badge {
   flex: 0 0 auto;

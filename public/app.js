@@ -715,6 +715,17 @@ const relatedTasksModule = window.RelatedTasksModule.create({
   updateTask: (...args) => updateTask(...args),
   showStatusToast: (...args) => showStatusToast(...args),
   onEditRelatedTasksChange: () => scheduleEditTaskAutosave({ immediate: true }),
+  onOpenRelatedTask: (id) => {
+    const numericId = Number(id);
+    const fromList = tasks.find((task) => Number(task.id) === numericId);
+    const snapshot = Array.isArray(pendingPreviewTask?.related_tasks)
+      ? pendingPreviewTask.related_tasks.find((related) => Number(related.id) === numericId)
+      : null;
+    const target = fromList || snapshot;
+    if (!target) return;
+    hidePreviewTaskModal();
+    showPreviewTaskModal(target);
+  },
 });
 const {
   getRelatedTaskIds,

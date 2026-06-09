@@ -26,6 +26,7 @@
     updateTask,
     showStatusToast,
     onEditRelatedTasksChange,
+    onOpenRelatedTask,
   }) => {
     const resolveRelatedTask = (id, task) => {
       const numericId = Number(id);
@@ -89,8 +90,22 @@
         const meta = document.createElement('div');
         meta.className = 'related-tasks-chip-meta';
 
-        const name = document.createElement('span');
+        const isPreview = pickerName === 'preview';
+        const canOpen = isPreview && typeof onOpenRelatedTask === 'function' && Number.isInteger(Number(id));
+        const name = document.createElement(canOpen ? 'button' : 'span');
         name.className = 'related-tasks-chip-name';
+        if (canOpen) {
+          name.type = 'button';
+          name.classList.add('related-tasks-chip-name-link');
+          name.dataset.relatedId = String(id);
+          name.dataset.relatedPicker = pickerName;
+          const openLabel = t('relatedTaskOpen');
+          // Fall back to the task title when the translation key is missing so
+          // the tooltip stays readable rather than showing "relatedTaskOpen".
+          name.title = openLabel === 'relatedTaskOpen' ? (related.title || '') : openLabel;
+          name.setAttribute('aria-label',
+            openLabel === 'relatedTaskOpen' ? `Open ${related.title || ''}` : openLabel);
+        }
         name.textContent = related.title || t('previewTaskTitle');
 
         const status = document.createElement('span');
@@ -245,8 +260,18 @@
 
     const handleListClick = (event) => {
       const removeButton = event.target.closest('.related-tasks-chip-remove');
-      if (!removeButton) return;
-      remove(removeButton.dataset.relatedPicker || 'preview', removeButton.dataset.relatedId);
+      if (removeButton) {
+        remove(removeButton.dataset.relatedPicker || 'preview', removeButton.dataset.relatedId);
+        return;
+      }
+
+      const openButton = event.target.closest('.related-tasks-chip-name-link');
+      if (openButton && typeof onOpenRelatedTask === 'function') {
+        const id = Number(openButton.dataset.relatedId);
+        if (Number.isInteger(id)) {
+          onOpenRelatedTask(id);
+        }
+      }
     };
 
     const bind = () => {
