@@ -3389,7 +3389,6 @@ const hidePreviewTaskModal = () => {
   clearPreviewTaskMeta();
   previewTaskDescription.textContent = '';
   if (previewRelatedTasksList) previewRelatedTasksList.innerHTML = '';
-  if (previewRelatedTasksSearch) previewRelatedTasksSearch.value = '';
   hideRelatedTaskResults('preview');
   previewTaskCommentDisplay.textContent = '';
   previewTaskCommentDisplay.classList.add('hidden');
@@ -3424,7 +3423,7 @@ const hideAttachmentPreview = () => {
   openAttachmentPreview.href = '#';
 };
 
-editPreviewTask.addEventListener('click', () => {
+editPreviewTask?.addEventListener('click', () => {
   if (!pendingPreviewTask) return;
   const task = pendingPreviewTask;
   hidePreviewTaskModal();

@@ -166,7 +166,6 @@
           all: t('activityAll'),
           comments: t('activityComments'),
           history: t('activityHistoryTab'),
-          worklog: t('activityWorkLogTab'),
           related: t('relatedTasks'),
         };
         button.textContent = labels[filter] || button.textContent;

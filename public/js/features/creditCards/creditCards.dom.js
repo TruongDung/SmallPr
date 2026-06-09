@@ -20,6 +20,7 @@
       info: document.getElementById('credit-card-info-panel'),
       links: document.getElementById('credit-card-links-panel'),
       transactions: document.getElementById('transactions-panel'),
+      calendar: document.getElementById('financial-calendar-panel'),
     },
     exportCreditCardsCsvButton: document.getElementById('export-credit-cards-csv'),
     exportCreditCardsPdfButton: document.getElementById('export-credit-cards-pdf'),

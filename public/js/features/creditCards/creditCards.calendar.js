@@ -1,0 +1,223 @@
+(function () {
+  // Financial calendar: shows recurring monthly credit-card due dates (closing
+  // dates) and expense/bill due dates on a month grid plus an upcoming list.
+  const createFinancialCalendar = ({ formatters, t, getLanguage }) => {
+    const grid = document.getElementById('financial-calendar-grid');
+    const label = document.getElementById('financial-calendar-label');
+    const upcomingList = document.getElementById('financial-calendar-upcoming-list');
+    const prevButton = document.getElementById('financial-calendar-prev');
+    const nextButton = document.getElementById('financial-calendar-next');
+    const todayButton = document.getElementById('financial-calendar-today');
+
+    let cards = [];
+    let bills = [];
+    let cursor = startOfMonth(new Date());
+
+    function startOfDay(date) {
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    }
+
+    function startOfMonth(date) {
+      return new Date(date.getFullYear(), date.getMonth(), 1);
+    }
+
+    function addDays(date, days) {
+      const next = new Date(date);
+      next.setDate(next.getDate() + days);
+      return next;
+    }
+
+    function startOfWeek(date) {
+      return addDays(startOfDay(date), -startOfDay(date).getDay());
+    }
+
+    function getLocale() {
+      return getLanguage && getLanguage() === 'vi' ? 'vi-VN' : 'en-US';
+    }
+
+    function formatMonth(date) {
+      return new Intl.DateTimeFormat(getLocale(), { month: 'long', year: 'numeric' }).format(date);
+    }
+
+    // Credit-card closing dates recur every month, so we key entries by the
+    // day of the month (1-31) rather than a single absolute date.
+    function dayFromDateString(value) {
+      if (!value) return null;
+      const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) return Number(match[3]);
+      return null;
+    }
+
+    // Bill due dates are free text; try to extract a day-of-month from common
+    // shapes like "15", "15th", "2026-06-15", or "06/15".
+    function dayFromText(value) {
+      if (!value) return null;
+      const text = String(value).trim();
+      const iso = text.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (iso) return Number(iso[3]);
+      const slash = text.match(/^(\d{1,2})\/(\d{1,2})/);
+      if (slash) return Number(slash[2]);
+      const ordinal = text.match(/\b(\d{1,2})(st|nd|rd|th)?\b/);
+      if (ordinal) {
+        const day = Number(ordinal[1]);
+        if (day >= 1 && day <= 31) return day;
+      }
+      return null;
+    }
+
+    function getCardEntriesForDay(day) {
+      return cards
+        .map((card) => ({ card, day: dayFromDateString(card.closing_date) }))
+        .filter((entry) => entry.day === day);
+    }
+
+    function getBillEntriesForDay(day) {
+      return bills
+        .map((bill) => ({ bill, day: dayFromText(bill.due_date) }))
+        .filter((entry) => entry.day === day);
+    }
+
+    function buildMarker(kind, text) {
+      const marker = document.createElement('span');
+      marker.className = `financial-calendar-marker financial-calendar-marker-${kind}`;
+      marker.textContent = text;
+      marker.title = text;
+      return marker;
+    }
+
+    function renderDayCell(date) {
+      const cell = document.createElement('section');
+      cell.className = 'financial-calendar-day';
+      const today = startOfDay(new Date());
+      if (date.getMonth() !== cursor.getMonth()) cell.classList.add('is-outside-month');
+      if (startOfDay(date).getTime() === today.getTime()) cell.classList.add('is-today');
+
+      const header = document.createElement('div');
+      header.className = 'financial-calendar-day-header';
+      header.textContent = String(date.getDate());
+      cell.append(header);
+
+      // Only mark days that belong to the displayed month so recurring entries
+      // don't bleed into the leading/trailing days from adjacent months.
+      if (date.getMonth() === cursor.getMonth()) {
+        const markers = document.createElement('div');
+        markers.className = 'financial-calendar-markers';
+
+        getCardEntriesForDay(date.getDate()).forEach((entry) => {
+          markers.append(buildMarker('card', entry.card.name || t('notAvailable')));
+        });
+        getBillEntriesForDay(date.getDate()).forEach((entry) => {
+          markers.append(buildMarker('bill', entry.bill.item || t('notAvailable')));
+        });
+
+        if (markers.childElementCount) cell.append(markers);
+      }
+
+      return cell;
+    }
+
+    function renderGrid() {
+      if (!grid) return;
+      grid.innerHTML = '';
+
+      const weekdays = getLocale() === 'vi-VN'
+        ? ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
+        : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      weekdays.forEach((name) => {
+        const dayName = document.createElement('div');
+        dayName.className = 'financial-calendar-weekday';
+        dayName.textContent = name;
+        grid.append(dayName);
+      });
+
+      const first = startOfWeek(cursor);
+      Array.from({ length: 42 }, (_, index) => addDays(first, index))
+        .forEach((date) => grid.append(renderDayCell(date)));
+    }
+
+    function renderUpcoming() {
+      if (!upcomingList) return;
+      upcomingList.innerHTML = '';
+
+      const today = new Date();
+      const todayDay = today.getDate();
+      const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
+
+      const entries = [];
+      cards.forEach((card) => {
+        const day = dayFromDateString(card.closing_date);
+        if (day) entries.push({ kind: 'card', day, name: card.name || t('notAvailable') });
+      });
+      bills.forEach((bill) => {
+        const day = dayFromText(bill.due_date);
+        if (day) entries.push({ kind: 'bill', day, name: bill.item || t('notAvailable') });
+      });
+
+      // Sort by how soon the day comes up relative to today (wrapping around the
+      // month), so the nearest due dates appear first.
+      entries.sort((a, b) => {
+        const aDelta = (a.day - todayDay + daysInMonth) % daysInMonth;
+        const bDelta = (b.day - todayDay + daysInMonth) % daysInMonth;
+        return aDelta - bDelta;
+      });
+
+      if (!entries.length) {
+        const empty = document.createElement('p');
+        empty.className = 'financial-calendar-empty';
+        empty.textContent = t('financialCalendarEmpty');
+        upcomingList.append(empty);
+        return;
+      }
+
+      entries.forEach((entry) => {
+        const row = document.createElement('div');
+        row.className = `financial-calendar-upcoming-item financial-calendar-upcoming-${entry.kind}`;
+
+        const dot = document.createElement('span');
+        dot.className = `financial-calendar-dot financial-calendar-dot-${entry.kind}`;
+
+        const name = document.createElement('strong');
+        name.textContent = entry.name;
+
+        const due = document.createElement('span');
+        due.className = 'financial-calendar-upcoming-due';
+        due.textContent = t('financialCalendarDayLabel', { day: entry.day });
+
+        row.append(dot, name, due);
+        upcomingList.append(row);
+      });
+    }
+
+    function render() {
+      if (label) label.textContent = formatMonth(cursor);
+      renderGrid();
+      renderUpcoming();
+    }
+
+    function moveCursor(direction) {
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth() + direction, 1);
+      render();
+    }
+
+    function setData({ cards: nextCards, bills: nextBills }) {
+      if (Array.isArray(nextCards)) cards = nextCards;
+      if (Array.isArray(nextBills)) bills = nextBills;
+    }
+
+    function bind() {
+      prevButton?.addEventListener('click', () => moveCursor(-1));
+      nextButton?.addEventListener('click', () => moveCursor(1));
+      todayButton?.addEventListener('click', () => {
+        cursor = startOfMonth(new Date());
+        render();
+      });
+    }
+
+    return { bind, render, setData };
+  };
+
+  window.CreditCardFeature = {
+    ...(window.CreditCardFeature || {}),
+    createFinancialCalendar,
+  };
+}());

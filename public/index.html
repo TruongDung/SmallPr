@@ -464,6 +464,7 @@
           <button id="credit-card-info-tab" class="financial-tab" type="button" role="tab" aria-selected="false" aria-controls="credit-card-info-panel" data-financial-tab="info" data-i18n-key="creditCardInfoSubTab">Expense</button>
           <button id="credit-card-links-tab" class="financial-tab" type="button" role="tab" aria-selected="false" aria-controls="credit-card-links-panel" data-financial-tab="links" data-i18n-key="fastAccessLinks">Bill Payment Websites</button>
           <button id="transactions-tab" class="financial-tab" type="button" role="tab" aria-selected="false" aria-controls="transactions-panel" data-financial-tab="transactions" data-i18n-key="transactionsSubTab">Transactions</button>
+          <button id="financial-calendar-tab" class="financial-tab" type="button" role="tab" aria-selected="false" aria-controls="financial-calendar-panel" data-financial-tab="calendar" data-i18n-key="financialCalendarSubTab">Calendar</button>
         </div>
 
         <section id="credit-card-panel" class="financial-panel" role="tabpanel" aria-labelledby="credit-card-tab">
@@ -626,6 +627,26 @@
               </thead>
               <tbody id="transactions-list"></tbody>
             </table>
+          </div>
+        </section>
+
+        <section id="financial-calendar-panel" class="financial-panel hidden" role="tabpanel" aria-labelledby="financial-calendar-tab">
+          <div class="financial-calendar-toolbar">
+            <div class="transaction-month-nav">
+              <button id="financial-calendar-prev" type="button" class="secondary month-nav-button" aria-label="Previous month" title="Previous month">‹</button>
+              <span id="financial-calendar-label" class="financial-calendar-label"></span>
+              <button id="financial-calendar-next" type="button" class="secondary month-nav-button" aria-label="Next month" title="Next month">›</button>
+            </div>
+            <button id="financial-calendar-today" type="button" class="secondary" data-i18n-key="calendarToday">Today</button>
+          </div>
+          <div class="financial-calendar-legend">
+            <span class="financial-calendar-legend-item"><span class="financial-calendar-dot financial-calendar-dot-card"></span><span data-i18n-key="financialCalendarCardLegend">Credit card due date</span></span>
+            <span class="financial-calendar-legend-item"><span class="financial-calendar-dot financial-calendar-dot-bill"></span><span data-i18n-key="financialCalendarBillLegend">Expense due date</span></span>
+          </div>
+          <div id="financial-calendar-grid" class="financial-calendar-grid"></div>
+          <div class="financial-calendar-upcoming">
+            <h3 id="financial-calendar-upcoming-title" data-i18n-key="financialCalendarUpcoming">Upcoming due dates</h3>
+            <div id="financial-calendar-upcoming-list" class="financial-calendar-upcoming-list"></div>
           </div>
         </section>
       </section>
@@ -1205,7 +1226,6 @@
             <button type="button" class="active" data-activity-filter="all" role="tab" aria-selected="true">All</button>
             <button type="button" data-activity-filter="comments" role="tab" aria-selected="false">Comments</button>
             <button type="button" data-activity-filter="history" role="tab" aria-selected="false">History</button>
-            <button type="button" data-activity-filter="worklog" role="tab" aria-selected="false">Work log</button>
             <button type="button" data-activity-filter="related" role="tab" aria-selected="false">Related</button>
           </div>
           <div id="task-activity-list" class="task-activity-list"></div>
@@ -1287,6 +1307,7 @@
   <script src="js/features/creditCards/creditCards.users.js?v=cache-clear-20260601-7"></script>
   <script src="js/features/creditCards/creditCards.table.js?v=cache-clear-20260601-7"></script>
   <script src="js/features/creditCards/creditCards.bills.js?v=cache-clear-20260601-7"></script>
+  <script src="js/features/creditCards/creditCards.calendar.js?v=cache-clear-20260609-financial-calendar-1"></script>
   <script src="js/features/creditCards/creditCards.translations.js?v=cache-clear-20260601-7"></script>
   <script src="js/features/creditCards/creditCards.module.js?v=cache-clear-20260601-7"></script>
   <script src="js/features/notes/notes.module.js?v=cache-clear-20260608-preview-default-1"></script>

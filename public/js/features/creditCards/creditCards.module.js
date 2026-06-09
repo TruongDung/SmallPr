@@ -177,6 +177,12 @@
       showStatusToast,
     });
 
+    const financialCalendar = feature.createFinancialCalendar({
+      formatters,
+      t,
+      getLanguage,
+    });
+
     const closeEditModal = () => {
       pendingEditCard = null;
       clearEditError();
@@ -343,6 +349,8 @@
       render(cards);
       renderFastAccessLinks();
       fastAccessBills.render();
+      financialCalendar.setData({ cards, bills: fastAccessBillsResult.bills || [] });
+      financialCalendar.render();
     };
 
     const openAddModal = () => {
@@ -447,6 +455,7 @@
       render();
       renderFastAccessLinks();
       fastAccessBills.render();
+      financialCalendar.render();
     };
 
     const getActiveFinancialTab = () => (
@@ -474,6 +483,8 @@
       render([]);
       renderFastAccessLinks();
       fastAccessBills.render();
+      financialCalendar.setData({ cards: [], bills: [] });
+      financialCalendar.render();
     };
 
     const bind = () => {
@@ -488,6 +499,11 @@
           // Render transactions module when transactions tab is clicked
           if (tabName === 'transactions' && window.transactionsModule) {
             window.transactionsModule.render();
+          }
+
+          // Render the financial calendar when its tab is clicked
+          if (tabName === 'calendar') {
+            financialCalendar.render();
           }
         });
       });
@@ -521,6 +537,7 @@
       elements.exportCreditCardsPdfButton?.addEventListener('click', exportCreditCardsPdf);
       elements.exportCreditCardsExcelButton?.addEventListener('click', exportCreditCardsExcel);
       fastAccessBills.bindExports();
+      financialCalendar.bind();
       document.addEventListener('keydown', (event) => {
         if (event.key !== 'Escape') return;
         if (!elements.addModal.classList.contains('hidden')) {
