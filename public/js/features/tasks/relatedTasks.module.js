@@ -106,11 +106,22 @@
           name.setAttribute('aria-label',
             openLabel === 'relatedTaskOpen' ? `Open ${related.title || ''}` : openLabel);
         }
-        name.textContent = related.title || t('previewTaskTitle');
+        // Truncate title to keep chip compact
+        const maxTitleLength = 25;
+        const fullTitle = related.title || t('previewTaskTitle');
+        name.textContent = fullTitle.length > maxTitleLength 
+          ? fullTitle.slice(0, maxTitleLength) + '…' 
+          : fullTitle;
+        if (fullTitle.length > maxTitleLength) {
+          name.title = fullTitle; // Show full title on hover
+        }
 
         const status = document.createElement('span');
-        status.className = `status-badge status-${related.status || 'todo'}`;
-        status.textContent = statusLabel(related.status);
+        status.className = `status-badge status-${related.status || 'todo'} status-badge-compact`;
+        // Use abbreviated status text for compact display
+        const statusAbbrev = { todo: '○', in_progress: '◐', done: '●' };
+        status.textContent = statusAbbrev[related.status] || statusAbbrev.todo;
+        status.title = statusLabel(related.status); // Full text on hover
 
         meta.append(name, status);
         chip.append(meta);
@@ -169,11 +180,22 @@
 
         const name = document.createElement('span');
         name.className = 'related-tasks-result-name';
-        name.textContent = candidate.title || t('previewTaskTitle');
+        // Truncate title to keep dropdown compact
+        const maxTitleLength = 30;
+        const fullTitle = candidate.title || t('previewTaskTitle');
+        name.textContent = fullTitle.length > maxTitleLength 
+          ? fullTitle.slice(0, maxTitleLength) + '…' 
+          : fullTitle;
+        if (fullTitle.length > maxTitleLength) {
+          option.title = fullTitle; // Show full title on hover
+        }
 
         const status = document.createElement('span');
-        status.className = `status-badge status-${candidate.status || 'todo'}`;
-        status.textContent = statusLabel(candidate.status);
+        status.className = `status-badge status-${candidate.status || 'todo'} status-badge-compact`;
+        // Use abbreviated status for compact display
+        const statusAbbrev = { todo: '○', in_progress: '◐', done: '●' };
+        status.textContent = statusAbbrev[candidate.status] || statusAbbrev.todo;
+        status.title = statusLabel(candidate.status); // Full text on hover
 
         option.append(name, status);
         option.addEventListener('mousedown', (event) => event.preventDefault());
