@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=cache-clear-20260608-rich-actions-visibility-1" />
+  <link rel="stylesheet" href="styles.css?v=cache-clear-20260608-task-detail-polish-1" />
 </head>
 <body>
   <div class="container">
@@ -148,12 +148,12 @@
                   <option value="">No linked task</option>
                 </select>
               </label>
-              <textarea id="note-body-input" class="notes-editor-body" placeholder="Start writing..." rows="14"></textarea>
-              <div id="note-preview" class="note-preview hidden"></div>
+              <textarea id="note-body-input" class="notes-editor-body hidden" placeholder="Start writing..." rows="14"></textarea>
+              <div id="note-preview" class="note-preview"></div>
               <div class="notes-editor-actions">
                 <button id="note-checkbox-button" type="button" class="secondary" title="Insert checkbox">☐ Check</button>
                 <button id="note-paste-button" type="button" class="secondary" title="Paste clipboard to the last line">Paste</button>
-                <button id="toggle-preview-button" type="button" class="secondary">Preview</button>
+                <button id="toggle-preview-button" type="button" class="secondary">Edit</button>
               </div>
               <p id="note-saved-indicator" class="notes-saved-indicator" aria-live="polite"></p>
             </div>
@@ -1172,7 +1172,10 @@
 
   <div id="preview-task-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="preview-task-title">
     <div class="modal preview-task-modal">
-      <h3 id="preview-task-title">Preview</h3>
+      <header class="preview-task-header">
+        <h3 id="preview-task-title">Preview</h3>
+        <div id="preview-task-meta" class="preview-task-meta hidden" aria-label="Task details"></div>
+      </header>
       <div id="preview-task-description" class="preview-task-description"></div>
       <div class="field preview-task-comment-field hidden">
         <label for="preview-task-comment-input">Add comment</label>
@@ -1301,7 +1304,7 @@
   <script src="js/features/creditCards/creditCards.bills.js?v=cache-clear-20260601-7"></script>
   <script src="js/features/creditCards/creditCards.translations.js?v=cache-clear-20260601-7"></script>
   <script src="js/features/creditCards/creditCards.module.js?v=cache-clear-20260601-7"></script>
-  <script src="js/features/notes/notes.module.js?v=cache-clear-20260605-1"></script>
+  <script src="js/features/notes/notes.module.js?v=cache-clear-20260608-preview-default-1"></script>
   <script src="js/features/dashboard/dashboard.module.js?v=cache-clear-20260601-7"></script>
   <script src="js/tasks.js?v=cache-clear-20260604-1"></script>
   <script src="js/features/tasks/calendar.module.js?v=cache-clear-20260605-1"></script>
@@ -1315,6 +1318,6 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="js/monitoring.js?v=cache-clear-20260603-1"></script>
   <script src="js/i18n.js?v=cache-clear-20260606-7"></script>
-  <script src="app.js?v=cache-clear-20260608-rich-actions-save-3"></script>
+  <script src="app.js?v=cache-clear-20260608-task-detail-polish-1"></script>
 </body>
 </html>

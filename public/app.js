@@ -171,6 +171,7 @@ const editAttachmentError = document.getElementById('edit-attachment-error');
 const editFormError = document.getElementById('edit-form-error');
 const previewTaskModal = document.getElementById('preview-task-modal');
 const previewTaskTitle = document.getElementById('preview-task-title');
+const previewTaskMeta = document.getElementById('preview-task-meta');
 const previewTaskDescription = document.getElementById('preview-task-description');
 const previewRelatedTasksList = document.getElementById('preview-related-tasks-list');
 const previewRelatedTasksCount = document.getElementById('preview-related-tasks-count');
@@ -610,6 +611,69 @@ const getPreviewTaskModalTitle = (task) => String(task?.title || '').trim() || t
 const updatePreviewTaskModalTitle = () => {
   if (!previewTaskTitle) return;
   previewTaskTitle.textContent = getPreviewTaskModalTitle(pendingPreviewTask);
+};
+
+const renderPreviewTaskMeta = (task) => {
+  if (!previewTaskMeta) return;
+
+  const chips = [];
+
+  const statusKey = taskStatus(task);
+  if (statusKey) {
+    chips.push({
+      cls: `preview-meta-chip status-chip status-${statusKey}`,
+      icon: '●',
+      text: statusLabel(statusKey),
+    });
+  }
+
+  const priority = task?.priority || 'medium';
+  chips.push({
+    cls: `preview-meta-chip priority-chip priority-${priority}`,
+    icon: '⬆',
+    text: priorityLabel(priority),
+  });
+
+  if (task?.tag) {
+    chips.push({
+      cls: 'preview-meta-chip tag-chip',
+      icon: '#',
+      text: task.tag,
+    });
+  }
+
+  if (task?.due_date) {
+    chips.push({
+      cls: `preview-meta-chip due-chip${isTaskOverdue(task) ? ' due-chip-overdue' : ''}`,
+      icon: '📅',
+      text: `${t('dueDate')}: ${formatLocalDateTime(task.due_date)}`,
+    });
+  }
+
+  if (task?.reminder_at) {
+    chips.push({
+      cls: 'preview-meta-chip reminder-chip',
+      icon: '⏰',
+      text: `${t('alert')}: ${formatLocalDateTime(task.reminder_at)}`,
+    });
+  }
+
+  previewTaskMeta.innerHTML = chips
+    .map((chip) => `
+      <span class="${escapeHtml(chip.cls)}">
+        <span class="preview-meta-chip-icon" aria-hidden="true">${escapeHtml(chip.icon)}</span>
+        <span class="preview-meta-chip-text">${escapeHtml(chip.text)}</span>
+      </span>
+    `)
+    .join('');
+
+  previewTaskMeta.classList.toggle('hidden', !chips.length);
+};
+
+const clearPreviewTaskMeta = () => {
+  if (!previewTaskMeta) return;
+  previewTaskMeta.innerHTML = '';
+  previewTaskMeta.classList.add('hidden');
 };
 
 const setPreviewRelatedTasksExpanded = (expanded) => {
@@ -3301,6 +3365,7 @@ previewTaskCommentDisplay.addEventListener('change', (event) => {
 const showPreviewTaskModal = async (task) => {
   pendingPreviewTask = task;
   updatePreviewTaskModalTitle();
+  renderPreviewTaskMeta(task);
   renderRelatedTaskPicker('preview');
   previewTaskDescription.innerHTML = task.description
     ? renderStoredRichText(task.description)
@@ -3335,6 +3400,7 @@ const hidePreviewTaskModal = () => {
   pendingPreviewTask = null;
   previewTaskModal.classList.add('hidden');
   updatePreviewTaskModalTitle();
+  clearPreviewTaskMeta();
   previewTaskDescription.textContent = '';
   if (previewRelatedTasksList) previewRelatedTasksList.innerHTML = '';
   if (previewRelatedTasksSearch) previewRelatedTasksSearch.value = '';

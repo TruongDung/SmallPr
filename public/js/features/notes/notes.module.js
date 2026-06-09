@@ -22,7 +22,7 @@
     let activeNoteId = null;
     let saveTimer = null;
     let pendingSave = false;
-    let showPreview = false;
+    let showPreview = true;
     let dataVersion = 0;
 
     // Pinned notes float to the top; within each group the most recently

@@ -3895,7 +3895,7 @@ body.theme-dark .user-status-badge.disabled {
 }
 
 .modal.preview-task-modal {
-  width: min(100%, 620px);
+  width: min(100%, 640px);
   max-height: calc(100dvh - 40px);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -4375,6 +4375,152 @@ body.theme-dark .user-status-badge.disabled {
 
 .preview-task-description :last-child {
   margin-bottom: 0;
+}
+
+/* ---- Polished task detail (preview) modal ---- */
+
+.preview-task-header {
+  margin: -4px 0 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.preview-task-header h3 {
+  margin: 0;
+  font-size: 1.32rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.preview-task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.preview-task-meta.hidden {
+  display: none;
+}
+
+.preview-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.2;
+  background: var(--surface-soft);
+  color: var(--muted);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.preview-meta-chip-icon {
+  font-size: 0.85em;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.preview-meta-chip.priority-chip.priority-low {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.preview-meta-chip.priority-chip.priority-medium {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+body.theme-dark .preview-meta-chip.priority-chip.priority-medium {
+  background: #3b2a14;
+  color: #fed7aa;
+}
+
+.preview-meta-chip.priority-chip.priority-high {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+.preview-meta-chip.status-chip.status-todo {
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+
+.preview-meta-chip.status-chip.status-in_progress {
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+  color: var(--primary-strong);
+}
+
+.preview-meta-chip.status-chip.status-done {
+  background: var(--success-bg);
+  color: var(--success-text);
+}
+
+.preview-meta-chip.tag-chip {
+  background: var(--surface-tint);
+  color: var(--primary-strong);
+}
+
+.preview-meta-chip.due-chip,
+.preview-meta-chip.reminder-chip {
+  background: var(--surface-soft);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.preview-meta-chip.due-chip-overdue {
+  background: var(--error-bg);
+  color: var(--error-text);
+  border-color: transparent;
+}
+
+/* Lift the description and comment-display into "cards" with subtle background */
+.preview-task-description {
+  background: var(--surface-soft);
+  border-color: transparent;
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.preview-task-comment-display {
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: var(--text);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.preview-task-comment-display:empty {
+  display: none;
+}
+
+.preview-task-comment-display p,
+.preview-task-comment-display ul,
+.preview-task-comment-display ol {
+  margin: 0 0 8px;
+}
+
+.preview-task-comment-display :last-child {
+  margin-bottom: 0;
+}
+
+/* Sticky action footer so quick actions stay accessible on long tasks */
+.preview-task-modal .modal-actions {
+  position: sticky;
+  bottom: -22px;
+  margin: 22px -22px -22px;
+  padding: 14px 22px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 12px 12px;
+  z-index: 1;
 }
 
 .related-tasks-field {
