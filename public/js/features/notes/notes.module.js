@@ -516,11 +516,11 @@
           try {
             text = await navigator.clipboard.readText();
           } catch (_error) {
-            // Reads can be blocked by browser permissions or a non-secure
-            // context; surface a short hint rather than throwing.
-            savedIndicator.textContent = t('notePasteFailed');
+            // Silently fail on iOS or when clipboard read is blocked.
+            // No need to show error message - just do nothing.
             return;
           }
+          
           if (!text) return;
 
           // Append on a fresh last line, adding a separating newline only when
