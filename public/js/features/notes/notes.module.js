@@ -171,6 +171,8 @@
       const note = notes.find((entry) => entry.id === id);
       if (!note) return;
       activeNoteId = id;
+      // Opening an existing note defaults to preview mode.
+      setPreviewMode(true);
       showEditor(note);
       renderList();
     };
@@ -286,6 +288,9 @@
         taskSelect.value = '';
       }
       savedIndicator.textContent = '';
+      // A brand-new note starts in edit mode (raw textarea visible) so the
+      // user can type the body right away instead of seeing an empty preview.
+      setPreviewMode(false);
       titleInput.focus();
 
       (async () => {
@@ -463,13 +468,7 @@
       // Toggle preview button
       if (togglePreviewButton) {
         togglePreviewButton.addEventListener('click', () => {
-          showPreview = !showPreview;
-          bodyInput.classList.toggle('hidden', showPreview);
-          previewDiv.classList.toggle('hidden', !showPreview);
-          togglePreviewButton.textContent = showPreview ? 'Edit' : 'Preview';
-          if (showPreview) {
-            updatePreview();
-          }
+          setPreviewMode(!showPreview);
         });
       }
 
@@ -584,6 +583,18 @@
       if (!previewDiv || !window.NotesCodeHighlighter) return;
       const highlighted = window.NotesCodeHighlighter.detectAndHighlightCodeBlocks(bodyInput.value);
       previewDiv.innerHTML = highlighted || '<p style="color: #999;">Nothing to preview</p>';
+    };
+
+    // Switch between preview (read-only rendered markdown) and edit (raw
+    // textarea) modes, keeping the toggle button label in sync.
+    const setPreviewMode = (enabled) => {
+      showPreview = enabled;
+      bodyInput.classList.toggle('hidden', enabled);
+      if (previewDiv) previewDiv.classList.toggle('hidden', !enabled);
+      if (togglePreviewButton) {
+        togglePreviewButton.textContent = enabled ? 'Edit' : 'Preview';
+      }
+      if (enabled) updatePreview();
     };
 
     // Insert a `- [ ] ` task-list marker on its own line at the caret. Starts a
