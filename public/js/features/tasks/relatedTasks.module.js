@@ -210,15 +210,25 @@
     const savePreviewIds = async (ids) => {
       const task = getPreviewTask();
       if (!task) return;
+      
+      // Optimistic update: update state and render immediately
+      setPreviewTask({
+        ...task,
+        related_task_ids: ids,
+        related_tasks: ids.map((id) => resolveRelatedTask(id, task)),
+      });
+      render('preview');
+      if (document.activeElement === elements.previewSearch) {
+        showResults('preview');
+      } else {
+        hideResults('preview');
+      }
+      
+      // Send to server in background
       const result = await updateTask(task.id, { related_task_ids: ids });
       if (result?.task) {
         setPreviewTask(result.task);
         render('preview');
-        if (document.activeElement === elements.previewSearch) {
-          showResults('preview');
-        } else {
-          hideResults('preview');
-        }
         showStatusToast(t('taskSaved'));
       }
     };
