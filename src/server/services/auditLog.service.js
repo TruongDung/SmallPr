@@ -36,6 +36,7 @@ const createAuditLogService = ({ allAsync, runAsync }) => {
     summary = '',
     before = null,
     after = null,
+    ipAddress = null,
   }) => {
     if (!AUDIT_ACTIONS.has(action) || !AUDIT_ENTITY_TYPES.has(entityType)) {
       throw new Error('Invalid audit log event');
@@ -47,8 +48,8 @@ const createAuditLogService = ({ allAsync, runAsync }) => {
     await runAsync(
       `INSERT INTO audit_logs (
         user_id, actor_user_id, impersonator_user_id, action, entity_type,
-        entity_id, summary, before_data, after_data
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb)
+        entity_id, summary, before_data, after_data, ip_address
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?::jsonb, ?::jsonb, ?)
       RETURNING id`,
       [
         userId || null,
@@ -60,6 +61,7 @@ const createAuditLogService = ({ allAsync, runAsync }) => {
         summary || '',
         beforeSnapshot ? JSON.stringify(beforeSnapshot) : null,
         afterSnapshot ? JSON.stringify(afterSnapshot) : null,
+        ipAddress || null,
       ]
     );
   };
@@ -138,6 +140,7 @@ const createAuditLogService = ({ allAsync, runAsync }) => {
          audit_logs.summary,
          audit_logs.before_data,
          audit_logs.after_data,
+         audit_logs.ip_address,
          audit_logs.created_at
        ${fromClause}
        ${whereClause}

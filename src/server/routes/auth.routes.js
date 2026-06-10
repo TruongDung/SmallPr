@@ -141,6 +141,7 @@ const createAuthRouter = ({ auditLogs, bcrypt, getAsync, getUserById, runAsync, 
       }
 
       const registeredUser = { id: result.lastID, username, email, account_status: 'pending_verification' };
+      const userIp = getRequestIp(req);
       await auditLogs.record({
         userId: result.lastID,
         actorUserId: result.lastID,
@@ -149,6 +150,7 @@ const createAuthRouter = ({ auditLogs, bcrypt, getAsync, getUserById, runAsync, 
         entityId: result.lastID,
         summary: username,
         after: registeredUser,
+        ipAddress: userIp,
       });
 
       res.json({
@@ -232,6 +234,7 @@ const createAuthRouter = ({ auditLogs, bcrypt, getAsync, getUserById, runAsync, 
 
       req.session.userId = user.id;
       delete req.session.impersonatorUserId;
+      const userIp = getRequestIp(req);
       await auditLogs.record({
         userId: user.id,
         actorUserId: user.id,
@@ -240,6 +243,7 @@ const createAuthRouter = ({ auditLogs, bcrypt, getAsync, getUserById, runAsync, 
         entityId: user.id,
         summary: user.username,
         after: createSessionUser(user),
+        ipAddress: userIp,
       });
       res.json({ user: createSessionUser(user) });
     } catch (error) {
