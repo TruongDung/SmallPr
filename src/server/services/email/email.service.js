@@ -338,7 +338,8 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
     status: getTaskStatus(task),
     description: formatPlainTextValue(task.description) || tEmail(language, 'noDescription'),
     descriptionHtml: formatRichTextEmailHtml(task.description, tEmail(language, 'noDescription')),
-    comment: task.comment || tEmail(language, 'noComment'),
+    comment: formatPlainTextValue(task.comment) || tEmail(language, 'noComment'),
+    commentHtml: formatRichTextEmailHtml(task.comment, tEmail(language, 'noComment')),
     attachment: task.attachment_name || tEmail(language, 'noAttachment'),
     reminder: formatReminder(task),
   }));
@@ -376,7 +377,7 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.priority)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.status)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;white-space:pre-line;">${task.descriptionHtml}</td>
-              <td style="border:1px solid #d1d5db;padding:8px;white-space:pre-line;">${formatMultilineHtml(task.comment)}</td>
+              <td style="border:1px solid #d1d5db;padding:8px;white-space:pre-line;">${task.commentHtml}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.attachment)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.reminder)}</td>
             </tr>`
