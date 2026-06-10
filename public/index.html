@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=cache-clear-20260608-related-tasks-open-1" />
+  <link rel="stylesheet" href="styles.css?v=cache-clear-20260608-add-tag-polish-1" />
 </head>
 <body>
   <div class="container">
@@ -347,7 +347,10 @@
               <label for="tag-name">Tag name</label>
               <input id="tag-name" type="text" maxlength="40" placeholder="Work, personal, urgent..." />
             </div>
-            <button type="submit" class="secondary">Add Tag</button>
+            <button type="submit" class="secondary tag-add-button">
+              <span class="tag-add-button-icon" aria-hidden="true">+</span>
+              <span class="tag-add-button-label">Add Tag</span>
+            </button>
           </form>
           <div id="tag-list" class="tag-list"></div>
         </section>
@@ -1327,6 +1330,6 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="js/monitoring.js?v=cache-clear-20260603-1"></script>
   <script src="js/i18n.js?v=cache-clear-20260606-7"></script>
-  <script src="app.js?v=cache-clear-20260608-related-tasks-open-1"></script>
+  <script src="app.js?v=cache-clear-20260608-add-tag-polish-1"></script>
 </body>
 </html>
