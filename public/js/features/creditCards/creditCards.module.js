@@ -1,4 +1,17 @@
 (function () {
+  /**
+   * Credit Cards feature coordinator for the legacy app.
+   *
+   * Orchestrates the split helpers loaded before this file (see the
+   * script-tag order in public/index.html): creditCards.dom.js,
+   * .formatters.js, .users.js, .table.js, .bills.js, .calendar.js and
+   * .translations.js — all registered on window.CreditCardFeature.
+   * Owns card CRUD, the bill/payment views, the payment calendar, and the
+   * fast-access (bill payment website) links.
+   *
+   * Entry point: window.CreditCardModule.create({ request, t, ... }),
+   * called by public/app.js (factory pattern — see public/js/README.md).
+   */
   const create = ({ request, t, showStatusToast, getLanguage, confirmDelete, confirmDeleteFastAccessLink }) => {
     const feature = window.CreditCardFeature;
     const elements = feature.dom.getElements();

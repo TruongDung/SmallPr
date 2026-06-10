@@ -1,4 +1,17 @@
 (function () {
+  /**
+   * Financial / Transactions tab of the legacy app.
+   *
+   * Responsibilities: transaction CRUD + the add/edit modal, month and
+   * kind/category filters, income/expense/balance summaries, the monthly
+   * report and finance chart, budget-per-category view, credit-card payment
+   * list, and the statement-PDF import flow.
+   *
+   * Entry point: window.TransactionsModule.create({ request, t, ... }),
+   * called by public/app.js with injected dependencies (factory pattern —
+   * see public/js/README.md). All DOM refs and state below are owned by
+   * this module.
+   */
   const create = ({ request, t, showStatusToast, getLanguage, confirmDelete: showDeleteConfirm }) => {
     const panel = document.getElementById('transactions-panel');
     const list = document.getElementById('transactions-list');

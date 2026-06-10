@@ -1,3 +1,19 @@
+/**
+ * Page orchestrator for the legacy frontend (the production UI served at /).
+ *
+ * This file is the LAST script loaded by public/index.html. It:
+ *  - wires every feature module together by calling window.<Feature>Module.create({deps})
+ *    (admin, notes, dashboard, credit cards, transactions, exports, tags, ...)
+ *  - owns shared app state and the DOM refs for cross-cutting chrome
+ *    (auth section, nav, modals, toasts)
+ *  - handles view switching (setCurrentView / showSection) and the boot
+ *    sequence (auth check -> apply preferences -> load active view)
+ *  - manages the Socket.IO connection for real-time updates
+ *
+ * Do NOT add new feature logic here — extract a module under public/js/
+ * instead and wire it in. See public/js/README.md for the pattern and
+ * docs/ONBOARDING.md §4 for a walkthrough.
+ */
 // ---- Module imports ----
 // Reusable utilities extracted to js/utils.js — available as window.AppUtils
 const U = window.AppUtils;

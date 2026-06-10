@@ -1,4 +1,16 @@
 (function () {
+  /**
+   * Notes workspace of the legacy app.
+   *
+   * Responsibilities: the notes sidebar list with search, the editor with
+   * markdown preview toggle, debounced autosave (saveTimer/pendingSave),
+   * checklist insertion, paste handling, linking a note to a task, and
+   * note deletion.
+   *
+   * Entry point: window.NotesModule.create({ request, t, showStatusToast,
+   * confirmDelete }), called by public/app.js with injected dependencies
+   * (factory pattern — see public/js/README.md).
+   */
   const create = ({ request, t, showStatusToast, confirmDelete }) => {
     const section = document.getElementById('notes-section');
     const list = document.getElementById('notes-list');

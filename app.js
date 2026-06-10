@@ -92,7 +92,7 @@ setupProxyTrust(app);
 
 /**
  * Session management
- * Sessions stored in Redis for scalability
+ * Sessions stored in PostgreSQL (connect-pg-simple, "session" table)
  */
 const isProduction = process.env.NODE_ENV === 'production';
 const sessionMiddleware = createSessionMiddleware(isProduction);
@@ -133,9 +133,9 @@ setupDatabaseReadyCheck(app, dbReady, logger);
 // ===== Static File Serving =====
 
 /**
- * Serve static assets and built frontend
- * - /public - Static assets (images, fonts)
- * - /client/dist - Built React application
+ * Serve static assets and frontends
+ * - public/ - the legacy vanilla-JS app (primary UI, served at /)
+ * - public/app/ - the committed React build (served at /app)
  */
 setupStaticFiles(app);
 

@@ -1,3 +1,18 @@
+/**
+ * Task API router.
+ *
+ * Mounted at /api by bootstrap/routes.js, so every path here is declared in
+ * full (e.g. router.get('/tasks', ...) → GET /api/tasks). Covers task CRUD,
+ * tags, comments/activity, recurrence, email import, and the task summary
+ * email. Heavy lifting is delegated to tasks.service.js,
+ * recurrence.service.js and emailImport.service.js.
+ *
+ * Dependencies (db helpers, auth middleware, cache, email senders) are
+ * injected by bootstrap/routes.js — nothing here touches the db directly.
+ * Task list/tag responses are cached in Redis (TASK_PAGE_CACHE_TTL_SECONDS);
+ * mutations clear those keys via clearTaskCaches and emit Socket.IO events
+ * through realtime.emitToUser so other sessions update live.
+ */
 const express = require('express');
 
 const { TASK_PAGE_CACHE_TTL_SECONDS } = require('../config/env');

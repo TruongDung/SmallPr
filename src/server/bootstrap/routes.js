@@ -1,3 +1,15 @@
+/**
+ * Route registry: the single place where every API router is created and
+ * mounted. app.js calls registerRoutes(app, deps) with the db helpers,
+ * auth middleware, email senders, and cache; each create<X>Router factory
+ * receives only what it needs.
+ *
+ * Mounting convention is MIXED — check before adding endpoints:
+ *  - mounted at /api, full subpaths declared inside the router:
+ *    auth, tasks, dashboard, dailyQuote, weather, notes, admin
+ *  - mounted at a resource prefix: /api/credit-cards, /api/transactions,
+ *    and /api/admin (evaluations)
+ */
 const createAdminRouter = require('../routes/admin.routes');
 const createAuthRouter = require('../routes/auth.routes');
 const createCreditCardsRouter = require('../routes/creditCards.routes');

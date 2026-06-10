@@ -1,4 +1,17 @@
 (function () {
+  /**
+   * Translations for the legacy app (English + Vietnamese).
+   *
+   * Exposes window.AppI18n = { createTranslator, translations }.
+   * public/app.js builds t = createTranslator(() => currentLanguage) and
+   * passes t down to every feature module; it also applies translations to
+   * elements carrying data-i18n-key attributes in index.html.
+   *
+   * To add a string: add the same key to BOTH the `en` and `vi`
+   * dictionaries below, then use t('myKey') in JS or
+   * data-i18n-key="myKey" in index.html. (The React app has its own
+   * separate dictionary in client/src/store/translations.ts.)
+   */
   const translations = {
   en: {
     appTitle: 'Task Manager',
