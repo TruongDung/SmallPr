@@ -167,11 +167,6 @@
       return Array.isArray(task.related_task_ids) && task.related_task_ids.length > 0;
     };
 
-    const hasDueDate = (task) => {
-      if (!task) return false;
-      return task.due_date && task.due_date.trim();
-    };
-
     const updateTabVisibility = () => {
       const task = getTask();
       elements.tabs.forEach((tab) => {
@@ -181,8 +176,6 @@
         if (filter === 'comments' && !hasComment(task)) {
           shouldShow = false;
         } else if (filter === 'related' && !hasRelatedTasks(task)) {
-          shouldShow = false;
-        } else if (filter === 'dueDate' && !hasDueDate(task)) {
           shouldShow = false;
         }
 
@@ -212,7 +205,6 @@
           all: t('activityAll'),
           comments: t('activityComments'),
           history: t('activityHistoryTab'),
-          dueDate: t('dueDate'),
           related: t('relatedTasks'),
         };
         button.textContent = labels[filter] || button.textContent;
@@ -230,15 +222,11 @@
         activeFilter = getVisibleTab();
       }
 
-      // Toggle visibility between activity list, related tasks panel, and due date panel
+      // Toggle visibility between activity list and related tasks panel
       const isRelatedTab = activeFilter === 'related';
-      const isDueDateTab = activeFilter === 'dueDate';
-      elements.list.classList.toggle('hidden', isRelatedTab || isDueDateTab);
+      elements.list.classList.toggle('hidden', isRelatedTab);
       if (elements.relatedPanel) {
         elements.relatedPanel.classList.toggle('hidden', !isRelatedTab);
-      }
-      if (elements.dueDatePanel) {
-        elements.dueDatePanel.classList.toggle('hidden', !isDueDateTab);
       }
 
       elements.tabs.forEach((tab) => {
@@ -251,16 +239,6 @@
       if (isRelatedTab) {
         if (typeof renderRelatedTasks === 'function') {
           renderRelatedTasks();
-        }
-        return;
-      }
-
-      // If showing due date tab, render due date and return
-      if (isDueDateTab) {
-        const task = getTask();
-        const dueDateDisplay = elements.dueDatePanel?.querySelector('#task-activity-duedate-display');
-        if (dueDateDisplay && task?.due_date) {
-          dueDateDisplay.textContent = formatLocalDateTime(task.due_date);
         }
         return;
       }
