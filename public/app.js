@@ -34,20 +34,7 @@ const tagForm = document.getElementById('tag-form');
 const tagManager = document.querySelector('.tag-manager');
 const taskHeader = document.querySelector('.task-header');
 const weatherSection = document.getElementById('weather-section');
-const openAddUserModalButton = document.getElementById('open-add-user-modal');
-const impersonateUserSelect = document.getElementById('impersonate-user-select');
 const adminUserModal = document.getElementById('admin-user-modal');
-const adminUserModalTitle = document.getElementById('admin-user-modal-title');
-const adminUserForm = document.getElementById('admin-user-form');
-const adminNameInput = document.getElementById('admin-name');
-const adminUsernameInput = document.getElementById('admin-username');
-const adminEmailInput = document.getElementById('admin-email');
-const adminStatusInput = document.getElementById('admin-status');
-const adminPasswordField = document.getElementById('admin-password-field');
-const adminPasswordInput = document.getElementById('admin-password');
-const adminUserFormError = document.getElementById('admin-user-form-error');
-const cancelAdminUser = document.getElementById('cancel-admin-user');
-const saveAdminUser = document.getElementById('save-admin-user');
 const userSettingsModal = document.getElementById('user-settings-modal');
 const userSettingsTitle = document.getElementById('user-settings-title');
 const userSettingsForm = document.getElementById('user-settings-form');
@@ -67,16 +54,7 @@ const passwordSettingsFormError = document.getElementById('password-settings-for
 const savePasswordSettings = document.getElementById('save-password-settings');
 const taskList = document.getElementById('task-list');
 const calendarSection = document.getElementById('calendar-section');
-const userList = document.getElementById('user-list');
-const auditLogList = document.getElementById('audit-log-list');
-const refreshAuditLog = document.getElementById('refresh-audit-log');
-const auditLogPagination = document.getElementById('audit-log-pagination');
-const auditLogPrevious = document.getElementById('audit-log-previous');
-const auditLogNext = document.getElementById('audit-log-next');
-const auditLogPageInfo = document.getElementById('audit-log-page-info');
-const auditLogSearchInput = document.getElementById('audit-log-search-input');
 const authMessage = document.getElementById('auth-message');
-const adminMessage = document.getElementById('admin-message');
 const showLogin = document.getElementById('show-login');
 const showSignup = document.getElementById('show-signup');
 const logoutButton = document.getElementById('logout-button');
@@ -134,9 +112,6 @@ const editTagNameInput = document.getElementById('edit-tag-name-input');
 const editTagError = document.getElementById('edit-tag-error');
 const cancelEditTag = document.getElementById('cancel-edit-tag');
 const resetPasswordModal = document.getElementById('reset-password-modal');
-const resetPasswordForm = document.getElementById('reset-password-form');
-const resetPasswordInput = document.getElementById('reset-password-input');
-const resetPasswordError = document.getElementById('reset-password-error');
 const cancelResetPassword = document.getElementById('cancel-reset-password');
 const editTaskModal = document.getElementById('edit-task-modal');
 const editTaskForm = document.getElementById('edit-task-form');
@@ -226,12 +201,6 @@ let currentTheme = localStorage.getItem('task-manager-theme') || 'light';
 let currentTagFilter = '';
 let tasks = [];
 let tags = [];
-let users = [];
-let auditLogs = [];
-let auditLogPage = 1;
-const AUDIT_LOG_PAGE_SIZE = 25;
-let auditLogSearchTimer = null;
-let pendingAdminUser = null;
 const reminderTimers = new Map();
 let pendingDeleteTaskId = null;
 let pendingDeleteUser = null;
@@ -240,7 +209,6 @@ let pendingDeleteCard = null;
 let pendingDeleteFastAccessLink = null;
 let pendingDeleteNote = null;
 let pendingDeleteTransaction = null;
-let pendingResetPasswordUser = null;
 let pendingEditTask = null;
 let pendingPreviewTask = null;
 let pendingAddTask = { related_task_ids: [], related_tasks: [] };
@@ -481,46 +449,7 @@ const applyTranslations = () => {
   setText('label[for="edit-task-reminder-input"]', t('dateTimeAlert'));
   setText('label[for="edit-task-attachment-input"]', t('uploadFile'));
   renderEditAttachmentState();
-  setText('#admin-section h2', t('manageUsers'));
-  setText('#open-add-user-modal .admin-add-user-label', t('addUser'));
-  if (impersonateUserSelect) {
-    impersonateUserSelect.setAttribute('aria-label', t('impersonateUser'));
-    const placeholder = impersonateUserSelect.querySelector('option[value=""]');
-    if (placeholder) placeholder.textContent = t('impersonate');
-  }
-  adminUserModalTitle.textContent = pendingAdminUser ? t('editUser') : t('addUser');
-  setText('label[for="admin-name"]', t('name'));
-  setText('label[for="admin-username"]', t('username'));
-  setText('label[for="admin-email"]', t('email'));
-  setText('label[for="admin-status"]', t('userStatus'));
-  const enabledOption = adminStatusInput?.querySelector('option[value="enabled"]');
-  const disabledOption = adminStatusInput?.querySelector('option[value="disabled"]');
-  if (enabledOption) enabledOption.textContent = t('userEnabledStatus');
-  if (disabledOption) disabledOption.textContent = t('userDisabledStatus');
-  setText('label[for="admin-password"]', t('password'));
-  cancelAdminUser.setAttribute('aria-label', t('cancel'));
-  cancelAdminUser.title = t('cancel');
-  saveAdminUser.setAttribute('aria-label', pendingAdminUser ? t('save') : t('addUser'));
-  saveAdminUser.title = pendingAdminUser ? t('save') : t('addUser');
-  setText('.user-table th:nth-child(1)', t('username'));
-  setText('.user-table th:nth-child(2)', t('name'));
-  setText('.user-table th:nth-child(3)', t('email'));
-  setText('.user-table th:nth-child(4)', t('userStatus'));
-  setText('.user-table th:nth-child(5)', t('tasks'));
-  setText('.user-table th:nth-child(6)', t('notes'));
-  setText('.user-table th:nth-child(7)', t('actions'));
-  setText('#audit-log-title', t('auditLog'));
-  setText('label[for="audit-log-search-input"]', t('searchAuditLog'));
-  if (auditLogSearchInput) auditLogSearchInput.placeholder = t('searchAuditLog');
-  setText('#refresh-audit-log', t('refresh'));
-  setText('#audit-log-previous', t('previousPage'));
-  setText('#audit-log-next', t('nextPage'));
-  setText('.audit-log-table th:nth-child(1)', t('time'));
-  setText('.audit-log-table th:nth-child(2)', t('actor'));
-  setText('.audit-log-table th:nth-child(3)', t('actions'));
-  setText('.audit-log-table th:nth-child(4)', t('target'));
-  setText('.audit-log-table th:nth-child(5)', t('owner'));
-  setText('.audit-log-table th:nth-child(6)', t('summary'));
+  adminModule.applyTranslations();
   confirmDeleteNo.className = 'task-action-icon secondary';
   confirmDeleteNo.textContent = '×';
   confirmDeleteNo.setAttribute('aria-label', t('no'));
@@ -536,8 +465,7 @@ const applyTranslations = () => {
   if (currentUser && currentView === 'calendar') calendarModule.render();
   if (currentUser && currentView === 'weather') weatherModule.render();
   if (currentUser && currentView === 'credit-cards') creditCardModule.render();
-  if (currentUser && currentView === 'admin') renderUsers(users);
-  if (currentUser && currentView === 'admin') renderAuditLogs(auditLogs);
+  if (currentUser && currentView === 'admin') adminModule.renderFromState();
 };
 
 const richText = window.RichTextModule.create({ escapeHtml });
@@ -1029,7 +957,7 @@ const showSection = () => {
   }
 
   if (showAdmin) {
-    loadUsers();
+    adminModule.loadUsers();
     return;
   }
 
@@ -1190,7 +1118,7 @@ const renderUserArea = () => {
     returnButton.type = 'button';
     returnButton.className = 'secondary nav-button impersonation-return';
     setNavButtonContent(returnButton, t('backToAdmin'), 'A');
-    returnButton.addEventListener('click', stopImpersonation);
+    returnButton.addEventListener('click', () => adminModule.stopImpersonation());
     userArea.append(returnButton);
   }
 
@@ -1616,470 +1544,6 @@ const {
   handleEditTagSubmit,
   deleteTag,
 } = tagsModule;
-
-const loadUsers = async () => {
-  adminMessage.textContent = '';
-  const result = await request('/api/admin/users');
-  if (result.error) {
-    adminMessage.textContent = result.error;
-    return;
-  }
-  users = result.users || [];
-  renderImpersonateOptions(users);
-  renderUsers(users);
-  auditLogPage = 1;
-  await loadAuditLogs();
-};
-
-const renderAuditLogPagination = (pagination) => {
-  if (!auditLogPagination || !auditLogPageInfo || !auditLogPrevious || !auditLogNext) return;
-  if (!pagination || pagination.totalPages <= 1) {
-    auditLogPagination.classList.add('hidden');
-    return;
-  }
-
-  auditLogPagination.classList.remove('hidden');
-  auditLogPageInfo.textContent = t('pageStatus', {
-    page: pagination.page,
-    totalPages: pagination.totalPages,
-    total: pagination.total,
-  });
-  auditLogPrevious.disabled = !pagination.hasPreviousPage;
-  auditLogNext.disabled = !pagination.hasNextPage;
-};
-
-const loadAuditLogs = async (page = auditLogPage) => {
-  if (!isAdminUser()) return;
-  const params = new URLSearchParams({
-    page: String(page),
-    limit: String(AUDIT_LOG_PAGE_SIZE),
-  });
-  const search = auditLogSearchInput?.value.trim() || '';
-  if (search) params.set('q', search);
-
-  const result = await request(`/api/admin/audit-logs?${params.toString()}`);
-  if (result.error) {
-    adminMessage.textContent = result.error;
-    return;
-  }
-  auditLogs = result.logs || [];
-  auditLogPage = result.pagination?.page || 1;
-  renderAuditLogs(auditLogs);
-  renderAuditLogPagination(result.pagination);
-};
-
-const scheduleAuditLogSearch = () => {
-  if (auditLogSearchTimer) clearTimeout(auditLogSearchTimer);
-  auditLogSearchTimer = setTimeout(() => {
-    auditLogPage = 1;
-    loadAuditLogs(1);
-  }, 250);
-};
-
-const renderImpersonateOptions = (users) => {
-  if (!impersonateUserSelect) return;
-  impersonateUserSelect.innerHTML = '';
-
-  const placeholder = document.createElement('option');
-  placeholder.value = '';
-  placeholder.textContent = t('impersonate');
-  impersonateUserSelect.append(placeholder);
-
-  users
-    .filter((user) => user.username !== 'admin')
-    .forEach((user) => {
-      const option = document.createElement('option');
-      option.value = String(user.id);
-      option.textContent = user.name ? `${user.username} (${user.name})` : user.username;
-      option.disabled = user.account_status !== 'enabled';
-      impersonateUserSelect.append(option);
-    });
-
-  impersonateUserSelect.value = '';
-  impersonateUserSelect.disabled = impersonateUserSelect.options.length <= 1;
-};
-
-const renderUsers = (users) => {
-  userList.innerHTML = '';
-
-  users.forEach((user) => {
-    const row = document.createElement('tr');
-
-    const usernameCell = document.createElement('td');
-    usernameCell.dataset.label = t('username');
-    usernameCell.textContent = user.username;
-
-    const nameCell = document.createElement('td');
-    nameCell.dataset.label = t('name');
-    nameCell.textContent = user.name || '';
-
-    const emailCell = document.createElement('td');
-    emailCell.dataset.label = t('email');
-    emailCell.textContent = user.email || '';
-
-    const statusCell = document.createElement('td');
-    statusCell.dataset.label = t('userStatus');
-    const statusBadge = document.createElement('span');
-    const isDisabled = user.account_status === 'disabled';
-    const isPending = user.account_status === 'pending_verification';
-    statusBadge.className = `user-status-badge ${isDisabled || isPending ? 'disabled' : 'enabled'}`;
-    statusBadge.textContent = isPending
-      ? t('userPendingStatus')
-      : (isDisabled ? t('userDisabledStatus') : t('userEnabledStatus'));
-    statusCell.append(statusBadge);
-
-    const taskCountCell = document.createElement('td');
-    taskCountCell.dataset.label = t('tasks');
-    const taskBadge = document.createElement('span');
-    taskBadge.className = 'user-task-badge';
-    taskBadge.textContent = user.task_count;
-    taskCountCell.append(taskBadge);
-
-    const noteCountCell = document.createElement('td');
-    noteCountCell.dataset.label = t('notes');
-    const noteBadge = document.createElement('span');
-    noteBadge.className = 'user-task-badge';
-    noteBadge.textContent = user.note_count;
-    noteCountCell.append(noteBadge);
-
-    const actionsCell = document.createElement('td');
-    actionsCell.dataset.label = t('actions');
-    const actions = document.createElement('div');
-    actions.className = 'user-actions';
-
-    const editButton = document.createElement('button');
-    editButton.type = 'button';
-    editButton.className = 'task-action-icon';
-    editButton.textContent = '✎';
-    editButton.setAttribute('aria-label', t('edit'));
-    editButton.title = t('edit');
-    editButton.addEventListener('click', () => showAdminUserModal(user));
-
-    const resetButton = document.createElement('button');
-    resetButton.type = 'button';
-    resetButton.className = 'task-action-icon';
-    resetButton.textContent = '🔑';
-    resetButton.setAttribute('aria-label', t('resetPassword'));
-    resetButton.title = t('resetPassword');
-    resetButton.addEventListener('click', () => resetUserPassword(user));
-
-    actions.append(editButton, resetButton);
-
-    if (user.username !== 'admin' && user.id !== currentUser.id) {
-      const statusButton = document.createElement('button');
-      statusButton.type = 'button';
-      statusButton.className = `task-action-icon ${isDisabled ? '' : 'secondary'}`;
-      statusButton.textContent = isDisabled ? '+' : '-';
-      statusButton.setAttribute('aria-label', isDisabled ? t('enableUser') : t('disableUser'));
-      statusButton.title = isDisabled ? t('enableUser') : t('disableUser');
-      statusButton.addEventListener('click', () => toggleUserStatus(user));
-      actions.append(statusButton);
-    }
-
-    if (user.username !== 'admin' && user.id !== currentUser.id) {
-      const deleteButton = document.createElement('button');
-      deleteButton.type = 'button';
-      deleteButton.className = 'task-action-icon danger';
-      deleteButton.textContent = '×';
-      deleteButton.setAttribute('aria-label', t('delete'));
-      deleteButton.title = t('delete');
-      deleteButton.addEventListener('click', () => showUserDeleteConfirm(user));
-      actions.append(deleteButton);
-    }
-
-    actionsCell.append(actions);
-    row.append(usernameCell, nameCell, emailCell, statusCell, taskCountCell, noteCountCell, actionsCell);
-    userList.append(row);
-  });
-};
-
-const formatAuditAction = (action) => {
-  if (action === 'create') return t('created');
-  if (action === 'edit') return t('updated');
-  if (action === 'delete') return t('delete');
-  if (action === 'login') return t('login');
-  if (action === 'register') return t('signup');
-  return action;
-};
-
-const formatAuditTarget = (log) => {
-  const labels = {
-    credit_card: t('creditCards'),
-    expense: t('monthlyBills'),
-    note: t('notes'),
-    task: t('tasks'),
-    transaction: t('transactionsSubTab'),
-    user: t('manageUsers'),
-  };
-  const type = labels[log.entity_type] || log.entity_type;
-  return `${type} #${log.entity_id || ''}`.trim();
-};
-
-const formatAuditDateTime = (value) => {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const year = String(date.getFullYear()).slice(-2);
-  const time = date.toLocaleTimeString(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
-
-  return `${month}/${day}/${year} ${time}`;
-};
-
-const renderAuditLogs = (logs) => {
-  if (!auditLogList) return;
-  auditLogList.innerHTML = '';
-
-  if (!logs.length) {
-    const row = document.createElement('tr');
-    const cell = document.createElement('td');
-    cell.colSpan = 7;
-    cell.className = 'empty-table-cell';
-    cell.textContent = t('auditNoEvents');
-    row.append(cell);
-    auditLogList.append(row);
-    return;
-  }
-
-  logs.forEach((log) => {
-    const row = document.createElement('tr');
-    const actor = log.impersonator_username
-      ? `${log.actor_username || ''} -> ${log.username || ''}`
-      : (log.actor_username || log.username || '');
-    const cells = [
-      [t('time'), formatAuditDateTime(log.created_at)],
-      [t('actor'), actor],
-      [t('actions'), formatAuditAction(log.action)],
-      [t('target'), formatAuditTarget(log)],
-      [t('owner'), log.username || ''],
-      [t('summary'), log.summary || ''],
-      ['IP Address', log.ip_address || '-'],
-    ];
-
-    cells.forEach(([label, value]) => {
-      const cell = document.createElement('td');
-      cell.dataset.label = label;
-      if (label === t('summary') && value) {
-        cell.className = 'audit-log-summary-cell';
-        cell.title = value;
-      }
-      cell.textContent = value;
-      row.append(cell);
-    });
-
-    auditLogList.append(row);
-  });
-};
-
-const clearAdminUserFormError = () => {
-  adminUserFormError.textContent = '';
-  adminUserFormError.classList.add('hidden');
-};
-
-const showAdminUserModal = (user = null) => {
-  pendingAdminUser = user;
-  clearAdminUserFormError();
-  adminUserForm.reset();
-
-  adminUserModalTitle.textContent = user ? t('editUser') : t('addUser');
-  saveAdminUser.setAttribute('aria-label', user ? t('save') : t('addUser'));
-  saveAdminUser.title = user ? t('save') : t('addUser');
-  adminPasswordField.classList.toggle('hidden', Boolean(user));
-  adminPasswordInput.required = !user;
-  adminStatusInput.disabled = user?.username === 'admin';
-
-  if (user) {
-    adminNameInput.value = user.name || '';
-    adminUsernameInput.value = user.username || '';
-    adminEmailInput.value = user.email || '';
-    adminStatusInput.value = user.account_status || 'enabled';
-  } else {
-    adminStatusInput.value = 'enabled';
-  }
-
-  adminUserModal.classList.remove('hidden');
-  adminUsernameInput.focus();
-  adminUsernameInput.select();
-};
-
-const hideAdminUserModal = () => {
-  pendingAdminUser = null;
-  adminUserForm.reset();
-  adminPasswordField.classList.remove('hidden');
-  adminPasswordInput.required = true;
-  adminStatusInput.disabled = false;
-  clearAdminUserFormError();
-  adminUserModal.classList.add('hidden');
-};
-
-const handleAdminUserSubmit = async (event) => {
-  event.preventDefault();
-  adminMessage.textContent = '';
-  clearAdminUserFormError();
-
-  const username = adminUsernameInput.value.trim();
-  const name = adminNameInput.value.trim();
-  const email = adminEmailInput.value.trim();
-  const accountStatus = adminStatusInput.value;
-  const password = adminPasswordInput.value.trim();
-  const isEditing = Boolean(pendingAdminUser);
-
-  if (!username || (!isEditing && !password)) {
-    adminUserFormError.textContent = t('authRequired');
-    adminUserFormError.classList.remove('hidden');
-    return;
-  }
-
-  if (/\s/.test(username)) {
-    adminUserFormError.textContent = t('usernameNoSpaces');
-    adminUserFormError.classList.remove('hidden');
-    return;
-  }
-
-  const result = await request(isEditing ? `/api/admin/users/${pendingAdminUser.id}` : '/api/admin/users', {
-    method: isEditing ? 'PUT' : 'POST',
-    body: JSON.stringify(isEditing
-      ? { username, name, email, account_status: accountStatus }
-      : { username, name, email, password, account_status: accountStatus }),
-  });
-
-  if (result.error) {
-    adminUserFormError.textContent = result.error;
-    adminUserFormError.classList.remove('hidden');
-    return;
-  }
-
-  hideAdminUserModal();
-  showStatusToast(isEditing ? t('userUpdated') : t('userAdded'));
-  loadUsers();
-};
-
-const clearResetPasswordError = () => {
-  resetPasswordError.textContent = '';
-  resetPasswordError.classList.add('hidden');
-};
-
-const showResetPasswordModal = (user) => {
-  pendingResetPasswordUser = user;
-  clearResetPasswordError();
-  resetPasswordForm.reset();
-  setText('#reset-password-title', t('newPasswordFor', { username: user.username }));
-  resetPasswordModal.classList.remove('hidden');
-  resetPasswordInput.focus();
-};
-
-const hideResetPasswordModal = () => {
-  pendingResetPasswordUser = null;
-  resetPasswordForm.reset();
-  clearResetPasswordError();
-  resetPasswordModal.classList.add('hidden');
-};
-
-const resetUserPassword = (user) => {
-  showResetPasswordModal(user);
-};
-
-const submitResetPassword = async (user, password) => {
-  if (!password.trim()) {
-    resetPasswordError.textContent = t('passwordRequired');
-    resetPasswordError.classList.remove('hidden');
-    return;
-  }
-
-  const result = await request(`/api/admin/users/${user.id}/password`, {
-    method: 'PUT',
-    body: JSON.stringify({ password }),
-  });
-
-  if (result.error) {
-    resetPasswordError.textContent = result.error;
-    resetPasswordError.classList.remove('hidden');
-    return;
-  }
-
-  hideResetPasswordModal();
-  showStatusToast(t('passwordUpdated'));
-};
-
-const startImpersonation = async (userId) => {
-  const result = await request('/api/admin/impersonate', {
-    method: 'POST',
-    body: JSON.stringify({ user_id: Number(userId) }),
-  });
-
-  if (result.error) {
-    adminMessage.textContent = result.error;
-    if (impersonateUserSelect) impersonateUserSelect.value = '';
-    return;
-  }
-
-  resetFinancialModules();
-  currentUser = result.user;
-  applyUserPreferences(currentUser);
-  applyTranslations();
-  identifyMonitoringUser();
-  trackEvent('impersonation_started');
-  disconnectRealtime();
-  connectRealtime();
-  setCurrentView('dashboard');
-  showStatusToast(t('impersonationStarted', { username: currentUser.username }));
-  showSection();
-};
-
-const stopImpersonation = async () => {
-  const result = await request('/api/impersonation/stop', { method: 'POST' });
-
-  if (result.error) {
-    alert(result.error);
-    return;
-  }
-
-  resetFinancialModules();
-  currentUser = result.user;
-  applyUserPreferences(currentUser);
-  applyTranslations();
-  identifyMonitoringUser();
-  trackEvent('impersonation_stopped');
-  disconnectRealtime();
-  connectRealtime();
-  setCurrentView('admin');
-  showStatusToast(t('impersonationStopped'));
-  showSection();
-};
-
-const toggleUserStatus = async (user) => {
-  const nextStatus = user.account_status === 'disabled' ? 'enabled' : 'disabled';
-  const result = await request(`/api/admin/users/${user.id}/status`, {
-    method: 'PATCH',
-    body: JSON.stringify({ account_status: nextStatus }),
-  });
-
-  if (result.error) {
-    alert(result.error);
-    return;
-  }
-
-  showStatusToast(nextStatus === 'disabled' ? t('userDisabled') : t('userEnabled'));
-  loadUsers();
-};
-
-const deleteUser = async (user) => {
-  const result = await request(`/api/admin/users/${user.id}`, {
-    method: 'DELETE',
-  });
-
-  if (result.error) {
-    alert(result.error);
-    return;
-  }
-
-  loadUsers();
-};
 
 const handleTaskSubmit = async (event) => {
   event.preventDefault();
@@ -2771,7 +2235,7 @@ confirmDeleteYes.addEventListener('click', async () => {
     await transactionsModule.deleteTransaction(transaction);
     return;
   }
-  await deleteUser(user);
+  await adminModule.deleteUser(user);
 });
 
 deleteConfirmModal.addEventListener('click', (event) => {
@@ -2783,15 +2247,6 @@ deleteConfirmModal.addEventListener('click', (event) => {
 editTagForm.addEventListener('submit', handleEditTagSubmit);
 
 cancelEditTag.addEventListener('click', hideEditTagModal);
-
-resetPasswordForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  if (!pendingResetPasswordUser) return;
-  clearResetPasswordError();
-  await submitResetPassword(pendingResetPasswordUser, resetPasswordInput.value);
-});
-
-cancelResetPassword.addEventListener('click', hideResetPasswordModal);
 
 cancelAddTask.addEventListener('click', hideAddTaskModal);
 
@@ -2805,7 +2260,7 @@ document.addEventListener('keydown', (event) => {
   }
 
   if (event.key === 'Escape' && !resetPasswordModal.classList.contains('hidden')) {
-    hideResetPasswordModal();
+    adminModule.hideResetPasswordModal();
   }
 
   if (event.key === 'Escape' && !addTaskModal.classList.contains('hidden')) {
@@ -2813,7 +2268,7 @@ document.addEventListener('keydown', (event) => {
   }
 
   if (event.key === 'Escape' && !adminUserModal.classList.contains('hidden')) {
-    hideAdminUserModal();
+    adminModule.hideAdminUserModal();
   }
 
   if (event.key === 'Escape' && !userSettingsModal.classList.contains('hidden')) {
@@ -3693,6 +3148,26 @@ const exportsModule = window.ExportsModule.create({
   showStatusToast,
 });
 
+const adminModule = window.AdminModule.create({
+  request,
+  t,
+  showStatusToast,
+  setText,
+  getCurrentUser: () => currentUser,
+  setCurrentUser: (user) => { currentUser = user; },
+  isAdminUser,
+  resetFinancialModules,
+  applyUserPreferences,
+  applyTranslations,
+  identifyMonitoringUser,
+  trackEvent,
+  disconnectRealtime,
+  connectRealtime,
+  setCurrentView,
+  showSection,
+  confirmDeleteUser: showUserDeleteConfirm,
+});
+
 showLogin.addEventListener('click', () => setMode('login'));
 showSignup.addEventListener('click', () => setMode('signup'));
 themeToggle.addEventListener('click', toggleTheme);
@@ -3787,22 +3262,7 @@ dashboardModule.bind();
 calendarModule.bind();
 weatherModule.bind();
 editTaskForm.addEventListener('submit', handleEditTaskSubmit);
-adminUserForm.addEventListener('submit', handleAdminUserSubmit);
-openAddUserModalButton.addEventListener('click', () => showAdminUserModal());
-if (impersonateUserSelect) {
-  impersonateUserSelect.addEventListener('change', (event) => {
-    if (event.target.value) startImpersonation(event.target.value);
-  });
-}
-refreshAuditLog?.addEventListener('click', () => loadAuditLogs(auditLogPage));
-auditLogSearchInput?.addEventListener('input', scheduleAuditLogSearch);
-auditLogPrevious?.addEventListener('click', () => {
-  if (auditLogPage > 1) loadAuditLogs(auditLogPage - 1);
-});
-auditLogNext?.addEventListener('click', () => {
-  if (auditLogNext && !auditLogNext.disabled) loadAuditLogs(auditLogPage + 1);
-});
-cancelAdminUser.addEventListener('click', hideAdminUserModal);
+adminModule.bind();
 userSettingsForm?.addEventListener('submit', handleUserSettingsSubmit);
 passwordSettingsForm?.addEventListener('submit', handlePasswordSettingsSubmit);
 savePasswordSettings?.addEventListener('click', async (event) => {
