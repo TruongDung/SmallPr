@@ -2,6 +2,7 @@ const express = require('express');
 
 const logger = require('../logger');
 const { createSessionUser, normalizeEmail, normalizeName } = require('../utils/users');
+const { sendNoteSummaryEmail } = require('../services/email/email.service');
 
 const ACCOUNT_STATUSES = new Set(['enabled', 'disabled', 'pending_verification']);
 
@@ -316,17 +317,37 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsyn
   });
 
   router.post('/admin/notes/send-email', adminRequired, async (req, res) => {
+    const language = String(req.body?.language || 'en');
+    
     try {
-      const rows = await allAsync(
-        `SELECT users.id, users.username, users.email, users.language,
-                COUNT(DISTINCT notes.id)::int AS note_count
-         FROM users
-         LEFT JOIN notes ON notes.user_id = users.id
-         WHERE users.account_status = 'enabled'
-         GROUP BY users.id, users.username, users.email, users.language
-         ORDER BY users.id ASC`
+      // Get the current user (admin) to send the email to
+      const adminUser = await getAsync(
+        'SELECT id, username, name, email, language FROM users WHERE id = ?',
+        [req.currentUser.id]
       );
-      res.json({ success: true, users: rows });
+      
+      if (!adminUser || !adminUser.email) {
+        return res.status(400).json({ error: 'Admin user email not configured' });
+      }
+
+      // Get all notes for all enabled users
+      const notes = await allAsync(
+        `SELECT notes.id, notes.title, notes.body, notes.created_at, notes.updated_at,
+                users.username AS owner_username
+         FROM notes
+         JOIN users ON users.id = notes.user_id
+         WHERE users.account_status = 'enabled'
+         ORDER BY notes.updated_at DESC, notes.id DESC`
+      );
+
+      // Send the email
+      const sent = await sendNoteSummaryEmail(notes, adminUser, language);
+      
+      if (!sent) {
+        return res.status(500).json({ error: 'Failed to send email. Check SMTP configuration.' });
+      }
+
+      res.json({ success: true, count: notes.length });
     } catch (error) {
       logger.error({ err: error }, 'Failed to send notes email');
       res.status(500).json({ error: 'Failed to send notes email' });

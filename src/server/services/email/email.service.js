@@ -12,6 +12,13 @@ const EMAIL_TRANSLATIONS = {
     newTaskMessage: 'A new task was added by {username}.',
     summarySubject: 'Task summary',
     summaryMessage: 'Task summary requested by {username}.',
+    noteSummarySubject: 'Notes summary',
+    noteSummaryMessage: 'Notes summary requested by {username}.',
+    noteTitle: 'Title',
+    noteBody: 'Content',
+    noteCreated: 'Created',
+    noteUpdated: 'Updated',
+    noNotes: 'No notes found.',
     number: '#',
     title: 'Title',
     tag: 'Tag',
@@ -41,6 +48,13 @@ const EMAIL_TRANSLATIONS = {
     newTaskMessage: 'Một công việc mới đã được thêm bởi {username}.',
     summarySubject: 'Tóm tắt công việc',
     summaryMessage: 'Tóm tắt công việc được yêu cầu bởi {username}.',
+    noteSummarySubject: 'Tóm tắt ghi chú',
+    noteSummaryMessage: 'Tóm tắt ghi chú được yêu cầu bởi {username}.',
+    noteTitle: 'Tiêu đề',
+    noteBody: 'Nội dung',
+    noteCreated: 'Đã tạo',
+    noteUpdated: 'Đã cập nhật',
+    noNotes: 'Không có ghi chú nào.',
     number: '#',
     title: 'Tiêu đề',
     tag: 'Nhãn',
@@ -412,6 +426,107 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
   return true;
 };
 
+const sendNoteSummaryEmail = async (notes, user, language = 'en') => {
+  const transporter = createMailTransporter();
+  if (!transporter) {
+    logger.warn('Note summary email skipped: SMTP_HOST, SMTP_USER, and SMTP_PASS are required.');
+    return false;
+  }
+
+  const from = process.env.MAIL_FROM || process.env.SMTP_USER;
+  const to = getUserEmailRecipient(user);
+  if (!to) {
+    logger.warn('Note summary email skipped: user email or TASK_ALERT_TO is required.');
+    return false;
+  }
+
+  const locale = normalizeLanguage(language) === 'vi' ? 'vi-VN' : 'en-US';
+  const appMarker = tEmail(language, 'taskManager');
+  
+  const formatDate = (dateStr) => {
+    if (!dateStr) return tEmail(language, 'notSet');
+    return new Date(dateStr).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
+  };
+
+  const headings = [
+    tEmail(language, 'number'),
+    tEmail(language, 'noteTitle'),
+    tEmail(language, 'noteBody'),
+    tEmail(language, 'noteCreated'),
+    tEmail(language, 'noteUpdated'),
+  ];
+
+  const noteRows = notes.map((note, index) => ({
+    number: index + 1,
+    title: note.title || '(Untitled)',
+    body: formatPlainTextValue(note.body) || '',
+    bodyHtml: formatRichTextEmailHtml(note.body, ''),
+    created: formatDate(note.created_at),
+    updated: formatDate(note.updated_at),
+  }));
+
+  const textTable = noteRows.length
+    ? [
+        headings.join('\t'),
+        ...noteRows.map((note) => [
+          note.number,
+          note.title,
+          note.body.slice(0, 200) + (note.body.length > 200 ? '...' : ''),
+          note.created,
+          note.updated,
+        ].join('\t')),
+      ]
+    : [tEmail(language, 'noNotes')];
+
+  const htmlTable = noteRows.length
+    ? `<table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;">
+        <thead>
+          <tr>
+            ${headings.map((heading) => (
+              `<th style="border:1px solid #d1d5db;padding:8px;background:#f3f4f6;text-align:left;">${escapeHtml(heading)}</th>`
+            )).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${noteRows.map((note) => (
+            `<tr>
+              <td style="border:1px solid #d1d5db;padding:8px;vertical-align:top;">${note.number}</td>
+              <td style="border:1px solid #d1d5db;padding:8px;vertical-align:top;font-weight:600;">${escapeHtml(note.title)}</td>
+              <td style="border:1px solid #d1d5db;padding:8px;white-space:pre-line;vertical-align:top;">${note.bodyHtml}</td>
+              <td style="border:1px solid #d1d5db;padding:8px;vertical-align:top;white-space:nowrap;">${escapeHtml(note.created)}</td>
+              <td style="border:1px solid #d1d5db;padding:8px;vertical-align:top;white-space:nowrap;">${escapeHtml(note.updated)}</td>
+            </tr>`
+          )).join('')}
+        </tbody>
+      </table>`
+    : `<p>${escapeHtml(tEmail(language, 'noNotes'))}</p>`;
+
+  await transporter.sendMail({
+    from,
+    to,
+    subject: tEmail(language, 'noteSummarySubject'),
+    headers: {
+      'X-Task-Manager-Alert': appMarker,
+    },
+    text: [
+      appMarker,
+      '',
+      tEmail(language, 'noteSummaryMessage', { username: user.username }),
+      '',
+      ...textTable,
+    ].join('\n'),
+    html: `
+      <div style="font-family:Arial,sans-serif;color:#111827;">
+        <p><strong>${escapeHtml(appMarker)}</strong></p>
+        <p>${escapeHtml(tEmail(language, 'noteSummaryMessage', { username: user.username }))}</p>
+        ${htmlTable}
+      </div>
+    `,
+  });
+
+  return true;
+};
+
 const sendVerificationEmail = async ({ email, username, verificationUrl }) => {
   const transporter = createMailTransporter();
   if (!transporter) {
@@ -455,4 +570,5 @@ module.exports = {
   sendVerificationEmail,
   sendTaskAlertEmail,
   sendTaskSummaryEmail,
+  sendNoteSummaryEmail,
 };
