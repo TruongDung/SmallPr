@@ -794,6 +794,7 @@ const taskActivityModule = window.TaskActivityModule.create({
     tabs: taskActivityTabs,
     list: taskActivityList,
     relatedPanel: taskActivityRelated,
+    dueDatePanel: document.getElementById('task-activity-duedate'),
   },
   getCurrentUser: () => currentUser,
   getTask: () => pendingPreviewTask,

@@ -157,6 +157,49 @@
       });
     };
 
+    const hasComment = (task) => {
+      if (!task) return false;
+      return task.comment && getRichTextPlainText(task.comment).trim();
+    };
+
+    const hasRelatedTasks = (task) => {
+      if (!task) return false;
+      return Array.isArray(task.related_task_ids) && task.related_task_ids.length > 0;
+    };
+
+    const hasDueDate = (task) => {
+      if (!task) return false;
+      return task.due_date && task.due_date.trim();
+    };
+
+    const updateTabVisibility = () => {
+      const task = getTask();
+      elements.tabs.forEach((tab) => {
+        const filter = tab.dataset.activityFilter;
+        let shouldShow = true;
+
+        if (filter === 'comments' && !hasComment(task)) {
+          shouldShow = false;
+        } else if (filter === 'related' && !hasRelatedTasks(task)) {
+          shouldShow = false;
+        } else if (filter === 'dueDate' && !hasDueDate(task)) {
+          shouldShow = false;
+        }
+
+        tab.classList.toggle('hidden', !shouldShow);
+      });
+    };
+
+    const getVisibleTab = () => {
+      // Find the first visible tab with data-activity-filter
+      for (const tab of elements.tabs) {
+        if (!tab.classList.contains('hidden')) {
+          return tab.dataset.activityFilter;
+        }
+      }
+      return 'all';
+    };
+
     const applyTranslations = () => {
       if (elements.title) {
         const label = elements.title.querySelector('[data-activity-title-label]');
@@ -169,6 +212,7 @@
           all: t('activityAll'),
           comments: t('activityComments'),
           history: t('activityHistoryTab'),
+          dueDate: t('dueDate'),
           related: t('relatedTasks'),
         };
         button.textContent = labels[filter] || button.textContent;
@@ -178,11 +222,23 @@
     const render = () => {
       if (!elements.list) return;
 
-      // Toggle visibility between activity list and related tasks panel
+      // Update tab visibility based on data availability
+      updateTabVisibility();
+
+      // If the current active tab is hidden, switch to the first visible tab
+      if (elements.tabs.find(t => t.dataset.activityFilter === activeFilter)?.classList.contains('hidden')) {
+        activeFilter = getVisibleTab();
+      }
+
+      // Toggle visibility between activity list, related tasks panel, and due date panel
       const isRelatedTab = activeFilter === 'related';
-      elements.list.classList.toggle('hidden', isRelatedTab);
+      const isDueDateTab = activeFilter === 'dueDate';
+      elements.list.classList.toggle('hidden', isRelatedTab || isDueDateTab);
       if (elements.relatedPanel) {
         elements.relatedPanel.classList.toggle('hidden', !isRelatedTab);
+      }
+      if (elements.dueDatePanel) {
+        elements.dueDatePanel.classList.toggle('hidden', !isDueDateTab);
       }
 
       elements.tabs.forEach((tab) => {
@@ -195,6 +251,16 @@
       if (isRelatedTab) {
         if (typeof renderRelatedTasks === 'function') {
           renderRelatedTasks();
+        }
+        return;
+      }
+
+      // If showing due date tab, render due date and return
+      if (isDueDateTab) {
+        const task = getTask();
+        const dueDateDisplay = elements.dueDatePanel?.querySelector('#task-activity-duedate-display');
+        if (dueDateDisplay && task?.due_date) {
+          dueDateDisplay.textContent = formatLocalDateTime(task.due_date);
         }
         return;
       }
@@ -273,8 +339,11 @@
     const bind = () => {
       elements.tabs.forEach((button) => {
         button.addEventListener('click', () => {
-          activeFilter = button.dataset.activityFilter || 'all';
-          render();
+          // Only respond to clicks on visible tabs
+          if (!button.classList.contains('hidden')) {
+            activeFilter = button.dataset.activityFilter || 'all';
+            render();
+          }
         });
       });
 
@@ -286,6 +355,9 @@
 
     const reset = () => {
       activeFilter = 'comments';
+      // After reset, update tab visibility and select first visible tab
+      updateTabVisibility();
+      activeFilter = getVisibleTab();
       setExpanded(true);
       if (elements.list) elements.list.innerHTML = '';
     };

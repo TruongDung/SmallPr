@@ -4223,6 +4223,10 @@ body.theme-dark .user-status-badge.disabled {
   white-space: nowrap;
 }
 
+.task-activity-tabs button.hidden {
+  display: none;
+}
+
 .task-activity-tabs button:first-child {
   border-radius: 4px 0 0 4px;
 }
@@ -4256,6 +4260,26 @@ body.theme-dark .user-status-badge.disabled {
 
 .task-activity-related .field-hint {
   margin-top: 12px;
+}
+
+.task-activity-duedate {
+  padding: 8px 0;
+}
+
+.task-activity-duedate.hidden {
+  display: none;
+}
+
+.task-activity-duedate-content {
+  padding: 12px;
+  background: var(--surface-variant);
+  border-radius: 4px;
+}
+
+.task-activity-duedate-display {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text);
 }
 
 .task-activity-item {
