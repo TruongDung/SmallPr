@@ -102,6 +102,157 @@
       return marker;
     }
 
+    // ---- Day detail modal --------------------------------------------------
+    let dayModal = null;
+
+    function ensureDayModal() {
+      if (dayModal) return dayModal;
+
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop financial-day-backdrop hidden';
+      backdrop.setAttribute('role', 'dialog');
+      backdrop.setAttribute('aria-modal', 'true');
+
+      const modal = document.createElement('div');
+      modal.className = 'modal financial-day-modal';
+
+      const header = document.createElement('div');
+      header.className = 'financial-day-modal-header';
+      const title = document.createElement('h3');
+      title.className = 'financial-day-modal-title';
+      const closeButton = document.createElement('button');
+      closeButton.type = 'button';
+      closeButton.className = 'secondary task-action-icon';
+      closeButton.setAttribute('aria-label', t('close') || 'Close');
+      closeButton.title = t('close') || 'Close';
+      closeButton.textContent = '×';
+      closeButton.addEventListener('click', closeDayDetail);
+      header.append(title, closeButton);
+
+      const body = document.createElement('div');
+      body.className = 'financial-day-modal-body';
+
+      modal.append(header, body);
+      backdrop.append(modal);
+      backdrop.addEventListener('click', (event) => {
+        if (event.target === backdrop) closeDayDetail();
+      });
+      document.body.append(backdrop);
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && dayModal && !dayModal.backdrop.classList.contains('hidden')) {
+          closeDayDetail();
+        }
+      });
+
+      dayModal = { backdrop, title, body };
+      return dayModal;
+    }
+
+    function closeDayDetail() {
+      if (dayModal) dayModal.backdrop.classList.add('hidden');
+    }
+
+    function buildDetailSection(titleText, kind, items) {
+      const section = document.createElement('section');
+      section.className = 'financial-day-section';
+
+      const heading = document.createElement('div');
+      heading.className = 'financial-day-section-title';
+      const dot = document.createElement('span');
+      dot.className = `financial-calendar-dot financial-calendar-dot-${kind}`;
+      const label = document.createElement('span');
+      label.textContent = `${titleText} (${items.length})`;
+      heading.append(dot, label);
+      section.append(heading);
+
+      const list = document.createElement('div');
+      list.className = 'financial-day-item-list';
+      items.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'financial-day-item';
+
+        const name = document.createElement('span');
+        name.className = 'financial-day-item-name';
+        name.textContent = item.name;
+        row.append(name);
+
+        if (item.meta) {
+          const meta = document.createElement('span');
+          meta.className = `financial-day-item-meta${item.metaClass ? ` ${item.metaClass}` : ''}`;
+          meta.textContent = item.meta;
+          row.append(meta);
+        }
+        list.append(row);
+      });
+      section.append(list);
+      return section;
+    }
+
+    function openDayDetail(date) {
+      const modal = ensureDayModal();
+      modal.title.textContent = new Intl.DateTimeFormat(getLocale(), {
+        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+      }).format(date);
+      modal.body.innerHTML = '';
+
+      const day = date.getDate();
+      const cardEntries = getCardEntriesForDay(day);
+      const billEntries = getBillEntriesForDay(day);
+      const txEntries = getTransactionsForDay(date);
+      let hasAny = false;
+
+      if (cardEntries.length) {
+        hasAny = true;
+        modal.body.append(buildDetailSection(
+          t('financialCalendarCardLegend'),
+          'card',
+          cardEntries.map((entry) => ({
+            name: entry.card.name || t('notAvailable'),
+            meta: entry.card.total_balance != null && entry.card.total_balance !== ''
+              ? formatters.formatCurrency(entry.card.total_balance)
+              : '',
+          }))
+        ));
+      }
+
+      if (billEntries.length) {
+        hasAny = true;
+        modal.body.append(buildDetailSection(
+          t('financialCalendarBillLegend'),
+          'bill',
+          billEntries.map((entry) => ({
+            name: entry.bill.item || t('notAvailable'),
+            meta: entry.bill.amount != null && entry.bill.amount !== ''
+              ? formatters.formatCurrency(entry.bill.amount)
+              : '',
+          }))
+        ));
+      }
+
+      if (txEntries.length) {
+        hasAny = true;
+        modal.body.append(buildDetailSection(
+          t('transactionsSubTab'),
+          'transaction',
+          txEntries.map((tx) => ({
+            name: tx.category || tx.note || t('notAvailable'),
+            meta: `${tx.kind === 'income' ? '+' : '-'}${formatters.formatCurrency(tx.amount)}`,
+            metaClass: tx.kind === 'income' ? 'amount-income' : 'amount-expense',
+          }))
+        ));
+      }
+
+      if (!hasAny) {
+        const empty = document.createElement('p');
+        empty.className = 'financial-calendar-empty';
+        empty.textContent = t('financialCalendarEmpty');
+        modal.body.append(empty);
+      }
+
+      modal.backdrop.classList.remove('hidden');
+    }
+
     function renderDayCell(date) {
       const cell = document.createElement('section');
       cell.className = 'financial-calendar-day';
@@ -117,6 +268,19 @@
       // Only mark days that belong to the displayed month so recurring entries
       // don't bleed into the leading/trailing days from adjacent months.
       if (date.getMonth() === cursor.getMonth()) {
+        // Make the day clickable to open a detail view for that date.
+        cell.classList.add('is-clickable');
+        cell.setAttribute('role', 'button');
+        cell.setAttribute('tabindex', '0');
+        cell.setAttribute('aria-label', `${date.getDate()}`);
+        cell.addEventListener('click', () => openDayDetail(new Date(date)));
+        cell.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openDayDetail(new Date(date));
+          }
+        });
+
         const markers = document.createElement('div');
         markers.className = 'financial-calendar-markers';
 

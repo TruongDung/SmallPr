@@ -3096,6 +3096,106 @@ body.theme-dark .audit-log-pagination button.secondary:focus-visible:not(:disabl
   }
 }
 
+/* Clickable day cells open a detail view for that date. */
+.financial-calendar-day.is-clickable {
+  cursor: pointer;
+}
+
+.financial-calendar-day.is-clickable:hover {
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.18);
+}
+
+.financial-calendar-day.is-clickable:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+/* Day detail modal */
+.financial-day-modal {
+  max-width: 460px;
+  width: 100%;
+}
+
+.financial-day-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.financial-day-modal-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.financial-day-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.financial-day-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.financial-day-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+}
+
+.financial-day-item-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.financial-day-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.financial-day-item-name {
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.financial-day-item-meta {
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.financial-day-item-meta.amount-income {
+  color: #16a34a;
+}
+
+.financial-day-item-meta.amount-expense {
+  color: #dc2626;
+}
+
 #credit-card-section {
   animation: fadeIn 0.3s ease;
 }
