@@ -315,6 +315,24 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsyn
     }
   });
 
+  router.post('/admin/notes/send-email', adminRequired, async (req, res) => {
+    try {
+      const rows = await allAsync(
+        `SELECT users.id, users.username, users.email, users.language,
+                COUNT(DISTINCT notes.id)::int AS note_count
+         FROM users
+         LEFT JOIN notes ON notes.user_id = users.id
+         WHERE users.account_status = 'enabled'
+         GROUP BY users.id, users.username, users.email, users.language
+         ORDER BY users.id ASC`
+      );
+      res.json({ success: true, users: rows });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to send notes email');
+      res.status(500).json({ error: 'Failed to send notes email' });
+    }
+  });
+
   return router;
 };
 

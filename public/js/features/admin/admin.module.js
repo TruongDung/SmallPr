@@ -22,10 +22,13 @@
     setCurrentView,
     showSection,
     confirmDeleteUser,
+    currentLanguage,
   }) => {
     // ---- DOM refs (owned by this module) ----
     const adminMessage = document.getElementById('admin-message');
     const impersonateUserSelect = document.getElementById('impersonate-user-select');
+    const sendSummaryEmailButton = document.getElementById('send-summary-email');
+    const sendNotesEmailButton = document.getElementById('send-notes-email');
     const userList = document.getElementById('user-list');
     const auditLogList = document.getElementById('audit-log-list');
     const auditLogPagination = document.getElementById('audit-log-pagination');
@@ -576,9 +579,57 @@
       renderAuditLogs(auditLogs);
     };
 
+    const sendSummaryEmail = async () => {
+      sendSummaryEmailButton.disabled = true;
+      showStatusToast(t('sending'), 'success', { persist: true });
+
+      try {
+        const result = await request('/api/tasks/send-email', {
+          method: 'POST',
+          body: JSON.stringify({ language: currentLanguage }),
+        });
+
+        if (result.error) {
+          showStatusToast(result.error, 'error');
+          return;
+        }
+
+        showStatusToast(t('emailSent'));
+      } catch (error) {
+        showStatusToast(error.message || t('emailFailed'), 'error');
+      } finally {
+        sendSummaryEmailButton.disabled = false;
+      }
+    };
+
+    const sendNotesEmail = async () => {
+      sendNotesEmailButton.disabled = true;
+      showStatusToast(t('sending'), 'success', { persist: true });
+
+      try {
+        const result = await request('/api/admin/notes/send-email', {
+          method: 'POST',
+          body: JSON.stringify({ language: currentLanguage }),
+        });
+
+        if (result.error) {
+          showStatusToast(result.error, 'error');
+          return;
+        }
+
+        showStatusToast(t('emailSent'));
+      } catch (error) {
+        showStatusToast(error.message || t('emailFailed'), 'error');
+      } finally {
+        sendNotesEmailButton.disabled = false;
+      }
+    };
+
     const bind = () => {
       adminUserForm.addEventListener('submit', handleAdminUserSubmit);
       openAddUserModalButton.addEventListener('click', () => showAdminUserModal());
+      sendSummaryEmailButton?.addEventListener('click', sendSummaryEmail);
+      sendNotesEmailButton?.addEventListener('click', sendNotesEmail);
       if (impersonateUserSelect) {
         impersonateUserSelect.addEventListener('change', (event) => {
           if (event.target.value) startImpersonation(event.target.value);

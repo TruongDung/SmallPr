@@ -58,7 +58,6 @@ const authMessage = document.getElementById('auth-message');
 const showLogin = document.getElementById('show-login');
 const showSignup = document.getElementById('show-signup');
 const logoutButton = document.getElementById('logout-button');
-const sendSummaryEmailButton = document.getElementById('send-summary-email');
 const importEmailButton = document.getElementById('import-email');
 const importEmailFileInput = document.getElementById('import-email-file');
 const exportExcelButton = document.getElementById('export-excel');
@@ -312,7 +311,6 @@ const applyTranslations = () => {
     passwordInput.type === 'password' ? t('showPassword') : t('hidePassword')
   );
   setText('#auth-form button[type="submit"]', t('submit'));
-  setIconButtonLabel(sendSummaryEmailButton, t('sendEmail'));
   setIconButtonLabel(exportExcelButton, t('exportExcel'));
   setIconButtonLabel(exportPdfButton, t('exportPdf'));
   if (exportWordButton) setIconButtonLabel(exportWordButton, t('exportWord'));
@@ -3013,28 +3011,6 @@ const handleLogout = async () => {
   prefillRememberedCredentials();
 };
 
-const sendSummaryEmail = async () => {
-  sendSummaryEmailButton.disabled = true;
-  showStatusToast(t('sending'), 'success', { persist: true });
-
-  try {
-    const result = await request('/api/tasks/send-email', {
-      method: 'POST',
-      body: JSON.stringify({ language: currentLanguage }),
-    });
-
-    if (result.error) {
-      showStatusToast(result.error, 'error');
-      return;
-    }
-
-    showStatusToast(t('emailSent'));
-  } catch (error) {
-    showStatusToast(error.message || t('emailFailed'), 'error');
-  } finally {
-    sendSummaryEmailButton.disabled = false;
-  }
-};
 
 // Read a File into raw base64 (without the data-URL prefix) so it can be sent
 // as JSON to the import-email endpoint.
@@ -3166,6 +3142,7 @@ const adminModule = window.AdminModule.create({
   setCurrentView,
   showSection,
   confirmDeleteUser: showUserDeleteConfirm,
+  currentLanguage,
 });
 
 showLogin.addEventListener('click', () => setMode('login'));
@@ -3271,7 +3248,6 @@ savePasswordSettings?.addEventListener('click', async (event) => {
 });
 cancelUserSettings?.addEventListener('click', hideUserSettingsModal);
 logoutButton.addEventListener('click', handleLogout);
-sendSummaryEmailButton.addEventListener('click', sendSummaryEmail);
 importEmailButton?.addEventListener('click', () => {
   importEmailFileInput.value = '';
   importEmailFileInput.click();

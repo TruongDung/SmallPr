@@ -232,6 +232,8 @@ const sendTaskAlertEmail = async (task, user, language = 'en') => {
   const hasReminder = Boolean(task.reminder_at);
   const description = formatPlainTextValue(task.description);
   const descriptionHtml = formatRichTextEmailHtml(task.description, '');
+  const comment = formatPlainTextValue(task.comment);
+  const commentHtml = formatRichTextEmailHtml(task.comment, '');
   const reminder = hasReminder
     ? new Date(task.reminder_at).toLocaleString(locale, {
         dateStyle: 'medium',
@@ -245,7 +247,7 @@ const sendTaskAlertEmail = async (task, user, language = 'en') => {
     `${tEmail(language, 'priority')}: ${priority}`,
     `${tEmail(language, 'status')}: ${status}`,
     hasDescription ? `${tEmail(language, 'description')}:\n${description}` : null,
-    hasComment ? `${tEmail(language, 'comment')}: ${task.comment}` : null,
+    hasComment ? `${tEmail(language, 'comment')}: ${comment}` : null,
     hasAttachment ? `${tEmail(language, 'attachment')}: ${task.attachment_name}` : null,
     hasReminder ? `${tEmail(language, 'dateTimeAlert')}: ${reminder}` : null,
   ].filter(Boolean);
@@ -259,7 +261,12 @@ const sendTaskAlertEmail = async (task, user, language = 'en') => {
           <div style="margin-top:4px;white-space:normal;">${descriptionHtml}</div>
         </div>
       ` : '',
-    hasComment ? `<p style="margin:0 0 8px;"><strong>${escapeHtml(tEmail(language, 'comment'))}:</strong> ${formatLinkedMultilineHtml(task.comment)}</p>` : '',
+    hasComment ? `
+        <div style="margin:0 0 8px;">
+          <strong>${escapeHtml(tEmail(language, 'comment'))}:</strong>
+          <div style="margin-top:4px;white-space:normal;">${commentHtml}</div>
+        </div>
+      ` : '',
     hasAttachment ? `<p style="margin:0 0 8px;"><strong>${escapeHtml(tEmail(language, 'attachment'))}:</strong> ${escapeHtml(task.attachment_name)}</p>` : '',
     hasReminder ? `<p style="margin:0;"><strong>${escapeHtml(tEmail(language, 'dateTimeAlert'))}:</strong> ${escapeHtml(reminder)}</p>` : '',
   ].join('');

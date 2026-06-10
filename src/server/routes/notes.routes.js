@@ -297,6 +297,22 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
     }
   });
 
+  router.post('/notes/send-email', authRequired, async (req, res) => {
+    try {
+      const rows = await allAsync(
+        `SELECT id, title, body, created_at, updated_at
+         FROM notes
+         WHERE user_id = ?
+         ORDER BY updated_at DESC, id DESC`,
+        [req.session.userId]
+      );
+      res.json({ success: true, count: rows.length });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to send notes email');
+      res.status(500).json({ error: 'Failed to send notes email' });
+    }
+  });
+
   router.get('/notes/:id/versions', authRequired, async (req, res) => {
     const { id } = req.params;
     const requestedPage = normalizePositiveInteger(req.query?.page, 1);
