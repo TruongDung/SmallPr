@@ -8,10 +8,16 @@
     const prevButton = document.getElementById('financial-calendar-prev');
     const nextButton = document.getElementById('financial-calendar-next');
     const todayButton = document.getElementById('financial-calendar-today');
+    const toggleCard = document.getElementById('financial-calendar-toggle-card');
+    const toggleBill = document.getElementById('financial-calendar-toggle-bill');
+    const toggleTransaction = document.getElementById('financial-calendar-toggle-transaction');
 
     let cards = [];
     let bills = [];
     let transactions = [];
+    let showCards = true;
+    let showBills = true;
+    let showTransactions = true;
     let cursor = startOfMonth(new Date());
 
     function startOfDay(date) {
@@ -114,16 +120,22 @@
         const markers = document.createElement('div');
         markers.className = 'financial-calendar-markers';
 
-        getCardEntriesForDay(date.getDate()).forEach((entry) => {
-          markers.append(buildMarker('card', entry.card.name || t('notAvailable')));
-        });
-        getBillEntriesForDay(date.getDate()).forEach((entry) => {
-          markers.append(buildMarker('bill', entry.bill.item || t('notAvailable')));
-        });
-        getTransactionsForDay(date).forEach((tx) => {
-          const label = tx.category || tx.note || t('notAvailable');
-          markers.append(buildMarker('transaction', label));
-        });
+        if (showCards) {
+          getCardEntriesForDay(date.getDate()).forEach((entry) => {
+            markers.append(buildMarker('card', entry.card.name || t('notAvailable')));
+          });
+        }
+        if (showBills) {
+          getBillEntriesForDay(date.getDate()).forEach((entry) => {
+            markers.append(buildMarker('bill', entry.bill.item || t('notAvailable')));
+          });
+        }
+        if (showTransactions) {
+          getTransactionsForDay(date).forEach((tx) => {
+            const label = tx.category || tx.note || t('notAvailable');
+            markers.append(buildMarker('transaction', label));
+          });
+        }
 
         if (markers.childElementCount) cell.append(markers);
       }
@@ -159,14 +171,24 @@
       const daysInMonth = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0).getDate();
 
       const entries = [];
-      cards.forEach((card) => {
-        const day = dayFromDateString(card.closing_date);
-        if (day) entries.push({ kind: 'card', day, name: card.name || t('notAvailable') });
-      });
-      bills.forEach((bill) => {
-        const day = dayFromText(bill.due_date);
-        if (day) entries.push({ kind: 'bill', day, name: bill.item || t('notAvailable') });
-      });
+      if (showCards) {
+        cards.forEach((card) => {
+          const day = dayFromDateString(card.closing_date);
+          if (day) entries.push({ kind: 'card', day, name: card.name || t('notAvailable') });
+        });
+      }
+      if (showBills) {
+        bills.forEach((bill) => {
+          const day = dayFromText(bill.due_date);
+          if (day) entries.push({ kind: 'bill', day, name: bill.item || t('notAvailable') });
+        });
+      }
+      if (showTransactions) {
+        transactions.forEach((tx) => {
+          const day = dayFromDateString(tx.occurred_on);
+          if (day) entries.push({ kind: 'transaction', day, name: tx.category || tx.note || t('notAvailable') });
+        });
+      }
 
       // Sort by how soon the day comes up relative to today (wrapping around the
       // month), so the nearest due dates appear first.
@@ -229,6 +251,22 @@
       nextButton?.addEventListener('click', () => moveCursor(1));
       todayButton?.addEventListener('click', () => {
         cursor = startOfMonth(new Date());
+        if (typeof onLoadTransactions === 'function') {
+          onLoadTransactions(cursor.getFullYear(), cursor.getMonth() + 1);
+        }
+        render();
+      });
+
+      toggleCard?.addEventListener('change', () => {
+        showCards = toggleCard.checked;
+        render();
+      });
+      toggleBill?.addEventListener('change', () => {
+        showBills = toggleBill.checked;
+        render();
+      });
+      toggleTransaction?.addEventListener('change', () => {
+        showTransactions = toggleTransaction.checked;
         render();
       });
     }

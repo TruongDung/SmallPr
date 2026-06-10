@@ -395,7 +395,11 @@ const applyTranslations = () => {
   setText('#calendar-overdue-title', t('overdueTasks'));
   setText('label[for="tag-name"]', t('tagName'));
   document.getElementById('tag-name').placeholder = t('tagPlaceholder');
-  setText('#tag-form button[type="submit"] .tag-add-button-label', t('addTag'));
+  const tagSubmitButton = document.querySelector('#tag-form button[type="submit"]');
+  if (tagSubmitButton) {
+    tagSubmitButton.setAttribute('aria-label', t('addTag'));
+    tagSubmitButton.title = t('addTag');
+  }
   editTagTitle.textContent = t('renameTag');
   setText('label[for="edit-tag-name-input"]', t('tagName'));
   editTagNameInput.placeholder = t('tagPlaceholder');
