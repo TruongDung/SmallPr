@@ -39,6 +39,66 @@
       showStatusToast(t('excelExported'));
     };
 
+    // Wrap a CSV cell value: escape quotes, quote anything containing
+    // commas, quotes, newlines, or leading/trailing whitespace.
+    const csvCell = (value) => {
+      const str = value === null || value === undefined ? '' : String(value);
+      if (/[",\n\r]/.test(str) || /^\s|\s$/.test(str)) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const exportToCsv = () => {
+      const currentDateTime = new Date().toLocaleString('en-US', {
+        timeZone: 'America/New_York'
+      }) + ' EST (NYC)';
+
+      const headers = [
+        t('exportDate'),
+        t('title'),
+        t('tag'),
+        t('priority'),
+        t('status'),
+        t('description'),
+        t('comment'),
+        t('attachment'),
+        t('completed'),
+        t('dateTimeAlert'),
+        t('created'),
+        t('updated'),
+      ];
+
+      const rows = getTasks().map((task) => [
+        currentDateTime,
+        task.title || '',
+        task.tag || '',
+        priorityLabel(task.priority),
+        statusLabel(taskStatus(task)),
+        getRichTextPlainText(task.description),
+        getRichTextPlainText(task.comment),
+        task.attachment_name || '',
+        task.completed ? t('yes') : t('no'),
+        task.reminder_at ? formatLocalDateTime(task.reminder_at) : '',
+        formatDateEST(task.created_at),
+        formatDateEST(task.updated_at),
+      ]);
+
+      const lines = [headers, ...rows].map((row) => row.map(csvCell).join(','));
+      // Prepend a UTF-8 BOM so Excel opens Unicode (e.g. Vietnamese) correctly.
+      const csvContent = '\uFEFF' + lines.join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'tasks.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showStatusToast(t('csvExported'));
+    };
+
     const arrayBufferToBase64 = (buffer) => {
       let binary = '';
       const bytes = new Uint8Array(buffer);
@@ -440,6 +500,7 @@
 
     return {
       exportToExcel,
+      exportToCsv,
       exportToPdf,
       exportToWord,
     };

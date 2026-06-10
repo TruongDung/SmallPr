@@ -22,7 +22,7 @@
       taskSearchInput, clearTaskSearch, taskPriorityInput, taskStatusInput,
       taskTagInput, weatherCityInput, tagNameInput,
       editTagTitle, editTagNameInput, cancelEditTag,
-      sendSummaryEmailButton, exportExcelButton, exportPdfButton, exportWordButton,
+      sendSummaryEmailButton, exportExcelButton, exportPdfButton, exportCsvButton, exportWordButton,
       userSettingsModal, userSettingsTitle, userSettingsForm,
       settingsNameInput, settingsEmailInput, settingsTimezoneInput,
       settingsLanguageInput, userSettingsFormError,
@@ -141,6 +141,7 @@
       setIconButtonLabel(sendSummaryEmailButton, t('sendEmail'));
       setIconButtonLabel(exportExcelButton, t('exportExcel'));
       setIconButtonLabel(exportPdfButton, t('exportPdf'));
+      setIconButtonLabel(exportCsvButton, t('exportCsv'));
       if (exportWordButton) setIconButtonLabel(exportWordButton, t('exportWord'));
       logoutButton.textContent = t('logout');
       if (userSettingsTitle) userSettingsTitle.textContent = t('userSettings');

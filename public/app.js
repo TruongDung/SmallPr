@@ -62,6 +62,7 @@ const importEmailButton = document.getElementById('import-email');
 const importEmailFileInput = document.getElementById('import-email-file');
 const exportExcelButton = document.getElementById('export-excel');
 const exportPdfButton = document.getElementById('export-pdf');
+const exportCsvButton = document.getElementById('export-csv');
 const exportWordButton = document.getElementById('export-word');
 const taskSearchInput = document.getElementById('task-search-input');
 const clearTaskSearch = document.getElementById('clear-task-search');
@@ -313,6 +314,7 @@ const applyTranslations = () => {
   setText('#auth-form button[type="submit"]', t('submit'));
   setIconButtonLabel(exportExcelButton, t('exportExcel'));
   setIconButtonLabel(exportPdfButton, t('exportPdf'));
+  setIconButtonLabel(exportCsvButton, t('exportCsv'));
   if (exportWordButton) setIconButtonLabel(exportWordButton, t('exportWord'));
   logoutButton.textContent = t('logout');
   if (userSettingsTitle) userSettingsTitle.textContent = t('userSettings');
@@ -3255,6 +3257,7 @@ importEmailButton?.addEventListener('click', () => {
 importEmailFileInput?.addEventListener('change', importTaskFromEmail);
 exportExcelButton.addEventListener('click', exportsModule.exportToExcel);
 exportPdfButton.addEventListener('click', exportsModule.exportToPdf);
+exportCsvButton?.addEventListener('click', exportsModule.exportToCsv);
 if (exportWordButton) exportWordButton.addEventListener('click', exportsModule.exportToWord);
 
 setMode('login');
