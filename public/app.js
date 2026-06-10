@@ -1830,7 +1830,7 @@ const renderAuditLogs = (logs) => {
   if (!logs.length) {
     const row = document.createElement('tr');
     const cell = document.createElement('td');
-    cell.colSpan = 6;
+    cell.colSpan = 7;
     cell.className = 'empty-table-cell';
     cell.textContent = t('auditNoEvents');
     row.append(cell);
@@ -1850,6 +1850,7 @@ const renderAuditLogs = (logs) => {
       [t('target'), formatAuditTarget(log)],
       [t('owner'), log.username || ''],
       [t('summary'), log.summary || ''],
+      ['IP Address', log.ip_address || '-'],
     ];
 
     cells.forEach(([label, value]) => {
