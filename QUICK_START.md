@@ -60,16 +60,16 @@ CREATE DATABASE taskmanager;
 
 ### 5. Start Everything
 
-Open **two terminals**:
-
-**Terminal 1 - Backend:**
+**Terminal 1 - Backend (this also serves the full app):**
 ```bash
 npm run dev
 ```
 
 Wait for: `✅ Server running on http://localhost:3000`
 
-**Terminal 2 - Frontend:**
+**Terminal 2 (optional) - React dev server:**
+
+Only needed if you're working on the React rewrite (`client/`, auth + tasks only):
 ```bash
 cd client
 npm run dev
@@ -79,9 +79,12 @@ Wait for: `Local: http://localhost:5173`
 
 ### 6. Open and Test
 
-1. Open browser: http://localhost:5173
+1. Open browser: http://localhost:3000 — the full app (legacy frontend, all features)
+   - React rewrite: http://localhost:3000/app, or http://localhost:5173 if Terminal 2 is running
 2. Login with default admin password from `.env`
 3. Start creating tasks! 🎉
+
+> Two frontends? Yes — see [docs/ONBOARDING.md](./docs/ONBOARDING.md) for the 2-minute explanation.
 
 ---
 
@@ -253,7 +256,8 @@ Then press ▶️ in Xcode!
 ## 💡 Tips
 
 - Use `npm run dev` (not `npm start`) for development - it auto-reloads on changes
-- Frontend: http://localhost:5173 (Vite dev server)
+- Full app (legacy frontend): http://localhost:3000
+- React rewrite: http://localhost:3000/app, or http://localhost:5173 (Vite dev server)
 - Backend API: http://localhost:3000/api
 - Check logs for any errors - they're usually helpful!
 - Redis and PostgreSQL must be running before starting the app

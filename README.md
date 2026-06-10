@@ -1,6 +1,8 @@
 # 📋 Task Manager Application
 
-A modern, full-stack task management application with real-time collaboration, built with Node.js, React, and PostgreSQL.
+A modern, full-stack task management application with real-time collaboration, built with Node.js and PostgreSQL.
+
+> **New to the project?** Start with **[docs/ONBOARDING.md](./docs/ONBOARDING.md)** — it explains the one thing that trips everyone up: this app has **two frontends**. The legacy vanilla-JS app (`public/`) is the production UI served at `/`; the React app (`client/`) is an incremental rewrite covering auth + tasks, served at `/app`.
 
 ![Build Status](https://img.shields.io/github/workflow/status/yourusername/task-manager/Node.js%20CI)
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
@@ -93,25 +95,28 @@ Ensure you have the following installed:
 
    **Option B: Production mode**
    ```bash
-   # Build frontend
+   # Build the React app (emits into public/app/ — a committed artifact)
    cd client
    npm run build
    cd ..
 
-   # Start server (serves built frontend)
+   # Start server (serves the legacy app at / and the React build at /app)
    npm start
    ```
 
 6. **Access the application**
-   - Frontend: http://localhost:5173 (dev) or https://small-pr.vercel.app/ (production)
+   - Legacy app (all features): http://localhost:3000 or https://small-pr.vercel.app/ (production)
+   - React app (auth + tasks): http://localhost:3000/app, or http://localhost:5173 in dev mode
    - Backend API: http://localhost:3000/api
    - Default admin login: Use the password from `DEFAULT_ADMIN_PASSWORD`
 
 ## 📖 Documentation
 
+- **[Onboarding Guide](./docs/ONBOARDING.md)** - Day-1 guide: the two frontends, request lifecycle, module patterns
 - **[Architecture Guide](./ARCHITECTURE.md)** - Detailed system architecture and design patterns
-- **[API Documentation](./docs/API.md)** - REST API endpoints (coming soon)
+- **[CLAUDE.md](./CLAUDE.md)** - Conventions and commands (for AI assistants and humans alike)
 - **[iOS App Guide](./ios/TaskManager/README.md)** - Building and deploying the iOS app
+- API reference: not yet written — check the route files in `src/server/routes/`
 
 ## 🏗️ Project Structure
 
@@ -125,7 +130,13 @@ SmallPr/
 │   ├── db/              # Database & migrations
 │   └── cache/           # Redis caching
 │
-├── client/              # Frontend application
+├── public/              # PRIMARY frontend: legacy vanilla-JS app, served at /
+│   ├── index.html       # Single page; script tags define module load order
+│   ├── app.js           # Page orchestrator wiring all feature modules
+│   ├── js/              # Feature modules (tasks, notes, dashboard, admin, ...)
+│   └── app/             # Committed React build output, served at /app
+│
+├── client/              # React rewrite (auth + tasks only), builds into public/app/
 │   └── src/
 │       ├── api/         # API client
 │       ├── components/  # Reusable components
@@ -133,7 +144,6 @@ SmallPr/
 │       └── hooks/       # Custom React hooks
 │
 ├── ios/                 # iOS native app
-├── public/              # Static assets
 └── .github/workflows/   # CI/CD pipelines
 ```
 
@@ -148,7 +158,11 @@ SmallPr/
 - **Zod** - Schema validation
 - **bcrypt** - Password hashing
 
-### Frontend
+### Frontend (legacy app — primary, served at `/`)
+- **Vanilla JavaScript** - IIFE feature modules with injected dependencies (see [public/js/README.md](./public/js/README.md))
+- **No build step** - scripts loaded directly by `public/index.html`
+
+### Frontend (React rewrite — auth + tasks, served at `/app`)
 - **React 18** - UI framework
 - **TypeScript** - Type safety
 - **Vite** - Build tool
@@ -188,7 +202,9 @@ npm start
 ```bash
 cd client
 npm run build
-# Built files will be in client/dist/
+# Built files are emitted into public/app/ (served at /app) and are COMMITTED —
+# rebuild and commit whenever client/ changes, or production serves a stale bundle.
+# The legacy app in public/ needs no build step.
 ```
 
 ### Docker (Optional)

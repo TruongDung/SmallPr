@@ -6,11 +6,14 @@ Your complete guide to the Task Manager application documentation.
 
 New to the project? Follow this path:
 
-1. **[README.md](./README.md)** - Project overview and features
+1. **[docs/ONBOARDING.md](./docs/ONBOARDING.md)** - Day 1: the two frontends, request lifecycle, module patterns
 2. **[QUICK_START.md](./QUICK_START.md)** - Get running in 10 minutes
-3. **[CODE_MAP.md](./CODE_MAP.md)** - Navigate the codebase
-4. **[DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)** - Start building features
-5. **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Deep dive into system design
+3. **[README.md](./README.md)** - Project overview and features
+4. **[CODE_MAP.md](./CODE_MAP.md)** - Navigate the codebase
+5. **[DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md)** - Start building features
+6. **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Deep dive into system design
+
+Also: **[CLAUDE.md](./CLAUDE.md)** — conventions and commands at a glance (written for AI assistants, equally useful for humans).
 
 ---
 
@@ -46,7 +49,7 @@ New to the project? Follow this path:
 ### I'm a New Developer
 
 **Start here:**
-1. [README.md](./README.md) - Understand what this app does
+1. [docs/ONBOARDING.md](./docs/ONBOARDING.md) - The day-1 guide (two frontends, request lifecycle)
 2. [QUICK_START.md](./QUICK_START.md) - Get it running locally
 3. [CODE_MAP.md](./CODE_MAP.md) - Learn where everything lives
 4. [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) - Write your first feature
@@ -138,7 +141,6 @@ New to the project? Follow this path:
 
 ### Features & Capabilities
 - [Authentication](./ARCHITECTURE.md#authentication-flow)
-- [Recurring Tasks](./RECURRING_TASKS.md)
 - [Real-time Updates](./ARCHITECTURE.md#real-time-task-updates)
 - [Caching Strategy](./ARCHITECTURE.md#caching-strategy)
 - [Email Notifications](./README.md#-features)
@@ -167,11 +169,15 @@ New to the project? Follow this path:
 ```
 Documentation:
 ├── README.md                    # Project overview
+├── CLAUDE.md                   # Conventions & commands at a glance
 ├── QUICK_START.md              # Setup guide
 ├── CODE_MAP.md                 # Code navigation
 ├── DEVELOPER_GUIDE.md          # Development guide
 ├── ARCHITECTURE.md             # Architecture docs
-└── DOCUMENTATION_INDEX.md      # This file
+├── DOCUMENTATION_INDEX.md      # This file
+├── docs/ONBOARDING.md          # Day-1 onboarding guide
+├── docs/AI_EVALUATION_HARNESS.md  # Statement-import eval harness
+└── docs/archive/               # Stale historical reports (do not trust)
 
 Application Code:
 ├── app.js                      # App initialization

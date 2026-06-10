@@ -11,12 +11,15 @@ A quick reference guide to navigate the codebase.
 | Add validation | `src/server/schemas/` |
 | Add middleware | `src/server/middleware/` |
 | Add database migration | `src/server/db/migrations/` |
-| Add frontend component | `client/src/components/` or `client/src/features/` |
-| Add API call | `client/src/api/` |
-| Add custom hook | `client/src/hooks/` |
+| Change the main UI (legacy app, all features) | `public/js/` feature modules — see `public/js/README.md` |
+| Add React component (auth + tasks rewrite) | `client/src/components/` or `client/src/features/` |
+| Add API call (React) | `client/src/api/` |
+| Add custom hook (React) | `client/src/hooks/` |
 | Configure the app | `.env` file |
 | Check app initialization | `app.js` |
 | Check server startup | `server.js` |
+
+> Note: there are **two frontends** — the legacy vanilla-JS app in `public/` is the production UI at `/`; the React app in `client/` covers auth + tasks at `/app`. See [docs/ONBOARDING.md](./docs/ONBOARDING.md).
 
 ---
 
@@ -26,9 +29,11 @@ A quick reference guide to navigate the codebase.
 ┌─────────────────────────────────────────────────────────────┐
 │                        CLIENT (Browser)                       │
 │  ┌──────────────────────────────────────────────────────┐   │
-│  │            React Application (Port 5173)              │   │
-│  │                                                        │   │
-│  │  Components → Hooks → API Client → HTTP/WebSocket    │   │
+│  │  Legacy JS app (served at /)  — ALL features          │   │
+│  │  public/index.html + app.js + js/ feature modules     │   │
+│  ├──────────────────────────────────────────────────────┤   │
+│  │  React app (served at /app; Vite :5173 in dev)        │   │
+│  │  Components → Hooks → API Client    — auth + tasks    │   │
 │  └────────────────────────┬───────────────────────────────┘ │
 └────────────────────────────┼─────────────────────────────────┘
                              │

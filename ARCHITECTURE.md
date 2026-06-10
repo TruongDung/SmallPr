@@ -12,6 +12,17 @@
 
 This is a full-stack task management application with real-time updates, user authentication, and multi-platform support (web + iOS).
 
+### The two frontends
+
+This app has **one Express backend and two frontends** — understanding this is a prerequisite for everything else:
+
+| Frontend | Location | Served at | Coverage |
+|----------|----------|-----------|----------|
+| **Legacy vanilla-JS app** (primary, production UI) | `public/` + `public/js/` | `/` | All features: tasks, notes, dashboard, transactions, credit cards, admin, exports |
+| **React rewrite** (incremental) | `client/src/` | `/app` | Auth + tasks only |
+
+Serving model: `express.static(public)` serves the legacy app and everything in `public/`; a `*` fallback sends `public/index.html` for unknown paths (see `setupStaticFiles`/`setupFallbackRoute` in `src/server/bootstrap/middleware.js`). The React build is emitted into `public/app/` (a **committed** artifact, configured in `client/vite.config.ts` with `base: '/app/'`) so it rides along with no extra static config. In dev, Vite serves the React app on :5173 and proxies `/api` + `/socket.io` to the backend on :3000.
+
 ### Key Features
 - ✅ User authentication with session management
 - ✅ Real-time task updates via WebSockets
@@ -38,7 +49,16 @@ SmallPr/
 │   ├── services/            # Business logic layer
 │   └── utils/               # Helper functions
 │
-├── client/                  # Frontend (React + TypeScript)
+├── public/                  # PRIMARY frontend: legacy vanilla-JS app (served at /)
+│   ├── index.html           # Single page; script-tag order = module load order
+│   ├── app.js               # Page orchestrator wiring all feature modules
+│   ├── js/                  # Feature modules (see public/js/README.md)
+│   │   ├── features/        # notes, dashboard, admin, creditCards, tasks, exports
+│   │   ├── i18n.js          # Translations (en/vi)
+│   │   └── ...              # utils, state, apiClient, richText, weather, ...
+│   └── app/                 # Committed React build output (served at /app)
+│
+├── client/                  # React rewrite: auth + tasks only (builds into public/app/)
 │   └── src/
 │       ├── api/             # API client & type definitions
 │       ├── components/      # Reusable UI components
@@ -51,7 +71,6 @@ SmallPr/
 ├── ios/                     # iOS native app wrapper
 │   └── TaskManager/         # Xcode project
 │
-├── public/                  # Static assets
 ├── scripts/                 # Utility scripts
 └── .github/workflows/       # CI/CD pipelines
 ```
@@ -104,7 +123,8 @@ Request → Middleware → Routes → Services → Database
    - HTTP endpoint definitions
    - Request/response handling
    - Input validation
-   - *Pattern*: One file per resource (tasks, auth, admin, etc.)
+   - *Pattern*: One file per resource (tasks, auth, admin, etc.), exporting a `create<X>Router(deps)` factory registered in `bootstrap/routes.js`
+   - *Gotcha*: mounting is mixed — tasks/dashboard/notes/admin/auth routers mount at `/api` and declare full subpaths internally, while credit-cards and transactions mount at `/api/credit-cards` / `/api/transactions`. Check `bootstrap/routes.js` before adding endpoints.
 
 3. **Services Layer** (`src/server/services/`)
    - Business logic implementation
@@ -124,7 +144,26 @@ Request → Middleware → Routes → Services → Database
    - Migrations
    - *Pattern*: Centralized database client
 
-### Frontend Architecture
+### Frontend Architecture — Legacy App (primary, `public/`)
+
+#### Module Factory Pattern
+Every feature is an IIFE registering a factory on `window`; `public/app.js` is the orchestrator that creates and wires the modules:
+
+```
+public/index.html  (script-tag order = load order)
+└── public/app.js  (orchestrator)
+    ├── window.AdminModule.create({ request, t, showStatusToast, ... })
+    ├── window.NotesModule.create({ ... })
+    ├── window.DashboardModule.create({ ... })
+    └── ...one factory per feature, dependencies injected, nothing imported
+```
+
+Rules (details in `public/js/README.md`):
+- New behavior goes in a **new module under `public/js/`**, not into `app.js`
+- Script tags carry `?v=cache-clear-...` params — bump them when editing a file
+- Shared infra (`utils.js`, `state.js`, `apiClient.js`) loads before feature modules; `app.js` loads last
+
+### Frontend Architecture — React App (`client/`, served at `/app`)
 
 #### Component-Based Architecture
 ```
@@ -164,7 +203,7 @@ App
 ```
 1. User submits credentials → POST /api/auth/login
 2. Backend validates → bcrypt.compare(password, hash)
-3. Session created → express-session stores in Redis
+3. Session created → express-session stores it in PostgreSQL (connect-pg-simple, `session` table)
 4. Cookie sent to client → httpOnly, secure in production
 5. Subsequent requests → Session cookie validates user
 ```
