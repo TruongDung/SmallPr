@@ -255,10 +255,28 @@
 
       // Draw a multi-line block field (label on its own line, content below).
       // Used for Description and Comment so long content always shows in full.
+      // Preserves explicit line breaks from the original text.
       const drawBlockField = (label, value) => {
         const content = (value && value.trim()) || t('notAvailable');
         const lineHeight = 5;
-        const lines = doc.splitTextToSize(content, contentWidth - 6);
+        const blockPadding = 3;
+        
+        // Split by explicit newlines first, then wrap each paragraph
+        const paragraphs = content.split(/\n/);
+        const allLines = [];
+        paragraphs.forEach((para, idx) => {
+          if (para.trim() === '') {
+            // Preserve blank lines as empty entries
+            allLines.push('');
+          } else {
+            const wrapped = doc.splitTextToSize(para, contentWidth - 6);
+            allLines.push(...wrapped);
+          }
+          // Add a visual gap between paragraphs (except after the last one)
+          if (idx < paragraphs.length - 1 && para.trim() !== '') {
+            allLines.push(''); // blank line for paragraph spacing
+          }
+        });
 
         // Label line
         ensureSpace(6);
@@ -271,10 +289,10 @@
         doc.setFontSize(10);
         doc.setTextColor(...colors.text);
         let index = 0;
-        while (index < lines.length) {
+        while (index < allLines.length) {
           const remainingSpace = contentBottom - y;
           const linesThatFit = Math.max(1, Math.floor(remainingSpace / lineHeight));
-          const chunk = lines.slice(index, index + linesThatFit);
+          const chunk = allLines.slice(index, index + linesThatFit);
 
           // Draw subtle left accent bar for the chunk
           const blockHeight = chunk.length * lineHeight + 2;
@@ -286,12 +304,17 @@
           doc.setLineWidth(0.2);
 
           doc.setTextColor(...colors.text);
-          doc.text(chunk, marginX + 3, y);
+          // Draw each line individually to handle blank lines properly
+          chunk.forEach((line, lineIdx) => {
+            if (line !== '') {
+              doc.text(line, marginX + blockPadding, y + (lineIdx * lineHeight));
+            }
+          });
 
           y += chunk.length * lineHeight;
           index += chunk.length;
 
-          if (index < lines.length) {
+          if (index < allLines.length) {
             // Need a new page for the rest
             drawFooter();
             doc.addPage();

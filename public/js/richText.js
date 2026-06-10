@@ -84,7 +84,18 @@
       if (!hasRichTextMarkup(html)) return String(html || '').trim();
       const container = document.createElement('div');
       container.innerHTML = sanitizeRichText(html);
-      return container.textContent.trim();
+      // Convert block elements and <br> to newlines before extracting text
+      container.querySelectorAll('br').forEach((br) => br.replaceWith('\n'));
+      container.querySelectorAll('p, div').forEach((el) => {
+        // Add newline before block element content (unless it's the first element)
+        if (el.previousSibling) {
+          el.before('\n');
+        }
+      });
+      // Normalize multiple newlines and trim
+      return container.textContent
+        .replace(/\n{3,}/g, '\n\n')  // Max 2 consecutive newlines
+        .trim();
     };
 
     const setRichEditorValue = (editor, value = '') => {
