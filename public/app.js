@@ -3787,8 +3787,12 @@ if (impersonateUserSelect) {
 }
 refreshAuditLog?.addEventListener('click', () => loadAuditLogs(auditLogPage));
 auditLogSearchInput?.addEventListener('input', scheduleAuditLogSearch);
-auditLogPrevious?.addEventListener('click', () => loadAuditLogs(auditLogPage - 1));
-auditLogNext?.addEventListener('click', () => loadAuditLogs(auditLogPage + 1));
+auditLogPrevious?.addEventListener('click', () => {
+  if (auditLogPage > 1) loadAuditLogs(auditLogPage - 1);
+});
+auditLogNext?.addEventListener('click', () => {
+  if (auditLogNext && !auditLogNext.disabled) loadAuditLogs(auditLogPage + 1);
+});
 cancelAdminUser.addEventListener('click', hideAdminUserModal);
 userSettingsForm?.addEventListener('submit', handleUserSettingsSubmit);
 passwordSettingsForm?.addEventListener('submit', handlePasswordSettingsSubmit);
