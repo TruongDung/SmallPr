@@ -159,7 +159,11 @@
       if (savePasswordSettings) savePasswordSettings.title = t('save');
       setText('#weather-title', t('weather'));
       weatherCityInput.placeholder = t('cityPlaceholder');
-      setText('#weather-form button[type="submit"]', t('addCity'));
+      const weatherAddButton = document.querySelector('#weather-form button[type="submit"]');
+      if (weatherAddButton) {
+        weatherAddButton.setAttribute('aria-label', t('addCity'));
+        weatherAddButton.title = t('addCity');
+      }
       setText('label[for="task-search-input"]', t('searchTasks'));
       taskSearchInput.placeholder = t('searchTasksPlaceholder');
       clearTaskSearch.setAttribute('aria-label', t('clearSearch'));

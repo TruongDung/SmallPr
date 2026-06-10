@@ -366,7 +366,11 @@ const applyTranslations = () => {
   setText('#weather-title', t('weather'));
   const weatherCityInput = document.getElementById('weather-city-input');
   if (weatherCityInput) weatherCityInput.placeholder = t('cityPlaceholder');
-  setText('#weather-form button[type="submit"]', t('addCity'));
+  const weatherAddButton = document.querySelector('#weather-form button[type="submit"]');
+  if (weatherAddButton) {
+    weatherAddButton.setAttribute('aria-label', t('addCity'));
+    weatherAddButton.title = t('addCity');
+  }
   creditCardModule.applyTranslations();
   notesModule.applyTranslations();
   dashboardModule.applyTranslations();
