@@ -158,7 +158,7 @@ Also: **[CLAUDE.md](./CLAUDE.md)** — conventions and commands at a glance (wri
 ### Mobile Development
 - [iOS App Overview](./ios/TaskManager/README.md)
 - [iOS Build Instructions](./ios/TaskManager/README.md#build-on-mac)
-- [GitHub Actions iOS Build](./.github/workflows/ios-build.yml)
+- [GitHub Actions workflows](./.github/workflows/)
 
 ---
 
