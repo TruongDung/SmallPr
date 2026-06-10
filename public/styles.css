@@ -2942,6 +2942,10 @@ body.theme-dark .audit-log-pagination button.secondary:focus-visible:not(:disabl
   background: #d97706;
 }
 
+.financial-calendar-dot-transaction {
+  background: #7c3aed;
+}
+
 .financial-calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -3008,6 +3012,10 @@ body.theme-dark .audit-log-pagination button.secondary:focus-visible:not(:disabl
 
 .financial-calendar-marker-bill {
   background: #d97706;
+}
+
+.financial-calendar-marker-transaction {
+  background: #7c3aed;
 }
 
 .financial-calendar-upcoming {

@@ -1,7 +1,7 @@
 (function () {
   // Financial calendar: shows recurring monthly credit-card due dates (closing
-  // dates) and expense/bill due dates on a month grid plus an upcoming list.
-  const createFinancialCalendar = ({ formatters, t, getLanguage }) => {
+  // dates), expense/bill due dates, and transactions for the month on a month grid plus an upcoming list.
+  const createFinancialCalendar = ({ formatters, t, getLanguage, onLoadTransactions }) => {
     const grid = document.getElementById('financial-calendar-grid');
     const label = document.getElementById('financial-calendar-label');
     const upcomingList = document.getElementById('financial-calendar-upcoming-list');
@@ -11,6 +11,7 @@
 
     let cards = [];
     let bills = [];
+    let transactions = [];
     let cursor = startOfMonth(new Date());
 
     function startOfDay(date) {
@@ -77,6 +78,16 @@
         .filter((entry) => entry.day === day);
     }
 
+    function getTransactionsForDay(date) {
+      return transactions.filter((transaction) => {
+        if (!transaction.occurred_on) return false;
+        const parts = String(transaction.occurred_on).match(/^(\d{4})-(\d{2})-(\d{2})/);
+        if (!parts) return false;
+        const txDate = new Date(Number(parts[1]), Number(parts[2]) - 1, Number(parts[3]));
+        return txDate.getTime() === date.getTime();
+      });
+    }
+
     function buildMarker(kind, text) {
       const marker = document.createElement('span');
       marker.className = `financial-calendar-marker financial-calendar-marker-${kind}`;
@@ -108,6 +119,10 @@
         });
         getBillEntriesForDay(date.getDate()).forEach((entry) => {
           markers.append(buildMarker('bill', entry.bill.item || t('notAvailable')));
+        });
+        getTransactionsForDay(date).forEach((tx) => {
+          const label = tx.category || tx.note || t('notAvailable');
+          markers.append(buildMarker('transaction', label));
         });
 
         if (markers.childElementCount) cell.append(markers);
@@ -196,12 +211,17 @@
 
     function moveCursor(direction) {
       cursor = new Date(cursor.getFullYear(), cursor.getMonth() + direction, 1);
+      // Load transactions for the new month
+      if (typeof onLoadTransactions === 'function') {
+        onLoadTransactions(cursor.getFullYear(), cursor.getMonth() + 1);
+      }
       render();
     }
 
-    function setData({ cards: nextCards, bills: nextBills }) {
+    function setData({ cards: nextCards, bills: nextBills, transactions: nextTransactions }) {
       if (Array.isArray(nextCards)) cards = nextCards;
       if (Array.isArray(nextBills)) bills = nextBills;
+      if (Array.isArray(nextTransactions)) transactions = nextTransactions;
     }
 
     function bind() {

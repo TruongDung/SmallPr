@@ -181,6 +181,14 @@
       formatters,
       t,
       getLanguage,
+      onLoadTransactions: async (year, month) => {
+        const result = await request(`/api/transactions?year=${year}&month=${month}`);
+        if (!result.error && result.transactions) {
+          financialCalendar.setData({
+            transactions: result.transactions,
+          });
+        }
+      },
     });
 
     const closeEditModal = () => {
@@ -317,11 +325,16 @@
     };
 
     const load = async () => {
-      const [cardsResult, usersResult, fastAccessBillsResult, fastAccessLinksResult] = await Promise.all([
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = now.getMonth() + 1;
+      
+      const [cardsResult, usersResult, fastAccessBillsResult, fastAccessLinksResult, transactionsResult] = await Promise.all([
         request('/api/credit-cards'),
         request('/api/credit-cards/users'),
         request('/api/credit-cards/fast-access-bills'),
         request('/api/credit-cards/fast-access-links'),
+        request(`/api/transactions?year=${year}&month=${month}`),
       ]);
 
       if (cardsResult.error) {
@@ -349,7 +362,11 @@
       render(cards);
       renderFastAccessLinks();
       fastAccessBills.render();
-      financialCalendar.setData({ cards, bills: fastAccessBillsResult.bills || [] });
+      financialCalendar.setData({ 
+        cards, 
+        bills: fastAccessBillsResult.bills || [],
+        transactions: transactionsResult.transactions || []
+      });
       financialCalendar.render();
     };
 
@@ -503,7 +520,18 @@
 
           // Render the financial calendar when its tab is clicked
           if (tabName === 'calendar') {
-            financialCalendar.render();
+            // Load current month's transactions when calendar tab is clicked
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1;
+            request(`/api/transactions?year=${year}&month=${month}`).then((result) => {
+              if (!result.error) {
+                financialCalendar.setData({ 
+                  transactions: result.transactions || []
+                });
+              }
+              financialCalendar.render();
+            });
           }
         });
       });
