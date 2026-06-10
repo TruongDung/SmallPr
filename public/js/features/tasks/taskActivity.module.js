@@ -24,7 +24,7 @@
     escapeHtml,
     renderRelatedTasks,
   }) => {
-    let activeFilter = 'all';
+    let activeFilter = 'comments';
 
     const getActor = () => {
       const currentUser = getCurrentUser();
@@ -285,7 +285,7 @@
     };
 
     const reset = () => {
-      activeFilter = 'all';
+      activeFilter = 'comments';
       setExpanded(true);
       if (elements.list) elements.list.innerHTML = '';
     };
