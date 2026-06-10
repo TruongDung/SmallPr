@@ -468,7 +468,14 @@
       // Toggle preview button
       if (togglePreviewButton) {
         togglePreviewButton.addEventListener('click', () => {
+          const enteringEditMode = showPreview;
           setPreviewMode(!showPreview);
+          // When switching into edit mode, drop the caret at the end of the
+          // body and scroll there. Done synchronously inside the tap gesture so
+          // iOS opens the keyboard and honors the caret position on long notes.
+          if (enteringEditMode) {
+            focusBodyAtEnd();
+          }
         });
       }
 
@@ -482,11 +489,20 @@
       if (previewDiv) {
         previewDiv.addEventListener('click', (event) => {
           const input = event.target.closest('.note-check-input');
-          if (!input) return;
-          event.preventDefault();
-          const label = input.closest('[data-check-index]');
-          const index = Number(label?.dataset.checkIndex);
-          if (Number.isInteger(index)) toggleCheckboxLine(index);
+          if (input) {
+            event.preventDefault();
+            const label = input.closest('[data-check-index]');
+            const index = Number(label?.dataset.checkIndex);
+            if (Number.isInteger(index)) toggleCheckboxLine(index);
+            return;
+          }
+
+          // Tapping anywhere else in the rendered preview enters edit mode and
+          // drops the caret at the end of the note. Handled synchronously so
+          // iOS opens the keyboard within the tap gesture for long notes.
+          if (event.target.closest('a[href]')) return;
+          setPreviewMode(false);
+          focusBodyAtEnd();
         });
       }
 
@@ -595,6 +611,20 @@
         togglePreviewButton.textContent = enabled ? 'Edit' : 'Preview';
       }
       if (enabled) updatePreview();
+    };
+
+    // Focus the body textarea and place the caret at the very end, scrolling
+    // the textarea so the caret is visible. Used when entering edit mode on a
+    // long note so the user lands where they left off rather than at the top.
+    const focusBodyAtEnd = () => {
+      const end = bodyInput.value.length;
+      bodyInput.focus();
+      try {
+        bodyInput.setSelectionRange(end, end);
+      } catch {
+        // setSelectionRange can throw on some input types; ignore safely.
+      }
+      bodyInput.scrollTop = bodyInput.scrollHeight;
     };
 
     // Insert a `- [ ] ` task-list marker on its own line at the caret. Starts a
