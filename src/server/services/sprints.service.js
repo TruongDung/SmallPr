@@ -32,7 +32,7 @@ const createSprintsService = ({ allAsync, getAsync, runAsync }) => {
     await runAsync(
       `UPDATE sprints
        SET name = ?, goal = ?, start_date = ?, end_date = ?, status = ?,
-           updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+           updated_at = CURRENT_TIMESTAMP
        WHERE id = ? AND user_id = ?`,
       [name, goal || null, startDate || null, endDate || null, status, id, userId]
     );
