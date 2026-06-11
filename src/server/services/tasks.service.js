@@ -256,6 +256,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     parentTaskId,
     nextOccurrenceDate,
     relatedTaskIds,
+    sprintId,
   }) => {
     const result = await runAsync(
       `INSERT INTO tasks (
@@ -263,8 +264,8 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         attachment_name, attachment_type, attachment_data, attachment_size,
         is_recurring, recurrence_pattern, recurrence_interval, recurrence_days, recurrence_timezone,
         recurrence_end_date, recurrence_occurrence_limit, recurring_rule_id, recurrence_occurrence_index,
-        parent_task_id, next_occurrence_date
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+        parent_task_id, next_occurrence_date, sprint_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       [
         userId,
         title,
@@ -291,7 +292,8 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         recurringRuleId || null,
         recurrenceOccurrenceIndex || null,
         parentTaskId || null,
-        nextOccurrenceDate || null
+        nextOccurrenceDate || null,
+        sprintId || null,
       ]
     );
 
@@ -324,7 +326,9 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     recurrenceEndDate,
     recurrenceOccurrenceLimit,
     hasRelatedTaskUpdate,
-    relatedTaskIds
+    relatedTaskIds,
+    hasSprintUpdate,
+    sprintId,
   }) => {
     await runAsync(
       `UPDATE tasks SET
@@ -350,6 +354,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         recurrence_timezone = ?,
         recurrence_end_date = ?,
         recurrence_occurrence_limit = ?,
+        sprint_id = ?,
         updated_at = CURRENT_TIMESTAMP
        WHERE id = ? AND user_id = ?`,
       [
@@ -375,6 +380,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         recurrenceTimezone !== undefined ? recurrenceTimezone : existingTask.recurrence_timezone,
         recurrenceEndDate !== undefined ? recurrenceEndDate : existingTask.recurrence_end_date,
         recurrenceOccurrenceLimit !== undefined ? recurrenceOccurrenceLimit : existingTask.recurrence_occurrence_limit,
+        hasSprintUpdate ? sprintId : existingTask.sprint_id,
         id,
         userId
       ]

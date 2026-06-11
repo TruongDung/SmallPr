@@ -2,6 +2,27 @@
 
 export type TaskStatus = 'todo' | 'in_progress' | 'done';
 export type TaskPriority = 'low' | 'medium' | 'high';
+export type SprintStatus = 'planned' | 'active' | 'completed';
+
+export interface Sprint {
+  id: number;
+  name: string;
+  goal?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  status: SprintStatus;
+  task_count?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SprintPayload {
+  name?: string;
+  goal?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  status?: SprintStatus;
+}
 
 export interface Task {
   id: number;
@@ -13,6 +34,7 @@ export interface Task {
   status?: TaskStatus | null;
   completed?: boolean;
   archived?: boolean;
+  sprint_id?: number | null;
   reminder_at?: string | null;
   attachment_data?: string | null;
   attachment_name?: string | null;
@@ -36,6 +58,7 @@ export interface TaskPayload {
   status?: TaskStatus;
   completed?: boolean;
   archived?: boolean;
+  sprint_id?: number | null;
   reminder_at?: string | null;
   attachment?: AttachmentPayload | null;
   language?: string;

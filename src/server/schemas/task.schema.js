@@ -173,6 +173,7 @@ const validateCreateTask = (body = {}) => {
     recurrence_end_date,
     recurrence_occurrence_limit,
     related_task_ids,
+    sprint_id,
   } = body;
 
   if (!title) {
@@ -232,6 +233,13 @@ const validateCreateTask = (body = {}) => {
     return taskError(recurrence.error);
   }
 
+  const normalizedSprintId = sprint_id !== undefined && sprint_id !== null && sprint_id !== ''
+    ? Number(sprint_id)
+    : null;
+  if (normalizedSprintId !== null && !Number.isInteger(normalizedSprintId)) {
+    return taskError('Sprint ID must be a valid number');
+  }
+
   return {
     value: {
       title,
@@ -247,6 +255,7 @@ const validateCreateTask = (body = {}) => {
       language,
       ...recurrence,
       relatedTaskIds: relatedTasks.relatedTaskIds || [],
+      sprintId: normalizedSprintId,
     },
   };
 };
@@ -273,10 +282,12 @@ const validateUpdateTask = (body = {}, existingTask) => {
     recurrence_end_date,
     recurrence_occurrence_limit,
     related_task_ids,
+    sprint_id,
   } = body;
   const hasAttachmentUpdate = Object.prototype.hasOwnProperty.call(body, 'attachment');
   const hasStatusUpdate = Object.prototype.hasOwnProperty.call(body, 'status');
   const hasTagUpdate = Object.prototype.hasOwnProperty.call(body, 'tag');
+  const hasSprintUpdate = Object.prototype.hasOwnProperty.call(body, 'sprint_id');
 
   if (title !== undefined && title.length > MAX_TASK_TITLE_LENGTH) {
     return taskError(`Task title must be ${MAX_TASK_TITLE_LENGTH} characters or less`);
@@ -338,6 +349,16 @@ const validateUpdateTask = (body = {}, existingTask) => {
     return taskError(recurrence.error);
   }
 
+  let normalizedSprintId = undefined;
+  if (hasSprintUpdate) {
+    normalizedSprintId = sprint_id !== undefined && sprint_id !== null && sprint_id !== ''
+      ? Number(sprint_id)
+      : null;
+    if (normalizedSprintId !== null && !Number.isInteger(normalizedSprintId)) {
+      return taskError('Sprint ID must be a valid number');
+    }
+  }
+
   return {
     value: {
       title,
@@ -357,6 +378,8 @@ const validateUpdateTask = (body = {}, existingTask) => {
       recurrenceScope: body.recurrence_scope === 'single' ? 'single' : 'future',
       hasRelatedTaskUpdate: relatedTasks.hasRelatedTaskUpdate,
       relatedTaskIds: relatedTasks.relatedTaskIds,
+      hasSprintUpdate,
+      sprintId: normalizedSprintId,
     },
   };
 };

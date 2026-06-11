@@ -22,8 +22,16 @@ export const useRealtime = (enabled: boolean) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     };
 
+    const invalidateSprints = () => {
+      queryClient.invalidateQueries({ queryKey: ['sprints'] });
+    };
+
     ['task:created', 'task:updated', 'task:deleted'].forEach((event) => {
       socket.on(event, invalidateTasks);
+    });
+
+    ['sprint:created', 'sprint:updated', 'sprint:deleted'].forEach((event) => {
+      socket.on(event, invalidateSprints);
     });
 
     return () => {

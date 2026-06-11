@@ -7,8 +7,10 @@ import { useTheme } from './store/theme';
 import { useToast } from './components/Toast';
 import { LoginGate } from './features/auth/LoginGate';
 import { TaskColumn } from './features/tasks/TaskColumn';
+import { SprintList } from './features/sprints/SprintList';
+import { SprintBoard } from './features/sprints/SprintBoard';
 import { sortTasksByPriority, taskStatus } from './features/tasks/taskHelpers';
-import type { Task, TaskStatus } from './api/types';
+import type { Sprint, Task, TaskStatus } from './api/types';
 
 const COLUMNS: { status: TaskStatus; labelKey: string }[] = [
   { status: 'todo', labelKey: 'open' },
@@ -89,6 +91,21 @@ const TaskBoard = () => {
   );
 };
 
+const SprintView = () => {
+  const [selectedSprint, setSelectedSprint] = useState<Sprint | null>(null);
+
+  if (selectedSprint) {
+    return (
+      <SprintBoard
+        sprint={selectedSprint}
+        onBack={() => setSelectedSprint(null)}
+      />
+    );
+  }
+
+  return <SprintList onSelectSprint={setSelectedSprint} />;
+};
+
 const Header = () => {
   const { t, language, setLanguage } = useI18n();
   const { theme, toggleTheme } = useTheme();
@@ -119,13 +136,36 @@ const Header = () => {
   );
 };
 
-export const App = () => (
-  <LoginGate>
-    <div className="app-shell">
-      <Header />
-      <main className="app-main">
-        <TaskBoard />
-      </main>
-    </div>
-  </LoginGate>
-);
+type AppTab = 'board' | 'sprints';
+
+export const App = () => {
+  const { t } = useI18n();
+  const [tab, setTab] = useState<AppTab>('board');
+
+  return (
+    <LoginGate>
+      <div className="app-shell">
+        <Header />
+        <nav className="app-tab-nav" aria-label="Main navigation">
+          <button
+            type="button"
+            className={`app-tab${tab === 'board' ? ' app-tab-active' : ''}`}
+            onClick={() => setTab('board')}
+          >
+            {t('tasks')}
+          </button>
+          <button
+            type="button"
+            className={`app-tab${tab === 'sprints' ? ' app-tab-active' : ''}`}
+            onClick={() => setTab('sprints')}
+          >
+            {t('sprints')}
+          </button>
+        </nav>
+        <main className="app-main">
+          {tab === 'board' ? <TaskBoard /> : <SprintView />}
+        </main>
+      </div>
+    </LoginGate>
+  );
+};

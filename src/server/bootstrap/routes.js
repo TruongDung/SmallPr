@@ -5,6 +5,7 @@ const createDailyQuoteRouter = require('../routes/dailyQuote.routes');
 const createDashboardRouter = require('../routes/dashboard.routes');
 const createEvaluationsRouter = require('../routes/evaluations.routes');
 const createNotesRouter = require('../routes/notes.routes');
+const createSprintsRouter = require('../routes/sprints.routes');
 const createTasksRouter = require('../routes/tasks.routes');
 const createTransactionsRouter = require('../routes/transactions.routes');
 const createWeatherRouter = require('../routes/weather.routes');
@@ -57,6 +58,15 @@ const registerRoutes = (app, {
     authRequired,
     auditLogs,
     allAsync,
+    getAsync,
+    runAsync,
+  }));
+
+  // Sprint routes
+  app.use('/api', createSprintsRouter({
+    authRequired,
+    allAsync,
+    cache: redisCache,
     getAsync,
     runAsync,
   }));

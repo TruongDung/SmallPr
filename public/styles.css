@@ -7876,3 +7876,234 @@ body.theme-dark .notes-editor-actions button.secondary:hover {
     padding: 12px;
   }
 }
+
+/* ── React App: tab navigation ────────────────────────────────────────────── */
+.app-tab-nav {
+  display: flex;
+  gap: 4px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.app-tab {
+  padding: 10px 18px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  margin-bottom: -1px;
+}
+
+.app-tab:hover {
+  color: var(--text);
+}
+
+.app-tab-active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+/* ── Sprint list ──────────────────────────────────────────────────────────── */
+.sprint-list-view {
+  padding: 24px 16px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.sprint-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.sprint-list-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sprint-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.sprint-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s;
+  box-shadow: 0 1px 4px var(--card-shadow);
+}
+
+.sprint-card:hover,
+.sprint-card:focus {
+  border-color: var(--primary);
+  box-shadow: 0 2px 8px var(--card-shadow);
+  outline: none;
+}
+
+.sprint-card-active {
+  border-left: 3px solid var(--primary);
+}
+
+.sprint-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.sprint-card-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.sprint-card:hover .sprint-card-actions,
+.sprint-card:focus-within .sprint-card-actions {
+  opacity: 1;
+}
+
+.sprint-card-actions button {
+  padding: 2px 7px;
+  font-size: 0.85rem;
+}
+
+.sprint-card-name {
+  margin: 0 0 6px 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sprint-card-goal {
+  margin: 0 0 10px 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sprint-card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-top: 8px;
+}
+
+.sprint-dates {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.sprint-task-count {
+  font-size: 0.8rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Sprint status badges */
+.sprint-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.sprint-status-planned {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.sprint-status-active {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.sprint-status-completed {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+body.theme-dark .sprint-status-planned {
+  background: #374151;
+  color: #9ca3af;
+}
+
+body.theme-dark .sprint-status-active {
+  background: #1e3353;
+  color: #93c5fd;
+}
+
+body.theme-dark .sprint-status-completed {
+  background: #123123;
+  color: #86efac;
+}
+
+/* ── Sprint board ─────────────────────────────────────────────────────────── */
+.sprint-board-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.sprint-board-header {
+  padding: 16px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.sprint-board-header > button {
+  margin-bottom: 12px;
+}
+
+.sprint-board-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.sprint-board-title h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sprint-board-goal {
+  margin: 4px 0 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+@media (max-width: 640px) {
+  .sprint-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .sprint-list-view {
+    padding: 16px 12px;
+  }
+}
