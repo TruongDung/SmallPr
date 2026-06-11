@@ -115,6 +115,24 @@
       renderAuditLogPagination(result.pagination);
     };
 
+    // Wraps loadAuditLogs with visible UI feedback for the manual Refresh
+    // action so users see the click took effect even when data is unchanged.
+    const refreshAuditLogsWithFeedback = async () => {
+      if (!refreshAuditLog) return;
+      if (refreshAuditLog.dataset.loading === 'true') return;
+      refreshAuditLog.dataset.loading = 'true';
+      refreshAuditLog.disabled = true;
+      refreshAuditLog.classList.add('is-loading');
+      try {
+        await loadAuditLogs(auditLogPage);
+        showStatusToast(t('refresh'));
+      } finally {
+        refreshAuditLog.disabled = false;
+        refreshAuditLog.classList.remove('is-loading');
+        delete refreshAuditLog.dataset.loading;
+      }
+    };
+
     const scheduleAuditLogSearch = () => {
       if (auditLogSearchTimer) clearTimeout(auditLogSearchTimer);
       auditLogSearchTimer = setTimeout(() => {
@@ -635,7 +653,7 @@
           if (event.target.value) startImpersonation(event.target.value);
         });
       }
-      refreshAuditLog?.addEventListener('click', () => loadAuditLogs(auditLogPage));
+      refreshAuditLog?.addEventListener('click', refreshAuditLogsWithFeedback);
       auditLogSearchInput?.addEventListener('input', scheduleAuditLogSearch);
       auditLogPrevious?.addEventListener('click', () => {
         if (auditLogPage > 1) loadAuditLogs(auditLogPage - 1);
