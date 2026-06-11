@@ -1,4 +1,5 @@
 const AUDIT_ENTITY_TYPES = new Set(['task', 'transaction', 'note', 'credit_card', 'expense', 'user', 'recurrence']);
+const AUDIT_LOGS_ENABLED_KEY = 'audit_logs_enabled';
 const AUDIT_ACTIONS = new Set([
   'create',
   'edit',
@@ -13,6 +14,12 @@ const AUDIT_ACTIONS = new Set([
   'task_auto_generated',
 ]);
 
+const normalizeAuditLogsEnabled = (value) => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'string') return value.toLowerCase() !== 'false';
+  return value !== false;
+};
+
 const createAuditLogService = ({ allAsync, runAsync }) => {
   // Audit snapshots should capture the entity's own fields, not large derived
   // or binary data. Stripping these keeps the audit_logs table from ballooning
@@ -24,6 +31,31 @@ const createAuditLogService = ({ allAsync, runAsync }) => {
     const clone = { ...data };
     HEAVY_SNAPSHOT_KEYS.forEach((key) => { delete clone[key]; });
     return clone;
+  };
+
+  const isEnabled = async () => {
+    const rows = await allAsync(
+      'SELECT setting_value FROM app_settings WHERE setting_key = ?',
+      [AUDIT_LOGS_ENABLED_KEY]
+    );
+    return normalizeAuditLogsEnabled(rows[0]?.setting_value ?? true);
+  };
+
+  const getSettings = async () => ({
+    enabled: await isEnabled(),
+  });
+
+  const setEnabled = async (enabled) => {
+    const normalized = Boolean(enabled);
+    await runAsync(
+      `INSERT INTO app_settings (setting_key, setting_value, updated_at)
+       VALUES (?, ?::jsonb, CURRENT_TIMESTAMP)
+       ON CONFLICT (setting_key)
+       DO UPDATE SET setting_value = EXCLUDED.setting_value,
+                     updated_at = CURRENT_TIMESTAMP`,
+      [AUDIT_LOGS_ENABLED_KEY, JSON.stringify(normalized)]
+    );
+    return { enabled: normalized };
   };
 
   const record = async ({
@@ -41,6 +73,8 @@ const createAuditLogService = ({ allAsync, runAsync }) => {
     if (!AUDIT_ACTIONS.has(action) || !AUDIT_ENTITY_TYPES.has(entityType)) {
       throw new Error('Invalid audit log event');
     }
+
+    if (!(await isEnabled())) return null;
 
     const beforeSnapshot = stripHeavySnapshot(before);
     const afterSnapshot = stripHeavySnapshot(after);
@@ -163,8 +197,10 @@ const createAuditLogService = ({ allAsync, runAsync }) => {
   };
 
   return {
+    getSettings,
     list,
     record,
+    setEnabled,
   };
 };
 

@@ -57,6 +57,30 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsyn
     }
   });
 
+  router.get('/admin/audit-logs/settings', adminRequired, async (req, res) => {
+    try {
+      const settings = await auditLogs.getSettings();
+      res.json({ settings });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to load audit log settings');
+      res.status(500).json({ error: 'Failed to load audit log settings' });
+    }
+  });
+
+  router.put('/admin/audit-logs/settings', adminRequired, async (req, res) => {
+    if (typeof req.body?.enabled !== 'boolean') {
+      return res.status(400).json({ error: 'Audit log saving setting is required' });
+    }
+
+    try {
+      const settings = await auditLogs.setEnabled(req.body.enabled);
+      res.json({ settings });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to save audit log settings');
+      res.status(500).json({ error: 'Failed to save audit log settings' });
+    }
+  });
+
   router.get('/admin/users', adminRequired, async (req, res) => {
     try {
       const users = await allAsync(

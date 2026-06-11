@@ -39,6 +39,7 @@
     const auditLogSearchInput = document.getElementById('audit-log-search-input');
     const refreshAuditLog = document.getElementById('refresh-audit-log');
     const clearAuditLog = document.getElementById('clear-audit-log');
+    const auditLogSavingToggle = document.getElementById('toggle-audit-log-saving');
     const openAddUserModalButton = document.getElementById('open-add-user-modal');
     const adminUserModal = document.getElementById('admin-user-modal');
     const adminUserModalTitle = document.getElementById('admin-user-modal-title');
@@ -63,8 +64,34 @@
     let auditLogs = [];
     let auditLogPage = 1;
     let auditLogSearchTimer = null;
+    let auditLogSavingEnabled = true;
     let pendingAdminUser = null;
     let pendingResetPasswordUser = null;
+
+    const renderAuditLogSavingToggle = () => {
+      if (!auditLogSavingToggle) return;
+      auditLogSavingToggle.textContent = auditLogSavingEnabled
+        ? t('auditLogSavingOn')
+        : t('auditLogSavingOff');
+      auditLogSavingToggle.title = auditLogSavingEnabled
+        ? t('disableAuditLogSaving')
+        : t('enableAuditLogSaving');
+      auditLogSavingToggle.setAttribute('aria-label', auditLogSavingToggle.title);
+      auditLogSavingToggle.setAttribute('aria-pressed', String(auditLogSavingEnabled));
+      auditLogSavingToggle.classList.toggle('is-enabled', auditLogSavingEnabled);
+      auditLogSavingToggle.classList.toggle('is-disabled', !auditLogSavingEnabled);
+    };
+
+    const loadAuditLogSettings = async () => {
+      if (!isAdminUser() || !auditLogSavingToggle) return;
+      const result = await request('/api/admin/audit-logs/settings');
+      if (result.error) {
+        showStatusToast(result.error, 'error');
+        return;
+      }
+      auditLogSavingEnabled = result.settings?.enabled !== false;
+      renderAuditLogSavingToggle();
+    };
 
     const loadUsers = async () => {
       adminMessage.textContent = '';
@@ -77,6 +104,7 @@
       renderImpersonateOptions(users);
       renderUsers(users);
       auditLogPage = 1;
+      await loadAuditLogSettings();
       await loadAuditLogs();
     };
 
@@ -151,6 +179,31 @@
         showStatusToast(error.message || 'Failed to clear audit log', 'error');
       } finally {
         clearAuditLog.disabled = false;
+      }
+    };
+
+    const updateAuditLogSaving = async () => {
+      if (!auditLogSavingToggle) return;
+      const nextEnabled = !auditLogSavingEnabled;
+      auditLogSavingToggle.disabled = true;
+
+      try {
+        const result = await request('/api/admin/audit-logs/settings', {
+          method: 'PUT',
+          body: JSON.stringify({ enabled: nextEnabled }),
+        });
+        if (result.error) {
+          showStatusToast(result.error, 'error');
+          return;
+        }
+
+        auditLogSavingEnabled = result.settings?.enabled !== false;
+        renderAuditLogSavingToggle();
+        showStatusToast(t(auditLogSavingEnabled ? 'auditLogSavingEnabled' : 'auditLogSavingDisabled'));
+      } catch (error) {
+        showStatusToast(error.message || 'Failed to save audit log setting', 'error');
+      } finally {
+        auditLogSavingToggle.disabled = false;
       }
     };
 
@@ -641,6 +694,7 @@
       setText('#audit-log-title', t('auditLog'));
       setText('label[for="audit-log-search-input"]', t('searchAuditLog'));
       if (auditLogSearchInput) auditLogSearchInput.placeholder = t('searchAuditLog');
+      renderAuditLogSavingToggle();
       setText('#refresh-audit-log', t('refresh'));
       setText('#audit-log-previous', t('previousPage'));
       setText('#audit-log-next', t('nextPage'));
@@ -656,6 +710,7 @@
     const renderFromState = () => {
       renderUsers(users);
       renderAuditLogs(auditLogs);
+      renderAuditLogSavingToggle();
     };
 
     const sendSummaryEmail = async () => {
@@ -717,6 +772,7 @@
       }
       refreshAuditLog?.addEventListener('click', refreshAuditLogsWithFeedback);
       clearAuditLog?.addEventListener('click', clearAuditLogs);
+      auditLogSavingToggle?.addEventListener('click', updateAuditLogSaving);
       auditLogSearchInput?.addEventListener('input', scheduleAuditLogSearch);
       auditLogPrevious?.addEventListener('click', () => {
         if (auditLogPage > 1) loadAuditLogs(auditLogPage - 1);
