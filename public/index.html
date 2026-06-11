@@ -178,6 +178,7 @@
         <div id="task-subtab-nav" class="task-subtabs" role="tablist" aria-label="Tasks">
           <button id="tasks-subtab" class="task-subtab active" type="button" role="tab" aria-selected="true" data-task-tab="tasks">Tasks</button>
           <button id="calendar-subtab" class="task-subtab" type="button" role="tab" aria-selected="false" data-task-tab="calendar">Calendar</button>
+          <button id="sprints-subtab" class="task-subtab" type="button" role="tab" aria-selected="false" data-task-tab="sprints">Sprints</button>
           <button id="archived-subtab" class="task-subtab" type="button" role="tab" aria-selected="false" data-task-tab="archived">Archive</button>
           <button id="tag-subtab" class="task-subtab" type="button" role="tab" aria-selected="false" data-task-tab="tags">Tag</button>
         </div>
@@ -384,6 +385,14 @@
               </section>
             </aside>
           </div>
+        </section>
+
+        <section id="sprints-section" class="sprints-section hidden" aria-labelledby="sprints-title" role="tabpanel">
+          <div class="sprints-header">
+            <h2 id="sprints-title">Sprints</h2>
+            <button id="open-add-sprint" type="button" class="primary task-action-icon" aria-label="Add Sprint" title="Add Sprint">+</button>
+          </div>
+          <div id="sprints-list" class="sprints-list"></div>
         </section>
 
         <div id="task-list" class="task-list"></div>
@@ -886,6 +895,43 @@
     </div>
   </div>
 
+  <div id="sprint-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="sprint-modal-title">
+    <div class="modal">
+      <h3 id="sprint-modal-title">New Sprint</h3>
+      <form id="sprint-form">
+        <div class="field">
+          <label for="sprint-name-input">Name</label>
+          <input id="sprint-name-input" type="text" maxlength="200" required placeholder="Sprint 1" />
+        </div>
+        <div class="field">
+          <label for="sprint-goal-input">Goal</label>
+          <textarea id="sprint-goal-input" maxlength="2000" rows="3" placeholder="What's the goal of this sprint?"></textarea>
+        </div>
+        <div class="field">
+          <label for="sprint-start-input">Start Date</label>
+          <input id="sprint-start-input" type="date" />
+        </div>
+        <div class="field">
+          <label for="sprint-end-input">End Date</label>
+          <input id="sprint-end-input" type="date" />
+        </div>
+        <div class="field">
+          <label for="sprint-status-input">Status</label>
+          <select id="sprint-status-input">
+            <option value="planned">Planned</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+          </select>
+        </div>
+        <p id="sprint-form-error" class="field-error hidden"></p>
+        <div class="modal-actions">
+          <button id="cancel-sprint" type="button" class="task-action-icon secondary" aria-label="Cancel" title="Cancel">×</button>
+          <button id="save-sprint" type="submit" class="task-action-icon" aria-label="Save" title="Save">✓</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div id="reset-password-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="reset-password-title">
     <div class="modal">
       <h3 id="reset-password-title">Reset Password</h3>
@@ -1341,6 +1387,7 @@
   <script src="js/features/tasks/calendar.module.js?v=cache-clear-20260611-default-month-1"></script>
   <script src="js/features/tasks/relatedTasks.module.js?v=cache-clear-20260608-related-tasks-open-1"></script>
   <script src="js/features/tasks/taskActivity.module.js?v=cache-clear-20260608-activity-default-comments-1"></script>
+  <script src="js/features/sprints/sprints.module.js?v=cache-clear-20260611-add-sprint-1"></script>
   <script src="js/weather.js?v=cache-clear-20260604-1"></script>
   <script src="js/tags/tags.module.js?v=cache-clear-20260608-1"></script>
   <script src="js/transactions.module.js?v=cache-clear-20260601-7"></script>

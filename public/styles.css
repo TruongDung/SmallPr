@@ -8258,13 +8258,15 @@ body.theme-dark .notes-editor-actions button.secondary:hover {
   }
 }
 
-/* ── Sprint list ──────────────────────────────────────────────────────────── */
+/* Sprint list */
+.sprints-section,
 .sprint-list-view {
   padding: 24px 16px;
   max-width: 900px;
   margin: 0 auto;
 }
 
+.sprints-header,
 .sprint-list-header {
   display: flex;
   align-items: center;
@@ -8272,6 +8274,7 @@ body.theme-dark .notes-editor-actions button.secondary:hover {
   margin-bottom: 20px;
 }
 
+.sprints-header h2,
 .sprint-list-header h2 {
   margin: 0;
   font-size: 1.25rem;
@@ -8279,10 +8282,17 @@ body.theme-dark .notes-editor-actions button.secondary:hover {
   color: var(--text);
 }
 
+.sprints-list,
 .sprint-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 16px;
+}
+
+.sprints-empty {
+  grid-column: 1 / -1;
+  margin: 12px 0;
+  color: var(--muted);
 }
 
 .sprint-card {
@@ -8358,11 +8368,13 @@ body.theme-dark .notes-editor-actions button.secondary:hover {
   margin-top: 8px;
 }
 
+.sprint-card-dates,
 .sprint-dates {
   font-size: 0.8rem;
   color: var(--muted);
 }
 
+.sprint-card-tasks,
 .sprint-task-count {
   font-size: 0.8rem;
   color: var(--muted);
@@ -8449,10 +8461,12 @@ body.theme-dark .sprint-status-completed {
 }
 
 @media (max-width: 640px) {
+  .sprints-list,
   .sprint-cards {
     grid-template-columns: 1fr;
   }
 
+  .sprints-section,
   .sprint-list-view {
     padding: 16px 12px;
   }

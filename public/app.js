@@ -54,6 +54,7 @@ const passwordSettingsFormError = document.getElementById('password-settings-for
 const savePasswordSettings = document.getElementById('save-password-settings');
 const taskList = document.getElementById('task-list');
 const calendarSection = document.getElementById('calendar-section');
+const sprintsSection = document.getElementById('sprints-section');
 const authMessage = document.getElementById('auth-message');
 const showLogin = document.getElementById('show-login');
 const showSignup = document.getElementById('show-signup');
@@ -187,7 +188,7 @@ const SAVED_VIEW_KEY = 'task-manager-current-view';
 const REMEMBER_ME_KEY = 'task-manager-remember-me';
 const rememberMeCheckbox = document.getElementById('remember-me');
 const rememberMeText = document.getElementById('remember-me-text');
-const VIEW_NAMES = new Set(['dashboard', 'notes', 'tasks', 'calendar', 'archived', 'tags', 'weather', 'credit-cards', 'admin']);
+const VIEW_NAMES = new Set(['dashboard', 'notes', 'tasks', 'calendar', 'sprints', 'archived', 'tags', 'weather', 'credit-cards', 'admin']);
 const isAdminUser = () => currentUser?.username === 'admin';
 const isImpersonating = () => Boolean(currentUser?.impersonator);
 const getSavedView = () => {
@@ -342,6 +343,7 @@ const applyTranslations = () => {
   creditCardModule.applyTranslations();
   notesModule.applyTranslations();
   dashboardModule.applyTranslations();
+  sprintsModule.applyTranslations();
   setText('label[for="task-search-input"]', t('searchTasks'));
   taskSearchInput.placeholder = t('searchTasksPlaceholder');
   clearTaskSearch.setAttribute('aria-label', t('clearSearch'));
@@ -356,6 +358,7 @@ const applyTranslations = () => {
   setText('#tag-manager-title', t('manageTags'));
   setText('#tasks-subtab', t('tasks'));
   setText('#calendar-subtab', t('calendar'));
+  setText('#sprints-subtab', t('sprints'));
   setText('#archived-subtab', t('archive'));
   setText('#tag-subtab', t('tag'));
   setText('#calendar-title', t('calendar'));
@@ -895,7 +898,7 @@ const scheduleTaskReminders = (loadedTasks) => {
   });
 };
 
-const isTaskWorkspaceView = () => ['tasks', 'calendar', 'archived', 'tags'].includes(currentView);
+const isTaskWorkspaceView = () => ['tasks', 'calendar', 'sprints', 'archived', 'tags'].includes(currentView);
 
 const setCurrentView = (view, { persist = true } = {}) => {
   const previousView = currentView;
@@ -946,7 +949,7 @@ const showSection = () => {
   creditCardSection.classList.toggle('hidden', !showCreditCards);
   notesSection.classList.toggle('hidden', !showNotes);
   if (dashboardSection) dashboardSection.classList.toggle('hidden', !showDashboard);
-  floatingAddTask.classList.toggle('hidden', showDashboard || showAdmin || showCreditCards || showNotes || currentView === 'weather' || currentView === 'tags');
+  floatingAddTask.classList.toggle('hidden', showDashboard || showAdmin || showCreditCards || showNotes || currentView === 'weather' || currentView === 'tags' || currentView === 'sprints');
 
   if (showDashboard) {
     if (window.dashboardModule) {
@@ -975,13 +978,15 @@ const showSection = () => {
   const showWeather = currentView === 'weather';
   const showTags = currentView === 'tags';
   const showCalendar = currentView === 'calendar';
+  const showSprints = currentView === 'sprints';
   taskSubtabNav.classList.toggle('hidden', !showTaskWorkspace);
   setActiveTaskSubtab();
   weatherModule.hideQuoteWidget();
-  taskHeader.classList.toggle('hidden', showWeather || showTags || showCalendar);
+  taskHeader.classList.toggle('hidden', showWeather || showTags || showCalendar || showSprints);
   tagManager.classList.toggle('hidden', !showTags);
   calendarSection.classList.toggle('hidden', !showCalendar);
-  taskList.classList.toggle('hidden', showWeather || showTags || showCalendar);
+  sprintsSection?.classList.toggle('hidden', !showSprints);
+  taskList.classList.toggle('hidden', showWeather || showTags || showCalendar || showSprints);
   weatherSection.classList.toggle('hidden', !showWeather);
 
   if (showWeather) {
@@ -1000,6 +1005,12 @@ const showSection = () => {
   if (showCalendar) {
     taskForm.classList.add('hidden');
     loadTasks();
+    return;
+  }
+
+  if (showSprints) {
+    taskForm.classList.add('hidden');
+    sprintsModule.loadSprints();
     return;
   }
 
@@ -1365,6 +1376,7 @@ const init = async () => {
 let realtimeSocket = null;
 let pendingTaskRefresh = null;
 let pendingNoteRefresh = null;
+let pendingSprintRefresh = null;
 
 const scheduleTaskRefresh = () => {
   if (pendingTaskRefresh) return;
@@ -1383,6 +1395,16 @@ const scheduleNoteRefresh = () => {
     pendingNoteRefresh = null;
     if (currentUser && currentView === 'notes') {
       notesModule.load();
+    }
+  }, 150);
+};
+
+const scheduleSprintRefresh = () => {
+  if (pendingSprintRefresh) return;
+  pendingSprintRefresh = setTimeout(() => {
+    pendingSprintRefresh = null;
+    if (currentUser && currentView === 'sprints') {
+      sprintsModule.loadSprints();
     }
   }, 150);
 };
@@ -1407,6 +1429,10 @@ const connectRealtime = () => {
 
   ['note:created', 'note:updated', 'note:deleted'].forEach((event) => {
     realtimeSocket.on(event, scheduleNoteRefresh);
+  });
+
+  ['sprint:created', 'sprint:updated', 'sprint:deleted'].forEach((event) => {
+    realtimeSocket.on(event, scheduleSprintRefresh);
   });
 
   ['transaction:created', 'transaction:updated', 'transaction:deleted'].forEach((event) => {
@@ -1439,6 +1465,7 @@ const resetFinancialModules = () => {
   creditCardModule.reset?.();
   transactionsModule.reset?.();
   notesModule.reset?.();
+  sprintsModule.reset?.();
 };
 
 const markRegistrationInteraction = () => {
@@ -3090,6 +3117,12 @@ const notesModule = window.NotesModule.create({
   confirmDelete: showNoteDeleteConfirm,
 });
 
+const sprintsModule = window.SprintsModule.create({
+  request,
+  t,
+  showStatusToast,
+});
+
 const dashboardModule = window.DashboardModule.create({
   request,
   t,
@@ -3237,6 +3270,7 @@ creditCardModule.bind();
 transactionsModule.bind();
 window.transactionsModule = transactionsModule;
 notesModule.bind();
+sprintsModule.bind();
 dashboardModule.bind();
 calendarModule.bind();
 weatherModule.bind();
