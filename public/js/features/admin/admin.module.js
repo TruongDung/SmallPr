@@ -29,6 +29,7 @@
     const impersonateUserSelect = document.getElementById('impersonate-user-select');
     const sendSummaryEmailButton = document.getElementById('send-summary-email');
     const sendNotesEmailButton = document.getElementById('send-notes-email');
+    const deleteTestUsersButton = document.getElementById('delete-test-users');
     const userList = document.getElementById('user-list');
     const auditLogList = document.getElementById('audit-log-list');
     const auditLogPagination = document.getElementById('audit-log-pagination');
@@ -182,6 +183,11 @@
 
       impersonateUserSelect.value = '';
       impersonateUserSelect.disabled = impersonateUserSelect.options.length <= 1;
+    };
+
+    const isTestUser = (user) => {
+      const username = String(user?.username || '').toLowerCase();
+      return username === 'test' || username.startsWith('test-') || username.startsWith('test_');
     };
 
     const renderUsers = (list = users) => {
@@ -567,10 +573,45 @@
       loadUsers();
     };
 
+    const deleteTestUsers = async () => {
+      const currentUser = getCurrentUser();
+      const matchingUsers = users.filter((user) => (
+        isTestUser(user) && String(user.username || '').toLowerCase() !== 'admin' && user.id !== currentUser?.id
+      ));
+      const count = matchingUsers.length;
+      const names = matchingUsers.slice(0, 8).map((user) => user.username).join(', ');
+      const extra = count > 8 ? `, +${count - 8}` : '';
+      const message = count > 0
+        ? t('deleteTestUsersConfirm', { count, users: `${names}${extra}` })
+        : t('deleteTestUsersConfirmEmpty');
+
+      if (!confirm(message)) return;
+
+      deleteTestUsersButton.disabled = true;
+      try {
+        const result = await request('/api/admin/users/test', { method: 'DELETE' });
+        if (result.error) {
+          showStatusToast(result.error, 'error');
+          return;
+        }
+
+        await loadUsers();
+        showStatusToast(t('testUsersDeleted', { count: result.deletedCount || 0 }));
+      } catch (error) {
+        showStatusToast(error.message || 'Failed to delete test users', 'error');
+      } finally {
+        deleteTestUsersButton.disabled = false;
+      }
+    };
+
     // Admin-specific i18n. Called by the global applyTranslations().
     const applyAdminTranslations = () => {
       setText('#admin-section h2', t('manageUsers'));
       setText('#open-add-user-modal .admin-add-user-label', t('addUser'));
+      if (deleteTestUsersButton) {
+        deleteTestUsersButton.setAttribute('aria-label', t('deleteTestUsers'));
+        deleteTestUsersButton.title = t('deleteTestUsers');
+      }
       if (impersonateUserSelect) {
         impersonateUserSelect.setAttribute('aria-label', t('impersonateUser'));
         const placeholder = impersonateUserSelect.querySelector('option[value=""]');
@@ -668,6 +709,7 @@
       openAddUserModalButton.addEventListener('click', () => showAdminUserModal());
       sendSummaryEmailButton?.addEventListener('click', sendSummaryEmail);
       sendNotesEmailButton?.addEventListener('click', sendNotesEmail);
+      deleteTestUsersButton?.addEventListener('click', deleteTestUsers);
       if (impersonateUserSelect) {
         impersonateUserSelect.addEventListener('change', (event) => {
           if (event.target.value) startImpersonation(event.target.value);

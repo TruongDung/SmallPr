@@ -22,6 +22,10 @@ const USER_LIST_SELECT = `SELECT users.id, users.username, users.name, users.ema
 const USER_LIST_GROUP = `GROUP BY users.id, users.username, users.name, users.email,
        users.account_status, users.account_status_changed_at`;
 
+const TEST_USER_MATCH_SQL = `LOWER(username) = 'test'
+       OR LOWER(username) LIKE 'test-%'
+       OR LOWER(username) LIKE 'test!_%' ESCAPE '!'`;
+
 const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsync, runAsync }) => {
   const router = express.Router();
 
@@ -64,6 +68,53 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsyn
     } catch (error) {
       logger.error({ err: error }, 'Failed to load users');
       res.status(500).json({ error: 'Failed to load users' });
+    }
+  });
+
+  router.delete('/admin/users/test', adminRequired, async (req, res) => {
+    try {
+      const testUsers = await allAsync(
+        `SELECT id, username, name, email, account_status, account_status_changed_at
+         FROM users
+         WHERE (${TEST_USER_MATCH_SQL})
+           AND LOWER(username) <> 'admin'
+           AND id <> ?
+         ORDER BY id ASC`,
+        [req.session.userId]
+      );
+
+      if (!testUsers.length) {
+        return res.json({ success: true, deletedCount: 0, users: [] });
+      }
+
+      await auditLogs.record({
+        userId: req.currentUser.id,
+        actorUserId: req.currentUser.id,
+        action: 'delete',
+        entityType: 'user',
+        entityId: null,
+        summary: `Deleted ${testUsers.length} test user${testUsers.length === 1 ? '' : 's'}`,
+        before: { users: testUsers },
+      });
+
+      const deleteResult = await runAsync(
+        `DELETE FROM users
+         WHERE id = ANY(?::int[])
+           AND (${TEST_USER_MATCH_SQL})
+           AND LOWER(username) <> 'admin'
+           AND id <> ?`,
+        [testUsers.map((user) => Number(user.id)), req.session.userId]
+      );
+      const deletedCount = deleteResult.changes ?? testUsers.length;
+
+      res.json({
+        success: true,
+        deletedCount,
+        users: testUsers.map((user) => ({ id: user.id, username: user.username })),
+      });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to delete test users');
+      res.status(500).json({ error: 'Failed to delete test users' });
     }
   });
 
