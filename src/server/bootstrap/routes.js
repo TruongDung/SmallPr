@@ -5,9 +5,11 @@ const createDailyQuoteRouter = require('../routes/dailyQuote.routes');
 const createDashboardRouter = require('../routes/dashboard.routes');
 const createEvaluationsRouter = require('../routes/evaluations.routes');
 const createNotesRouter = require('../routes/notes.routes');
+const createLunarCalendarRouter = require('../routes/lunarCalendar.routes');
 const createSprintsRouter = require('../routes/sprints.routes');
 const createTasksRouter = require('../routes/tasks.routes');
 const createTransactionsRouter = require('../routes/transactions.routes');
+const createUserSettingsRouter = require('../routes/userSettings.routes');
 const createWeatherRouter = require('../routes/weather.routes');
 const realtime = require('../realtime');
 
@@ -69,6 +71,21 @@ const registerRoutes = (app, {
     cache: redisCache,
     getAsync,
     runAsync,
+  }));
+
+  // User settings routes
+  app.use('/api', createUserSettingsRouter({
+    authRequired,
+    allAsync,
+    cache: redisCache,
+    getAsync,
+    runAsync,
+  }));
+
+  // Lunar calendar routes
+  app.use('/api', createLunarCalendarRouter({
+    authRequired,
+    getUserById,
   }));
 
   // Tasks routes

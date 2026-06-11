@@ -31,6 +31,10 @@ const logger = require('./src/server/logger');
 const { createAuditLogService } = require('./src/server/services/auditLog.service');
 const { createAuthService } = require('./src/server/services/auth/auth.service');
 const { sendTaskAlertEmail, sendTaskSummaryEmail, sendVerificationEmail } = require('./src/server/services/email/email.service');
+const { createLunarCalendarService } = require('./src/server/services/lunarCalendar.service');
+const { createLunarReminderScheduler } = require('./src/server/services/lunarReminderScheduler.service');
+const { createTaskCreationService } = require('./src/server/services/taskCreation.service');
+const { createUserSettingsService } = require('./src/server/services/userSettings.service');
 const { createRecurringTaskWorker } = require('./src/server/workers/recurringTask.worker');
 
 // ===== Middleware Layer =====
@@ -182,9 +186,23 @@ const recurringTaskWorker = createRecurringTaskWorker({
   sendTaskAlertEmail,
 });
 
+const lunarReminderScheduler = createLunarReminderScheduler({
+  cache: redisCache,
+  emitToUser: require('./src/server/realtime').emitToUser,
+  lunarCalendar: createLunarCalendarService(),
+  taskCreation: createTaskCreationService({ getAsync, runAsync }),
+  userSettings: createUserSettingsService({ allAsync, getAsync, runAsync }),
+});
+
 if (process.env.NODE_ENV !== 'test' && process.env.DISABLE_RECURRING_TASK_WORKER !== 'true') {
   dbReady.then(() => recurringTaskWorker.start()).catch((error) => {
     logger.error({ err: error }, 'Failed to start recurring task worker');
+  });
+}
+
+if (process.env.NODE_ENV !== 'test' && process.env.DISABLE_LUNAR_REMINDER_SCHEDULER !== 'true') {
+  dbReady.then(() => lunarReminderScheduler.start()).catch((error) => {
+    logger.error({ err: error }, 'Failed to start lunar reminder scheduler');
   });
 }
 
@@ -234,4 +252,5 @@ module.exports.db = pool;
 module.exports.dbReady = dbReady;
 module.exports.httpServer = httpServer;
 module.exports.io = io;
+module.exports.lunarReminderScheduler = lunarReminderScheduler;
 module.exports.recurringTaskWorker = recurringTaskWorker;
