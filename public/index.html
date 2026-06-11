@@ -366,6 +366,10 @@
               <button class="calendar-view-button active" type="button" role="tab" aria-selected="true" data-calendar-view="week">Week</button>
               <button class="calendar-view-button" type="button" role="tab" aria-selected="false" data-calendar-view="month">Month</button>
             </div>
+            <label class="calendar-lunar-toggle" title="Show lunar calendar dates (1st and 15th)">
+              <input id="calendar-show-lunar" type="checkbox" class="calendar-lunar-input" />
+              <span class="calendar-lunar-label">🌙 Lunar</span>
+            </label>
           </div>
           <div class="calendar-layout">
             <div id="calendar-grid" class="calendar-grid"></div>
@@ -1315,6 +1319,7 @@
   <script src="https://cdn.jsdelivr.net/npm/docx@7.1.0/build/index.min.js"></script>
   <!-- Shared infrastructure modules -->
   <script src="js/utils.js?v=cache-clear-20260603-1"></script>
+  <script src="js/utils/lunar.js?v=cache-clear-20260610-lunar-calendar-1"></script>
   <script src="js/state.js?v=cache-clear-20260603-1"></script>
   <script src="js/apiClient.js?v=cache-clear-20260603-1"></script>
   <script src="js/ui/toast.js?v=cache-clear-20260603-1"></script>

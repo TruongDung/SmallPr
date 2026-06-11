@@ -9,9 +9,11 @@
     const todayButton = document.getElementById('calendar-today');
     const nextButton = document.getElementById('calendar-next');
     const viewButtons = [...document.querySelectorAll('[data-calendar-view]')];
+    const lunarToggle = document.getElementById('calendar-show-lunar');
 
     let view = 'week';
     let cursor = startOfDay(new Date());
+    let showLunar = localStorage.getItem('showLunarCalendar') === 'true';
 
     function startOfDay(date) {
       return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -121,6 +123,20 @@
       header.className = 'calendar-day-header';
       const title = document.createElement('h3');
       title.textContent = compact ? String(date.getDate()) : formatLongDate(date);
+      
+      // Add lunar badge if enabled
+      if (showLunar && window.LunarCalendar) {
+        const lunarInfo = window.LunarCalendar.getKeyLunarDates(date);
+        if (lunarInfo) {
+          const badge = document.createElement('span');
+          badge.className = 'calendar-lunar-badge';
+          badge.textContent = lunarInfo.label;
+          badge.title = `Lunar calendar: ${lunarInfo.label}`;
+          title.append(' ');
+          title.append(badge);
+        }
+      }
+
       const count = document.createElement('span');
       count.className = 'calendar-task-count';
       count.textContent = String(dayTasks.length);
@@ -250,6 +266,16 @@
         cursor = startOfDay(new Date());
         render();
       });
+      
+      // Lunar calendar toggle
+      if (lunarToggle) {
+        lunarToggle.checked = showLunar;
+        lunarToggle.addEventListener('change', (event) => {
+          showLunar = event.target.checked;
+          localStorage.setItem('showLunarCalendar', String(showLunar));
+          render();
+        });
+      }
     }
 
     return {
