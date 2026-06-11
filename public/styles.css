@@ -8289,6 +8289,60 @@ body.theme-dark .notes-editor-actions button.secondary:hover {
   gap: 16px;
 }
 
+.sprints-list {
+  display: block;
+}
+
+.sprint-planning-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 300px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.sprint-backlog {
+  position: sticky;
+  top: 14px;
+  min-height: 180px;
+  padding: 14px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.sprint-backlog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sprint-backlog-header h3 {
+  margin: 0;
+  font-size: 0.96rem;
+  color: var(--text);
+}
+
+.sprint-backlog-header span {
+  display: inline-grid;
+  place-items: center;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.sprint-backlog-hint {
+  margin: 8px 0 12px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
 .sprints-empty {
   grid-column: 1 / -1;
   margin: 12px 0;
@@ -8300,7 +8354,6 @@ body.theme-dark .notes-editor-actions button.secondary:hover {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 16px;
-  cursor: pointer;
   transition: box-shadow 0.15s, border-color 0.15s;
   box-shadow: 0 1px 4px var(--card-shadow);
 }
@@ -8366,6 +8419,100 @@ body.theme-dark .notes-editor-actions button.secondary:hover {
   font-size: 0.8rem;
   color: var(--muted);
   margin-top: 8px;
+}
+
+.sprint-card-task-list {
+  display: grid;
+  gap: 8px;
+  min-height: 48px;
+  margin-top: 12px;
+}
+
+.sprint-card-task-empty {
+  margin: 0;
+  padding: 12px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.sprint-task-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 44px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  cursor: grab;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+
+.sprint-task-pill:active {
+  cursor: grabbing;
+}
+
+.sprint-task-pill:hover {
+  border-color: var(--primary);
+  box-shadow: 0 4px 14px rgba(47, 112, 255, 0.12);
+}
+
+.sprint-task-pill-dragging {
+  opacity: 0.6;
+  transform: scale(0.98);
+}
+
+.sprint-task-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.sprint-task-copy strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 0.9rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sprint-task-copy span {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+.sprint-task-remove {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.sprint-task-remove:hover {
+  border-color: var(--danger);
+  background: var(--error-bg);
+  color: var(--danger);
+}
+
+.sprint-drop-zone {
+  outline: 0 solid transparent;
+}
+
+.sprint-drop-over {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 8%, var(--card-bg));
+  box-shadow: 0 8px 24px rgba(47, 112, 255, 0.16);
 }
 
 .sprint-card-dates,
@@ -8461,6 +8608,14 @@ body.theme-dark .sprint-status-completed {
 }
 
 @media (max-width: 640px) {
+  .sprint-planning-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .sprint-backlog {
+    position: static;
+  }
+
   .sprints-list,
   .sprint-cards {
     grid-template-columns: 1fr;

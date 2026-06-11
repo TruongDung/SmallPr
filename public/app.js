@@ -69,6 +69,7 @@ const taskSearchInput = document.getElementById('task-search-input');
 const clearTaskSearch = document.getElementById('clear-task-search');
 const taskPriorityInput = document.getElementById('task-priority');
 const taskStatusInput = document.getElementById('task-status');
+const taskSprintInput = document.getElementById('task-sprint');
 const taskTagInput = document.getElementById('task-tag');
 const taskTagSuggestions = document.getElementById('task-tag-suggestions');
 const taskDueDateInput = document.getElementById('task-due-date');
@@ -120,6 +121,7 @@ const editTaskTitle = document.getElementById('edit-task-title');
 const editTaskTitleInput = document.getElementById('edit-task-title-input');
 const editTaskPriorityInput = document.getElementById('edit-task-priority-input');
 const editTaskStatusInput = document.getElementById('edit-task-status-input');
+const editTaskSprintInput = document.getElementById('edit-task-sprint-input');
 const editTaskTagInput = document.getElementById('edit-task-tag-input');
 const editTaskTagSuggestions = document.getElementById('edit-task-tag-suggestions');
 const editTaskDescriptionInput = document.getElementById('edit-task-description-input');
@@ -202,6 +204,7 @@ let currentTheme = localStorage.getItem('task-manager-theme') || 'light';
 let currentTagFilter = '';
 let tasks = [];
 let tags = [];
+let sprintOptions = [];
 const reminderTimers = new Map();
 let pendingDeleteTaskId = null;
 let pendingDeleteUser = null;
@@ -353,6 +356,7 @@ const applyTranslations = () => {
   updatePriorityOptions(taskPriorityInput);
   setText('label[for="task-status"]', t('status'));
   updateStatusOptions(taskStatusInput);
+  setText('label[for="task-sprint"]', t('taskSprint'));
   setText('label[for="task-tag"]', t('tag'));
   taskTagInput.placeholder = t('tagPlaceholder');
   setText('#tag-manager-title', t('manageTags'));
@@ -438,6 +442,7 @@ const applyTranslations = () => {
   updatePriorityOptions(editTaskPriorityInput);
   setText('label[for="edit-task-status-input"]', t('status'));
   updateStatusOptions(editTaskStatusInput);
+  setText('label[for="edit-task-sprint-input"]', t('taskSprint'));
   setText('label[for="edit-task-tag-input"]', t('tag'));
   editTaskTagInput.placeholder = t('tagPlaceholder');
   setText('label[for="edit-task-description-input"]', `${t('taskDetail')} ${t('max500')}`);
@@ -464,6 +469,7 @@ const applyTranslations = () => {
   if (currentUser) renderUserArea();
   if (currentUser) setActiveTaskSubtab();
   if (currentUser) renderTags(tags);
+  if (currentUser) refreshSprintSelects();
   if (currentUser && (currentView === 'tasks' || currentView === 'archived')) renderTasks(tasks);
   if (currentUser && currentView === 'calendar') calendarModule.render();
   if (currentUser && currentView === 'weather') weatherModule.render();
@@ -1021,6 +1027,8 @@ const showSection = () => {
 
 const showAddTaskModal = () => {
   taskPriorityInput.value = DEFAULT_TASK_PRIORITY;
+  if (taskSprintInput) taskSprintInput.value = '';
+  loadSprintOptions('');
   pendingAddTask = { related_task_ids: [], related_tasks: [] };
   taskRecurrenceTimezone.value = getActiveTimezone();
   syncRecurrenceOptions({
@@ -1046,6 +1054,7 @@ const openAddTaskFlow = () => {
 
 const hideAddTaskModal = () => {
   pendingAddTask = { related_task_ids: [], related_tasks: [] };
+  if (taskSprintInput) taskSprintInput.value = '';
   if (addRelatedTasksList) addRelatedTasksList.innerHTML = '';
   if (addRelatedTasksSearch) addRelatedTasksSearch.value = '';
   hideRelatedTaskResults('add');
@@ -1342,6 +1351,42 @@ const togglePasswordVisibility = () => {
 // request() is provided by js/apiClient.js (window.ApiClient)
 const request = apiClient.request;
 
+const setSprintOptions = (select, selectedValue = '') => {
+  if (!select) return;
+  const normalizedSelected = selectedValue == null ? '' : String(selectedValue);
+  select.innerHTML = '';
+
+  const emptyOption = document.createElement('option');
+  emptyOption.value = '';
+  emptyOption.textContent = t('noSprint');
+  select.append(emptyOption);
+
+  sprintOptions.forEach((sprint) => {
+    const option = document.createElement('option');
+    option.value = String(sprint.id);
+    option.textContent = sprint.name;
+    select.append(option);
+  });
+
+  select.value = normalizedSelected;
+};
+
+const refreshSprintSelects = (selectedValue = editTaskSprintInput?.value || taskSprintInput?.value || '') => {
+  setSprintOptions(taskSprintInput, taskSprintInput?.value || '');
+  setSprintOptions(editTaskSprintInput, selectedValue);
+};
+
+const loadSprintOptions = async (selectedValue = editTaskSprintInput?.value || '') => {
+  const result = await request('/api/sprints');
+  if (result.error) {
+    showStatusToast(result.error, 'error');
+    return;
+  }
+
+  sprintOptions = result.sprints || [];
+  refreshSprintSelects(selectedValue);
+};
+
 const prefillRememberedCredentials = () => {
   try {
     const saved = localStorage.getItem(REMEMBER_ME_KEY);
@@ -1466,6 +1511,8 @@ const resetFinancialModules = () => {
   transactionsModule.reset?.();
   notesModule.reset?.();
   sprintsModule.reset?.();
+  sprintOptions = [];
+  refreshSprintSelects();
 };
 
 const markRegistrationInteraction = () => {
@@ -1577,6 +1624,7 @@ const handleTaskSubmit = async (event) => {
   const title = document.getElementById('task-title').value.trim();
   const priority = taskPriorityInput.value;
   const status = taskStatusInput.value;
+  const sprint_id = taskSprintInput?.value ? Number(taskSprintInput.value) : null;
   const tag = taskTagInput.value.trim();
   const descriptionEditor = document.getElementById('task-description');
   const description = getRichEditorValue(descriptionEditor);
@@ -1651,7 +1699,7 @@ const handleTaskSubmit = async (event) => {
     const result = await request('/api/tasks', {
       method: 'POST',
       body: JSON.stringify({
-        title, tag, description, priority, status, due_date, reminder_at, attachment: preparedAttachment, language: currentLanguage,
+        title, tag, description, priority, status, sprint_id, due_date, reminder_at, attachment: preparedAttachment, language: currentLanguage,
         related_task_ids: getRelatedTaskIds(pendingAddTask),
         is_recurring,
         recurrence_pattern,
@@ -1674,6 +1722,7 @@ const handleTaskSubmit = async (event) => {
       taskForm.reset();
       taskPriorityInput.value = DEFAULT_TASK_PRIORITY;
       taskStatusInput.value = 'todo';
+      if (taskSprintInput) taskSprintInput.value = '';
       descriptionEditor.innerHTML = '';
       preparedAttachment = null;
       pendingAddTask = { related_task_ids: [], related_tasks: [] };
@@ -2430,6 +2479,7 @@ const buildEditTaskUpdates = ({ includeDescription = false, includeComment = fal
   const title = editTaskTitleInput.value.trim();
   const priority = editTaskPriorityInput.value;
   const status = editTaskStatusInput.value;
+  const sprintId = editTaskSprintInput?.value ? Number(editTaskSprintInput.value) : null;
   const tag = editTaskTagInput.value.trim();
   const description = includeDescription ? getRichEditorValue(editTaskDescriptionInput) : null;
   const comment = includeComment ? getRichEditorValue(editTaskCommentInput) : null;
@@ -2497,6 +2547,7 @@ const buildEditTaskUpdates = ({ includeDescription = false, includeComment = fal
     tag,
     priority,
     status,
+    sprint_id: sprintId,
     due_date: dueDate,
     reminder_at: reminderAt,
     is_recurring: isRecurring,
@@ -2589,6 +2640,7 @@ const bindEditTaskAutosave = () => {
   [
     editTaskPriorityInput,
     editTaskStatusInput,
+    editTaskSprintInput,
     editTaskDueDateInput,
     editTaskReminderInput,
     editTaskRecurringCheckbox,
@@ -2751,6 +2803,8 @@ const showEditTaskModal = (task) => {
   editTaskTitleInput.value = task.title;
   editTaskPriorityInput.value = task.priority || 'medium';
   editTaskStatusInput.value = taskStatus(task);
+  if (editTaskSprintInput) editTaskSprintInput.value = task.sprint_id || '';
+  loadSprintOptions(task.sprint_id || '');
   editTaskTagInput.value = task.tag || '';
   editTaskDescriptionSavedValue = task.description || '';
   editTaskCommentSavedValue = task.comment || '';
@@ -3121,6 +3175,7 @@ const sprintsModule = window.SprintsModule.create({
   request,
   t,
   showStatusToast,
+  onSprintsChanged: () => loadSprintOptions(),
 });
 
 const dashboardModule = window.DashboardModule.create({

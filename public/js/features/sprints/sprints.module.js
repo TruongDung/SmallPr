@@ -1,6 +1,5 @@
 (function () {
-  const create = ({ request, t, showStatusToast }) => {
-    const sprintsSection = document.getElementById('sprints-section');
+  const create = ({ request, t, showStatusToast, onSprintsChanged = () => {} }) => {
     const sprintsList = document.getElementById('sprints-list');
     const openAddButton = document.getElementById('open-add-sprint');
     const modal = document.getElementById('sprint-modal');
@@ -16,6 +15,7 @@
     const saveButton = document.getElementById('save-sprint');
 
     let sprints = [];
+    let sprintTasks = [];
     let editingId = null;
 
     const statusLabels = {
@@ -24,105 +24,265 @@
       completed: () => t('sprint_completed') || 'Completed',
     };
 
-    const statusColors = {
-      planned: '#6b7280',
-      active: '#d97706',
-      completed: '#16a34a',
+    const loadSprints = async () => {
+      const [sprintsResult, tasksResult] = await Promise.all([
+        request('/api/sprints'),
+        request('/api/tasks'),
+      ]);
+
+      if (sprintsResult.error) {
+        showStatusToast(sprintsResult.error, 'error');
+        return;
+      }
+
+      if (tasksResult.error) {
+        showStatusToast(tasksResult.error, 'error');
+        return;
+      }
+
+      sprints = sprintsResult.sprints || [];
+      sprintTasks = tasksResult.tasks || [];
+      render();
     };
 
-    const loadSprints = async () => {
-      const result = await request('/api/sprints');
+    const normalizeSprintId = (value) => (value === null || value === undefined || value === ''
+      ? null
+      : Number(value));
+
+    const getTasksForSprint = (sprintId) => sprintTasks.filter((task) => (
+      normalizeSprintId(task.sprint_id) === normalizeSprintId(sprintId)
+    ));
+
+    const clearDropTargets = () => {
+      document.querySelectorAll('.sprint-drop-over').forEach((element) => {
+        element.classList.remove('sprint-drop-over');
+      });
+    };
+
+    const assignTaskToSprint = async (taskId, sprintId) => {
+      const task = sprintTasks.find((item) => String(item.id) === String(taskId));
+      const normalizedSprintId = normalizeSprintId(sprintId);
+      if (!task || normalizeSprintId(task.sprint_id) === normalizedSprintId) return;
+
+      const result = await request(`/api/tasks/${task.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ sprint_id: normalizedSprintId }),
+      });
+
       if (result.error) {
         showStatusToast(result.error, 'error');
         return;
       }
-      sprints = result.sprints || [];
-      render();
+
+      showStatusToast(
+        normalizedSprintId === null
+          ? (t('taskRemovedFromSprint') || 'Task moved to backlog.')
+          : (t('taskAssignedToSprint') || 'Task added to sprint.')
+      );
+      await loadSprints();
+    };
+
+    const bindDropTarget = (target, sprintId) => {
+      target.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'move';
+      });
+      target.addEventListener('dragenter', (event) => {
+        event.preventDefault();
+        target.classList.add('sprint-drop-over');
+      });
+      target.addEventListener('dragleave', (event) => {
+        if (!target.contains(event.relatedTarget)) {
+          target.classList.remove('sprint-drop-over');
+        }
+      });
+      target.addEventListener('drop', async (event) => {
+        event.preventDefault();
+        target.classList.remove('sprint-drop-over');
+        const taskId = event.dataTransfer.getData('text/plain');
+        await assignTaskToSprint(taskId, sprintId);
+      });
+    };
+
+    const createTaskPill = (task, { removable = false } = {}) => {
+      const pill = document.createElement('div');
+      pill.className = 'sprint-task-pill';
+      pill.draggable = true;
+      pill.dataset.taskId = task.id;
+      pill.addEventListener('dragstart', (event) => {
+        event.dataTransfer.effectAllowed = 'move';
+        event.dataTransfer.setData('text/plain', task.id);
+        pill.classList.add('sprint-task-pill-dragging');
+      });
+      pill.addEventListener('dragend', () => {
+        pill.classList.remove('sprint-task-pill-dragging');
+        clearDropTargets();
+      });
+
+      const copy = document.createElement('div');
+      copy.className = 'sprint-task-copy';
+      const title = document.createElement('strong');
+      title.textContent = task.title;
+      const meta = document.createElement('span');
+      meta.textContent = t(task.status || 'todo') || task.status || 'Todo';
+      copy.append(title, meta);
+      pill.append(copy);
+
+      if (removable) {
+        const removeButton = document.createElement('button');
+        removeButton.type = 'button';
+        removeButton.className = 'sprint-task-remove';
+        removeButton.textContent = 'x';
+        removeButton.title = t('removeFromSprint') || 'Remove from sprint';
+        removeButton.setAttribute('aria-label', t('removeFromSprint') || 'Remove from sprint');
+        removeButton.addEventListener('click', () => assignTaskToSprint(task.id, null));
+        pill.append(removeButton);
+      }
+
+      return pill;
+    };
+
+    const createTaskList = (listTasks, emptyText, options = {}) => {
+      const list = document.createElement('div');
+      list.className = 'sprint-card-task-list';
+      if (!listTasks.length) {
+        const empty = document.createElement('p');
+        empty.className = 'sprint-card-task-empty';
+        empty.textContent = emptyText;
+        list.append(empty);
+        return list;
+      }
+
+      listTasks.forEach((task) => list.append(createTaskPill(task, options)));
+      return list;
+    };
+
+    const createBacklog = () => {
+      const backlog = document.createElement('aside');
+      backlog.className = 'sprint-backlog sprint-drop-zone';
+      bindDropTarget(backlog, null);
+
+      const heading = document.createElement('div');
+      heading.className = 'sprint-backlog-header';
+      const title = document.createElement('h3');
+      title.textContent = t('sprintBacklog') || 'No sprint';
+      const count = document.createElement('span');
+      const backlogTasks = getTasksForSprint(null);
+      count.textContent = backlogTasks.length;
+      heading.append(title, count);
+
+      const hint = document.createElement('p');
+      hint.className = 'sprint-backlog-hint';
+      hint.textContent = t('dragTasksToSprint') || 'Drag tasks into a sprint.';
+
+      backlog.append(
+        heading,
+        hint,
+        createTaskList(backlogTasks, t('noBacklogTasks') || 'No unassigned tasks.')
+      );
+
+      return backlog;
+    };
+
+    const createSprintCard = (sprint) => {
+      const card = document.createElement('div');
+      card.className = `sprint-card sprint-card-${sprint.status} sprint-drop-zone`;
+      bindDropTarget(card, sprint.id);
+
+      const header = document.createElement('div');
+      header.className = 'sprint-card-header';
+
+      const name = document.createElement('h3');
+      name.className = 'sprint-card-name';
+      name.textContent = sprint.name;
+
+      const badge = document.createElement('span');
+      badge.className = `sprint-status-badge sprint-status-${sprint.status}`;
+      badge.textContent = (statusLabels[sprint.status] || statusLabels.planned)();
+
+      header.append(name, badge);
+      card.append(header);
+
+      if (sprint.goal) {
+        const goal = document.createElement('p');
+        goal.className = 'sprint-card-goal';
+        goal.textContent = sprint.goal;
+        card.append(goal);
+      }
+
+      const meta = document.createElement('div');
+      meta.className = 'sprint-card-meta';
+
+      if (sprint.start_date || sprint.end_date) {
+        const dates = document.createElement('span');
+        dates.className = 'sprint-card-dates';
+        dates.textContent = `${sprint.start_date || '...'} -> ${sprint.end_date || '...'}`;
+        meta.append(dates);
+      }
+
+      const sprintCardTasks = getTasksForSprint(sprint.id);
+      const taskCount = document.createElement('span');
+      taskCount.className = 'sprint-card-tasks';
+      taskCount.textContent = `${sprintCardTasks.length} ${t('sprintTasks') || 'tasks'}`;
+      meta.append(taskCount);
+
+      card.append(
+        meta,
+        createTaskList(sprintCardTasks, t('noSprintTasks') || 'Drop tasks here.', { removable: true })
+      );
+
+      const actions = document.createElement('div');
+      actions.className = 'sprint-card-actions';
+
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'task-action-icon secondary';
+      editBtn.textContent = 'E';
+      editBtn.title = t('editSprint') || 'Edit Sprint';
+      editBtn.setAttribute('aria-label', t('editSprint') || 'Edit Sprint');
+      editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openEditModal(sprint);
+      });
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'task-action-icon secondary';
+      deleteBtn.textContent = 'X';
+      deleteBtn.title = t('deleteSprint') || 'Delete Sprint';
+      deleteBtn.setAttribute('aria-label', t('deleteSprint') || 'Delete Sprint');
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteSprint(sprint);
+      });
+
+      actions.append(editBtn, deleteBtn);
+      card.append(actions);
+      return card;
     };
 
     const render = () => {
       if (!sprintsList) return;
       sprintsList.innerHTML = '';
 
+      const layout = document.createElement('div');
+      layout.className = 'sprint-planning-layout';
+      layout.append(createBacklog());
+
+      const sprintGrid = document.createElement('div');
+      sprintGrid.className = 'sprint-cards';
+
       if (!sprints.length) {
         const empty = document.createElement('p');
         empty.className = 'sprints-empty';
         empty.textContent = t('noSprints') || 'No sprints yet. Create your first sprint!';
-        sprintsList.append(empty);
-        return;
+        sprintGrid.append(empty);
+      } else {
+        sprints.forEach((sprint) => sprintGrid.append(createSprintCard(sprint)));
       }
 
-      sprints.forEach((sprint) => {
-        const card = document.createElement('div');
-        card.className = `sprint-card sprint-card-${sprint.status}`;
-
-        const header = document.createElement('div');
-        header.className = 'sprint-card-header';
-
-        const name = document.createElement('h3');
-        name.className = 'sprint-card-name';
-        name.textContent = sprint.name;
-
-        const badge = document.createElement('span');
-        badge.className = `sprint-status-badge sprint-status-${sprint.status}`;
-        badge.textContent = (statusLabels[sprint.status] || statusLabels.planned)();
-
-        header.append(name, badge);
-        card.append(header);
-
-        if (sprint.goal) {
-          const goal = document.createElement('p');
-          goal.className = 'sprint-card-goal';
-          goal.textContent = sprint.goal;
-          card.append(goal);
-        }
-
-        const meta = document.createElement('div');
-        meta.className = 'sprint-card-meta';
-
-        if (sprint.start_date || sprint.end_date) {
-          const dates = document.createElement('span');
-          dates.className = 'sprint-card-dates';
-          dates.textContent = `${sprint.start_date || '...'} -> ${sprint.end_date || '...'}`;
-          meta.append(dates);
-        }
-
-        const taskCount = document.createElement('span');
-        taskCount.className = 'sprint-card-tasks';
-        taskCount.textContent = `${sprint.task_count || 0} ${t('sprintTasks') || 'tasks'}`;
-        meta.append(taskCount);
-
-        card.append(meta);
-
-        const actions = document.createElement('div');
-        actions.className = 'sprint-card-actions';
-
-        const editBtn = document.createElement('button');
-        editBtn.type = 'button';
-        editBtn.className = 'task-action-icon secondary';
-        editBtn.textContent = 'E';
-        editBtn.title = t('editSprint') || 'Edit Sprint';
-        editBtn.setAttribute('aria-label', t('editSprint') || 'Edit Sprint');
-        editBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          openEditModal(sprint);
-        });
-
-        const deleteBtn = document.createElement('button');
-        deleteBtn.type = 'button';
-        deleteBtn.className = 'task-action-icon secondary';
-        deleteBtn.textContent = 'X';
-        deleteBtn.title = t('deleteSprint') || 'Delete Sprint';
-        deleteBtn.setAttribute('aria-label', t('deleteSprint') || 'Delete Sprint');
-        deleteBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          deleteSprint(sprint);
-        });
-
-        actions.append(editBtn, deleteBtn);
-        card.append(actions);
-        sprintsList.append(card);
-      });
+      layout.append(sprintGrid);
+      sprintsList.append(layout);
     };
 
     const openAddModal = () => {
@@ -202,6 +362,7 @@
 
     const reset = () => {
       sprints = [];
+      sprintTasks = [];
       closeModal();
       render();
     };
@@ -246,6 +407,7 @@
 
       closeModal();
       showStatusToast(t('sprintSaved') || 'Sprint saved.');
+      onSprintsChanged();
       await loadSprints();
     };
 
@@ -258,6 +420,7 @@
         return;
       }
       showStatusToast(t('sprintDeleted') || 'Sprint deleted.');
+      onSprintsChanged();
       await loadSprints();
     };
 
