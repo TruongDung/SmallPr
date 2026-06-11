@@ -2286,7 +2286,7 @@ body.theme-dark .status-in_progress {
   align-items: center;
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
 }
 
 .calendar-toolbar h2 {
@@ -2520,8 +2520,10 @@ body.theme-dark .status-in_progress {
   align-items: center;
   cursor: pointer;
   display: flex;
-  gap: 0.5rem;
+  gap: 0.4rem;
+  padding: 0.35rem 0.55rem;
   user-select: none;
+  white-space: nowrap;
 }
 
 .calendar-lunar-input {
@@ -2570,7 +2572,8 @@ body.theme-dark .status-in_progress {
   }
 
   .calendar-controls,
-  .calendar-view-switch {
+  .calendar-view-switch,
+  .calendar-lunar-toggle {
     justify-content: stretch;
   }
 
