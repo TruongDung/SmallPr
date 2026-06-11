@@ -37,6 +37,7 @@
     const auditLogPageInfo = document.getElementById('audit-log-page-info');
     const auditLogSearchInput = document.getElementById('audit-log-search-input');
     const refreshAuditLog = document.getElementById('refresh-audit-log');
+    const clearAuditLog = document.getElementById('clear-audit-log');
     const openAddUserModalButton = document.getElementById('open-add-user-modal');
     const adminUserModal = document.getElementById('admin-user-modal');
     const adminUserModalTitle = document.getElementById('admin-user-modal-title');
@@ -130,6 +131,25 @@
         refreshAuditLog.disabled = false;
         refreshAuditLog.classList.remove('is-loading');
         delete refreshAuditLog.dataset.loading;
+      }
+    };
+
+    const clearAuditLogs = async () => {
+      if (!confirm(t('clearAuditLogConfirm') || 'Delete all audit log entries? This cannot be undone.')) return;
+      clearAuditLog.disabled = true;
+      try {
+        const result = await request('/api/admin/audit-logs', { method: 'DELETE' });
+        if (result.error) {
+          showStatusToast(result.error, 'error');
+          return;
+        }
+        auditLogPage = 1;
+        await loadAuditLogs();
+        showStatusToast(t('auditLogCleared') || 'Audit log cleared.');
+      } catch (error) {
+        showStatusToast(error.message || 'Failed to clear audit log', 'error');
+      } finally {
+        clearAuditLog.disabled = false;
       }
     };
 
@@ -654,6 +674,7 @@
         });
       }
       refreshAuditLog?.addEventListener('click', refreshAuditLogsWithFeedback);
+      clearAuditLog?.addEventListener('click', clearAuditLogs);
       auditLogSearchInput?.addEventListener('input', scheduleAuditLogSearch);
       auditLogPrevious?.addEventListener('click', () => {
         if (auditLogPage > 1) loadAuditLogs(auditLogPage - 1);

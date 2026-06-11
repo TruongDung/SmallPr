@@ -42,6 +42,17 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsyn
     }
   });
 
+  router.delete('/admin/audit-logs', adminRequired, async (req, res) => {
+    try {
+      const result = await runAsync('DELETE FROM audit_logs');
+      logger.info({ rowCount: result.rowCount || result.lastID }, 'Audit logs cleared by admin');
+      res.json({ success: true });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to clear audit logs');
+      res.status(500).json({ error: 'Failed to clear audit logs' });
+    }
+  });
+
   router.get('/admin/users', adminRequired, async (req, res) => {
     try {
       const users = await allAsync(
