@@ -932,9 +932,13 @@
           </select>
         </div>
         <div id="sprint-editor-field" class="field hidden">
-          <label for="sprint-editor-input">Editors</label>
-          <select id="sprint-editor-input" multiple size="5">
+          <label id="sprint-editor-label" for="sprint-editor-input">Editors</label>
+          <select id="sprint-editor-input" class="sr-only" multiple tabindex="-1" aria-hidden="true">
           </select>
+          <div id="sprint-editor-picker" class="sprint-editor-picker" aria-labelledby="sprint-editor-label">
+            <div id="sprint-editor-summary" class="sprint-editor-summary" aria-live="polite"></div>
+            <div id="sprint-editor-options" class="sprint-editor-options" role="listbox" aria-multiselectable="true"></div>
+          </div>
           <p id="sprint-editor-hint" class="field-hint">Selected users can update this sprint and its tasks.</p>
         </div>
         <p id="sprint-form-error" class="field-error hidden"></p>

@@ -12,6 +12,8 @@
     const statusInput = document.getElementById('sprint-status-input');
     const editorField = document.getElementById('sprint-editor-field');
     const editorInput = document.getElementById('sprint-editor-input');
+    const editorSummary = document.getElementById('sprint-editor-summary');
+    const editorOptions = document.getElementById('sprint-editor-options');
     const editorHint = document.getElementById('sprint-editor-hint');
     const formError = document.getElementById('sprint-form-error');
     const cancelButton = document.getElementById('cancel-sprint');
@@ -20,6 +22,8 @@
     let sprints = [];
     let sprintTasks = [];
     let assignableEditors = [];
+    let selectedEditorIds = [];
+    let isLoadingEditors = false;
     let editingId = null;
 
     const statusLabels = {
@@ -102,22 +106,15 @@
 
     const getSelectedEditorIds = () => {
       if (!editorInput) return [];
-      return [...editorInput.selectedOptions]
-        .map((option) => Number(option.value))
-        .filter((id) => Number.isInteger(id) && id > 0);
+      return [...selectedEditorIds];
     };
 
-    const setEditorOptions = (selectedValues = []) => {
+    const syncEditorInput = () => {
       if (!editorInput) return;
-      const selectedIds = new Set(normalizeEditorIds(selectedValues).map(String));
+      const selectedIds = new Set(selectedEditorIds.map(String));
       editorInput.innerHTML = '';
 
       if (!assignableEditors.length) {
-        const emptyOption = document.createElement('option');
-        emptyOption.value = '';
-        emptyOption.disabled = true;
-        emptyOption.textContent = t('sprintNoEditorsAvailable') || 'No eligible users';
-        editorInput.append(emptyOption);
         return;
       }
 
@@ -130,10 +127,107 @@
       });
     };
 
+    const renderEditorSummary = () => {
+      if (!editorSummary) return;
+      editorSummary.innerHTML = '';
+
+      if (!selectedEditorIds.length) {
+        const empty = document.createElement('span');
+        empty.className = 'sprint-editor-empty';
+        empty.textContent = t('sprintEditorPlaceholder') || 'No editors selected';
+        editorSummary.append(empty);
+        return;
+      }
+
+      const selectedUsers = assignableEditors.filter((user) => selectedEditorIds.includes(Number(user.id)));
+      selectedUsers.forEach((user) => {
+        const chip = document.createElement('span');
+        chip.className = 'sprint-editor-chip';
+        chip.textContent = formatUserName(user);
+        editorSummary.append(chip);
+      });
+
+      const count = document.createElement('span');
+      count.className = 'sprint-editor-count';
+      count.textContent = t('sprintEditorsSelected', { count: selectedEditorIds.length }) || `${selectedEditorIds.length} selected`;
+      editorSummary.append(count);
+    };
+
+    const toggleEditorSelection = (userId) => {
+      const id = Number(userId);
+      if (!Number.isInteger(id) || id <= 0) return;
+      selectedEditorIds = selectedEditorIds.includes(id)
+        ? selectedEditorIds.filter((selectedId) => selectedId !== id)
+        : [...selectedEditorIds, id];
+      setEditorOptions(selectedEditorIds);
+    };
+
+    const renderEditorOptions = () => {
+      if (!editorOptions) return;
+      editorOptions.innerHTML = '';
+
+      if (!assignableEditors.length) {
+        const empty = document.createElement('p');
+        empty.className = 'sprint-editor-options-empty';
+        empty.textContent = isLoadingEditors
+          ? (t('sprintEditorsLoading') || 'Loading editors...')
+          : (t('sprintNoEditorsAvailable') || 'No eligible users');
+        editorOptions.append(empty);
+        return;
+      }
+
+      assignableEditors.forEach((user) => {
+        const isSelected = selectedEditorIds.includes(Number(user.id));
+        const displayName = formatUserName(user);
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.className = `sprint-editor-option${isSelected ? ' is-selected' : ''}`;
+        option.setAttribute('role', 'option');
+        option.setAttribute('aria-selected', String(isSelected));
+        option.setAttribute('aria-label', t('sprintEditorToggle', { username: displayName }) || `Toggle ${displayName}`);
+        option.addEventListener('click', () => toggleEditorSelection(user.id));
+
+        const text = document.createElement('span');
+        text.className = 'sprint-editor-option-text';
+        const name = document.createElement('strong');
+        name.textContent = displayName;
+        text.append(name);
+        if (user.name && user.username) {
+          const username = document.createElement('small');
+          username.textContent = user.username;
+          text.append(username);
+        }
+
+        const check = document.createElement('span');
+        check.className = 'sprint-editor-option-check';
+        check.textContent = isSelected ? '✓' : '';
+        option.append(text, check);
+        editorOptions.append(option);
+      });
+    };
+
+    const setEditorOptions = (selectedValues = selectedEditorIds) => {
+      if (!editorInput) return;
+      const normalizedIds = [...new Set(normalizeEditorIds(selectedValues))];
+      if (assignableEditors.length) {
+        const assignableIds = new Set(assignableEditors.map((user) => Number(user.id)));
+        selectedEditorIds = normalizedIds.filter((id) => assignableIds.has(id));
+      } else {
+        selectedEditorIds = normalizedIds;
+      }
+      syncEditorInput();
+      renderEditorSummary();
+      renderEditorOptions();
+    };
+
     const loadAssignableEditors = async (selectedValues = getSelectedEditorIds()) => {
       if (!isAdminUser() || !editorInput) return;
+      isLoadingEditors = true;
+      setEditorOptions(selectedValues);
       const result = await request('/api/admin/users');
+      isLoadingEditors = false;
       if (result.error) {
+        setEditorOptions(selectedValues);
         showStatusToast(result.error, 'error');
         return;
       }
@@ -547,6 +641,8 @@
       sprints = [];
       sprintTasks = [];
       assignableEditors = [];
+      selectedEditorIds = [];
+      isLoadingEditors = false;
       closeModal();
       render();
     };
