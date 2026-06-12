@@ -26,6 +26,8 @@
     setCurrentView,
     showSection,
     confirmDeleteUser,
+    confirmDeleteTestUsers = null,
+    confirmClearAuditLogs = null,
     currentLanguage,
   }) => {
     // ---- DOM refs (owned by this module) ----
@@ -330,9 +332,20 @@
       }
     };
 
+    const requestClearAuditLogs = () => {
+      const message = t('clearAuditLogConfirm') || 'Delete all audit log entries? This cannot be undone.';
+      if (typeof confirmClearAuditLogs === 'function') {
+        confirmClearAuditLogs(message);
+        return;
+      }
+
+      if (confirm(message)) {
+        clearAuditLogs();
+      }
+    };
+
     const clearAuditLogs = async () => {
-      if (!confirm(t('clearAuditLogConfirm') || 'Delete all audit log entries? This cannot be undone.')) return;
-      clearAuditLog.disabled = true;
+      if (clearAuditLog) clearAuditLog.disabled = true;
       try {
         const result = await request('/api/admin/audit-logs', { method: 'DELETE' });
         if (result.error) {
@@ -345,7 +358,7 @@
       } catch (error) {
         showStatusToast(error.message || 'Failed to clear audit log', 'error');
       } finally {
-        clearAuditLog.disabled = false;
+        if (clearAuditLog) clearAuditLog.disabled = false;
       }
     };
 
@@ -793,7 +806,7 @@
       loadUsers();
     };
 
-    const deleteTestUsers = async () => {
+    const getTestUsersDeleteMessage = () => {
       const currentUser = getCurrentUser();
       const matchingUsers = users.filter((user) => (
         isTestUser(user) && String(user.username || '').toLowerCase() !== 'admin' && user.id !== currentUser?.id
@@ -805,9 +818,23 @@
         ? t('deleteTestUsersConfirm', { count, users: `${names}${extra}` })
         : t('deleteTestUsersConfirmEmpty');
 
-      if (!confirm(message)) return;
+      return message;
+    };
 
-      deleteTestUsersButton.disabled = true;
+    const requestDeleteTestUsers = () => {
+      const message = getTestUsersDeleteMessage();
+      if (typeof confirmDeleteTestUsers === 'function') {
+        confirmDeleteTestUsers(message);
+        return;
+      }
+
+      if (confirm(message)) {
+        deleteTestUsers();
+      }
+    };
+
+    const deleteTestUsers = async () => {
+      if (deleteTestUsersButton) deleteTestUsersButton.disabled = true;
       try {
         const result = await request('/api/admin/users/test', { method: 'DELETE' });
         if (result.error) {
@@ -820,7 +847,7 @@
       } catch (error) {
         showStatusToast(error.message || 'Failed to delete test users', 'error');
       } finally {
-        deleteTestUsersButton.disabled = false;
+        if (deleteTestUsersButton) deleteTestUsersButton.disabled = false;
       }
     };
 
@@ -934,14 +961,14 @@
       openAddUserModalButton.addEventListener('click', () => showAdminUserModal());
       sendSummaryEmailButton?.addEventListener('click', sendSummaryEmail);
       sendNotesEmailButton?.addEventListener('click', sendNotesEmail);
-      deleteTestUsersButton?.addEventListener('click', deleteTestUsers);
+      deleteTestUsersButton?.addEventListener('click', requestDeleteTestUsers);
       if (impersonateUserSelect) {
         impersonateUserSelect.addEventListener('change', (event) => {
           if (event.target.value) startImpersonation(event.target.value);
         });
       }
       refreshAuditLog?.addEventListener('click', refreshAuditLogsWithFeedback);
-      clearAuditLog?.addEventListener('click', clearAuditLogs);
+      clearAuditLog?.addEventListener('click', requestClearAuditLogs);
       auditLogSavingToggle?.addEventListener('click', updateAuditLogSaving);
       loadDatabaseStorageButton?.addEventListener('click', loadDatabaseStorage);
       databaseStorageSortButtons.forEach((button) => {
@@ -975,6 +1002,8 @@
       hideResetPasswordModal,
       stopImpersonation,
       deleteUser,
+      deleteTestUsers,
+      clearAuditLogs,
     };
   };
 

@@ -214,6 +214,8 @@ let pendingDeleteFastAccessLink = null;
 let pendingDeleteNote = null;
 let pendingDeleteTransaction = null;
 let pendingDeleteSprint = null;
+let pendingDeleteTestUsers = false;
+let pendingClearAuditLogs = false;
 let pendingEditTask = null;
 let pendingPreviewTask = null;
 let pendingAddTask = { related_task_ids: [], related_tasks: [] };
@@ -2180,6 +2182,8 @@ const showDeleteConfirm = (id) => {
   pendingDeleteNote = null;
   pendingDeleteTransaction = null;
   pendingDeleteSprint = null;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = false;
   deleteConfirmTitle.textContent = t('deleteTaskTitle');
   deleteConfirmMessage.textContent = t('deleteTaskMessage');
   deleteConfirmModal.classList.remove('hidden');
@@ -2195,6 +2199,8 @@ const showUserDeleteConfirm = (user) => {
   pendingDeleteNote = null;
   pendingDeleteTransaction = null;
   pendingDeleteSprint = null;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = false;
   deleteConfirmTitle.textContent = t('deleteUserTitle');
   deleteConfirmMessage.textContent = t('deleteUserMessage', { username: user.username });
   deleteConfirmModal.classList.remove('hidden');
@@ -2210,6 +2216,8 @@ const showTagDeleteConfirm = (tag) => {
   pendingDeleteNote = null;
   pendingDeleteTransaction = null;
   pendingDeleteSprint = null;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = false;
   deleteConfirmTitle.textContent = t('deleteTagTitle');
   deleteConfirmMessage.textContent = t('deleteTagMessage', { tag: tag.name });
   deleteConfirmModal.classList.remove('hidden');
@@ -2225,6 +2233,8 @@ const showCreditCardDeleteConfirm = (card) => {
   pendingDeleteNote = null;
   pendingDeleteTransaction = null;
   pendingDeleteSprint = null;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = false;
   deleteConfirmTitle.textContent = t('deleteCreditCardTitle');
   deleteConfirmMessage.textContent = t('deleteCreditCardMessage', { name: card.name });
   deleteConfirmModal.classList.remove('hidden');
@@ -2240,6 +2250,8 @@ const showFastAccessLinkDeleteConfirm = (link) => {
   pendingDeleteNote = null;
   pendingDeleteTransaction = null;
   pendingDeleteSprint = null;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = false;
   deleteConfirmTitle.textContent = t('deleteFastAccessLinkTitle');
   deleteConfirmMessage.textContent = t('deleteFastAccessLinkMessage', { label: link.label || t('fastAccessLinks') });
   deleteConfirmModal.classList.remove('hidden');
@@ -2255,6 +2267,8 @@ const showNoteDeleteConfirm = (note) => {
   pendingDeleteNote = note;
   pendingDeleteTransaction = null;
   pendingDeleteSprint = null;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = false;
   deleteConfirmTitle.textContent = t('deleteNoteTitle');
   deleteConfirmMessage.textContent = t('deleteNoteMessage');
   deleteConfirmModal.classList.remove('hidden');
@@ -2270,6 +2284,8 @@ const showTransactionDeleteConfirm = (transaction) => {
   pendingDeleteNote = null;
   pendingDeleteTransaction = transaction;
   pendingDeleteSprint = null;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = false;
   deleteConfirmTitle.textContent = t('confirmDeleteTransaction');
   deleteConfirmMessage.textContent = t('confirmDeleteTransaction');
   deleteConfirmModal.classList.remove('hidden');
@@ -2285,8 +2301,44 @@ const showSprintDeleteConfirm = (sprint) => {
   pendingDeleteNote = null;
   pendingDeleteTransaction = null;
   pendingDeleteSprint = sprint;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = false;
   deleteConfirmTitle.textContent = t('deleteSprintTitle');
   deleteConfirmMessage.textContent = t('deleteSprintMessage', { name: sprint.name });
+  deleteConfirmModal.classList.remove('hidden');
+  confirmDeleteNo.focus();
+};
+
+const showTestUsersDeleteConfirm = (message) => {
+  pendingDeleteTaskId = null;
+  pendingDeleteUser = null;
+  pendingDeleteTag = null;
+  pendingDeleteCard = null;
+  pendingDeleteFastAccessLink = null;
+  pendingDeleteNote = null;
+  pendingDeleteTransaction = null;
+  pendingDeleteSprint = null;
+  pendingDeleteTestUsers = true;
+  pendingClearAuditLogs = false;
+  deleteConfirmTitle.textContent = t('deleteTestUsers');
+  deleteConfirmMessage.textContent = message;
+  deleteConfirmModal.classList.remove('hidden');
+  confirmDeleteNo.focus();
+};
+
+const showClearAuditLogsConfirm = (message) => {
+  pendingDeleteTaskId = null;
+  pendingDeleteUser = null;
+  pendingDeleteTag = null;
+  pendingDeleteCard = null;
+  pendingDeleteFastAccessLink = null;
+  pendingDeleteNote = null;
+  pendingDeleteTransaction = null;
+  pendingDeleteSprint = null;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = true;
+  deleteConfirmTitle.textContent = t('clearAuditLogTitle');
+  deleteConfirmMessage.textContent = message;
   deleteConfirmModal.classList.remove('hidden');
   confirmDeleteNo.focus();
 };
@@ -2300,13 +2352,15 @@ const hideDeleteConfirm = () => {
   pendingDeleteNote = null;
   pendingDeleteTransaction = null;
   pendingDeleteSprint = null;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = false;
   deleteConfirmModal.classList.add('hidden');
 };
 
 confirmDeleteNo.addEventListener('click', hideDeleteConfirm);
 
 confirmDeleteYes.addEventListener('click', async () => {
-  if (!pendingDeleteTaskId && !pendingDeleteUser && !pendingDeleteTag && !pendingDeleteCard && !pendingDeleteFastAccessLink && !pendingDeleteNote && !pendingDeleteTransaction && !pendingDeleteSprint) return;
+  if (!pendingDeleteTaskId && !pendingDeleteUser && !pendingDeleteTag && !pendingDeleteCard && !pendingDeleteFastAccessLink && !pendingDeleteNote && !pendingDeleteTransaction && !pendingDeleteSprint && !pendingDeleteTestUsers && !pendingClearAuditLogs) return;
   const taskId = pendingDeleteTaskId;
   const user = pendingDeleteUser;
   const tag = pendingDeleteTag;
@@ -2315,6 +2369,8 @@ confirmDeleteYes.addEventListener('click', async () => {
   const note = pendingDeleteNote;
   const transaction = pendingDeleteTransaction;
   const sprint = pendingDeleteSprint;
+  const shouldDeleteTestUsers = pendingDeleteTestUsers;
+  const shouldClearAuditLogs = pendingClearAuditLogs;
   hideDeleteConfirm();
   if (taskId) {
     await deleteTask(taskId);
@@ -2342,6 +2398,14 @@ confirmDeleteYes.addEventListener('click', async () => {
   }
   if (sprint) {
     await sprintsModule.deleteSprint(sprint);
+    return;
+  }
+  if (shouldDeleteTestUsers) {
+    await adminModule.deleteTestUsers();
+    return;
+  }
+  if (shouldClearAuditLogs) {
+    await adminModule.clearAuditLogs();
     return;
   }
   await adminModule.deleteUser(user);
@@ -3275,6 +3339,8 @@ const adminModule = window.AdminModule.create({
   setCurrentView,
   showSection,
   confirmDeleteUser: showUserDeleteConfirm,
+  confirmDeleteTestUsers: showTestUsersDeleteConfirm,
+  confirmClearAuditLogs: showClearAuditLogsConfirm,
   currentLanguage,
 });
 
