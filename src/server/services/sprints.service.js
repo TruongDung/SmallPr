@@ -134,8 +134,11 @@ const createSprintsService = ({ allAsync, getAsync, runAsync }) => {
     return getSprintForUser(id, userId);
   };
 
-  const deleteSprint = (id, userId) =>
-    runAsync('DELETE FROM sprints WHERE id = ? AND user_id = ?', [id, userId]);
+  const deleteSprint = (id, userId, { allowAnyOwner = false } = {}) => (
+    allowAnyOwner
+      ? runAsync('DELETE FROM sprints WHERE id = ?', [id])
+      : runAsync('DELETE FROM sprints WHERE id = ? AND user_id = ?', [id, userId])
+  );
 
   return {
     listSprints,

@@ -222,13 +222,16 @@ const createSprintsRouter = ({
     const { id } = req.params;
 
     try {
-      const existing = await sprints.getOwnedSprintForUser(id, req.session.userId);
+      const isAdmin = req.currentUser?.username === 'admin';
+      const existing = isAdmin
+        ? await sprints.getSprintForUser(id, req.session.userId)
+        : await sprints.getOwnedSprintForUser(id, req.session.userId);
       if (!existing) {
         return res.status(404).json({ error: 'Sprint not found' });
       }
 
       const accessUserIds = await sprints.listSprintAccessUserIds(id);
-      await sprints.deleteSprint(id, req.session.userId);
+      await sprints.deleteSprint(id, req.session.userId, { allowAnyOwner: isAdmin });
       await clearSprintUserCaches(accessUserIds);
       accessUserIds.forEach((userId) => emitToUser(userId, 'sprint:deleted', { id: Number(id) }));
       res.json({ success: true });

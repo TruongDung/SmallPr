@@ -65,7 +65,7 @@
       : Number(value));
 
     const isAdminUser = () => getCurrentUser()?.username === 'admin';
-    const canDeleteSprint = (sprint) => Number(sprint.is_owner) === 1;
+    const canDeleteSprint = (sprint) => Number(sprint.is_owner) === 1 || isAdminUser();
     const canRemoveTaskFromSprint = (task) => {
       const currentUserId = Number(getCurrentUser()?.id);
       return Number(task.user_id) === currentUserId || Number(task.sprint_owner_user_id) === currentUserId;
@@ -428,7 +428,7 @@
 
       const deleteBtn = document.createElement('button');
       deleteBtn.type = 'button';
-      deleteBtn.className = 'task-action-icon secondary';
+      deleteBtn.className = 'task-action-icon danger';
       deleteBtn.textContent = '×';
       deleteBtn.title = t('deleteSprint') || 'Delete Sprint';
       deleteBtn.setAttribute('aria-label', t('deleteSprint') || 'Delete Sprint');
