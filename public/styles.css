@@ -748,7 +748,7 @@ button {
 
 button.secondary {
   background: transparent;
-  color: #1a202c;
+  color: var(--text);
   border: 1px solid var(--border);
   font-weight: 700;
 }

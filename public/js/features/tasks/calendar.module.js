@@ -154,11 +154,6 @@
           list.append(more);
         }
         cell.append(list);
-      } else {
-        const empty = document.createElement('p');
-        empty.className = 'calendar-empty';
-        empty.textContent = t('calendarNoTasks');
-        cell.append(empty);
       }
 
       return cell;
