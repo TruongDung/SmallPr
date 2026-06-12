@@ -54,3 +54,4 @@ safe to re-run on databases that may already have the change.
 | `015_add_audit_logs_search.sql` | Full-text search index on audit_logs |
 | `016_relax_transaction_constraints.sql` | Relax NOT NULL on transaction text fields |
 | `017_data_initialization.sql` | Seed default fast access bills and task tags |
+| `027_create_sprint_editors.sql` | Delegated sprint editors |

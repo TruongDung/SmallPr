@@ -1887,6 +1887,7 @@ const createTaskCard = (task) => {
     const currentStatus = taskStatus(task);
     const isArchived = Boolean(task.archived);
     const isHighPriority = task.priority === 'high';
+    const canDeleteTask = task.can_delete === undefined || task.can_delete === true || Number(task.can_delete) === 1;
     const card = document.createElement('div');
     card.className = [
       'task-item',
@@ -2036,7 +2037,10 @@ const createTaskCard = (task) => {
     if (task.is_recurring && task.recurring_rule_id) {
       actions.append(recurrenceButton);
     }
-    actions.append(editButton, archiveButton, deleteButton);
+    actions.append(editButton, archiveButton);
+    if (canDeleteTask) {
+      actions.append(deleteButton);
+    }
     card.append(hoverMessage, meta, description);
     if (task.comment) {
       card.append(comment);
@@ -3175,6 +3179,7 @@ const sprintsModule = window.SprintsModule.create({
   request,
   t,
   showStatusToast,
+  getCurrentUser: () => currentUser,
   onSprintsChanged: () => loadSprintOptions(),
 });
 

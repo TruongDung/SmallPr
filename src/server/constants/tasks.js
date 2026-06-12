@@ -5,13 +5,13 @@ const MAX_TASK_TITLE_LENGTH = 20;
 const VALID_PRIORITIES = new Set(['low', 'medium', 'high']);
 const VALID_STATUSES = new Set(['todo', 'in_progress', 'done']);
 const TASK_PRIORITY_ORDER_SQL = `
-  CASE priority
+  CASE tasks.priority
     WHEN 'high' THEN 0
     WHEN 'medium' THEN 1
     WHEN 'low' THEN 2
     ELSE 3
   END,
-  created_at DESC
+  tasks.created_at DESC
 `;
 
 module.exports = {

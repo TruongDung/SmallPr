@@ -8623,6 +8623,26 @@ body.theme-dark .notes-editor-actions button.secondary:hover {
   overflow: hidden;
 }
 
+.sprint-card-people {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -2px 0 10px;
+}
+
+.sprint-card-people span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
 .sprint-card-meta {
   display: flex;
   align-items: center;
@@ -8788,6 +8808,13 @@ body.theme-dark .notes-editor-actions button.secondary:hover {
   font-weight: 800;
   color: var(--muted);
   white-space: nowrap;
+}
+
+#sprint-editor-hint {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
 }
 
 /* Sprint status badges */

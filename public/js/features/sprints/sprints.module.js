@@ -1,5 +1,5 @@
 (function () {
-  const create = ({ request, t, showStatusToast, onSprintsChanged = () => {} }) => {
+  const create = ({ request, t, showStatusToast, onSprintsChanged = () => {}, getCurrentUser = () => null }) => {
     const sprintsList = document.getElementById('sprints-list');
     const openAddButton = document.getElementById('open-add-sprint');
     const modal = document.getElementById('sprint-modal');
@@ -10,12 +10,16 @@
     const startInput = document.getElementById('sprint-start-input');
     const endInput = document.getElementById('sprint-end-input');
     const statusInput = document.getElementById('sprint-status-input');
+    const editorField = document.getElementById('sprint-editor-field');
+    const editorInput = document.getElementById('sprint-editor-input');
+    const editorHint = document.getElementById('sprint-editor-hint');
     const formError = document.getElementById('sprint-form-error');
     const cancelButton = document.getElementById('cancel-sprint');
     const saveButton = document.getElementById('save-sprint');
 
     let sprints = [];
     let sprintTasks = [];
+    let assignableEditors = [];
     let editingId = null;
 
     const statusLabels = {
@@ -49,9 +53,49 @@
       ? null
       : Number(value));
 
+    const isAdminUser = () => getCurrentUser()?.username === 'admin';
+    const canDeleteSprint = (sprint) => Number(sprint.is_owner) === 1;
+    const canRemoveTaskFromSprint = (task) => {
+      const currentUserId = Number(getCurrentUser()?.id);
+      return Number(task.user_id) === currentUserId || Number(task.sprint_owner_user_id) === currentUserId;
+    };
+
     const getTasksForSprint = (sprintId) => sprintTasks.filter((task) => (
       normalizeSprintId(task.sprint_id) === normalizeSprintId(sprintId)
     ));
+
+    const setEditorOptions = (selectedValue = '') => {
+      if (!editorInput) return;
+      const normalizedSelected = selectedValue == null ? '' : String(selectedValue);
+      editorInput.innerHTML = '';
+
+      const emptyOption = document.createElement('option');
+      emptyOption.value = '';
+      emptyOption.textContent = t('sprintEditorPlaceholder') || 'No editor';
+      editorInput.append(emptyOption);
+
+      assignableEditors.forEach((user) => {
+        const option = document.createElement('option');
+        option.value = String(user.id);
+        option.textContent = user.name ? `${user.name} (${user.username})` : user.username;
+        editorInput.append(option);
+      });
+
+      editorInput.value = normalizedSelected;
+    };
+
+    const loadAssignableEditors = async (selectedValue = editorInput?.value || '') => {
+      if (!isAdminUser() || !editorInput) return;
+      const result = await request('/api/admin/users');
+      if (result.error) {
+        showStatusToast(result.error, 'error');
+        return;
+      }
+      assignableEditors = (result.users || []).filter((user) => (
+        user.username !== 'admin' && user.account_status === 'enabled'
+      ));
+      setEditorOptions(selectedValue);
+    };
 
     const formatDateRange = (startDate, endDate) => {
       if (!startDate && !endDate) return t('noDate') || 'No dates';
@@ -143,7 +187,8 @@
       copy.append(title, meta);
       pill.append(copy);
 
-      if (removable) {
+      const isRemovable = typeof removable === 'function' ? removable(task) : Boolean(removable);
+      if (isRemovable) {
         const removeButton = document.createElement('button');
         removeButton.type = 'button';
         removeButton.className = 'sprint-task-remove';
@@ -245,9 +290,28 @@
         deleteSprint(sprint);
       });
 
-      actions.append(editBtn, deleteBtn);
+      actions.append(editBtn);
+      if (canDeleteSprint(sprint)) {
+        actions.append(deleteBtn);
+      }
       header.append(titleWrap, actions);
       card.append(header);
+
+      const people = document.createElement('div');
+      people.className = 'sprint-card-people';
+      if (!canDeleteSprint(sprint) && (sprint.owner_name || sprint.owner_username)) {
+        const owner = document.createElement('span');
+        owner.textContent = t('sprintOwnedBy', { username: sprint.owner_name || sprint.owner_username }) || `Owner: ${sprint.owner_name || sprint.owner_username}`;
+        people.append(owner);
+      }
+      if (canDeleteSprint(sprint) && (sprint.editor_name || sprint.editor_username)) {
+        const editor = document.createElement('span');
+        editor.textContent = t('sprintSharedWith', { username: sprint.editor_name || sprint.editor_username }) || `Shared with ${sprint.editor_name || sprint.editor_username}`;
+        people.append(editor);
+      }
+      if (people.children.length) {
+        card.append(people);
+      }
 
       if (sprint.goal) {
         const goal = document.createElement('p');
@@ -290,7 +354,7 @@
       card.append(
         meta,
         progressWrap,
-        createTaskList(sprintCardTasks, t('noSprintTasks') || 'Drop tasks here.', { removable: true })
+        createTaskList(sprintCardTasks, t('noSprintTasks') || 'Drop tasks here.', { removable: canRemoveTaskFromSprint })
       );
 
       return card;
@@ -344,6 +408,12 @@
       editingId = null;
       modalTitle.textContent = t('newSprint') || 'New Sprint';
       form.reset();
+      if (editorField) editorField.classList.toggle('hidden', !isAdminUser());
+      if (editorInput) {
+        editorInput.value = '';
+        setEditorOptions('');
+        loadAssignableEditors('');
+      }
       formError.classList.add('hidden');
       formError.textContent = '';
       modal.classList.remove('hidden');
@@ -358,6 +428,13 @@
       startInput.value = sprint.start_date || '';
       endInput.value = sprint.end_date || '';
       statusInput.value = sprint.status || 'planned';
+      if (editorField) editorField.classList.toggle('hidden', !isAdminUser());
+      if (editorInput) {
+        const editorValue = sprint.editor_user_id ? String(sprint.editor_user_id) : '';
+        editorInput.value = editorValue;
+        setEditorOptions(editorValue);
+        loadAssignableEditors(editorValue);
+      }
       formError.classList.add('hidden');
       formError.textContent = '';
       modal.classList.remove('hidden');
@@ -398,6 +475,11 @@
       if (endLabel) endLabel.textContent = t('sprintEnd') || 'End Date';
       const statusLabel = document.querySelector('label[for="sprint-status-input"]');
       if (statusLabel) statusLabel.textContent = t('sprintStatus') || 'Status';
+      const editorLabel = document.querySelector('label[for="sprint-editor-input"]');
+      if (editorLabel) editorLabel.textContent = t('sprintEditor') || 'Editor';
+      if (editorHint) editorHint.textContent = t('sprintEditorHint') || 'Editor can update this sprint and its tasks.';
+      setEditorOptions(editorInput?.value || '');
+      if (editorField) editorField.classList.toggle('hidden', !isAdminUser());
 
       setOptionText('planned', t('sprint_planned') || 'Planned');
       setOptionText('active', t('sprint_active') || 'Active');
@@ -418,6 +500,7 @@
     const reset = () => {
       sprints = [];
       sprintTasks = [];
+      assignableEditors = [];
       closeModal();
       render();
     };
@@ -440,6 +523,9 @@
         end_date: endInput.value || null,
         status: statusInput.value || 'planned',
       };
+      if (isAdminUser() && editorInput) {
+        payload.editor_user_id = editorInput.value ? Number(editorInput.value) : null;
+      }
 
       let result;
       if (editingId) {

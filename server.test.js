@@ -125,6 +125,8 @@ afterAll(async () => {
           OR (action = 'login' AND summary = 'admin' AND created_at >= $2)`,
       [`${RUN_ID}%`, TEST_STARTED_AT]
     ).catch(() => {});
+    await db.query('DELETE FROM tasks WHERE title LIKE $1 OR title LIKE $2', [`${RUN_ID}%`, `${RUN_ID.slice(0, 12)}%`]).catch(() => {});
+    await db.query('DELETE FROM sprints WHERE name LIKE $1', [`${RUN_ID}%`]).catch(() => {});
     await db.query('DELETE FROM users WHERE username LIKE $1', [`${RUN_ID}%`]);
   } catch (error) {
     if (process.env.JEST_WORKER_ID) {
@@ -1236,6 +1238,72 @@ describe('Task API', () => {
     const deleteResponse = await owner.delete(`/api/tasks/${taskId}`);
     expect(deleteResponse.statusCode).toBe(200);
     expect(deleteResponse.body).toHaveProperty('success', true);
+  });
+
+  test('allows admin to delegate sprint and task editing to another user', async () => {
+    const admin = await createAdminAgent();
+    const editor = await createAgent(testUsername('sprint-editor'));
+    const editorMe = await editor.get('/api/me');
+    const editorId = editorMe.body.user.id;
+
+    const sprintResponse = await admin
+      .post('/api/sprints')
+      .send({
+        name: `${RUN_ID}-delegated-sprint`,
+        goal: 'Admin owned sprint',
+        status: 'active',
+        editor_user_id: editorId,
+      });
+    expect(sprintResponse.statusCode).toBe(200);
+    expect(sprintResponse.body.sprint).toMatchObject({
+      name: `${RUN_ID}-delegated-sprint`,
+      editor_user_id: editorId,
+    });
+
+    const taskResponse = await admin
+      .post('/api/tasks')
+      .send({
+        title: `${RUN_ID.slice(0, 12)} task`,
+        priority: 'low',
+        sprint_id: sprintResponse.body.sprint.id,
+      });
+    expect(taskResponse.statusCode).toBe(200);
+
+    const editorSprints = await editor.get('/api/sprints');
+    expect(editorSprints.statusCode).toBe(200);
+    expect(editorSprints.body.sprints).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: sprintResponse.body.sprint.id,
+        name: `${RUN_ID}-delegated-sprint`,
+        is_owner: 0,
+      }),
+    ]));
+
+    const editorTasks = await editor.get('/api/tasks');
+    expect(editorTasks.statusCode).toBe(200);
+    expect(editorTasks.body.tasks).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: taskResponse.body.task.id,
+        sprint_id: sprintResponse.body.sprint.id,
+        can_delete: 0,
+      }),
+    ]));
+
+    const sprintEditResponse = await editor
+      .put(`/api/sprints/${sprintResponse.body.sprint.id}`)
+      .send({ goal: 'Edited by delegate' });
+    expect(sprintEditResponse.statusCode).toBe(200);
+    expect(sprintEditResponse.body.sprint).toMatchObject({ goal: 'Edited by delegate' });
+
+    const taskEditResponse = await editor
+      .put(`/api/tasks/${taskResponse.body.task.id}`)
+      .send({ status: 'done' });
+    expect(taskEditResponse.statusCode).toBe(200);
+    expect(taskEditResponse.body.task).toMatchObject({ status: 'done', completed: 1 });
+
+    const delegatedDeleteResponse = await editor.delete(`/api/tasks/${taskResponse.body.task.id}`);
+    expect(delegatedDeleteResponse.statusCode).toBe(403);
+    expect(delegatedDeleteResponse.body).toHaveProperty('error', 'Only the task owner can delete this task');
   });
 
   test('manages tags and keeps task tag values in sync', async () => {

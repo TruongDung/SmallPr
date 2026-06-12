@@ -26,6 +26,12 @@ const buildTaskTagsCacheKey = (userId) => `user:${userId}:task-tags:v1`;
 const clearTaskCaches = async (cache, userId) => {
   await cache?.deleteByPattern?.(`user:${userId}:tasks:*`);
   await cache?.deleteByPattern?.(buildTaskTagsCacheKey(userId));
+  await cache?.deleteByPattern?.(`user:${userId}:sprints:*`);
+};
+
+const clearTaskCachesForUsers = async (cache, userIds = []) => {
+  const uniqueIds = [...new Set(userIds.map(Number).filter(Number.isInteger))];
+  await Promise.all(uniqueIds.map((userId) => clearTaskCaches(cache, userId)));
 };
 
 const sendCachedJson = ({ res, payload, cacheStatus }) => {
@@ -64,6 +70,20 @@ const createTasksRouter = ({
     actorUserId: req.session.impersonatorUserId || req.session.userId,
     impersonatorUserId: req.session.impersonatorUserId || null,
   });
+
+  const ensureSprintAccess = async ({ sprintId, userId }) => {
+    if (!sprintId) return { sprint: null };
+    const sprint = await tasks.getAccessibleSprintForUser(sprintId, userId);
+    if (!sprint) {
+      return { error: 'Sprint not found' };
+    }
+    return { sprint };
+  };
+
+  const emitTaskEventToUsers = (userIds, eventName, payload) => {
+    [...new Set(userIds.map(Number).filter(Number.isInteger))]
+      .forEach((userId) => emitToUser(userId, eventName, payload));
+  };
 
   router.use(['/tasks', '/tags'], authRequired);
 
@@ -263,12 +283,21 @@ const createTasksRouter = ({
       }
       const taskInput = validation.value;
 
+      const sprintAccess = await ensureSprintAccess({
+        sprintId: taskInput.sprintId,
+        userId: req.session.userId,
+      });
+      if (sprintAccess.error) {
+        return res.status(404).json({ error: sprintAccess.error });
+      }
+
       const task = await tasks.createTask({
         userId: req.session.userId,
         ...taskInput,
       });
       await tasks.ensureTaskTag(req.session.userId, taskInput.tag);
-      await clearTaskCaches(cache, req.session.userId);
+      const accessUserIds = await tasks.listTaskAccessUserIds(task.id);
+      await clearTaskCachesForUsers(cache, accessUserIds);
 
       await auditLogs.record({
         ...createAuditContext(req),
@@ -279,7 +308,7 @@ const createTasksRouter = ({
         after: task,
       });
 
-      emitToUser(req.session.userId, 'task:created', { task });
+      emitTaskEventToUsers(accessUserIds, 'task:created', { task });
       res.json({ task });
     } catch (error) {
       logger.error({ err: error }, 'Failed to import email');
@@ -295,12 +324,21 @@ const createTasksRouter = ({
     const taskInput = validation.value;
 
     try {
+      const sprintAccess = await ensureSprintAccess({
+        sprintId: taskInput.sprintId,
+        userId: req.session.userId,
+      });
+      if (sprintAccess.error) {
+        return res.status(404).json({ error: sprintAccess.error });
+      }
+
       const task = await tasks.createTask({
         userId: req.session.userId,
         ...taskInput,
       });
       await tasks.ensureTaskTag(req.session.userId, taskInput.tag);
-      await clearTaskCaches(cache, req.session.userId);
+      const accessUserIds = await tasks.listTaskAccessUserIds(task.id);
+      await clearTaskCachesForUsers(cache, accessUserIds);
       const user = await getUserById(req.session.userId);
       let emailSent = false;
 
@@ -338,7 +376,7 @@ const createTasksRouter = ({
           return res.status(400).json({ error: ruleResult.error });
         }
       }
-      emitToUser(req.session.userId, 'task:created', { task });
+      emitTaskEventToUsers(accessUserIds, 'task:created', { task });
       res.json({ task, emailSent });
     } catch (error) {
       logger.error({ err: error }, 'Failed to create task');
@@ -361,6 +399,26 @@ const createTasksRouter = ({
       }
       const taskInput = validation.value;
 
+      if (
+        taskInput.hasSprintUpdate
+        && taskInput.sprintId === null
+        && Number(task.user_id) !== Number(req.session.userId)
+        && Number(task.sprint_owner_user_id) !== Number(req.session.userId)
+      ) {
+        return res.status(403).json({ error: 'Only the task or sprint owner can remove this task from a shared sprint' });
+      }
+
+      if (taskInput.hasSprintUpdate && taskInput.sprintId) {
+        const sprintAccess = await ensureSprintAccess({
+          sprintId: taskInput.sprintId,
+          userId: req.session.userId,
+        });
+        if (sprintAccess.error) {
+          return res.status(404).json({ error: sprintAccess.error });
+        }
+      }
+
+      const previousAccessUserIds = await tasks.listTaskAccessUserIds(id);
       const updatedTask = await tasks.updateTask({
         id,
         userId: req.session.userId,
@@ -368,9 +426,10 @@ const createTasksRouter = ({
         ...taskInput,
       });
       if (taskInput.hasTagUpdate) {
-        await tasks.ensureTaskTag(req.session.userId, taskInput.tag);
+        await tasks.ensureTaskTag(task.user_id, taskInput.tag);
       }
-      await clearTaskCaches(cache, req.session.userId);
+      const currentAccessUserIds = await tasks.listTaskAccessUserIds(id);
+      await clearTaskCachesForUsers(cache, [...previousAccessUserIds, ...currentAccessUserIds]);
 
       if (taskInput.isRecurring !== undefined) {
         if (taskInput.isRecurring) {
@@ -405,6 +464,7 @@ const createTasksRouter = ({
 
       await auditLogs.record({
         ...createAuditContext(req),
+        userId: updatedTask.user_id,
         action: 'edit',
         entityType: 'task',
         entityId: updatedTask.id,
@@ -412,8 +472,8 @@ const createTasksRouter = ({
         before: task,
         after: updatedTask,
       });
-      const taskWithHistory = await tasks.getTaskForUser(id, req.session.userId, { includeActivityHistory: false });
-      emitToUser(req.session.userId, 'task:updated', { task: taskWithHistory });
+      const taskWithHistory = await tasks.getTaskForUser(id, req.session.userId, { includeActivityHistory: false }) || updatedTask;
+      emitTaskEventToUsers([...previousAccessUserIds, ...currentAccessUserIds], 'task:updated', { task: taskWithHistory });
       res.json({ task: taskWithHistory });
     } catch (error) {
       logger.error({ err: error }, 'Failed to update task');
@@ -429,18 +489,23 @@ const createTasksRouter = ({
       if (!task) {
         return res.status(404).json({ error: 'Task not found' });
       }
+      if (Number(task.user_id) !== Number(req.session.userId)) {
+        return res.status(403).json({ error: 'Only the task owner can delete this task' });
+      }
 
-      await tasks.deleteTask(id, req.session.userId);
-      await clearTaskCaches(cache, req.session.userId);
+      const accessUserIds = await tasks.listTaskAccessUserIds(id);
+      await tasks.deleteTask(id, task.user_id);
+      await clearTaskCachesForUsers(cache, accessUserIds);
       await auditLogs.record({
         ...createAuditContext(req),
+        userId: task.user_id,
         action: 'delete',
         entityType: 'task',
         entityId: task.id,
         summary: task.title,
         before: task,
       });
-      emitToUser(req.session.userId, 'task:deleted', { id: Number(id) });
+      emitTaskEventToUsers(accessUserIds, 'task:deleted', { id: Number(id) });
       res.json({ success: true });
     } catch (error) {
       logger.error({ err: error }, 'Failed to delete task');
@@ -466,6 +531,7 @@ const createTasksRouter = ({
         return res.status(404).json({ error: 'Task not found' });
       }
 
+      const accessUserIds = await tasks.listTaskAccessUserIds(id);
       const result = await recurrence.setRuleStatusForTask({
         task,
         status,
@@ -475,8 +541,8 @@ const createTasksRouter = ({
         return res.status(400).json({ error: result.error });
       }
 
-      await clearTaskCaches(cache, req.session.userId);
-      emitToUser(req.session.userId, 'task:recurrence-updated', { taskId: Number(id), rule: result.rule });
+      await clearTaskCachesForUsers(cache, accessUserIds);
+      emitTaskEventToUsers(accessUserIds, 'task:recurrence-updated', { taskId: Number(id), rule: result.rule });
       res.json({ rule: result.rule });
     } catch (error) {
       logger.error({ err: error }, 'Failed to update recurrence status');

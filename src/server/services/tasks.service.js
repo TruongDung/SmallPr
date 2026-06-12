@@ -19,11 +19,12 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
          actor.name AS actor_name
        FROM audit_logs
        LEFT JOIN users actor ON actor.id = audit_logs.actor_user_id
-       WHERE audit_logs.user_id = ?
+       JOIN tasks audit_task ON audit_task.id = audit_logs.entity_id
+       WHERE audit_logs.user_id = audit_task.user_id
          AND audit_logs.entity_type = 'task'
          AND audit_logs.entity_id IN (${placeholders})
        ORDER BY audit_logs.created_at ASC, audit_logs.id ASC`,
-      [userId, ...taskIds]
+      taskIds
     );
 
     const historyByTaskId = historyRows.reduce((map, row) => {
@@ -55,16 +56,26 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
       `SELECT * FROM (
          SELECT relation.task_id, related.id, related.title, related.status, related.archived
          FROM task_related_tasks relation
-         JOIN tasks related ON related.id = relation.related_task_id AND related.user_id = relation.user_id
-         WHERE relation.user_id = ? AND relation.task_id IN (${placeholders})
+         JOIN tasks related ON related.id = relation.related_task_id
+         LEFT JOIN sprints related_sprint ON related_sprint.id = related.sprint_id
+         LEFT JOIN sprint_editors related_editor
+           ON related_editor.sprint_id = related.sprint_id
+          AND related_editor.user_id = ?
+         WHERE relation.task_id IN (${placeholders})
+           AND (related.user_id = ? OR related_sprint.user_id = ? OR related_editor.user_id IS NOT NULL)
          UNION
          SELECT relation.related_task_id AS task_id, related.id, related.title, related.status, related.archived
          FROM task_related_tasks relation
-         JOIN tasks related ON related.id = relation.task_id AND related.user_id = relation.user_id
-         WHERE relation.user_id = ? AND relation.related_task_id IN (${placeholders})
+         JOIN tasks related ON related.id = relation.task_id
+         LEFT JOIN sprints related_sprint ON related_sprint.id = related.sprint_id
+         LEFT JOIN sprint_editors related_editor
+           ON related_editor.sprint_id = related.sprint_id
+          AND related_editor.user_id = ?
+         WHERE relation.related_task_id IN (${placeholders})
+           AND (related.user_id = ? OR related_sprint.user_id = ? OR related_editor.user_id IS NOT NULL)
        ) related_union
        ORDER BY task_id, LOWER(title), id`,
-      [userId, ...taskIds, userId, ...taskIds]
+      [userId, ...taskIds, userId, userId, userId, ...taskIds, userId, userId]
     );
 
     const relatedByTaskId = relatedRows.reduce((map, row) => {
@@ -97,12 +108,21 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
 
   const listTasks = async ({ userId, archived = 0 }) => {
     const rows = await allAsync(
-      `SELECT tasks.*, rules.status AS recurrence_rule_status
+      `SELECT tasks.*,
+              rules.status AS recurrence_rule_status,
+              sprint.user_id AS sprint_owner_user_id,
+              CASE WHEN tasks.user_id = ? THEN 1 ELSE 0 END AS can_delete,
+              CASE WHEN tasks.user_id = ? OR sprint.user_id = ? OR task_editor.user_id IS NOT NULL THEN 1 ELSE 0 END AS can_edit
        FROM tasks
        LEFT JOIN recurring_task_rules rules ON rules.id = tasks.recurring_rule_id
-       WHERE tasks.user_id = ? AND tasks.archived = ?
+       LEFT JOIN sprints sprint ON sprint.id = tasks.sprint_id
+       LEFT JOIN sprint_editors task_editor
+         ON task_editor.sprint_id = tasks.sprint_id
+        AND task_editor.user_id = ?
+       WHERE tasks.archived = ?
+         AND (tasks.user_id = ? OR sprint.user_id = ? OR task_editor.user_id IS NOT NULL)
        ORDER BY ${TASK_PRIORITY_ORDER_SQL}`,
-      [userId, archived]
+      [userId, userId, userId, userId, archived, userId, userId]
     );
 
     // Strip the heavy attachment_data (base64 file contents) from the list.
@@ -127,17 +147,61 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
 
   const getTaskForUser = async (id, userId, { includeActivityHistory = true } = {}) => {
     const task = await getAsync(
-      `SELECT tasks.*, rules.status AS recurrence_rule_status
+      `SELECT tasks.*,
+              rules.status AS recurrence_rule_status,
+              sprint.user_id AS sprint_owner_user_id,
+              CASE WHEN tasks.user_id = ? THEN 1 ELSE 0 END AS can_delete,
+              CASE WHEN tasks.user_id = ? OR sprint.user_id = ? OR task_editor.user_id IS NOT NULL THEN 1 ELSE 0 END AS can_edit
        FROM tasks
        LEFT JOIN recurring_task_rules rules ON rules.id = tasks.recurring_rule_id
-       WHERE tasks.id = ? AND tasks.user_id = ?`,
-      [id, userId]
+       LEFT JOIN sprints sprint ON sprint.id = tasks.sprint_id
+       LEFT JOIN sprint_editors task_editor
+         ON task_editor.sprint_id = tasks.sprint_id
+        AND task_editor.user_id = ?
+       WHERE tasks.id = ?
+         AND (tasks.user_id = ? OR sprint.user_id = ? OR task_editor.user_id IS NOT NULL)`,
+      [userId, userId, userId, userId, id, userId, userId]
     );
     if (!task) return null;
     return (await attachRelatedTasks(userId, [task], { includeActivityHistory }))[0];
   };
 
   const getTaskById = (id) => getAsync('SELECT * FROM tasks WHERE id = ?', [id]);
+
+  const getAccessibleSprintForUser = (id, userId) => getAsync(
+    `SELECT s.*
+     FROM sprints s
+     LEFT JOIN sprint_editors editor
+       ON editor.sprint_id = s.id
+      AND editor.user_id = ?
+     WHERE s.id = ?
+       AND (s.user_id = ? OR editor.user_id IS NOT NULL)`,
+    [userId, id, userId]
+  );
+
+  const listTaskAccessUserIds = async (id) => {
+    const rows = await allAsync(
+      `SELECT DISTINCT user_id
+       FROM (
+         SELECT tasks.user_id
+         FROM tasks
+         WHERE tasks.id = ?
+         UNION
+         SELECT sprints.user_id
+         FROM tasks
+         JOIN sprints ON sprints.id = tasks.sprint_id
+         WHERE tasks.id = ?
+         UNION
+         SELECT sprint_editors.user_id
+         FROM tasks
+         JOIN sprint_editors ON sprint_editors.sprint_id = tasks.sprint_id
+         WHERE tasks.id = ?
+       ) access_users
+       WHERE user_id IS NOT NULL`,
+      [id, id, id]
+    );
+    return rows.map((row) => Number(row.user_id)).filter(Number.isInteger);
+  };
 
   const setRelatedTasks = async ({ userId, taskId, relatedTaskIds = [] }) => {
     const normalizedIds = [...new Set(relatedTaskIds
@@ -382,15 +446,15 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         recurrenceOccurrenceLimit !== undefined ? recurrenceOccurrenceLimit : existingTask.recurrence_occurrence_limit,
         hasSprintUpdate ? sprintId : existingTask.sprint_id,
         id,
-        userId
+        existingTask.user_id
       ]
     );
 
     if (hasRelatedTaskUpdate) {
-      await setRelatedTasks({ userId, taskId: id, relatedTaskIds });
+      await setRelatedTasks({ userId: existingTask.user_id, taskId: id, relatedTaskIds });
     }
 
-    return getTaskForUser(id, userId, { includeActivityHistory: false });
+    return getTaskForUser(id, existingTask.user_id, { includeActivityHistory: false });
   };
 
   const deleteTask = (id, userId) => runAsync('DELETE FROM tasks WHERE id = ? AND user_id = ?', [id, userId]);
@@ -401,8 +465,10 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     deleteTask,
     ensureTaskTag,
     findTagByNormalizedName,
+    getAccessibleSprintForUser,
     getTagForUser,
     getTaskForUser,
+    listTaskAccessUserIds,
     listAllTasksForEmail,
     listTags,
     listTasks,
