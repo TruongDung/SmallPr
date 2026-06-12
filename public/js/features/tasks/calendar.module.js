@@ -208,7 +208,7 @@
         const title = document.createElement('strong');
         title.textContent = task.title;
         const meta = document.createElement('span');
-        meta.textContent = `${t('dueDate')}: ${task.due_date}`;
+        meta.textContent = `${t('dueDate')}: ${taskDateKey(task)}`;
         row.append(title, meta);
         container.append(row);
       });
