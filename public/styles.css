@@ -2642,6 +2642,46 @@ body.theme-dark .status-in_progress {
   white-space: nowrap;
 }
 
+/* US Holiday markers */
+.calendar-holiday-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 3px;
+}
+
+.calendar-holiday-marker {
+  background: linear-gradient(135deg, #b91c1c 0%, #1d4ed8 100%);
+  border-radius: 0.25rem;
+  color: white;
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  overflow: hidden;
+  padding: 0.18rem 0.35rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.calendar-holiday-marker-observance {
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+  opacity: 0.85;
+}
+
+/* Highlight days that have a holiday with a subtle top accent */
+.calendar-day.has-holiday {
+  border-top: 2px solid #dc2626;
+}
+
+/* In compact month view only show the flag emoji to save space */
+@media (max-width: 980px) {
+  .calendar-grid-month .calendar-holiday-marker {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.2rem;
+  }
+}
+
 .calendar-deadline-panel h3 {
   font-size: 0.88rem;
   margin: 0 0 0.55rem;
