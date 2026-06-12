@@ -4,6 +4,8 @@ const createSprintsService = ({ allAsync, getAsync, runAsync }) => {
        s.user_id AS owner_user_id,
        owner.username AS owner_username,
        owner.name AS owner_name,
+       COALESCE(editors.editors, '[]'::jsonb) AS editors,
+       COALESCE(editors.editor_user_ids, ARRAY[]::integer[]) AS editor_user_ids,
        editor.user_id AS editor_user_id,
        editor.username AS editor_username,
        editor.name AS editor_name,
@@ -12,6 +14,21 @@ const createSprintsService = ({ allAsync, getAsync, runAsync }) => {
        (SELECT COUNT(*) FROM tasks t WHERE t.sprint_id = s.id AND t.archived = 0) AS task_count
      FROM sprints s
      JOIN users owner ON owner.id = s.user_id
+     LEFT JOIN LATERAL (
+       SELECT
+         jsonb_agg(
+           jsonb_build_object(
+             'id', u.id,
+             'username', u.username,
+             'name', u.name
+           )
+           ORDER BY COALESCE(u.name, u.username), u.id
+         ) AS editors,
+         array_agg(se.user_id ORDER BY COALESCE(u.name, u.username), u.id) AS editor_user_ids
+       FROM sprint_editors se
+       JOIN users u ON u.id = se.user_id
+       WHERE se.sprint_id = s.id
+     ) editors ON TRUE
      LEFT JOIN LATERAL (
        SELECT se.user_id, u.username, u.name
        FROM sprint_editors se
@@ -46,26 +63,38 @@ const createSprintsService = ({ allAsync, getAsync, runAsync }) => {
     [userId, userId, userId, id, userId]
   );
 
-  const replaceSprintEditor = async ({ sprintId, editorUserId }) => {
-    await runAsync('DELETE FROM sprint_editors WHERE sprint_id = ?', [sprintId]);
-    if (!editorUserId) return null;
+  const replaceSprintEditors = async ({ sprintId, editorUserIds = [] }) => {
+    const normalizedEditorUserIds = [...new Set(editorUserIds
+      .map((id) => Number(id))
+      .filter((id) => Number.isInteger(id) && id > 0))];
 
-    await runAsync(
-      `INSERT INTO sprint_editors (sprint_id, user_id)
-       VALUES (?, ?)
-       ON CONFLICT (sprint_id, user_id) DO NOTHING
-       RETURNING sprint_id`,
-      [sprintId, editorUserId]
-    );
-    return editorUserId;
+    await runAsync('DELETE FROM sprint_editors WHERE sprint_id = ?', [sprintId]);
+    if (!normalizedEditorUserIds.length) return [];
+
+    for (const editorUserId of normalizedEditorUserIds) {
+      await runAsync(
+        `INSERT INTO sprint_editors (sprint_id, user_id)
+         VALUES (?, ?)
+         ON CONFLICT (sprint_id, user_id) DO NOTHING
+         RETURNING sprint_id`,
+        [sprintId, editorUserId]
+      );
+    }
+    return normalizedEditorUserIds;
   };
 
-  const getAssignableEditor = (id) => getAsync(
-    `SELECT id, username, name, email, account_status
+  const listAssignableEditors = (ids = []) => {
+    const normalizedIds = [...new Set(ids
+      .map((id) => Number(id))
+      .filter((id) => Number.isInteger(id) && id > 0))];
+    if (!normalizedIds.length) return [];
+    return allAsync(
+      `SELECT id, username, name, email, account_status
      FROM users
-     WHERE id = ? AND account_status = 'enabled'`,
-    [id]
-  );
+     WHERE id = ANY(?::int[]) AND account_status = 'enabled'`,
+      [normalizedIds]
+    );
+  };
 
   const listSprintAccessUserIds = async (id) => {
     const rows = await allAsync(
@@ -81,17 +110,17 @@ const createSprintsService = ({ allAsync, getAsync, runAsync }) => {
     return rows.map((row) => Number(row.user_id)).filter(Number.isInteger);
   };
 
-  const createSprint = async ({ userId, name, goal, startDate, endDate, status, editorUserId = null }) => {
+  const createSprint = async ({ userId, name, goal, startDate, endDate, status, editorUserIds = [] }) => {
     const result = await runAsync(
       `INSERT INTO sprints (user_id, name, goal, start_date, end_date, status)
        VALUES (?, ?, ?, ?, ?, ?) RETURNING id`,
       [userId, name, goal || null, startDate || null, endDate || null, status || 'planned']
     );
-    await replaceSprintEditor({ sprintId: result.lastID, editorUserId });
+    await replaceSprintEditors({ sprintId: result.lastID, editorUserIds });
     return getSprintForUser(result.lastID, userId);
   };
 
-  const updateSprint = async ({ id, userId, name, goal, startDate, endDate, status, editorUserId, hasEditorUpdate = false }) => {
+  const updateSprint = async ({ id, userId, name, goal, startDate, endDate, status, editorUserIds, hasEditorUpdate = false }) => {
     await runAsync(
       `UPDATE sprints
        SET name = ?, goal = ?, start_date = ?, end_date = ?, status = ?,
@@ -100,7 +129,7 @@ const createSprintsService = ({ allAsync, getAsync, runAsync }) => {
       [name, goal || null, startDate || null, endDate || null, status, id]
     );
     if (hasEditorUpdate) {
-      await replaceSprintEditor({ sprintId: id, editorUserId });
+      await replaceSprintEditors({ sprintId: id, editorUserIds });
     }
     return getSprintForUser(id, userId);
   };
@@ -112,10 +141,10 @@ const createSprintsService = ({ allAsync, getAsync, runAsync }) => {
     listSprints,
     getSprintForUser,
     getOwnedSprintForUser,
-    getAssignableEditor,
+    listAssignableEditors,
     createSprint,
     listSprintAccessUserIds,
-    replaceSprintEditor,
+    replaceSprintEditors,
     updateSprint,
     deleteSprint,
   };

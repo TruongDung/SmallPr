@@ -8817,6 +8817,14 @@ body.theme-dark .notes-editor-actions button.secondary:hover {
   line-height: 1.35;
 }
 
+#sprint-editor-input {
+  min-height: 112px;
+}
+
+#sprint-editor-input option {
+  padding: 7px 9px;
+}
+
 /* Sprint status badges */
 .sprint-status-badge {
   display: inline-flex;

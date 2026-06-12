@@ -5,9 +5,30 @@ const { emitToUser } = require('../realtime');
 
 const SPRINT_STATUSES = new Set(['planned', 'active', 'completed']);
 
+const normalizeEditorUserIds = (value) => {
+  if (value === undefined || value === null || value === '') {
+    return { value: [] };
+  }
+
+  const entries = Array.isArray(value) ? value : [value];
+  const ids = [];
+  for (const entry of entries) {
+    if (entry === undefined || entry === null || entry === '') continue;
+    const id = Number(entry);
+    if (!Number.isInteger(id) || id <= 0) {
+      return { error: 'Sprint editors must be valid users' };
+    }
+    ids.push(id);
+  }
+
+  return { value: [...new Set(ids)] };
+};
+
 const validateSprintInput = (body = {}, isCreate = false) => {
-  const { name, goal, start_date, end_date, status, editor_user_id } = body;
-  const hasEditorUpdate = Object.prototype.hasOwnProperty.call(body, 'editor_user_id');
+  const { name, goal, start_date, end_date, status, editor_user_id, editor_user_ids } = body;
+  const hasEditorIdsUpdate = Object.prototype.hasOwnProperty.call(body, 'editor_user_ids');
+  const hasEditorIdUpdate = Object.prototype.hasOwnProperty.call(body, 'editor_user_id');
+  const hasEditorUpdate = hasEditorIdsUpdate || hasEditorIdUpdate;
 
   if (isCreate && !name) {
     return { error: 'Sprint name is required' };
@@ -25,14 +46,13 @@ const validateSprintInput = (body = {}, isCreate = false) => {
     return { error: 'Sprint status must be planned, active, or completed' };
   }
 
-  let editorUserId;
+  let editorUserIds;
   if (hasEditorUpdate) {
-    editorUserId = editor_user_id === undefined || editor_user_id === null || editor_user_id === ''
-      ? null
-      : Number(editor_user_id);
-    if (editorUserId !== null && (!Number.isInteger(editorUserId) || editorUserId <= 0)) {
-      return { error: 'Sprint editor must be a valid user' };
+    const editors = normalizeEditorUserIds(hasEditorIdsUpdate ? editor_user_ids : editor_user_id);
+    if (editors.error) {
+      return { error: editors.error };
     }
+    editorUserIds = editors.value;
   }
 
   return {
@@ -42,7 +62,7 @@ const validateSprintInput = (body = {}, isCreate = false) => {
       startDate: start_date !== undefined ? (start_date || null) : undefined,
       endDate: end_date !== undefined ? (end_date || null) : undefined,
       status: status || (isCreate ? 'planned' : undefined),
-      editorUserId,
+      editorUserIds,
       hasEditorUpdate,
     },
   };
@@ -72,26 +92,30 @@ const createSprintsRouter = ({
     }));
   };
 
-  const validateEditorAssignment = async ({ req, ownerUserId, editorUserId }) => {
-    if (editorUserId === undefined) {
-      return { editorUserId, hasEditorUpdate: false };
+  const validateEditorAssignments = async ({ req, ownerUserId, editorUserIds }) => {
+    if (editorUserIds === undefined) {
+      return { editorUserIds, hasEditorUpdate: false };
     }
     if (!isAdmin(req)) {
-      return { error: 'Only admin can assign a sprint editor' };
+      return { error: 'Only admin can assign sprint editors' };
     }
-    if (editorUserId === null) {
-      return { editorUserId: null, hasEditorUpdate: true };
-    }
-    if (Number(editorUserId) === Number(ownerUserId)) {
-      return { error: 'Sprint editor must be a different user' };
+    if (!editorUserIds.length) {
+      return { editorUserIds: [], hasEditorUpdate: true };
     }
 
-    const editor = await sprints.getAssignableEditor(editorUserId);
-    if (!editor || editor.username === 'admin') {
-      return { error: 'Sprint editor must be an enabled non-admin user' };
+    if (editorUserIds.some((editorUserId) => Number(editorUserId) === Number(ownerUserId))) {
+      return { error: 'Sprint editors must be different users from the owner' };
     }
 
-    return { editorUserId, hasEditorUpdate: true };
+    const editors = await sprints.listAssignableEditors(editorUserIds);
+    const validEditorIds = new Set(editors
+      .filter((editor) => editor.username !== 'admin')
+      .map((editor) => Number(editor.id)));
+    if (validEditorIds.size !== editorUserIds.length) {
+      return { error: 'Sprint editors must be enabled non-admin users' };
+    }
+
+    return { editorUserIds, hasEditorUpdate: true };
   };
 
   router.get('/sprints', async (req, res) => {
@@ -117,13 +141,13 @@ const createSprintsRouter = ({
     if (validation.error) {
       return res.status(400).json({ error: validation.error });
     }
-    const { name, goal, startDate, endDate, status, editorUserId } = validation.value;
+    const { name, goal, startDate, endDate, status, editorUserIds } = validation.value;
 
     try {
-      const editorAssignment = await validateEditorAssignment({
+      const editorAssignment = await validateEditorAssignments({
         req,
         ownerUserId: req.session.userId,
-        editorUserId: validation.value.hasEditorUpdate ? editorUserId : undefined,
+        editorUserIds: validation.value.hasEditorUpdate ? editorUserIds : undefined,
       });
       if (editorAssignment.error) {
         return res.status(400).json({ error: editorAssignment.error });
@@ -136,7 +160,7 @@ const createSprintsRouter = ({
         startDate,
         endDate,
         status,
-        editorUserId: editorAssignment.editorUserId || null,
+        editorUserIds: editorAssignment.editorUserIds || [],
       });
       const accessUserIds = await sprints.listSprintAccessUserIds(sprint.id);
       await clearSprintUserCaches(accessUserIds);
@@ -163,10 +187,10 @@ const createSprintsRouter = ({
       }
       const input = validation.value;
       const previousAccessUserIds = await sprints.listSprintAccessUserIds(id);
-      const editorAssignment = await validateEditorAssignment({
+      const editorAssignment = await validateEditorAssignments({
         req,
         ownerUserId: existing.owner_user_id || existing.user_id,
-        editorUserId: input.hasEditorUpdate ? input.editorUserId : undefined,
+        editorUserIds: input.hasEditorUpdate ? input.editorUserIds : undefined,
       });
       if (editorAssignment.error) {
         return res.status(400).json({ error: editorAssignment.error });
@@ -180,7 +204,7 @@ const createSprintsRouter = ({
         startDate: input.startDate !== undefined ? input.startDate : existing.start_date,
         endDate: input.endDate !== undefined ? input.endDate : existing.end_date,
         status: input.status !== undefined ? input.status : existing.status,
-        editorUserId: editorAssignment.editorUserId,
+        editorUserIds: editorAssignment.editorUserIds,
         hasEditorUpdate: editorAssignment.hasEditorUpdate,
       });
       const accessUserIds = await sprints.listSprintAccessUserIds(id);

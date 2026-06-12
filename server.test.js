@@ -1240,11 +1240,14 @@ describe('Task API', () => {
     expect(deleteResponse.body).toHaveProperty('success', true);
   });
 
-  test('allows admin to delegate sprint and task editing to another user', async () => {
+  test('allows admin to delegate sprint and task editing to multiple users', async () => {
     const admin = await createAdminAgent();
-    const editor = await createAgent(testUsername('sprint-editor'));
-    const editorMe = await editor.get('/api/me');
-    const editorId = editorMe.body.user.id;
+    const editorOne = await createAgent(testUsername('sprint-editor-one'));
+    const editorTwo = await createAgent(testUsername('sprint-editor-two'));
+    const editorOneMe = await editorOne.get('/api/me');
+    const editorTwoMe = await editorTwo.get('/api/me');
+    const editorOneId = editorOneMe.body.user.id;
+    const editorTwoId = editorTwoMe.body.user.id;
 
     const sprintResponse = await admin
       .post('/api/sprints')
@@ -1252,13 +1255,13 @@ describe('Task API', () => {
         name: `${RUN_ID}-delegated-sprint`,
         goal: 'Admin owned sprint',
         status: 'active',
-        editor_user_id: editorId,
+        editor_user_ids: [editorOneId, editorTwoId],
       });
     expect(sprintResponse.statusCode).toBe(200);
     expect(sprintResponse.body.sprint).toMatchObject({
       name: `${RUN_ID}-delegated-sprint`,
-      editor_user_id: editorId,
     });
+    expect(sprintResponse.body.sprint.editor_user_ids).toEqual(expect.arrayContaining([editorOneId, editorTwoId]));
 
     const taskResponse = await admin
       .post('/api/tasks')
@@ -1269,9 +1272,9 @@ describe('Task API', () => {
       });
     expect(taskResponse.statusCode).toBe(200);
 
-    const editorSprints = await editor.get('/api/sprints');
-    expect(editorSprints.statusCode).toBe(200);
-    expect(editorSprints.body.sprints).toEqual(expect.arrayContaining([
+    const editorOneSprints = await editorOne.get('/api/sprints');
+    expect(editorOneSprints.statusCode).toBe(200);
+    expect(editorOneSprints.body.sprints).toEqual(expect.arrayContaining([
       expect.objectContaining({
         id: sprintResponse.body.sprint.id,
         name: `${RUN_ID}-delegated-sprint`,
@@ -1279,9 +1282,18 @@ describe('Task API', () => {
       }),
     ]));
 
-    const editorTasks = await editor.get('/api/tasks');
-    expect(editorTasks.statusCode).toBe(200);
-    expect(editorTasks.body.tasks).toEqual(expect.arrayContaining([
+    const editorTwoSprints = await editorTwo.get('/api/sprints');
+    expect(editorTwoSprints.statusCode).toBe(200);
+    expect(editorTwoSprints.body.sprints).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: sprintResponse.body.sprint.id,
+        editor_user_ids: expect.arrayContaining([editorOneId, editorTwoId]),
+      }),
+    ]));
+
+    const editorTwoTasks = await editorTwo.get('/api/tasks');
+    expect(editorTwoTasks.statusCode).toBe(200);
+    expect(editorTwoTasks.body.tasks).toEqual(expect.arrayContaining([
       expect.objectContaining({
         id: taskResponse.body.task.id,
         sprint_id: sprintResponse.body.sprint.id,
@@ -1289,19 +1301,19 @@ describe('Task API', () => {
       }),
     ]));
 
-    const sprintEditResponse = await editor
+    const sprintEditResponse = await editorOne
       .put(`/api/sprints/${sprintResponse.body.sprint.id}`)
       .send({ goal: 'Edited by delegate' });
     expect(sprintEditResponse.statusCode).toBe(200);
     expect(sprintEditResponse.body.sprint).toMatchObject({ goal: 'Edited by delegate' });
 
-    const taskEditResponse = await editor
+    const taskEditResponse = await editorTwo
       .put(`/api/tasks/${taskResponse.body.task.id}`)
       .send({ status: 'done' });
     expect(taskEditResponse.statusCode).toBe(200);
     expect(taskEditResponse.body.task).toMatchObject({ status: 'done', completed: 1 });
 
-    const delegatedDeleteResponse = await editor.delete(`/api/tasks/${taskResponse.body.task.id}`);
+    const delegatedDeleteResponse = await editorTwo.delete(`/api/tasks/${taskResponse.body.task.id}`);
     expect(delegatedDeleteResponse.statusCode).toBe(403);
     expect(delegatedDeleteResponse.body).toHaveProperty('error', 'Only the task owner can delete this task');
   });

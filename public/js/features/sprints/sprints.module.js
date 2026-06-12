@@ -64,27 +64,73 @@
       normalizeSprintId(task.sprint_id) === normalizeSprintId(sprintId)
     ));
 
-    const setEditorOptions = (selectedValue = '') => {
+    const normalizeEditorIds = (value) => {
+      if (Array.isArray(value)) {
+        return value
+          .map((id) => Number(id))
+          .filter((id) => Number.isInteger(id) && id > 0);
+      }
+      const id = Number(value);
+      return Number.isInteger(id) && id > 0 ? [id] : [];
+    };
+
+    const getSprintEditorIds = (sprint) => {
+      const ids = normalizeEditorIds(sprint.editor_user_ids);
+      return ids.length ? ids : normalizeEditorIds(sprint.editor_user_id);
+    };
+
+    const getSprintEditors = (sprint) => {
+      if (Array.isArray(sprint.editors) && sprint.editors.length) {
+        return sprint.editors;
+      }
+      if (sprint.editor_user_id && (sprint.editor_name || sprint.editor_username)) {
+        return [{
+          id: sprint.editor_user_id,
+          name: sprint.editor_name,
+          username: sprint.editor_username,
+        }];
+      }
+      return [];
+    };
+
+    const formatUserName = (user) => user.name || user.username || '';
+
+    const formatEditorNames = (editors) => editors
+      .map(formatUserName)
+      .filter(Boolean)
+      .join(', ');
+
+    const getSelectedEditorIds = () => {
+      if (!editorInput) return [];
+      return [...editorInput.selectedOptions]
+        .map((option) => Number(option.value))
+        .filter((id) => Number.isInteger(id) && id > 0);
+    };
+
+    const setEditorOptions = (selectedValues = []) => {
       if (!editorInput) return;
-      const normalizedSelected = selectedValue == null ? '' : String(selectedValue);
+      const selectedIds = new Set(normalizeEditorIds(selectedValues).map(String));
       editorInput.innerHTML = '';
 
-      const emptyOption = document.createElement('option');
-      emptyOption.value = '';
-      emptyOption.textContent = t('sprintEditorPlaceholder') || 'No editor';
-      editorInput.append(emptyOption);
+      if (!assignableEditors.length) {
+        const emptyOption = document.createElement('option');
+        emptyOption.value = '';
+        emptyOption.disabled = true;
+        emptyOption.textContent = t('sprintNoEditorsAvailable') || 'No eligible users';
+        editorInput.append(emptyOption);
+        return;
+      }
 
       assignableEditors.forEach((user) => {
         const option = document.createElement('option');
         option.value = String(user.id);
         option.textContent = user.name ? `${user.name} (${user.username})` : user.username;
+        option.selected = selectedIds.has(String(user.id));
         editorInput.append(option);
       });
-
-      editorInput.value = normalizedSelected;
     };
 
-    const loadAssignableEditors = async (selectedValue = editorInput?.value || '') => {
+    const loadAssignableEditors = async (selectedValues = getSelectedEditorIds()) => {
       if (!isAdminUser() || !editorInput) return;
       const result = await request('/api/admin/users');
       if (result.error) {
@@ -94,7 +140,7 @@
       assignableEditors = (result.users || []).filter((user) => (
         user.username !== 'admin' && user.account_status === 'enabled'
       ));
-      setEditorOptions(selectedValue);
+      setEditorOptions(selectedValues);
     };
 
     const formatDateRange = (startDate, endDate) => {
@@ -304,9 +350,11 @@
         owner.textContent = t('sprintOwnedBy', { username: sprint.owner_name || sprint.owner_username }) || `Owner: ${sprint.owner_name || sprint.owner_username}`;
         people.append(owner);
       }
-      if (canDeleteSprint(sprint) && (sprint.editor_name || sprint.editor_username)) {
+      const editors = getSprintEditors(sprint);
+      const editorNames = formatEditorNames(editors);
+      if (canDeleteSprint(sprint) && editorNames) {
         const editor = document.createElement('span');
-        editor.textContent = t('sprintSharedWith', { username: sprint.editor_name || sprint.editor_username }) || `Shared with ${sprint.editor_name || sprint.editor_username}`;
+        editor.textContent = t('sprintSharedWith', { username: editorNames }) || `Shared with ${editorNames}`;
         people.append(editor);
       }
       if (people.children.length) {
@@ -410,9 +458,8 @@
       form.reset();
       if (editorField) editorField.classList.toggle('hidden', !isAdminUser());
       if (editorInput) {
-        editorInput.value = '';
-        setEditorOptions('');
-        loadAssignableEditors('');
+        setEditorOptions([]);
+        loadAssignableEditors([]);
       }
       formError.classList.add('hidden');
       formError.textContent = '';
@@ -430,10 +477,9 @@
       statusInput.value = sprint.status || 'planned';
       if (editorField) editorField.classList.toggle('hidden', !isAdminUser());
       if (editorInput) {
-        const editorValue = sprint.editor_user_id ? String(sprint.editor_user_id) : '';
-        editorInput.value = editorValue;
-        setEditorOptions(editorValue);
-        loadAssignableEditors(editorValue);
+        const editorIds = getSprintEditorIds(sprint);
+        setEditorOptions(editorIds);
+        loadAssignableEditors(editorIds);
       }
       formError.classList.add('hidden');
       formError.textContent = '';
@@ -476,9 +522,9 @@
       const statusLabel = document.querySelector('label[for="sprint-status-input"]');
       if (statusLabel) statusLabel.textContent = t('sprintStatus') || 'Status';
       const editorLabel = document.querySelector('label[for="sprint-editor-input"]');
-      if (editorLabel) editorLabel.textContent = t('sprintEditor') || 'Editor';
-      if (editorHint) editorHint.textContent = t('sprintEditorHint') || 'Editor can update this sprint and its tasks.';
-      setEditorOptions(editorInput?.value || '');
+      if (editorLabel) editorLabel.textContent = t('sprintEditors') || 'Editors';
+      if (editorHint) editorHint.textContent = t('sprintEditorHint') || 'Selected users can update this sprint and its tasks.';
+      setEditorOptions(getSelectedEditorIds());
       if (editorField) editorField.classList.toggle('hidden', !isAdminUser());
 
       setOptionText('planned', t('sprint_planned') || 'Planned');
@@ -524,7 +570,7 @@
         status: statusInput.value || 'planned',
       };
       if (isAdminUser() && editorInput) {
-        payload.editor_user_id = editorInput.value ? Number(editorInput.value) : null;
+        payload.editor_user_ids = getSelectedEditorIds();
       }
 
       let result;
