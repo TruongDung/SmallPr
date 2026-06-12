@@ -1,5 +1,12 @@
 (function () {
-  const create = ({ request, t, showStatusToast, onSprintsChanged = () => {}, getCurrentUser = () => null }) => {
+  const create = ({
+    request,
+    t,
+    showStatusToast,
+    confirmDelete = null,
+    onSprintsChanged = () => {},
+    getCurrentUser = () => null,
+  }) => {
     const sprintsList = document.getElementById('sprints-list');
     const openAddButton = document.getElementById('open-add-sprint');
     const modal = document.getElementById('sprint-modal');
@@ -427,7 +434,13 @@
       deleteBtn.setAttribute('aria-label', t('deleteSprint') || 'Delete Sprint');
       deleteBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        deleteSprint(sprint);
+        if (typeof confirmDelete === 'function') {
+          confirmDelete(sprint);
+          return;
+        }
+        if (confirm(`${t('deleteSprint') || 'Delete Sprint'}: "${sprint.name}"?`)) {
+          deleteSprint(sprint);
+        }
       });
 
       actions.append(editBtn);
@@ -695,8 +708,6 @@
     };
 
     const deleteSprint = async (sprint) => {
-      if (!confirm(`${t('deleteSprint') || 'Delete Sprint'}: "${sprint.name}"?`)) return;
-
       const result = await request(`/api/sprints/${sprint.id}`, { method: 'DELETE' });
       if (result.error) {
         showStatusToast(result.error, 'error');
@@ -716,7 +727,7 @@
       });
     };
 
-    return { applyTranslations, bind, loadSprints, render, reset };
+    return { applyTranslations, bind, deleteSprint, loadSprints, render, reset };
   };
 
   window.SprintsModule = { create };
