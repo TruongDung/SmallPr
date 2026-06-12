@@ -6,6 +6,8 @@ import { useI18n } from './store/i18n';
 import { useTheme } from './store/theme';
 import { useToast } from './components/Toast';
 import { LoginGate } from './features/auth/LoginGate';
+import { LunarMonthCalendar } from './features/calendar/LunarMonthCalendar';
+import { LunarReminderSettings } from './features/settings/LunarReminderSettings';
 import { TaskColumn } from './features/tasks/TaskColumn';
 import { SprintList } from './features/sprints/SprintList';
 import { SprintBoard } from './features/sprints/SprintBoard';
@@ -136,7 +138,7 @@ const Header = () => {
   );
 };
 
-type AppTab = 'board' | 'sprints';
+type AppTab = 'board' | 'calendar' | 'sprints' | 'settings';
 
 export const App = () => {
   const { t } = useI18n();
@@ -156,14 +158,31 @@ export const App = () => {
           </button>
           <button
             type="button"
+            className={`app-tab${tab === 'calendar' ? ' app-tab-active' : ''}`}
+            onClick={() => setTab('calendar')}
+          >
+            {t('calendar')}
+          </button>
+          <button
+            type="button"
             className={`app-tab${tab === 'sprints' ? ' app-tab-active' : ''}`}
             onClick={() => setTab('sprints')}
           >
             {t('sprints')}
           </button>
+          <button
+            type="button"
+            className={`app-tab${tab === 'settings' ? ' app-tab-active' : ''}`}
+            onClick={() => setTab('settings')}
+          >
+            {t('settings')}
+          </button>
         </nav>
         <main className="app-main">
-          {tab === 'board' ? <TaskBoard /> : <SprintView />}
+          {tab === 'board' && <TaskBoard />}
+          {tab === 'calendar' && <LunarMonthCalendar />}
+          {tab === 'sprints' && <SprintView />}
+          {tab === 'settings' && <LunarReminderSettings />}
         </main>
       </div>
     </LoginGate>

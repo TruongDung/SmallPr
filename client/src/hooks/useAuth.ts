@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getMe, login, logout } from '../api/authApi';
+import { getMe, login, logout, updateMe, type UpdateProfilePayload } from '../api/authApi';
 
 export const useAuth = () => {
   const queryClient = useQueryClient();
@@ -27,6 +27,13 @@ export const useAuth = () => {
     },
   });
 
+  const updateProfileMutation = useMutation({
+    mutationFn: (payload: UpdateProfilePayload) => updateMe(payload),
+    onSuccess: (user) => {
+      queryClient.setQueryData(['me'], user);
+    },
+  });
+
   return {
     user: meQuery.data ?? null,
     isLoading: meQuery.isLoading,
@@ -35,5 +42,7 @@ export const useAuth = () => {
     loginError: loginMutation.error,
     isLoggingIn: loginMutation.isPending,
     logout: logoutMutation.mutateAsync,
+    updateProfile: updateProfileMutation.mutateAsync,
+    isUpdatingProfile: updateProfileMutation.isPending,
   };
 };

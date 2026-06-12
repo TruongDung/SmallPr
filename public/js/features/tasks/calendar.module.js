@@ -11,7 +11,7 @@
     const viewButtons = [...document.querySelectorAll('[data-calendar-view]')];
     const lunarToggle = document.getElementById('calendar-show-lunar');
 
-    let view = 'week';
+    let view = 'month';
     let cursor = startOfDay(new Date());
     let showLunar = localStorage.getItem('showLunarCalendar') === 'true';
 

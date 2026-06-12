@@ -29,6 +29,7 @@
     const impersonateUserSelect = document.getElementById('impersonate-user-select');
     const sendSummaryEmailButton = document.getElementById('send-summary-email');
     const sendNotesEmailButton = document.getElementById('send-notes-email');
+    const deleteTestUsersButton = document.getElementById('delete-test-users');
     const userList = document.getElementById('user-list');
     const auditLogList = document.getElementById('audit-log-list');
     const auditLogPagination = document.getElementById('audit-log-pagination');
@@ -37,6 +38,8 @@
     const auditLogPageInfo = document.getElementById('audit-log-page-info');
     const auditLogSearchInput = document.getElementById('audit-log-search-input');
     const refreshAuditLog = document.getElementById('refresh-audit-log');
+    const clearAuditLog = document.getElementById('clear-audit-log');
+    const auditLogSavingToggle = document.getElementById('toggle-audit-log-saving');
     const openAddUserModalButton = document.getElementById('open-add-user-modal');
     const adminUserModal = document.getElementById('admin-user-modal');
     const adminUserModalTitle = document.getElementById('admin-user-modal-title');
@@ -61,8 +64,34 @@
     let auditLogs = [];
     let auditLogPage = 1;
     let auditLogSearchTimer = null;
+    let auditLogSavingEnabled = true;
     let pendingAdminUser = null;
     let pendingResetPasswordUser = null;
+
+    const renderAuditLogSavingToggle = () => {
+      if (!auditLogSavingToggle) return;
+      auditLogSavingToggle.textContent = auditLogSavingEnabled
+        ? t('auditLogSavingOn')
+        : t('auditLogSavingOff');
+      auditLogSavingToggle.title = auditLogSavingEnabled
+        ? t('disableAuditLogSaving')
+        : t('enableAuditLogSaving');
+      auditLogSavingToggle.setAttribute('aria-label', auditLogSavingToggle.title);
+      auditLogSavingToggle.setAttribute('aria-pressed', String(auditLogSavingEnabled));
+      auditLogSavingToggle.classList.toggle('is-enabled', auditLogSavingEnabled);
+      auditLogSavingToggle.classList.toggle('is-disabled', !auditLogSavingEnabled);
+    };
+
+    const loadAuditLogSettings = async () => {
+      if (!isAdminUser() || !auditLogSavingToggle) return;
+      const result = await request('/api/admin/audit-logs/settings');
+      if (result.error) {
+        showStatusToast(result.error, 'error');
+        return;
+      }
+      auditLogSavingEnabled = result.settings?.enabled !== false;
+      renderAuditLogSavingToggle();
+    };
 
     const loadUsers = async () => {
       adminMessage.textContent = '';
@@ -75,6 +104,7 @@
       renderImpersonateOptions(users);
       renderUsers(users);
       auditLogPage = 1;
+      await loadAuditLogSettings();
       await loadAuditLogs();
     };
 
@@ -133,6 +163,50 @@
       }
     };
 
+    const clearAuditLogs = async () => {
+      if (!confirm(t('clearAuditLogConfirm') || 'Delete all audit log entries? This cannot be undone.')) return;
+      clearAuditLog.disabled = true;
+      try {
+        const result = await request('/api/admin/audit-logs', { method: 'DELETE' });
+        if (result.error) {
+          showStatusToast(result.error, 'error');
+          return;
+        }
+        auditLogPage = 1;
+        await loadAuditLogs();
+        showStatusToast(t('auditLogCleared') || 'Audit log cleared.');
+      } catch (error) {
+        showStatusToast(error.message || 'Failed to clear audit log', 'error');
+      } finally {
+        clearAuditLog.disabled = false;
+      }
+    };
+
+    const updateAuditLogSaving = async () => {
+      if (!auditLogSavingToggle) return;
+      const nextEnabled = !auditLogSavingEnabled;
+      auditLogSavingToggle.disabled = true;
+
+      try {
+        const result = await request('/api/admin/audit-logs/settings', {
+          method: 'PUT',
+          body: JSON.stringify({ enabled: nextEnabled }),
+        });
+        if (result.error) {
+          showStatusToast(result.error, 'error');
+          return;
+        }
+
+        auditLogSavingEnabled = result.settings?.enabled !== false;
+        renderAuditLogSavingToggle();
+        showStatusToast(t(auditLogSavingEnabled ? 'auditLogSavingEnabled' : 'auditLogSavingDisabled'));
+      } catch (error) {
+        showStatusToast(error.message || 'Failed to save audit log setting', 'error');
+      } finally {
+        auditLogSavingToggle.disabled = false;
+      }
+    };
+
     const scheduleAuditLogSearch = () => {
       if (auditLogSearchTimer) clearTimeout(auditLogSearchTimer);
       auditLogSearchTimer = setTimeout(() => {
@@ -162,6 +236,11 @@
 
       impersonateUserSelect.value = '';
       impersonateUserSelect.disabled = impersonateUserSelect.options.length <= 1;
+    };
+
+    const isTestUser = (user) => {
+      const username = String(user?.username || '').toLowerCase();
+      return username === 'test' || username.startsWith('test-') || username.startsWith('test_');
     };
 
     const renderUsers = (list = users) => {
@@ -547,10 +626,45 @@
       loadUsers();
     };
 
+    const deleteTestUsers = async () => {
+      const currentUser = getCurrentUser();
+      const matchingUsers = users.filter((user) => (
+        isTestUser(user) && String(user.username || '').toLowerCase() !== 'admin' && user.id !== currentUser?.id
+      ));
+      const count = matchingUsers.length;
+      const names = matchingUsers.slice(0, 8).map((user) => user.username).join(', ');
+      const extra = count > 8 ? `, +${count - 8}` : '';
+      const message = count > 0
+        ? t('deleteTestUsersConfirm', { count, users: `${names}${extra}` })
+        : t('deleteTestUsersConfirmEmpty');
+
+      if (!confirm(message)) return;
+
+      deleteTestUsersButton.disabled = true;
+      try {
+        const result = await request('/api/admin/users/test', { method: 'DELETE' });
+        if (result.error) {
+          showStatusToast(result.error, 'error');
+          return;
+        }
+
+        await loadUsers();
+        showStatusToast(t('testUsersDeleted', { count: result.deletedCount || 0 }));
+      } catch (error) {
+        showStatusToast(error.message || 'Failed to delete test users', 'error');
+      } finally {
+        deleteTestUsersButton.disabled = false;
+      }
+    };
+
     // Admin-specific i18n. Called by the global applyTranslations().
     const applyAdminTranslations = () => {
       setText('#admin-section h2', t('manageUsers'));
       setText('#open-add-user-modal .admin-add-user-label', t('addUser'));
+      if (deleteTestUsersButton) {
+        deleteTestUsersButton.setAttribute('aria-label', t('deleteTestUsers'));
+        deleteTestUsersButton.title = t('deleteTestUsers');
+      }
       if (impersonateUserSelect) {
         impersonateUserSelect.setAttribute('aria-label', t('impersonateUser'));
         const placeholder = impersonateUserSelect.querySelector('option[value=""]');
@@ -580,6 +694,7 @@
       setText('#audit-log-title', t('auditLog'));
       setText('label[for="audit-log-search-input"]', t('searchAuditLog'));
       if (auditLogSearchInput) auditLogSearchInput.placeholder = t('searchAuditLog');
+      renderAuditLogSavingToggle();
       setText('#refresh-audit-log', t('refresh'));
       setText('#audit-log-previous', t('previousPage'));
       setText('#audit-log-next', t('nextPage'));
@@ -595,6 +710,7 @@
     const renderFromState = () => {
       renderUsers(users);
       renderAuditLogs(auditLogs);
+      renderAuditLogSavingToggle();
     };
 
     const sendSummaryEmail = async () => {
@@ -648,12 +764,15 @@
       openAddUserModalButton.addEventListener('click', () => showAdminUserModal());
       sendSummaryEmailButton?.addEventListener('click', sendSummaryEmail);
       sendNotesEmailButton?.addEventListener('click', sendNotesEmail);
+      deleteTestUsersButton?.addEventListener('click', deleteTestUsers);
       if (impersonateUserSelect) {
         impersonateUserSelect.addEventListener('change', (event) => {
           if (event.target.value) startImpersonation(event.target.value);
         });
       }
       refreshAuditLog?.addEventListener('click', refreshAuditLogsWithFeedback);
+      clearAuditLog?.addEventListener('click', clearAuditLogs);
+      auditLogSavingToggle?.addEventListener('click', updateAuditLogSaving);
       auditLogSearchInput?.addEventListener('input', scheduleAuditLogSearch);
       auditLogPrevious?.addEventListener('click', () => {
         if (auditLogPage > 1) loadAuditLogs(auditLogPage - 1);
