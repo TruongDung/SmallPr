@@ -520,6 +520,15 @@ const updateTaskSearchState = () => {
 };
 
 const getTaskDueDateKey = (task) => String(task?.due_date || '').slice(0, 10);
+const getDateInputValue = (value) => String(value || '').slice(0, 10);
+const formatTaskDueDate = (task) => {
+  const key = getTaskDueDateKey(task);
+  if (!key) return '';
+  const [year, month, day] = key.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  if (Number.isNaN(date.getTime())) return key;
+  return date.toLocaleDateString(undefined, { dateStyle: 'medium' });
+};
 
 const getTodayDateKey = () => {
   const today = new Date();
@@ -583,7 +592,7 @@ const renderPreviewTaskMeta = (task) => {
     chips.push({
       cls: `preview-meta-chip due-chip${isTaskOverdue(task) ? ' due-chip-overdue' : ''}`,
       icon: '📅',
-      text: `${t('dueDate')}: ${formatLocalDateTime(task.due_date)}`,
+      text: `${t('dueDate')}: ${formatTaskDueDate(task)}`,
     });
   }
 
@@ -1631,7 +1640,7 @@ const handleTaskSubmit = async (event) => {
   const tag = taskTagInput.value.trim();
   const descriptionEditor = document.getElementById('task-description');
   const description = getRichEditorValue(descriptionEditor);
-  const due_date = taskDueDateInput.value || null;
+  const due_date = getDateInputValue(taskDueDateInput.value) || null;
   const reminder_at = taskReminderInput?.value || null;
   const attachmentFile = taskAttachmentInput.files[0] || null;
 
@@ -2580,7 +2589,7 @@ const buildEditTaskUpdates = ({ includeDescription = false, includeComment = fal
   const tag = editTaskTagInput.value.trim();
   const description = includeDescription ? getRichEditorValue(editTaskDescriptionInput) : null;
   const comment = includeComment ? getRichEditorValue(editTaskCommentInput) : null;
-  const dueDate = editTaskDueDateInput.value || null;
+  const dueDate = getDateInputValue(editTaskDueDateInput.value) || null;
   const reminderAt = editTaskReminderInput?.value || null;
   const attachmentFile = editTaskAttachmentInput.files[0] || null;
   const isRecurring = editTaskRecurringCheckbox.checked;
@@ -2738,7 +2747,6 @@ const bindEditTaskAutosave = () => {
     editTaskPriorityInput,
     editTaskStatusInput,
     editTaskSprintInput,
-    editTaskDueDateInput,
     editTaskReminderInput,
     editTaskRecurringCheckbox,
     editTaskRecurrencePattern,
@@ -2748,6 +2756,10 @@ const bindEditTaskAutosave = () => {
   ].forEach((input) => {
     input?.addEventListener('change', () => scheduleEditTaskAutosave({ immediate: true }));
   });
+
+  editTaskDueDateInput?.addEventListener('input', () => scheduleEditTaskAutosave());
+  editTaskDueDateInput?.addEventListener('change', () => scheduleEditTaskAutosave({ immediate: true }));
+  editTaskDueDateInput?.addEventListener('blur', () => scheduleEditTaskAutosave({ immediate: true }));
 
   editWeeklyOptions?.querySelectorAll('input[name="edit-weekday"]').forEach((input) => {
     input.addEventListener('change', () => scheduleEditTaskAutosave({ immediate: true }));
@@ -2907,7 +2919,7 @@ const showEditTaskModal = (task) => {
   editTaskCommentSavedValue = task.comment || '';
   setRichEditorValue(editTaskDescriptionInput, task.description || '');
   setRichEditorValue(editTaskCommentInput, task.comment || '');
-  editTaskDueDateInput.value = formatDateTimeLocalValue(task.due_date);
+  editTaskDueDateInput.value = getDateInputValue(task.due_date);
   if (editTaskReminderInput) editTaskReminderInput.value = formatDateTimeLocalValue(task.reminder_at);
   editTaskRecurringCheckbox.checked = Boolean(task.is_recurring);
   editTaskRecurrencePattern.value = task.recurrence_pattern || 'daily';
