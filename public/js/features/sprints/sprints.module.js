@@ -6,6 +6,7 @@
     confirmDelete = null,
     onSprintsChanged = () => {},
     getCurrentUser = () => null,
+    onOpenTask = () => {},
   }) => {
     const sprintsList = document.getElementById('sprints-list');
     const openAddButton = document.getElementById('open-add-sprint');
@@ -327,8 +328,15 @@
 
       const copy = document.createElement('div');
       copy.className = 'sprint-task-copy';
-      const title = document.createElement('strong');
+      const title = document.createElement('button');
+      title.type = 'button';
+      title.className = 'sprint-task-title-button';
+      title.draggable = false;
       title.textContent = task.title;
+      title.addEventListener('click', (event) => {
+        event.stopPropagation();
+        onOpenTask(task);
+      });
       const meta = document.createElement('span');
       meta.textContent = t(task.status || 'todo') || task.status || 'Todo';
       copy.append(title, meta);

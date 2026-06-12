@@ -3016,6 +3016,13 @@ const hideAttachmentPreview = () => {
   openAttachmentPreview.href = '#';
 };
 
+const openTaskPreviewFromWorkspace = (task) => {
+  if (!task) return;
+  setCurrentView('tasks');
+  showSection();
+  showPreviewTaskModal(task);
+};
+
 editPreviewTask?.addEventListener('click', () => {
   if (!pendingPreviewTask) return;
   const task = pendingPreviewTask;
@@ -3210,6 +3217,7 @@ const sprintsModule = window.SprintsModule.create({
   showStatusToast,
   confirmDelete: showSprintDeleteConfirm,
   getCurrentUser: () => currentUser,
+  onOpenTask: (task) => openTaskPreviewFromWorkspace(task),
   onSprintsChanged: () => loadSprintOptions(),
 });
 
