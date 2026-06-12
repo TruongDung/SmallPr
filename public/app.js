@@ -231,6 +231,7 @@ let editTaskAutosaveQueue = Promise.resolve();
 let editTaskAutosaveStatusTimer = null;
 let editTaskDescriptionSavedValue = '';
 let editTaskCommentSavedValue = '';
+let editTaskLastSavedSnapshot = null;
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const MAX_TASK_TEXT_LENGTH = 10000;
 const DEFAULT_TASK_PRIORITY = 'low';
@@ -2683,6 +2684,84 @@ const buildEditTaskUpdates = ({ includeDescription = false, includeComment = fal
   return updates;
 };
 
+const normalizeEditTaskComparableSnapshot = (snapshot = {}) => ({
+  title: String(snapshot.title || ''),
+  tag: String(snapshot.tag || ''),
+  priority: snapshot.priority || 'medium',
+  status: snapshot.status || 'todo',
+  sprint_id: snapshot.sprint_id === null || snapshot.sprint_id === undefined || snapshot.sprint_id === ''
+    ? null
+    : Number(snapshot.sprint_id),
+  due_date: getDateInputValue(snapshot.due_date) || null,
+  reminder_at: snapshot.reminder_at || null,
+  is_recurring: Boolean(snapshot.is_recurring),
+  recurrence_pattern: snapshot.recurrence_pattern || null,
+  recurrence_interval: snapshot.recurrence_interval === null || snapshot.recurrence_interval === undefined || snapshot.recurrence_interval === ''
+    ? null
+    : Number(snapshot.recurrence_interval),
+  recurrence_days: snapshot.recurrence_days || null,
+  recurrence_timezone: snapshot.recurrence_timezone || null,
+  recurrence_end_date: getDateInputValue(snapshot.recurrence_end_date) || null,
+  recurrence_occurrence_limit: snapshot.recurrence_occurrence_limit === null || snapshot.recurrence_occurrence_limit === undefined || snapshot.recurrence_occurrence_limit === ''
+    ? null
+    : Number(snapshot.recurrence_occurrence_limit),
+  related_task_ids: [...new Set((snapshot.related_task_ids || [])
+    .map((id) => Number(id))
+    .filter((id) => Number.isInteger(id)))]
+    .sort((left, right) => left - right),
+  description: snapshot.description || '',
+  comment: snapshot.comment || '',
+});
+
+const buildEditTaskComparableSnapshot = () => {
+  const isRecurring = editTaskRecurringCheckbox.checked;
+  return normalizeEditTaskComparableSnapshot({
+    title: editTaskTitleInput.value.trim(),
+    tag: editTaskTagInput.value.trim(),
+    priority: editTaskPriorityInput.value,
+    status: editTaskStatusInput.value,
+    sprint_id: editTaskSprintInput?.value ? Number(editTaskSprintInput.value) : null,
+    due_date: getDateInputValue(editTaskDueDateInput.value) || null,
+    reminder_at: editTaskReminderInput?.value || null,
+    is_recurring: isRecurring,
+    recurrence_pattern: isRecurring ? editTaskRecurrencePattern.value : null,
+    recurrence_interval: isRecurring ? parseInt(editTaskRecurrenceInterval.value, 10) : null,
+    recurrence_days: isRecurring && editTaskRecurrencePattern.value === 'weekly'
+      ? getSelectedWeekdays(editWeeklyOptions)
+      : null,
+    recurrence_timezone: isRecurring
+      ? (editTaskRecurrenceTimezone.value.trim() || getActiveTimezone())
+      : null,
+    recurrence_end_date: isRecurring ? editTaskRecurrenceEndDate.value || null : null,
+    recurrence_occurrence_limit: isRecurring && editTaskRecurrenceOccurrences.value
+      ? parseInt(editTaskRecurrenceOccurrences.value, 10)
+      : null,
+    related_task_ids: getRelatedTaskIds(pendingEditTask),
+    description: getRichEditorValue(editTaskDescriptionInput),
+    comment: getRichEditorValue(editTaskCommentInput),
+  });
+};
+
+const buildEditTaskComparableUpdates = (updates = {}) => {
+  const normalized = normalizeEditTaskComparableSnapshot({
+    ...updates,
+    related_task_ids: updates.related_task_ids,
+  });
+  return Object.fromEntries(
+    Object.keys(updates)
+      .filter((key) => key !== 'attachment')
+      .map((key) => [key, normalized[key]])
+  );
+};
+
+const hasEditTaskComparableChanges = (updates) => {
+  if (!editTaskLastSavedSnapshot || preparedEditAttachment || removeEditAttachment) return true;
+  const comparableUpdates = buildEditTaskComparableUpdates(updates);
+  return Object.entries(comparableUpdates).some(([key, value]) => (
+    JSON.stringify(value) !== JSON.stringify(editTaskLastSavedSnapshot[key])
+  ));
+};
+
 const saveEditTaskNow = async (options = {}) => {
   if (!pendingEditTask || isPopulatingEditTaskForm) return null;
 
@@ -2690,6 +2769,10 @@ const saveEditTaskNow = async (options = {}) => {
   const task = pendingEditTask;
   const updates = buildEditTaskUpdates(options);
   if (!updates) return null;
+  if (!hasEditTaskComparableChanges(updates)) {
+    setEditTaskAutosaveStatus('');
+    return { task, skipped: true };
+  }
 
   setEditTaskAutosaveStatus(t('savingTask'));
   const result = await updateTask(task.id, updates);
@@ -2715,6 +2798,7 @@ const saveEditTaskNow = async (options = {}) => {
     editTaskAttachmentInput.value = '';
     renderEditAttachmentState();
     renderRelatedTaskPicker('edit');
+    editTaskLastSavedSnapshot = buildEditTaskComparableSnapshot();
   }
 
   setEditTaskAutosaveStatus(t('taskSaved'));
@@ -2779,8 +2863,15 @@ const saveEditRichTextField = async (field) => {
   const editor = field === 'description' ? editTaskDescriptionInput : editTaskCommentInput;
   const actionsField = field === 'description' ? 'description' : 'comment';
   const value = getRichEditorValue(editor);
+  const savedValue = field === 'description' ? editTaskDescriptionSavedValue : editTaskCommentSavedValue;
 
   clearEditTaskErrors();
+
+  if (value === (savedValue || '')) {
+    setRichEditorActionsVisible(actionsField, false);
+    setEditTaskAutosaveStatus('');
+    return;
+  }
 
   if (field === 'description' && getRichEditorLength(editTaskDescriptionInput) > MAX_TASK_TEXT_LENGTH) {
     editDescriptionError.textContent = t('descriptionTooLong');
@@ -2823,6 +2914,7 @@ const saveEditRichTextField = async (field) => {
       }
 
       setRichEditorActionsVisible(actionsField, false);
+      editTaskLastSavedSnapshot = buildEditTaskComparableSnapshot();
       setEditTaskAutosaveStatus(t('taskSaved'));
       showStatusToast(t('taskSaved'));
       return;
@@ -2943,6 +3035,7 @@ const showEditTaskModal = (task) => {
   renderRelatedTaskPicker('edit');
   setRichEditorActionsVisible('description', false);
   setRichEditorActionsVisible('comment', false);
+  editTaskLastSavedSnapshot = buildEditTaskComparableSnapshot();
 
   editTaskModal.classList.remove('hidden');
   editTaskTitleInput.focus();
@@ -2961,6 +3054,7 @@ const hideEditTaskModal = () => {
   removeEditAttachment = false;
   editTaskDescriptionSavedValue = '';
   editTaskCommentSavedValue = '';
+  editTaskLastSavedSnapshot = null;
   editTaskForm.reset();
   editTaskDescriptionInput.innerHTML = '';
   editTaskCommentInput.innerHTML = '';
