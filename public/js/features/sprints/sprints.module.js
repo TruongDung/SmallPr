@@ -53,6 +53,21 @@
       normalizeSprintId(task.sprint_id) === normalizeSprintId(sprintId)
     ));
 
+    const formatDateRange = (startDate, endDate) => {
+      if (!startDate && !endDate) return t('noDate') || 'No dates';
+      return `${startDate || '...'} -> ${endDate || '...'}`;
+    };
+
+    const getSprintProgress = (tasks) => {
+      const total = tasks.length;
+      const completed = tasks.filter((task) => task.status === 'done' || task.completed).length;
+      return {
+        total,
+        completed,
+        percent: total ? Math.round((completed / total) * 100) : 0,
+      };
+    };
+
     const clearDropTargets = () => {
       document.querySelectorAll('.sprint-drop-over').forEach((element) => {
         element.classList.remove('sprint-drop-over');
@@ -106,7 +121,7 @@
 
     const createTaskPill = (task, { removable = false } = {}) => {
       const pill = document.createElement('div');
-      pill.className = 'sprint-task-pill';
+      pill.className = `sprint-task-pill sprint-task-pill-${task.priority || 'low'}`;
       pill.draggable = true;
       pill.dataset.taskId = task.id;
       pill.addEventListener('dragstart', (event) => {
@@ -132,7 +147,7 @@
         const removeButton = document.createElement('button');
         removeButton.type = 'button';
         removeButton.className = 'sprint-task-remove';
-        removeButton.textContent = 'x';
+        removeButton.textContent = '×';
         removeButton.title = t('removeFromSprint') || 'Remove from sprint';
         removeButton.setAttribute('aria-label', t('removeFromSprint') || 'Remove from sprint');
         removeButton.addEventListener('click', () => assignTaskToSprint(task.id, null));
@@ -170,6 +185,7 @@
       const backlogTasks = getTasksForSprint(null);
       count.textContent = backlogTasks.length;
       heading.append(title, count);
+      if (!backlogTasks.length) backlog.classList.add('sprint-backlog-empty');
 
       const hint = document.createElement('p');
       hint.className = 'sprint-backlog-hint';
@@ -200,7 +216,37 @@
       badge.className = `sprint-status-badge sprint-status-${sprint.status}`;
       badge.textContent = (statusLabels[sprint.status] || statusLabels.planned)();
 
-      header.append(name, badge);
+      const titleWrap = document.createElement('div');
+      titleWrap.className = 'sprint-card-title-wrap';
+      titleWrap.append(name, badge);
+
+      const actions = document.createElement('div');
+      actions.className = 'sprint-card-actions';
+
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'task-action-icon secondary';
+      editBtn.textContent = '✎';
+      editBtn.title = t('editSprint') || 'Edit Sprint';
+      editBtn.setAttribute('aria-label', t('editSprint') || 'Edit Sprint');
+      editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openEditModal(sprint);
+      });
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'task-action-icon secondary';
+      deleteBtn.textContent = '×';
+      deleteBtn.title = t('deleteSprint') || 'Delete Sprint';
+      deleteBtn.setAttribute('aria-label', t('deleteSprint') || 'Delete Sprint');
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        deleteSprint(sprint);
+      });
+
+      actions.append(editBtn, deleteBtn);
+      header.append(titleWrap, actions);
       card.append(header);
 
       if (sprint.goal) {
@@ -213,51 +259,40 @@
       const meta = document.createElement('div');
       meta.className = 'sprint-card-meta';
 
-      if (sprint.start_date || sprint.end_date) {
-        const dates = document.createElement('span');
-        dates.className = 'sprint-card-dates';
-        dates.textContent = `${sprint.start_date || '...'} -> ${sprint.end_date || '...'}`;
-        meta.append(dates);
-      }
-
       const sprintCardTasks = getTasksForSprint(sprint.id);
+      const progress = getSprintProgress(sprintCardTasks);
+      const dates = document.createElement('span');
+      dates.className = 'sprint-card-dates';
+      dates.textContent = formatDateRange(sprint.start_date, sprint.end_date);
+      meta.append(dates);
+
       const taskCount = document.createElement('span');
       taskCount.className = 'sprint-card-tasks';
       taskCount.textContent = `${sprintCardTasks.length} ${t('sprintTasks') || 'tasks'}`;
       meta.append(taskCount);
 
+      const progressWrap = document.createElement('div');
+      progressWrap.className = 'sprint-progress';
+      const progressLabel = document.createElement('span');
+      progressLabel.textContent = `${progress.completed}/${progress.total} ${t('sprintCompleted') || 'completed'}`;
+      const progressPercent = document.createElement('span');
+      progressPercent.textContent = `${progress.percent}%`;
+      const progressMeta = document.createElement('div');
+      progressMeta.className = 'sprint-progress-meta';
+      progressMeta.append(progressLabel, progressPercent);
+      const progressTrack = document.createElement('div');
+      progressTrack.className = 'sprint-progress-track';
+      const progressFill = document.createElement('span');
+      progressFill.style.width = `${progress.percent}%`;
+      progressTrack.append(progressFill);
+      progressWrap.append(progressMeta, progressTrack);
+
       card.append(
         meta,
+        progressWrap,
         createTaskList(sprintCardTasks, t('noSprintTasks') || 'Drop tasks here.', { removable: true })
       );
 
-      const actions = document.createElement('div');
-      actions.className = 'sprint-card-actions';
-
-      const editBtn = document.createElement('button');
-      editBtn.type = 'button';
-      editBtn.className = 'task-action-icon secondary';
-      editBtn.textContent = 'E';
-      editBtn.title = t('editSprint') || 'Edit Sprint';
-      editBtn.setAttribute('aria-label', t('editSprint') || 'Edit Sprint');
-      editBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openEditModal(sprint);
-      });
-
-      const deleteBtn = document.createElement('button');
-      deleteBtn.type = 'button';
-      deleteBtn.className = 'task-action-icon secondary';
-      deleteBtn.textContent = 'X';
-      deleteBtn.title = t('deleteSprint') || 'Delete Sprint';
-      deleteBtn.setAttribute('aria-label', t('deleteSprint') || 'Delete Sprint');
-      deleteBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        deleteSprint(sprint);
-      });
-
-      actions.append(editBtn, deleteBtn);
-      card.append(actions);
       return card;
     };
 
@@ -272,6 +307,25 @@
       const sprintGrid = document.createElement('div');
       sprintGrid.className = 'sprint-cards';
 
+      const totalTasks = sprintTasks.filter((task) => !task.archived).length;
+      const assignedTasks = sprintTasks.filter((task) => normalizeSprintId(task.sprint_id) !== null && !task.archived).length;
+      const summary = document.createElement('div');
+      summary.className = 'sprint-summary';
+      [
+        [t('sprints') || 'Sprints', sprints.length],
+        [t('sprintTasks') || 'Tasks', totalTasks],
+        [t('sprintAssigned') || 'assigned', assignedTasks],
+      ].forEach(([label, value]) => {
+        const item = document.createElement('div');
+        item.className = 'sprint-summary-item';
+        const strong = document.createElement('strong');
+        strong.textContent = value;
+        const span = document.createElement('span');
+        span.textContent = label;
+        item.append(strong, span);
+        summary.append(item);
+      });
+
       if (!sprints.length) {
         const empty = document.createElement('p');
         empty.className = 'sprints-empty';
@@ -282,6 +336,7 @@
       }
 
       layout.append(sprintGrid);
+      sprintsList.append(summary);
       sprintsList.append(layout);
     };
 
