@@ -998,13 +998,14 @@ const showSection = () => {
   const showTags = currentView === 'tags';
   const showCalendar = currentView === 'calendar';
   const showSprints = currentView === 'sprints';
+  const showArchive = currentView === 'archived';
   taskSubtabNav.classList.toggle('hidden', !showTaskWorkspace);
   setActiveTaskSubtab();
   weatherModule.hideQuoteWidget();
   taskHeader.classList.toggle('hidden', showWeather || showTags || showCalendar || showSprints);
   tagManager.classList.toggle('hidden', !showTags);
   calendarSection.classList.toggle('hidden', !showCalendar);
-  sprintsSection?.classList.toggle('hidden', !showSprints);
+  sprintsSection?.classList.toggle('hidden', !(showSprints || showArchive));
   taskList.classList.toggle('hidden', showWeather || showTags || showCalendar || showSprints);
   weatherSection.classList.toggle('hidden', !showWeather);
 
@@ -1030,6 +1031,13 @@ const showSection = () => {
   if (showSprints) {
     taskForm.classList.add('hidden');
     sprintsModule.loadSprints();
+    return;
+  }
+
+  if (showArchive) {
+    taskForm.classList.add('hidden');
+    loadTasks();
+    sprintsModule.loadSprints({ archived: true });
     return;
   }
 

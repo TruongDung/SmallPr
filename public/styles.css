@@ -8910,6 +8910,48 @@ body.theme-dark .notes-editor-actions button.secondary:hover {
   white-space: nowrap;
 }
 
+/* Archived sprint cards — visually dimmed with a strikethrough-style left bar */
+.sprint-cards-archived {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.sprint-cards-archived .sprint-card {
+  opacity: 0.72;
+  filter: grayscale(0.35);
+  border-style: dashed;
+}
+
+.sprint-cards-archived .sprint-card:hover {
+  opacity: 1;
+  filter: none;
+}
+
+.sprint-cards-archived .sprint-card::before {
+  background: var(--muted);
+}
+
+/* Heading that appears above archived sprints in the Archive tab */
+.sprints-archived-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 0 8px;
+  margin-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.sprints-archived-heading h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 #sprint-editor-hint {
   margin: 6px 0 0;
   color: var(--muted);

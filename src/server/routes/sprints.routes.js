@@ -25,10 +25,11 @@ const normalizeEditorUserIds = (value) => {
 };
 
 const validateSprintInput = (body = {}, isCreate = false) => {
-  const { name, goal, start_date, end_date, status, editor_user_id, editor_user_ids } = body;
+  const { name, goal, start_date, end_date, status, archived, editor_user_id, editor_user_ids } = body;
   const hasEditorIdsUpdate = Object.prototype.hasOwnProperty.call(body, 'editor_user_ids');
   const hasEditorIdUpdate = Object.prototype.hasOwnProperty.call(body, 'editor_user_id');
   const hasEditorUpdate = hasEditorIdsUpdate || hasEditorIdUpdate;
+  const hasArchivedUpdate = Object.prototype.hasOwnProperty.call(body, 'archived');
 
   if (isCreate && !name) {
     return { error: 'Sprint name is required' };
@@ -44,6 +45,9 @@ const validateSprintInput = (body = {}, isCreate = false) => {
   }
   if (status !== undefined && !SPRINT_STATUSES.has(status)) {
     return { error: 'Sprint status must be planned, active, or completed' };
+  }
+  if (hasArchivedUpdate && typeof archived !== 'boolean') {
+    return { error: 'Sprint archived value must be true or false' };
   }
 
   let editorUserIds;
@@ -62,13 +66,15 @@ const validateSprintInput = (body = {}, isCreate = false) => {
       startDate: start_date !== undefined ? (start_date || null) : undefined,
       endDate: end_date !== undefined ? (end_date || null) : undefined,
       status: status || (isCreate ? 'planned' : undefined),
+      archived: hasArchivedUpdate ? archived : undefined,
+      hasArchivedUpdate,
       editorUserIds,
       hasEditorUpdate,
     },
   };
 };
 
-const buildSprintsCacheKey = (userId) => `user:${userId}:sprints:v1`;
+const buildSprintsCacheKey = (userId, archived = 0) => `user:${userId}:sprints:v2:${archived ? 'archived' : 'active'}`;
 
 const isAdmin = (req) => req.currentUser?.username === 'admin';
 
@@ -120,13 +126,14 @@ const createSprintsRouter = ({
 
   router.get('/sprints', async (req, res) => {
     try {
-      const cacheKey = buildSprintsCacheKey(req.session.userId);
+      const archived = req.query.archived === 'true' ? 1 : 0;
+      const cacheKey = buildSprintsCacheKey(req.session.userId, archived);
       const cached = await cache?.getJson?.(cacheKey);
       if (cached) {
         return res.json(cached);
       }
 
-      const rows = await sprints.listSprints(req.session.userId);
+      const rows = await sprints.listSprints(req.session.userId, { archived });
       const payload = { sprints: rows };
       await cache?.setJson?.(cacheKey, payload, 300);
       res.json(payload);
@@ -186,6 +193,9 @@ const createSprintsRouter = ({
         return res.status(400).json({ error: validation.error });
       }
       const input = validation.value;
+      if (input.hasArchivedUpdate && Number(existing.is_owner) !== 1 && !isAdmin(req)) {
+        return res.status(403).json({ error: 'Only the sprint owner can archive this sprint' });
+      }
       const previousAccessUserIds = await sprints.listSprintAccessUserIds(id);
       const editorAssignment = await validateEditorAssignments({
         req,
@@ -204,6 +214,7 @@ const createSprintsRouter = ({
         startDate: input.startDate !== undefined ? input.startDate : existing.start_date,
         endDate: input.endDate !== undefined ? input.endDate : existing.end_date,
         status: input.status !== undefined ? input.status : existing.status,
+        archived: input.archived !== undefined ? input.archived : Boolean(Number(existing.archived)),
         editorUserIds: editorAssignment.editorUserIds,
         hasEditorUpdate: editorAssignment.hasEditorUpdate,
       });

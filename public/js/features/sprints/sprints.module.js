@@ -40,9 +40,9 @@
       completed: () => t('sprint_completed') || 'Completed',
     };
 
-    const loadSprints = async () => {
+    const loadSprints = async ({ archived = false, renderView = true } = {}) => {
       const [sprintsResult, tasksResult] = await Promise.all([
-        request('/api/sprints'),
+        request(`/api/sprints${archived ? '?archived=true' : ''}`),
         request('/api/tasks'),
       ]);
 
@@ -58,7 +58,10 @@
 
       sprints = sprintsResult.sprints || [];
       sprintTasks = tasksResult.tasks || [];
-      render();
+      if (renderView) {
+        render({ archived });
+      }
+      return { sprints, sprintTasks };
     };
 
     const normalizeSprintId = (value) => (value === null || value === undefined || value === ''
@@ -400,10 +403,28 @@
       return backlog;
     };
 
-    const createSprintCard = (sprint) => {
+    const updateSprintArchive = async (sprint, archived) => {
+      const result = await request(`/api/sprints/${sprint.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ archived }),
+      });
+      if (result.error) {
+        showStatusToast(result.error, 'error');
+        return;
+      }
+      showStatusToast(archived
+        ? (t('sprintArchived') || 'Sprint archived.')
+        : (t('sprintRestored') || 'Sprint restored.'));
+      onSprintsChanged();
+      await loadSprints({ archived: !archived });
+    };
+
+    const createSprintCard = (sprint, { archivedView = false } = {}) => {
       const card = document.createElement('div');
       card.className = `sprint-card sprint-card-${sprint.status} sprint-drop-zone`;
-      bindDropTarget(card, sprint.id);
+      if (!archivedView) {
+        bindDropTarget(card, sprint.id);
+      }
 
       const header = document.createElement('div');
       header.className = 'sprint-card-header';
@@ -451,9 +472,22 @@
         }
       });
 
+      const archiveBtn = document.createElement('button');
+      archiveBtn.type = 'button';
+      archiveBtn.className = 'task-action-icon secondary';
+      archiveBtn.textContent = archivedView ? '↥' : '▣';
+      archiveBtn.title = archivedView
+        ? (t('restoreSprint') || t('restore') || 'Restore')
+        : (t('archiveSprint') || t('archive') || 'Archive');
+      archiveBtn.setAttribute('aria-label', archiveBtn.title);
+      archiveBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        updateSprintArchive(sprint, !archivedView);
+      });
+
       actions.append(editBtn);
       if (canDeleteSprint(sprint)) {
-        actions.append(deleteBtn);
+        actions.append(archiveBtn, deleteBtn);
       }
       header.append(titleWrap, actions);
       card.append(header);
@@ -517,15 +551,46 @@
       card.append(
         meta,
         progressWrap,
-        createTaskList(sprintCardTasks, t('noSprintTasks') || 'Drop tasks here.', { removable: canRemoveTaskFromSprint })
+        createTaskList(sprintCardTasks, t('noSprintTasks') || 'Drop tasks here.', { removable: archivedView ? false : canRemoveTaskFromSprint })
       );
 
       return card;
     };
 
-    const render = () => {
+    const render = ({ archived = false } = {}) => {
       if (!sprintsList) return;
       sprintsList.innerHTML = '';
+
+      // Show/hide the static archived heading in the HTML
+      const archivedHeading = document.getElementById('sprints-archived-heading');
+      const sprintsHeader = document.querySelector('.sprints-header');
+      if (archivedHeading) archivedHeading.classList.toggle('hidden', !archived);
+      if (sprintsHeader) sprintsHeader.classList.toggle('hidden', archived);
+
+      const title = document.getElementById('sprints-title');
+      if (title) {
+        title.textContent = archived
+          ? (t('archivedSprints') || 'Archived sprints')
+          : (t('sprints') || 'Sprints');
+      }
+      if (openAddButton) {
+        openAddButton.classList.toggle('hidden', archived);
+      }
+
+      if (archived) {
+        const sprintGrid = document.createElement('div');
+        sprintGrid.className = 'sprint-cards sprint-cards-archived';
+        if (!sprints.length) {
+          const empty = document.createElement('p');
+          empty.className = 'sprints-empty';
+          empty.textContent = t('noArchivedSprints') || 'No archived sprints.';
+          sprintGrid.append(empty);
+        } else {
+          sprints.forEach((sprint) => sprintGrid.append(createSprintCard(sprint, { archivedView: true })));
+        }
+        sprintsList.append(sprintGrid);
+        return;
+      }
 
       const layout = document.createElement('div');
       layout.className = 'sprint-planning-layout';
