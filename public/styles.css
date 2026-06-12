@@ -2914,6 +2914,37 @@ body.theme-dark .status-in_progress {
   white-space: nowrap;
 }
 
+.database-storage-sort {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+.database-storage-table th:not(:first-child) .database-storage-sort {
+  justify-content: flex-end;
+}
+
+.database-storage-sort:hover,
+.database-storage-sort:focus-visible,
+.database-storage-sort.is-active {
+  color: var(--primary);
+}
+
+.database-storage-sort:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 65%, transparent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
 .audit-log-section {
   margin-top: 48px;
   padding-top: 32px;

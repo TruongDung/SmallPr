@@ -3,6 +3,10 @@
   // Extracted from app.js to keep that file focused. Follows the shared
   // factory pattern: app.js wires in dependencies and cross-cutting helpers.
   const AUDIT_LOG_PAGE_SIZE = 25;
+  const DATABASE_STORAGE_DEFAULT_SORT = {
+    key: 'totalBytes',
+    direction: 'desc',
+  };
 
   const create = ({
     request,
@@ -43,6 +47,7 @@
     const loadDatabaseStorageButton = document.getElementById('load-database-storage');
     const databaseStorageSummary = document.getElementById('database-storage-summary');
     const databaseStorageList = document.getElementById('database-storage-list');
+    const databaseStorageSortButtons = document.querySelectorAll('[data-db-storage-sort]');
     const openAddUserModalButton = document.getElementById('open-add-user-modal');
     const adminUserModal = document.getElementById('admin-user-modal');
     const adminUserModalTitle = document.getElementById('admin-user-modal-title');
@@ -69,6 +74,7 @@
     let auditLogSearchTimer = null;
     let auditLogSavingEnabled = true;
     let databaseStorage = null;
+    let databaseStorageSort = { ...DATABASE_STORAGE_DEFAULT_SORT };
     let pendingAdminUser = null;
     let pendingResetPasswordUser = null;
 
@@ -118,10 +124,66 @@
       }).format(size)} ${units[unitIndex]}`;
     };
 
+    const getDatabaseStorageSortValue = (table, key) => {
+      if (key === 'tableName') {
+        return [table.schemaName, table.tableName].filter(Boolean).join('.').toLowerCase();
+      }
+
+      return Number(table[key] || 0);
+    };
+
+    const compareDatabaseStorageTables = (left, right) => {
+      const leftValue = getDatabaseStorageSortValue(left, databaseStorageSort.key);
+      const rightValue = getDatabaseStorageSortValue(right, databaseStorageSort.key);
+      const direction = databaseStorageSort.direction === 'asc' ? 1 : -1;
+
+      if (leftValue < rightValue) return -1 * direction;
+      if (leftValue > rightValue) return 1 * direction;
+
+      const leftName = getDatabaseStorageSortValue(left, 'tableName');
+      const rightName = getDatabaseStorageSortValue(right, 'tableName');
+      return leftName.localeCompare(rightName);
+    };
+
+    const renderDatabaseStorageSortHeaders = () => {
+      databaseStorageSortButtons.forEach((button) => {
+        const key = button.dataset.dbStorageSort;
+        const label = t(button.dataset.labelKey);
+        const isActive = key === databaseStorageSort.key;
+        const directionLabel = databaseStorageSort.direction === 'asc' ? t('ascending') : t('descending');
+        const sortIndicator = isActive
+          ? (databaseStorageSort.direction === 'asc' ? ' ↑' : ' ↓')
+          : '';
+
+        button.textContent = `${label}${sortIndicator}`;
+        button.title = t('sortByColumn', { column: label });
+        button.setAttribute('aria-label', isActive
+          ? t('sortedByColumn', { column: label, direction: directionLabel })
+          : t('sortByColumn', { column: label }));
+        button.classList.toggle('is-active', isActive);
+        button.closest('th')?.setAttribute(
+          'aria-sort',
+          isActive ? (databaseStorageSort.direction === 'asc' ? 'ascending' : 'descending') : 'none'
+        );
+      });
+    };
+
+    const updateDatabaseStorageSort = (key) => {
+      if (!key) return;
+      databaseStorageSort = {
+        key,
+        direction: databaseStorageSort.key === key && databaseStorageSort.direction === 'desc'
+          ? 'asc'
+          : 'desc',
+      };
+      renderDatabaseStorage();
+    };
+
     const renderDatabaseStorage = () => {
       if (!databaseStorageList || !databaseStorageSummary || !loadDatabaseStorageButton) return;
       databaseStorageList.innerHTML = '';
       loadDatabaseStorageButton.textContent = databaseStorage ? t('refreshStorage') : t('viewStorage');
+      renderDatabaseStorageSortHeaders();
 
       if (!databaseStorage) {
         databaseStorageSummary.textContent = t('databaseStorageNotLoaded');
@@ -153,7 +215,7 @@
         return;
       }
 
-      tables.forEach((table) => {
+      [...tables].sort(compareDatabaseStorageTables).forEach((table) => {
         const row = document.createElement('tr');
         const tableName = [table.schemaName, table.tableName].filter(Boolean).join('.');
         const cells = [
@@ -797,11 +859,6 @@
       setText('.user-table th:nth-child(6)', t('notes'));
       setText('.user-table th:nth-child(7)', t('actions'));
       setText('#database-storage-title', t('databaseStorage'));
-      setText('.database-storage-table th:nth-child(1)', t('table'));
-      setText('.database-storage-table th:nth-child(2)', t('estimatedRows'));
-      setText('.database-storage-table th:nth-child(3)', t('dataStorage'));
-      setText('.database-storage-table th:nth-child(4)', t('indexStorage'));
-      setText('.database-storage-table th:nth-child(5)', t('totalStorage'));
       renderDatabaseStorage();
       setText('#audit-log-title', t('auditLog'));
       setText('label[for="audit-log-search-input"]', t('searchAuditLog'));
@@ -887,6 +944,9 @@
       clearAuditLog?.addEventListener('click', clearAuditLogs);
       auditLogSavingToggle?.addEventListener('click', updateAuditLogSaving);
       loadDatabaseStorageButton?.addEventListener('click', loadDatabaseStorage);
+      databaseStorageSortButtons.forEach((button) => {
+        button.addEventListener('click', () => updateDatabaseStorageSort(button.dataset.dbStorageSort));
+      });
       auditLogSearchInput?.addEventListener('input', scheduleAuditLogSearch);
       auditLogPrevious?.addEventListener('click', () => {
         if (auditLogPage > 1) loadAuditLogs(auditLogPage - 1);
