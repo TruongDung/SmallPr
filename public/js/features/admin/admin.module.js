@@ -40,6 +40,9 @@
     const refreshAuditLog = document.getElementById('refresh-audit-log');
     const clearAuditLog = document.getElementById('clear-audit-log');
     const auditLogSavingToggle = document.getElementById('toggle-audit-log-saving');
+    const loadDatabaseStorageButton = document.getElementById('load-database-storage');
+    const databaseStorageSummary = document.getElementById('database-storage-summary');
+    const databaseStorageList = document.getElementById('database-storage-list');
     const openAddUserModalButton = document.getElementById('open-add-user-modal');
     const adminUserModal = document.getElementById('admin-user-modal');
     const adminUserModalTitle = document.getElementById('admin-user-modal-title');
@@ -65,6 +68,7 @@
     let auditLogPage = 1;
     let auditLogSearchTimer = null;
     let auditLogSavingEnabled = true;
+    let databaseStorage = null;
     let pendingAdminUser = null;
     let pendingResetPasswordUser = null;
 
@@ -91,6 +95,107 @@
       }
       auditLogSavingEnabled = result.settings?.enabled !== false;
       renderAuditLogSavingToggle();
+    };
+
+    const formatInteger = (value) => new Intl.NumberFormat(undefined, {
+      maximumFractionDigits: 0,
+    }).format(Number(value || 0));
+
+    const formatBytes = (value) => {
+      const bytes = Number(value || 0);
+      if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+
+      const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+      let size = bytes;
+      let unitIndex = 0;
+      while (size >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024;
+        unitIndex += 1;
+      }
+
+      return `${new Intl.NumberFormat(undefined, {
+        maximumFractionDigits: size >= 100 || unitIndex === 0 ? 0 : 1,
+      }).format(size)} ${units[unitIndex]}`;
+    };
+
+    const renderDatabaseStorage = () => {
+      if (!databaseStorageList || !databaseStorageSummary || !loadDatabaseStorageButton) return;
+      databaseStorageList.innerHTML = '';
+      loadDatabaseStorageButton.textContent = databaseStorage ? t('refreshStorage') : t('viewStorage');
+
+      if (!databaseStorage) {
+        databaseStorageSummary.textContent = t('databaseStorageNotLoaded');
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 5;
+        cell.className = 'empty-table-cell';
+        cell.textContent = t('databaseStorageNotLoaded');
+        row.append(cell);
+        databaseStorageList.append(row);
+        return;
+      }
+
+      const { summary = {}, tables = [] } = databaseStorage;
+      databaseStorageSummary.textContent = t('databaseStorageSummary', {
+        database: summary.databaseName || '-',
+        size: formatBytes(summary.databaseBytes),
+        count: formatInteger(summary.tableCount || tables.length),
+      });
+
+      if (!tables.length) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 5;
+        cell.className = 'empty-table-cell';
+        cell.textContent = t('databaseStorageEmpty');
+        row.append(cell);
+        databaseStorageList.append(row);
+        return;
+      }
+
+      tables.forEach((table) => {
+        const row = document.createElement('tr');
+        const tableName = [table.schemaName, table.tableName].filter(Boolean).join('.');
+        const cells = [
+          [t('table'), tableName],
+          [t('estimatedRows'), formatInteger(table.estimatedRows)],
+          [t('dataStorage'), formatBytes(table.tableBytes)],
+          [t('indexStorage'), formatBytes(table.indexBytes)],
+          [t('totalStorage'), formatBytes(table.totalBytes)],
+        ];
+
+        cells.forEach(([label, value]) => {
+          const cell = document.createElement('td');
+          cell.dataset.label = label;
+          cell.textContent = value;
+          row.append(cell);
+        });
+
+        databaseStorageList.append(row);
+      });
+    };
+
+    const loadDatabaseStorage = async () => {
+      if (!isAdminUser() || !loadDatabaseStorageButton) return;
+      loadDatabaseStorageButton.disabled = true;
+      try {
+        const result = await request('/api/admin/database/storage');
+        if (result.error) {
+          showStatusToast(result.error, 'error');
+          return;
+        }
+
+        databaseStorage = {
+          summary: result.summary || {},
+          tables: result.tables || [],
+        };
+        renderDatabaseStorage();
+        showStatusToast(t('databaseStorageLoaded'));
+      } catch (error) {
+        showStatusToast(error.message || 'Failed to load database storage', 'error');
+      } finally {
+        loadDatabaseStorageButton.disabled = false;
+      }
     };
 
     const loadUsers = async () => {
@@ -691,6 +796,13 @@
       setText('.user-table th:nth-child(5)', t('tasks'));
       setText('.user-table th:nth-child(6)', t('notes'));
       setText('.user-table th:nth-child(7)', t('actions'));
+      setText('#database-storage-title', t('databaseStorage'));
+      setText('.database-storage-table th:nth-child(1)', t('table'));
+      setText('.database-storage-table th:nth-child(2)', t('estimatedRows'));
+      setText('.database-storage-table th:nth-child(3)', t('dataStorage'));
+      setText('.database-storage-table th:nth-child(4)', t('indexStorage'));
+      setText('.database-storage-table th:nth-child(5)', t('totalStorage'));
+      renderDatabaseStorage();
       setText('#audit-log-title', t('auditLog'));
       setText('label[for="audit-log-search-input"]', t('searchAuditLog'));
       if (auditLogSearchInput) auditLogSearchInput.placeholder = t('searchAuditLog');
@@ -709,6 +821,7 @@
     // Render admin views from current state (used after a language switch).
     const renderFromState = () => {
       renderUsers(users);
+      renderDatabaseStorage();
       renderAuditLogs(auditLogs);
       renderAuditLogSavingToggle();
     };
@@ -773,6 +886,7 @@
       refreshAuditLog?.addEventListener('click', refreshAuditLogsWithFeedback);
       clearAuditLog?.addEventListener('click', clearAuditLogs);
       auditLogSavingToggle?.addEventListener('click', updateAuditLogSaving);
+      loadDatabaseStorageButton?.addEventListener('click', loadDatabaseStorage);
       auditLogSearchInput?.addEventListener('input', scheduleAuditLogSearch);
       auditLogPrevious?.addEventListener('click', () => {
         if (auditLogPage > 1) loadAuditLogs(auditLogPage - 1);
