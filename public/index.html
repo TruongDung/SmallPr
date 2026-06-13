@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=cache-clear-20260611-lunar-checkbox-1" />
+  <link rel="stylesheet" href="styles.css?v=cache-clear-20260611-us-holidays-1" />
 </head>
 <body>
   <div class="container">
@@ -257,7 +257,7 @@
           </div>
           <div class="field">
             <label for="task-due-date">Due Date</label>
-            <input id="task-due-date" type="datetime-local" />
+            <input id="task-due-date" type="date" />
           </div>
           <div class="field">
             <label class="checkbox-label recurring-toggle">
@@ -377,6 +377,10 @@
               <input id="calendar-show-lunar" type="checkbox" class="calendar-lunar-input" />
               <span class="calendar-lunar-label">🌙 Lunar</span>
             </label>
+            <label class="calendar-lunar-toggle" title="Show US holidays and observance dates">
+              <input id="calendar-show-holidays" type="checkbox" class="calendar-lunar-input" />
+              <span class="calendar-lunar-label">🇺🇸 Holidays</span>
+            </label>
           </div>
           <div class="calendar-layout">
             <div id="calendar-grid" class="calendar-grid"></div>
@@ -397,6 +401,9 @@
           <div class="sprints-header">
             <h2 id="sprints-title">Sprints</h2>
             <button id="open-add-sprint" type="button" class="primary task-action-icon" aria-label="Add Sprint" title="Add Sprint">+</button>
+          </div>
+          <div id="sprints-archived-heading" class="sprints-archived-heading hidden">
+            <h3 data-i18n-key="archivedSprints">Archived sprints</h3>
           </div>
           <div id="sprints-list" class="sprints-list"></div>
         </section>
@@ -442,6 +449,30 @@
             <tbody id="user-list"></tbody>
           </table>
         </div>
+
+        <section class="database-storage-section" aria-labelledby="database-storage-title">
+          <div class="database-storage-header">
+            <div>
+              <h3 id="database-storage-title">Database Storage</h3>
+              <p id="database-storage-summary" class="database-storage-summary">Storage data has not been loaded.</p>
+            </div>
+            <button id="load-database-storage" type="button" class="secondary">View Storage</button>
+          </div>
+          <div class="user-table-wrap">
+            <table class="user-table database-storage-table">
+              <thead>
+                <tr>
+                  <th aria-sort="none"><button type="button" class="database-storage-sort" data-db-storage-sort="tableName" data-label-key="table">Table</button></th>
+                  <th aria-sort="none"><button type="button" class="database-storage-sort" data-db-storage-sort="estimatedRows" data-label-key="estimatedRows">Est. Rows</button></th>
+                  <th aria-sort="none"><button type="button" class="database-storage-sort" data-db-storage-sort="tableBytes" data-label-key="dataStorage">Data</button></th>
+                  <th aria-sort="none"><button type="button" class="database-storage-sort" data-db-storage-sort="indexBytes" data-label-key="indexStorage">Indexes</button></th>
+                  <th aria-sort="descending"><button type="button" class="database-storage-sort" data-db-storage-sort="totalBytes" data-label-key="totalStorage">Total</button></th>
+                </tr>
+              </thead>
+              <tbody id="database-storage-list"></tbody>
+            </table>
+          </div>
+        </section>
 
         <section class="audit-log-section" aria-labelledby="audit-log-title">
           <div class="audit-log-header">
@@ -1206,7 +1237,7 @@
         </div>
         <div class="field">
           <label for="edit-task-due-date-input">Due Date</label>
-          <input id="edit-task-due-date-input" type="datetime-local" />
+          <input id="edit-task-due-date-input" type="date" />
         </div>
         <div class="field">
           <label class="checkbox-label recurring-toggle">
@@ -1408,10 +1439,11 @@
   <script src="js/features/dashboard/dashboard.module.js?v=cache-clear-20260601-7"></script>
   <script src="js/features/admin/admin.module.js?v=cache-clear-20260610-audit-refresh-feedback-1"></script>
   <script src="js/tasks.js?v=cache-clear-20260604-1"></script>
-  <script src="js/features/tasks/calendar.module.js?v=cache-clear-20260611-default-month-1"></script>
+  <script src="js/usHolidays.js?v=1"></script>
+  <script src="js/features/tasks/calendar.module.js?v=cache-clear-20260611-holidays-1"></script>
   <script src="js/features/tasks/relatedTasks.module.js?v=cache-clear-20260608-related-tasks-open-1"></script>
   <script src="js/features/tasks/taskActivity.module.js?v=cache-clear-20260608-activity-default-comments-1"></script>
-  <script src="js/features/sprints/sprints.module.js?v=cache-clear-20260611-add-sprint-1"></script>
+  <script src="js/features/sprints/sprints.module.js?v=cache-clear-20260611-sprint-archive-1"></script>
   <script src="js/weather.js?v=cache-clear-20260604-1"></script>
   <script src="js/tags/tags.module.js?v=cache-clear-20260608-1"></script>
   <script src="js/transactions.module.js?v=cache-clear-20260601-7"></script>

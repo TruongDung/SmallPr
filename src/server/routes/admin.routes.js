@@ -26,6 +26,8 @@ const TEST_USER_MATCH_SQL = `LOWER(username) = 'test'
        OR LOWER(username) LIKE 'test-%'
        OR LOWER(username) LIKE 'test!_%' ESCAPE '!'`;
 
+const toNumber = (value) => Number(value || 0);
+
 const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsync, runAsync }) => {
   const router = express.Router();
 
@@ -92,6 +94,53 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsyn
     } catch (error) {
       logger.error({ err: error }, 'Failed to load users');
       res.status(500).json({ error: 'Failed to load users' });
+    }
+  });
+
+  router.get('/admin/database/storage', adminRequired, async (req, res) => {
+    try {
+      const summary = await getAsync(
+        `SELECT current_database() AS database_name,
+                pg_database_size(current_database())::bigint AS database_bytes`
+      );
+      const tables = await allAsync(
+        `SELECT
+           ns.nspname AS schema_name,
+           cls.relname AS table_name,
+           COALESCE(stats.n_live_tup, cls.reltuples::bigint, 0)::bigint AS estimated_rows,
+           pg_relation_size(cls.oid)::bigint AS table_bytes,
+           pg_indexes_size(cls.oid)::bigint AS index_bytes,
+           pg_total_relation_size(cls.oid)::bigint AS total_bytes
+         FROM pg_class cls
+         JOIN pg_namespace ns ON ns.oid = cls.relnamespace
+         LEFT JOIN pg_stat_user_tables stats ON stats.relid = cls.oid
+         WHERE cls.relkind IN ('r', 'p')
+           AND ns.nspname NOT IN ('pg_catalog', 'information_schema')
+           AND ns.nspname NOT LIKE 'pg_toast%'
+         ORDER BY pg_total_relation_size(cls.oid) DESC,
+                  ns.nspname ASC,
+                  cls.relname ASC`
+      );
+
+      res.json({
+        summary: {
+          databaseName: summary?.database_name || '',
+          databaseBytes: toNumber(summary?.database_bytes),
+          tableCount: tables.length,
+          capturedAt: new Date().toISOString(),
+        },
+        tables: tables.map((table) => ({
+          schemaName: table.schema_name,
+          tableName: table.table_name,
+          estimatedRows: toNumber(table.estimated_rows),
+          tableBytes: toNumber(table.table_bytes),
+          indexBytes: toNumber(table.index_bytes),
+          totalBytes: toNumber(table.total_bytes),
+        })),
+      });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to load database storage');
+      res.status(500).json({ error: 'Failed to load database storage' });
     }
   });
 

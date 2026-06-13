@@ -41,14 +41,15 @@ const createSprintsService = ({ allAsync, getAsync, runAsync }) => {
        ON current_editor.sprint_id = s.id
       AND current_editor.user_id = ?`;
 
-  const listSprints = (userId) => allAsync(
+  const listSprints = (userId, { archived = 0 } = {}) => allAsync(
     `${sprintSelect}
-     WHERE s.user_id = ? OR current_editor.user_id IS NOT NULL
+     WHERE s.archived = ?
+       AND (s.user_id = ? OR current_editor.user_id IS NOT NULL)
      ORDER BY
        CASE s.status WHEN 'active' THEN 0 WHEN 'planned' THEN 1 ELSE 2 END,
        s.start_date DESC,
        s.id DESC`,
-    [userId, userId, userId, userId]
+    [userId, userId, userId, archived ? 1 : 0, userId]
   );
 
   const getSprintForUser = (id, userId) => getAsync(
@@ -120,13 +121,14 @@ const createSprintsService = ({ allAsync, getAsync, runAsync }) => {
     return getSprintForUser(result.lastID, userId);
   };
 
-  const updateSprint = async ({ id, userId, name, goal, startDate, endDate, status, editorUserIds, hasEditorUpdate = false }) => {
+  const updateSprint = async ({ id, userId, name, goal, startDate, endDate, status, archived, editorUserIds, hasEditorUpdate = false }) => {
     await runAsync(
       `UPDATE sprints
        SET name = ?, goal = ?, start_date = ?, end_date = ?, status = ?,
+           archived = ?,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`,
-      [name, goal || null, startDate || null, endDate || null, status, id]
+      [name, goal || null, startDate || null, endDate || null, status, archived ? 1 : 0, id]
     );
     if (hasEditorUpdate) {
       await replaceSprintEditors({ sprintId: id, editorUserIds });
@@ -134,8 +136,11 @@ const createSprintsService = ({ allAsync, getAsync, runAsync }) => {
     return getSprintForUser(id, userId);
   };
 
-  const deleteSprint = (id, userId) =>
-    runAsync('DELETE FROM sprints WHERE id = ? AND user_id = ?', [id, userId]);
+  const deleteSprint = (id, userId, { allowAnyOwner = false } = {}) => (
+    allowAnyOwner
+      ? runAsync('DELETE FROM sprints WHERE id = ?', [id])
+      : runAsync('DELETE FROM sprints WHERE id = ? AND user_id = ?', [id, userId])
+  );
 
   return {
     listSprints,

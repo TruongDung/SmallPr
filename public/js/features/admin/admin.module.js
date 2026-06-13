@@ -3,6 +3,10 @@
   // Extracted from app.js to keep that file focused. Follows the shared
   // factory pattern: app.js wires in dependencies and cross-cutting helpers.
   const AUDIT_LOG_PAGE_SIZE = 25;
+  const DATABASE_STORAGE_DEFAULT_SORT = {
+    key: 'totalBytes',
+    direction: 'desc',
+  };
 
   const create = ({
     request,
@@ -22,6 +26,8 @@
     setCurrentView,
     showSection,
     confirmDeleteUser,
+    confirmDeleteTestUsers = null,
+    confirmClearAuditLogs = null,
     currentLanguage,
   }) => {
     // ---- DOM refs (owned by this module) ----
@@ -40,6 +46,10 @@
     const refreshAuditLog = document.getElementById('refresh-audit-log');
     const clearAuditLog = document.getElementById('clear-audit-log');
     const auditLogSavingToggle = document.getElementById('toggle-audit-log-saving');
+    const loadDatabaseStorageButton = document.getElementById('load-database-storage');
+    const databaseStorageSummary = document.getElementById('database-storage-summary');
+    const databaseStorageList = document.getElementById('database-storage-list');
+    const databaseStorageSortButtons = document.querySelectorAll('[data-db-storage-sort]');
     const openAddUserModalButton = document.getElementById('open-add-user-modal');
     const adminUserModal = document.getElementById('admin-user-modal');
     const adminUserModalTitle = document.getElementById('admin-user-modal-title');
@@ -65,6 +75,8 @@
     let auditLogPage = 1;
     let auditLogSearchTimer = null;
     let auditLogSavingEnabled = true;
+    let databaseStorage = null;
+    let databaseStorageSort = { ...DATABASE_STORAGE_DEFAULT_SORT };
     let pendingAdminUser = null;
     let pendingResetPasswordUser = null;
 
@@ -91,6 +103,163 @@
       }
       auditLogSavingEnabled = result.settings?.enabled !== false;
       renderAuditLogSavingToggle();
+    };
+
+    const formatInteger = (value) => new Intl.NumberFormat(undefined, {
+      maximumFractionDigits: 0,
+    }).format(Number(value || 0));
+
+    const formatBytes = (value) => {
+      const bytes = Number(value || 0);
+      if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+
+      const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+      let size = bytes;
+      let unitIndex = 0;
+      while (size >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024;
+        unitIndex += 1;
+      }
+
+      return `${new Intl.NumberFormat(undefined, {
+        maximumFractionDigits: size >= 100 || unitIndex === 0 ? 0 : 1,
+      }).format(size)} ${units[unitIndex]}`;
+    };
+
+    const getDatabaseStorageSortValue = (table, key) => {
+      if (key === 'tableName') {
+        return [table.schemaName, table.tableName].filter(Boolean).join('.').toLowerCase();
+      }
+
+      return Number(table[key] || 0);
+    };
+
+    const compareDatabaseStorageTables = (left, right) => {
+      const leftValue = getDatabaseStorageSortValue(left, databaseStorageSort.key);
+      const rightValue = getDatabaseStorageSortValue(right, databaseStorageSort.key);
+      const direction = databaseStorageSort.direction === 'asc' ? 1 : -1;
+
+      if (leftValue < rightValue) return -1 * direction;
+      if (leftValue > rightValue) return 1 * direction;
+
+      const leftName = getDatabaseStorageSortValue(left, 'tableName');
+      const rightName = getDatabaseStorageSortValue(right, 'tableName');
+      return leftName.localeCompare(rightName);
+    };
+
+    const renderDatabaseStorageSortHeaders = () => {
+      databaseStorageSortButtons.forEach((button) => {
+        const key = button.dataset.dbStorageSort;
+        const label = t(button.dataset.labelKey);
+        const isActive = key === databaseStorageSort.key;
+        const directionLabel = databaseStorageSort.direction === 'asc' ? t('ascending') : t('descending');
+        const sortIndicator = isActive
+          ? (databaseStorageSort.direction === 'asc' ? ' ↑' : ' ↓')
+          : '';
+
+        button.textContent = `${label}${sortIndicator}`;
+        button.title = t('sortByColumn', { column: label });
+        button.setAttribute('aria-label', isActive
+          ? t('sortedByColumn', { column: label, direction: directionLabel })
+          : t('sortByColumn', { column: label }));
+        button.classList.toggle('is-active', isActive);
+        button.closest('th')?.setAttribute(
+          'aria-sort',
+          isActive ? (databaseStorageSort.direction === 'asc' ? 'ascending' : 'descending') : 'none'
+        );
+      });
+    };
+
+    const updateDatabaseStorageSort = (key) => {
+      if (!key) return;
+      databaseStorageSort = {
+        key,
+        direction: databaseStorageSort.key === key && databaseStorageSort.direction === 'desc'
+          ? 'asc'
+          : 'desc',
+      };
+      renderDatabaseStorage();
+    };
+
+    const renderDatabaseStorage = () => {
+      if (!databaseStorageList || !databaseStorageSummary || !loadDatabaseStorageButton) return;
+      databaseStorageList.innerHTML = '';
+      loadDatabaseStorageButton.textContent = databaseStorage ? t('refreshStorage') : t('viewStorage');
+      renderDatabaseStorageSortHeaders();
+
+      if (!databaseStorage) {
+        databaseStorageSummary.textContent = t('databaseStorageNotLoaded');
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 5;
+        cell.className = 'empty-table-cell';
+        cell.textContent = t('databaseStorageNotLoaded');
+        row.append(cell);
+        databaseStorageList.append(row);
+        return;
+      }
+
+      const { summary = {}, tables = [] } = databaseStorage;
+      databaseStorageSummary.textContent = t('databaseStorageSummary', {
+        database: summary.databaseName || '-',
+        size: formatBytes(summary.databaseBytes),
+        count: formatInteger(summary.tableCount || tables.length),
+      });
+
+      if (!tables.length) {
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 5;
+        cell.className = 'empty-table-cell';
+        cell.textContent = t('databaseStorageEmpty');
+        row.append(cell);
+        databaseStorageList.append(row);
+        return;
+      }
+
+      [...tables].sort(compareDatabaseStorageTables).forEach((table) => {
+        const row = document.createElement('tr');
+        const tableName = [table.schemaName, table.tableName].filter(Boolean).join('.');
+        const cells = [
+          [t('table'), tableName],
+          [t('estimatedRows'), formatInteger(table.estimatedRows)],
+          [t('dataStorage'), formatBytes(table.tableBytes)],
+          [t('indexStorage'), formatBytes(table.indexBytes)],
+          [t('totalStorage'), formatBytes(table.totalBytes)],
+        ];
+
+        cells.forEach(([label, value]) => {
+          const cell = document.createElement('td');
+          cell.dataset.label = label;
+          cell.textContent = value;
+          row.append(cell);
+        });
+
+        databaseStorageList.append(row);
+      });
+    };
+
+    const loadDatabaseStorage = async () => {
+      if (!isAdminUser() || !loadDatabaseStorageButton) return;
+      loadDatabaseStorageButton.disabled = true;
+      try {
+        const result = await request('/api/admin/database/storage');
+        if (result.error) {
+          showStatusToast(result.error, 'error');
+          return;
+        }
+
+        databaseStorage = {
+          summary: result.summary || {},
+          tables: result.tables || [],
+        };
+        renderDatabaseStorage();
+        showStatusToast(t('databaseStorageLoaded'));
+      } catch (error) {
+        showStatusToast(error.message || 'Failed to load database storage', 'error');
+      } finally {
+        loadDatabaseStorageButton.disabled = false;
+      }
     };
 
     const loadUsers = async () => {
@@ -163,9 +332,20 @@
       }
     };
 
+    const requestClearAuditLogs = () => {
+      const message = t('clearAuditLogConfirm') || 'Delete all audit log entries? This cannot be undone.';
+      if (typeof confirmClearAuditLogs === 'function') {
+        confirmClearAuditLogs(message);
+        return;
+      }
+
+      if (confirm(message)) {
+        clearAuditLogs();
+      }
+    };
+
     const clearAuditLogs = async () => {
-      if (!confirm(t('clearAuditLogConfirm') || 'Delete all audit log entries? This cannot be undone.')) return;
-      clearAuditLog.disabled = true;
+      if (clearAuditLog) clearAuditLog.disabled = true;
       try {
         const result = await request('/api/admin/audit-logs', { method: 'DELETE' });
         if (result.error) {
@@ -178,7 +358,7 @@
       } catch (error) {
         showStatusToast(error.message || 'Failed to clear audit log', 'error');
       } finally {
-        clearAuditLog.disabled = false;
+        if (clearAuditLog) clearAuditLog.disabled = false;
       }
     };
 
@@ -626,7 +806,7 @@
       loadUsers();
     };
 
-    const deleteTestUsers = async () => {
+    const getTestUsersDeleteMessage = () => {
       const currentUser = getCurrentUser();
       const matchingUsers = users.filter((user) => (
         isTestUser(user) && String(user.username || '').toLowerCase() !== 'admin' && user.id !== currentUser?.id
@@ -638,9 +818,23 @@
         ? t('deleteTestUsersConfirm', { count, users: `${names}${extra}` })
         : t('deleteTestUsersConfirmEmpty');
 
-      if (!confirm(message)) return;
+      return message;
+    };
 
-      deleteTestUsersButton.disabled = true;
+    const requestDeleteTestUsers = () => {
+      const message = getTestUsersDeleteMessage();
+      if (typeof confirmDeleteTestUsers === 'function') {
+        confirmDeleteTestUsers(message);
+        return;
+      }
+
+      if (confirm(message)) {
+        deleteTestUsers();
+      }
+    };
+
+    const deleteTestUsers = async () => {
+      if (deleteTestUsersButton) deleteTestUsersButton.disabled = true;
       try {
         const result = await request('/api/admin/users/test', { method: 'DELETE' });
         if (result.error) {
@@ -653,7 +847,7 @@
       } catch (error) {
         showStatusToast(error.message || 'Failed to delete test users', 'error');
       } finally {
-        deleteTestUsersButton.disabled = false;
+        if (deleteTestUsersButton) deleteTestUsersButton.disabled = false;
       }
     };
 
@@ -691,6 +885,8 @@
       setText('.user-table th:nth-child(5)', t('tasks'));
       setText('.user-table th:nth-child(6)', t('notes'));
       setText('.user-table th:nth-child(7)', t('actions'));
+      setText('#database-storage-title', t('databaseStorage'));
+      renderDatabaseStorage();
       setText('#audit-log-title', t('auditLog'));
       setText('label[for="audit-log-search-input"]', t('searchAuditLog'));
       if (auditLogSearchInput) auditLogSearchInput.placeholder = t('searchAuditLog');
@@ -709,6 +905,7 @@
     // Render admin views from current state (used after a language switch).
     const renderFromState = () => {
       renderUsers(users);
+      renderDatabaseStorage();
       renderAuditLogs(auditLogs);
       renderAuditLogSavingToggle();
     };
@@ -764,15 +961,19 @@
       openAddUserModalButton.addEventListener('click', () => showAdminUserModal());
       sendSummaryEmailButton?.addEventListener('click', sendSummaryEmail);
       sendNotesEmailButton?.addEventListener('click', sendNotesEmail);
-      deleteTestUsersButton?.addEventListener('click', deleteTestUsers);
+      deleteTestUsersButton?.addEventListener('click', requestDeleteTestUsers);
       if (impersonateUserSelect) {
         impersonateUserSelect.addEventListener('change', (event) => {
           if (event.target.value) startImpersonation(event.target.value);
         });
       }
       refreshAuditLog?.addEventListener('click', refreshAuditLogsWithFeedback);
-      clearAuditLog?.addEventListener('click', clearAuditLogs);
+      clearAuditLog?.addEventListener('click', requestClearAuditLogs);
       auditLogSavingToggle?.addEventListener('click', updateAuditLogSaving);
+      loadDatabaseStorageButton?.addEventListener('click', loadDatabaseStorage);
+      databaseStorageSortButtons.forEach((button) => {
+        button.addEventListener('click', () => updateDatabaseStorageSort(button.dataset.dbStorageSort));
+      });
       auditLogSearchInput?.addEventListener('input', scheduleAuditLogSearch);
       auditLogPrevious?.addEventListener('click', () => {
         if (auditLogPage > 1) loadAuditLogs(auditLogPage - 1);
@@ -801,6 +1002,8 @@
       hideResetPasswordModal,
       stopImpersonation,
       deleteUser,
+      deleteTestUsers,
+      clearAuditLogs,
     };
   };
 

@@ -10,10 +10,12 @@
     const nextButton = document.getElementById('calendar-next');
     const viewButtons = [...document.querySelectorAll('[data-calendar-view]')];
     const lunarToggle = document.getElementById('calendar-show-lunar');
+    const holidayToggle = document.getElementById('calendar-show-holidays');
 
     let view = 'month';
     let cursor = startOfDay(new Date());
     let showLunar = localStorage.getItem('showLunarCalendar') === 'true';
+    let showHolidays = localStorage.getItem('showUSHolidays') === 'true';
 
     function startOfDay(date) {
       return new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -156,6 +158,24 @@
         cell.append(list);
       }
 
+      // US holiday markers
+      if (showHolidays && window.USHolidays) {
+        const holidays = window.USHolidays.getHolidaysForDate(date);
+        if (holidays.length) {
+          const holidayList = document.createElement('div');
+          holidayList.className = 'calendar-holiday-list';
+          holidays.forEach((h) => {
+            const marker = document.createElement('span');
+            marker.className = `calendar-holiday-marker${h.isObservance ? ' calendar-holiday-marker-observance' : ''}`;
+            marker.textContent = compact ? '🇺🇸' : `🇺🇸 ${h.name}`;
+            marker.title = h.name;
+            holidayList.append(marker);
+          });
+          cell.append(holidayList);
+          cell.classList.add('has-holiday');
+        }
+      }
+
       return cell;
     }
 
@@ -208,7 +228,7 @@
         const title = document.createElement('strong');
         title.textContent = task.title;
         const meta = document.createElement('span');
-        meta.textContent = `${t('dueDate')}: ${task.due_date}`;
+        meta.textContent = `${t('dueDate')}: ${taskDateKey(task)}`;
         row.append(title, meta);
         container.append(row);
       });
@@ -268,6 +288,16 @@
         lunarToggle.addEventListener('change', (event) => {
           showLunar = event.target.checked;
           localStorage.setItem('showLunarCalendar', String(showLunar));
+          render();
+        });
+      }
+
+      // US holidays toggle
+      if (holidayToggle) {
+        holidayToggle.checked = showHolidays;
+        holidayToggle.addEventListener('change', (event) => {
+          showHolidays = event.target.checked;
+          localStorage.setItem('showUSHolidays', String(showHolidays));
           render();
         });
       }

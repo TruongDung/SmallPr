@@ -197,9 +197,9 @@
       modal.body.innerHTML = '';
 
       const day = date.getDate();
-      const cardEntries = getCardEntriesForDay(day);
-      const billEntries = getBillEntriesForDay(day);
-      const txEntries = getTransactionsForDay(date);
+      const cardEntries = showCards ? getCardEntriesForDay(day) : [];
+      const billEntries = showBills ? getBillEntriesForDay(day) : [];
+      const txEntries = showTransactions ? getTransactionsForDay(date) : [];
       let hasAny = false;
 
       if (cardEntries.length) {

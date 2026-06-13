@@ -213,6 +213,9 @@ let pendingDeleteCard = null;
 let pendingDeleteFastAccessLink = null;
 let pendingDeleteNote = null;
 let pendingDeleteTransaction = null;
+let pendingDeleteSprint = null;
+let pendingDeleteTestUsers = false;
+let pendingClearAuditLogs = false;
 let pendingEditTask = null;
 let pendingPreviewTask = null;
 let pendingAddTask = { related_task_ids: [], related_tasks: [] };
@@ -228,6 +231,7 @@ let editTaskAutosaveQueue = Promise.resolve();
 let editTaskAutosaveStatusTimer = null;
 let editTaskDescriptionSavedValue = '';
 let editTaskCommentSavedValue = '';
+let editTaskLastSavedSnapshot = null;
 const MAX_ATTACHMENT_BYTES = 5 * 1024 * 1024;
 const MAX_TASK_TEXT_LENGTH = 10000;
 const DEFAULT_TASK_PRIORITY = 'low';
@@ -517,6 +521,15 @@ const updateTaskSearchState = () => {
 };
 
 const getTaskDueDateKey = (task) => String(task?.due_date || '').slice(0, 10);
+const getDateInputValue = (value) => String(value || '').slice(0, 10);
+const formatTaskDueDate = (task) => {
+  const key = getTaskDueDateKey(task);
+  if (!key) return '';
+  const [year, month, day] = key.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  if (Number.isNaN(date.getTime())) return key;
+  return date.toLocaleDateString(undefined, { dateStyle: 'medium' });
+};
 
 const getTodayDateKey = () => {
   const today = new Date();
@@ -580,7 +593,7 @@ const renderPreviewTaskMeta = (task) => {
     chips.push({
       cls: `preview-meta-chip due-chip${isTaskOverdue(task) ? ' due-chip-overdue' : ''}`,
       icon: '📅',
-      text: `${t('dueDate')}: ${formatLocalDateTime(task.due_date)}`,
+      text: `${t('dueDate')}: ${formatTaskDueDate(task)}`,
     });
   }
 
@@ -985,13 +998,14 @@ const showSection = () => {
   const showTags = currentView === 'tags';
   const showCalendar = currentView === 'calendar';
   const showSprints = currentView === 'sprints';
+  const showArchive = currentView === 'archived';
   taskSubtabNav.classList.toggle('hidden', !showTaskWorkspace);
   setActiveTaskSubtab();
   weatherModule.hideQuoteWidget();
   taskHeader.classList.toggle('hidden', showWeather || showTags || showCalendar || showSprints);
   tagManager.classList.toggle('hidden', !showTags);
   calendarSection.classList.toggle('hidden', !showCalendar);
-  sprintsSection?.classList.toggle('hidden', !showSprints);
+  sprintsSection?.classList.toggle('hidden', !(showSprints || showArchive));
   taskList.classList.toggle('hidden', showWeather || showTags || showCalendar || showSprints);
   weatherSection.classList.toggle('hidden', !showWeather);
 
@@ -1017,6 +1031,13 @@ const showSection = () => {
   if (showSprints) {
     taskForm.classList.add('hidden');
     sprintsModule.loadSprints();
+    return;
+  }
+
+  if (showArchive) {
+    taskForm.classList.add('hidden');
+    loadTasks();
+    sprintsModule.loadSprints({ archived: true });
     return;
   }
 
@@ -1628,7 +1649,7 @@ const handleTaskSubmit = async (event) => {
   const tag = taskTagInput.value.trim();
   const descriptionEditor = document.getElementById('task-description');
   const description = getRichEditorValue(descriptionEditor);
-  const due_date = taskDueDateInput.value || null;
+  const due_date = getDateInputValue(taskDueDateInput.value) || null;
   const reminder_at = taskReminderInput?.value || null;
   const attachmentFile = taskAttachmentInput.files[0] || null;
 
@@ -2178,6 +2199,9 @@ const showDeleteConfirm = (id) => {
   pendingDeleteFastAccessLink = null;
   pendingDeleteNote = null;
   pendingDeleteTransaction = null;
+  pendingDeleteSprint = null;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = false;
   deleteConfirmTitle.textContent = t('deleteTaskTitle');
   deleteConfirmMessage.textContent = t('deleteTaskMessage');
   deleteConfirmModal.classList.remove('hidden');
@@ -2192,6 +2216,9 @@ const showUserDeleteConfirm = (user) => {
   pendingDeleteFastAccessLink = null;
   pendingDeleteNote = null;
   pendingDeleteTransaction = null;
+  pendingDeleteSprint = null;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = false;
   deleteConfirmTitle.textContent = t('deleteUserTitle');
   deleteConfirmMessage.textContent = t('deleteUserMessage', { username: user.username });
   deleteConfirmModal.classList.remove('hidden');
@@ -2206,6 +2233,9 @@ const showTagDeleteConfirm = (tag) => {
   pendingDeleteFastAccessLink = null;
   pendingDeleteNote = null;
   pendingDeleteTransaction = null;
+  pendingDeleteSprint = null;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = false;
   deleteConfirmTitle.textContent = t('deleteTagTitle');
   deleteConfirmMessage.textContent = t('deleteTagMessage', { tag: tag.name });
   deleteConfirmModal.classList.remove('hidden');
@@ -2220,6 +2250,9 @@ const showCreditCardDeleteConfirm = (card) => {
   pendingDeleteFastAccessLink = null;
   pendingDeleteNote = null;
   pendingDeleteTransaction = null;
+  pendingDeleteSprint = null;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = false;
   deleteConfirmTitle.textContent = t('deleteCreditCardTitle');
   deleteConfirmMessage.textContent = t('deleteCreditCardMessage', { name: card.name });
   deleteConfirmModal.classList.remove('hidden');
@@ -2234,6 +2267,9 @@ const showFastAccessLinkDeleteConfirm = (link) => {
   pendingDeleteFastAccessLink = link;
   pendingDeleteNote = null;
   pendingDeleteTransaction = null;
+  pendingDeleteSprint = null;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = false;
   deleteConfirmTitle.textContent = t('deleteFastAccessLinkTitle');
   deleteConfirmMessage.textContent = t('deleteFastAccessLinkMessage', { label: link.label || t('fastAccessLinks') });
   deleteConfirmModal.classList.remove('hidden');
@@ -2248,6 +2284,9 @@ const showNoteDeleteConfirm = (note) => {
   pendingDeleteFastAccessLink = null;
   pendingDeleteNote = note;
   pendingDeleteTransaction = null;
+  pendingDeleteSprint = null;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = false;
   deleteConfirmTitle.textContent = t('deleteNoteTitle');
   deleteConfirmMessage.textContent = t('deleteNoteMessage');
   deleteConfirmModal.classList.remove('hidden');
@@ -2262,8 +2301,62 @@ const showTransactionDeleteConfirm = (transaction) => {
   pendingDeleteFastAccessLink = null;
   pendingDeleteNote = null;
   pendingDeleteTransaction = transaction;
+  pendingDeleteSprint = null;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = false;
   deleteConfirmTitle.textContent = t('confirmDeleteTransaction');
   deleteConfirmMessage.textContent = t('confirmDeleteTransaction');
+  deleteConfirmModal.classList.remove('hidden');
+  confirmDeleteNo.focus();
+};
+
+const showSprintDeleteConfirm = (sprint) => {
+  pendingDeleteTaskId = null;
+  pendingDeleteUser = null;
+  pendingDeleteTag = null;
+  pendingDeleteCard = null;
+  pendingDeleteFastAccessLink = null;
+  pendingDeleteNote = null;
+  pendingDeleteTransaction = null;
+  pendingDeleteSprint = sprint;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = false;
+  deleteConfirmTitle.textContent = t('deleteSprintTitle');
+  deleteConfirmMessage.textContent = t('deleteSprintMessage', { name: sprint.name });
+  deleteConfirmModal.classList.remove('hidden');
+  confirmDeleteNo.focus();
+};
+
+const showTestUsersDeleteConfirm = (message) => {
+  pendingDeleteTaskId = null;
+  pendingDeleteUser = null;
+  pendingDeleteTag = null;
+  pendingDeleteCard = null;
+  pendingDeleteFastAccessLink = null;
+  pendingDeleteNote = null;
+  pendingDeleteTransaction = null;
+  pendingDeleteSprint = null;
+  pendingDeleteTestUsers = true;
+  pendingClearAuditLogs = false;
+  deleteConfirmTitle.textContent = t('deleteTestUsers');
+  deleteConfirmMessage.textContent = message;
+  deleteConfirmModal.classList.remove('hidden');
+  confirmDeleteNo.focus();
+};
+
+const showClearAuditLogsConfirm = (message) => {
+  pendingDeleteTaskId = null;
+  pendingDeleteUser = null;
+  pendingDeleteTag = null;
+  pendingDeleteCard = null;
+  pendingDeleteFastAccessLink = null;
+  pendingDeleteNote = null;
+  pendingDeleteTransaction = null;
+  pendingDeleteSprint = null;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = true;
+  deleteConfirmTitle.textContent = t('clearAuditLogTitle');
+  deleteConfirmMessage.textContent = message;
   deleteConfirmModal.classList.remove('hidden');
   confirmDeleteNo.focus();
 };
@@ -2276,13 +2369,16 @@ const hideDeleteConfirm = () => {
   pendingDeleteFastAccessLink = null;
   pendingDeleteNote = null;
   pendingDeleteTransaction = null;
+  pendingDeleteSprint = null;
+  pendingDeleteTestUsers = false;
+  pendingClearAuditLogs = false;
   deleteConfirmModal.classList.add('hidden');
 };
 
 confirmDeleteNo.addEventListener('click', hideDeleteConfirm);
 
 confirmDeleteYes.addEventListener('click', async () => {
-  if (!pendingDeleteTaskId && !pendingDeleteUser && !pendingDeleteTag && !pendingDeleteCard && !pendingDeleteFastAccessLink && !pendingDeleteNote && !pendingDeleteTransaction) return;
+  if (!pendingDeleteTaskId && !pendingDeleteUser && !pendingDeleteTag && !pendingDeleteCard && !pendingDeleteFastAccessLink && !pendingDeleteNote && !pendingDeleteTransaction && !pendingDeleteSprint && !pendingDeleteTestUsers && !pendingClearAuditLogs) return;
   const taskId = pendingDeleteTaskId;
   const user = pendingDeleteUser;
   const tag = pendingDeleteTag;
@@ -2290,6 +2386,9 @@ confirmDeleteYes.addEventListener('click', async () => {
   const fastAccessLink = pendingDeleteFastAccessLink;
   const note = pendingDeleteNote;
   const transaction = pendingDeleteTransaction;
+  const sprint = pendingDeleteSprint;
+  const shouldDeleteTestUsers = pendingDeleteTestUsers;
+  const shouldClearAuditLogs = pendingClearAuditLogs;
   hideDeleteConfirm();
   if (taskId) {
     await deleteTask(taskId);
@@ -2313,6 +2412,18 @@ confirmDeleteYes.addEventListener('click', async () => {
   }
   if (transaction) {
     await transactionsModule.deleteTransaction(transaction);
+    return;
+  }
+  if (sprint) {
+    await sprintsModule.deleteSprint(sprint);
+    return;
+  }
+  if (shouldDeleteTestUsers) {
+    await adminModule.deleteTestUsers();
+    return;
+  }
+  if (shouldClearAuditLogs) {
+    await adminModule.clearAuditLogs();
     return;
   }
   await adminModule.deleteUser(user);
@@ -2487,7 +2598,7 @@ const buildEditTaskUpdates = ({ includeDescription = false, includeComment = fal
   const tag = editTaskTagInput.value.trim();
   const description = includeDescription ? getRichEditorValue(editTaskDescriptionInput) : null;
   const comment = includeComment ? getRichEditorValue(editTaskCommentInput) : null;
-  const dueDate = editTaskDueDateInput.value || null;
+  const dueDate = getDateInputValue(editTaskDueDateInput.value) || null;
   const reminderAt = editTaskReminderInput?.value || null;
   const attachmentFile = editTaskAttachmentInput.files[0] || null;
   const isRecurring = editTaskRecurringCheckbox.checked;
@@ -2581,6 +2692,84 @@ const buildEditTaskUpdates = ({ includeDescription = false, includeComment = fal
   return updates;
 };
 
+const normalizeEditTaskComparableSnapshot = (snapshot = {}) => ({
+  title: String(snapshot.title || ''),
+  tag: String(snapshot.tag || ''),
+  priority: snapshot.priority || 'medium',
+  status: snapshot.status || 'todo',
+  sprint_id: snapshot.sprint_id === null || snapshot.sprint_id === undefined || snapshot.sprint_id === ''
+    ? null
+    : Number(snapshot.sprint_id),
+  due_date: getDateInputValue(snapshot.due_date) || null,
+  reminder_at: snapshot.reminder_at || null,
+  is_recurring: Boolean(snapshot.is_recurring),
+  recurrence_pattern: snapshot.recurrence_pattern || null,
+  recurrence_interval: snapshot.recurrence_interval === null || snapshot.recurrence_interval === undefined || snapshot.recurrence_interval === ''
+    ? null
+    : Number(snapshot.recurrence_interval),
+  recurrence_days: snapshot.recurrence_days || null,
+  recurrence_timezone: snapshot.recurrence_timezone || null,
+  recurrence_end_date: getDateInputValue(snapshot.recurrence_end_date) || null,
+  recurrence_occurrence_limit: snapshot.recurrence_occurrence_limit === null || snapshot.recurrence_occurrence_limit === undefined || snapshot.recurrence_occurrence_limit === ''
+    ? null
+    : Number(snapshot.recurrence_occurrence_limit),
+  related_task_ids: [...new Set((snapshot.related_task_ids || [])
+    .map((id) => Number(id))
+    .filter((id) => Number.isInteger(id)))]
+    .sort((left, right) => left - right),
+  description: snapshot.description || '',
+  comment: snapshot.comment || '',
+});
+
+const buildEditTaskComparableSnapshot = () => {
+  const isRecurring = editTaskRecurringCheckbox.checked;
+  return normalizeEditTaskComparableSnapshot({
+    title: editTaskTitleInput.value.trim(),
+    tag: editTaskTagInput.value.trim(),
+    priority: editTaskPriorityInput.value,
+    status: editTaskStatusInput.value,
+    sprint_id: editTaskSprintInput?.value ? Number(editTaskSprintInput.value) : null,
+    due_date: getDateInputValue(editTaskDueDateInput.value) || null,
+    reminder_at: editTaskReminderInput?.value || null,
+    is_recurring: isRecurring,
+    recurrence_pattern: isRecurring ? editTaskRecurrencePattern.value : null,
+    recurrence_interval: isRecurring ? parseInt(editTaskRecurrenceInterval.value, 10) : null,
+    recurrence_days: isRecurring && editTaskRecurrencePattern.value === 'weekly'
+      ? getSelectedWeekdays(editWeeklyOptions)
+      : null,
+    recurrence_timezone: isRecurring
+      ? (editTaskRecurrenceTimezone.value.trim() || getActiveTimezone())
+      : null,
+    recurrence_end_date: isRecurring ? editTaskRecurrenceEndDate.value || null : null,
+    recurrence_occurrence_limit: isRecurring && editTaskRecurrenceOccurrences.value
+      ? parseInt(editTaskRecurrenceOccurrences.value, 10)
+      : null,
+    related_task_ids: getRelatedTaskIds(pendingEditTask),
+    description: getRichEditorValue(editTaskDescriptionInput),
+    comment: getRichEditorValue(editTaskCommentInput),
+  });
+};
+
+const buildEditTaskComparableUpdates = (updates = {}) => {
+  const normalized = normalizeEditTaskComparableSnapshot({
+    ...updates,
+    related_task_ids: updates.related_task_ids,
+  });
+  return Object.fromEntries(
+    Object.keys(updates)
+      .filter((key) => key !== 'attachment')
+      .map((key) => [key, normalized[key]])
+  );
+};
+
+const hasEditTaskComparableChanges = (updates) => {
+  if (!editTaskLastSavedSnapshot || preparedEditAttachment || removeEditAttachment) return true;
+  const comparableUpdates = buildEditTaskComparableUpdates(updates);
+  return Object.entries(comparableUpdates).some(([key, value]) => (
+    JSON.stringify(value) !== JSON.stringify(editTaskLastSavedSnapshot[key])
+  ));
+};
+
 const saveEditTaskNow = async (options = {}) => {
   if (!pendingEditTask || isPopulatingEditTaskForm) return null;
 
@@ -2588,6 +2777,10 @@ const saveEditTaskNow = async (options = {}) => {
   const task = pendingEditTask;
   const updates = buildEditTaskUpdates(options);
   if (!updates) return null;
+  if (!hasEditTaskComparableChanges(updates)) {
+    setEditTaskAutosaveStatus('');
+    return { task, skipped: true };
+  }
 
   setEditTaskAutosaveStatus(t('savingTask'));
   const result = await updateTask(task.id, updates);
@@ -2613,6 +2806,7 @@ const saveEditTaskNow = async (options = {}) => {
     editTaskAttachmentInput.value = '';
     renderEditAttachmentState();
     renderRelatedTaskPicker('edit');
+    editTaskLastSavedSnapshot = buildEditTaskComparableSnapshot();
   }
 
   setEditTaskAutosaveStatus(t('taskSaved'));
@@ -2645,7 +2839,6 @@ const bindEditTaskAutosave = () => {
     editTaskPriorityInput,
     editTaskStatusInput,
     editTaskSprintInput,
-    editTaskDueDateInput,
     editTaskReminderInput,
     editTaskRecurringCheckbox,
     editTaskRecurrencePattern,
@@ -2655,6 +2848,10 @@ const bindEditTaskAutosave = () => {
   ].forEach((input) => {
     input?.addEventListener('change', () => scheduleEditTaskAutosave({ immediate: true }));
   });
+
+  editTaskDueDateInput?.addEventListener('input', () => scheduleEditTaskAutosave());
+  editTaskDueDateInput?.addEventListener('change', () => scheduleEditTaskAutosave({ immediate: true }));
+  editTaskDueDateInput?.addEventListener('blur', () => scheduleEditTaskAutosave({ immediate: true }));
 
   editWeeklyOptions?.querySelectorAll('input[name="edit-weekday"]').forEach((input) => {
     input.addEventListener('change', () => scheduleEditTaskAutosave({ immediate: true }));
@@ -2674,8 +2871,15 @@ const saveEditRichTextField = async (field) => {
   const editor = field === 'description' ? editTaskDescriptionInput : editTaskCommentInput;
   const actionsField = field === 'description' ? 'description' : 'comment';
   const value = getRichEditorValue(editor);
+  const savedValue = field === 'description' ? editTaskDescriptionSavedValue : editTaskCommentSavedValue;
 
   clearEditTaskErrors();
+
+  if (value === (savedValue || '')) {
+    setRichEditorActionsVisible(actionsField, false);
+    setEditTaskAutosaveStatus('');
+    return;
+  }
 
   if (field === 'description' && getRichEditorLength(editTaskDescriptionInput) > MAX_TASK_TEXT_LENGTH) {
     editDescriptionError.textContent = t('descriptionTooLong');
@@ -2718,6 +2922,7 @@ const saveEditRichTextField = async (field) => {
       }
 
       setRichEditorActionsVisible(actionsField, false);
+      editTaskLastSavedSnapshot = buildEditTaskComparableSnapshot();
       setEditTaskAutosaveStatus(t('taskSaved'));
       showStatusToast(t('taskSaved'));
       return;
@@ -2814,7 +3019,7 @@ const showEditTaskModal = (task) => {
   editTaskCommentSavedValue = task.comment || '';
   setRichEditorValue(editTaskDescriptionInput, task.description || '');
   setRichEditorValue(editTaskCommentInput, task.comment || '');
-  editTaskDueDateInput.value = formatDateTimeLocalValue(task.due_date);
+  editTaskDueDateInput.value = getDateInputValue(task.due_date);
   if (editTaskReminderInput) editTaskReminderInput.value = formatDateTimeLocalValue(task.reminder_at);
   editTaskRecurringCheckbox.checked = Boolean(task.is_recurring);
   editTaskRecurrencePattern.value = task.recurrence_pattern || 'daily';
@@ -2838,6 +3043,7 @@ const showEditTaskModal = (task) => {
   renderRelatedTaskPicker('edit');
   setRichEditorActionsVisible('description', false);
   setRichEditorActionsVisible('comment', false);
+  editTaskLastSavedSnapshot = buildEditTaskComparableSnapshot();
 
   editTaskModal.classList.remove('hidden');
   editTaskTitleInput.focus();
@@ -2856,6 +3062,7 @@ const hideEditTaskModal = () => {
   removeEditAttachment = false;
   editTaskDescriptionSavedValue = '';
   editTaskCommentSavedValue = '';
+  editTaskLastSavedSnapshot = null;
   editTaskForm.reset();
   editTaskDescriptionInput.innerHTML = '';
   editTaskCommentInput.innerHTML = '';
@@ -2985,6 +3192,13 @@ const hideAttachmentPreview = () => {
   attachmentPreviewFrame.classList.remove('hidden');
   openAttachmentPreview.removeAttribute('download');
   openAttachmentPreview.href = '#';
+};
+
+const openTaskPreviewFromWorkspace = (task) => {
+  if (!task) return;
+  setCurrentView('tasks');
+  showSection();
+  showPreviewTaskModal(task);
 };
 
 editPreviewTask?.addEventListener('click', () => {
@@ -3179,7 +3393,9 @@ const sprintsModule = window.SprintsModule.create({
   request,
   t,
   showStatusToast,
+  confirmDelete: showSprintDeleteConfirm,
   getCurrentUser: () => currentUser,
+  onOpenTask: (task) => openTaskPreviewFromWorkspace(task),
   onSprintsChanged: () => loadSprintOptions(),
 });
 
@@ -3237,6 +3453,8 @@ const adminModule = window.AdminModule.create({
   setCurrentView,
   showSection,
   confirmDeleteUser: showUserDeleteConfirm,
+  confirmDeleteTestUsers: showTestUsersDeleteConfirm,
+  confirmClearAuditLogs: showClearAuditLogsConfirm,
   currentLanguage,
 });
 
