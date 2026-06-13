@@ -58,8 +58,12 @@ const withDatabaseInitRetry = async (operation) => {
 };
 
 const runDatabaseInitialization = async () => {
+  logger.info('Initializing database');
+
   // Run all SQL migrations from dedicated migration files
   await runMigrations(pool);
+
+  logger.info('Database migrations applied successfully');
 
   // Create default admin user if it doesn't exist
   const admin = await getAsync('SELECT id FROM users WHERE username = ?', ['admin']);
