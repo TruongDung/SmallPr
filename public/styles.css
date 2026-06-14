@@ -2296,7 +2296,7 @@ body.theme-dark .status-in_progress {
   align-items: center;
   display: grid;
   gap: 0.55rem;
-  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto auto;
 }
 
 .calendar-toolbar h2 {
