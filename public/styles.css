@@ -7932,6 +7932,85 @@ body.theme-dark .finance-export-button.secondary:disabled {
   font-weight: 600;
 }
 
+/* ── Transaction table polish ───────────────────────────────────────────── */
+
+/* Row left-border accent */
+.txn-row-income td:first-child { border-left: 4px solid #10b981; }
+.txn-row-expense td:first-child { border-left: 4px solid #ef4444; }
+
+/* Amount column — tabular numbers, right-align */
+.txn-amount {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Date — monospace for alignment */
+.txn-date {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+/* Category chip */
+.txn-category-chip {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+/* Muted placeholder for empty cells */
+.txn-muted {
+  color: var(--muted);
+}
+
+/* Note — subtle italic truncation */
+.txn-note {
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-style: italic;
+  cursor: default;
+}
+
+/* Actions cell — flex row */
+.txn-actions {
+  white-space: nowrap;
+}
+
+/* Empty state */
+.transactions-empty {
+  text-align: center;
+  padding: 2rem;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+/* Upgrade existing kind badges — slightly rounder, bolder */
+.transaction-kind-badge {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.income-badge {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.expense-badge {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+body.theme-dark .income-badge  { background: #14532d; color: #86efac; }
+body.theme-dark .expense-badge { background: #450a0a; color: #fca5a5; }
+
 .transaction-modal .modal {
   max-width: 500px;
 }

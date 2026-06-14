@@ -309,31 +309,102 @@
     };
 
     const renderTransactions = () => {
+      list.innerHTML = '';
+
       if (transactions.length === 0) {
-        list.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem;">No transactions found</td></tr>';
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 7;
+        cell.className = 'transactions-empty';
+        cell.textContent = t('noTransactions') || 'No transactions found';
+        row.append(cell);
+        list.append(row);
         renderFinanceInsights();
         return;
       }
 
-      list.innerHTML = transactions.map(transaction => {
-        const kindLabel = transaction.kind === 'income' ? (t('income') || 'Income') : (t('expense') || 'Expense');
-        const kindClass = transaction.kind === 'income' ? 'income-badge' : 'expense-badge';
+      transactions.forEach((transaction) => {
+        const isIncome = transaction.kind === 'income';
+        const row = document.createElement('tr');
+        row.className = `txn-row txn-row-${isIncome ? 'income' : 'expense'}`;
 
-        return `
-          <tr>
-            <td>${formatDate(transaction.occurred_on)}</td>
-            <td><span class="transaction-kind-badge ${kindClass}">${kindLabel}</span></td>
-            <td>${transaction.category || '—'}</td>
-            <td class="${transaction.kind === 'income' ? 'amount-income' : 'amount-expense'}">${formatCurrency(transaction.amount)}</td>
-            <td>${transaction.account || '—'}</td>
-            <td>${transaction.note ? `<span title="${transaction.note}">${transaction.note.substring(0, 30)}${transaction.note.length > 30 ? '...' : ''}</span>` : '—'}</td>
-            <td>
-              <button class="task-action-icon secondary" onclick="window.transactionsModule.edit(${transaction.id})" aria-label="Edit" title="Edit">✎</button>
-              <button class="task-action-icon danger" onclick="window.transactionsModule.confirmDelete(${transaction.id})" aria-label="Delete" title="Delete">×</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
+        // Date
+        const dateCell = document.createElement('td');
+        dateCell.textContent = formatDate(transaction.occurred_on);
+        dateCell.className = 'txn-date';
+
+        // Kind badge
+        const kindCell = document.createElement('td');
+        const badge = document.createElement('span');
+        badge.className = `transaction-kind-badge ${isIncome ? 'income-badge' : 'expense-badge'}`;
+        badge.textContent = isIncome ? (t('income') || 'Income') : (t('expense') || 'Expense');
+        kindCell.append(badge);
+
+        // Category chip
+        const categoryCell = document.createElement('td');
+        if (transaction.category) {
+          const chip = document.createElement('span');
+          chip.className = 'txn-category-chip';
+          chip.textContent = transaction.category;
+          categoryCell.append(chip);
+        } else {
+          categoryCell.textContent = '—';
+          categoryCell.className = 'txn-muted';
+        }
+
+        // Amount
+        const amountCell = document.createElement('td');
+        amountCell.className = `txn-amount ${isIncome ? 'amount-income' : 'amount-expense'}`;
+        amountCell.textContent = formatCurrency(transaction.amount);
+
+        // Account
+        const accountCell = document.createElement('td');
+        if (transaction.account) {
+          accountCell.textContent = transaction.account;
+        } else {
+          accountCell.textContent = '—';
+          accountCell.className = 'txn-muted';
+        }
+
+        // Note
+        const noteCell = document.createElement('td');
+        if (transaction.note) {
+          const noteSpan = document.createElement('span');
+          noteSpan.className = 'txn-note';
+          noteSpan.title = transaction.note;
+          noteSpan.textContent = transaction.note.length > 30
+            ? `${transaction.note.substring(0, 30)}…`
+            : transaction.note;
+          noteCell.append(noteSpan);
+        } else {
+          noteCell.textContent = '—';
+          noteCell.className = 'txn-muted';
+        }
+
+        // Actions
+        const actionsCell = document.createElement('td');
+        actionsCell.className = 'txn-actions';
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'task-action-icon secondary';
+        editBtn.setAttribute('aria-label', t('edit') || 'Edit');
+        editBtn.title = t('edit') || 'Edit';
+        editBtn.textContent = '✎';
+        editBtn.addEventListener('click', () => window.transactionsModule.edit(transaction.id));
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'task-action-icon danger';
+        deleteBtn.setAttribute('aria-label', t('delete') || 'Delete');
+        deleteBtn.title = t('delete') || 'Delete';
+        deleteBtn.textContent = '×';
+        deleteBtn.addEventListener('click', () => window.transactionsModule.confirmDelete(transaction.id));
+
+        actionsCell.append(editBtn, deleteBtn);
+        row.append(dateCell, kindCell, categoryCell, amountCell, accountCell, noteCell, actionsCell);
+        list.append(row);
+      });
+
       renderFinanceInsights();
     };
 
