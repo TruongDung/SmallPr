@@ -459,6 +459,26 @@
           updatePreview();
         }
       });
+
+      // When the user types "---" on a line and presses Enter, keep the "---"
+      // in place (it renders as <hr> in preview) and move the cursor to a new
+      // blank line below it.
+      bodyInput.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        const value = bodyInput.value;
+        const pos = bodyInput.selectionStart;
+        const lineStart = value.lastIndexOf('\n', pos - 1) + 1;
+        const currentLine = value.slice(lineStart, pos);
+        if (currentLine !== '---') return;
+        event.preventDefault();
+        const before = value.slice(0, pos);
+        const after = value.slice(bodyInput.selectionEnd);
+        bodyInput.value = `${before}\n${after}`;
+        const caret = pos + 1;
+        bodyInput.setSelectionRange(caret, caret);
+        scheduleSave();
+        if (showPreview) updatePreview();
+      });
       titleInput.addEventListener('blur', flushSave);
       bodyInput.addEventListener('blur', flushSave);
       taskSelect?.addEventListener('change', scheduleSave);

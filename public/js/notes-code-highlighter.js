@@ -218,6 +218,7 @@
         .replace(/^###\s+(.+)$/gm, '<h3>$1</h3>')
         .replace(/^##\s+(.+)$/gm, '<h2>$1</h2>')
         .replace(/^#\s+(.+)$/gm, '<h1>$1</h1>')
+        .replace(/^(?:---|\*\*\*|___)\s*$/gm, '<hr>')
         .replace(/^&gt;\s+(.+)$/gm, '<blockquote>$1</blockquote>')
         .replace(/^\s*[-*]\s+(.+)$/gm, '<li>$1</li>');
 
