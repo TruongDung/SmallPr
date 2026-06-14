@@ -1838,6 +1838,15 @@ const renderTasks = (tasks) => {
   }
 
   if (showingArchived) {
+    const section = document.createElement('div');
+    section.className = 'archive-section-group';
+
+    const sectionHeading = document.createElement('div');
+    sectionHeading.className = 'archive-section-heading';
+    const sectionTitle = document.createElement('h3');
+    sectionTitle.textContent = t('archivedTasks') || 'Archived Tasks';
+    sectionHeading.append(sectionTitle);
+
     const column = document.createElement('section');
     column.className = 'task-column task-column-wide';
     const header = document.createElement('div');
@@ -1852,7 +1861,8 @@ const renderTasks = (tasks) => {
     body.className = 'task-column-body';
     visibleTasks.forEach((task) => body.append(createTaskCard(task)));
     column.append(header, body);
-    taskList.append(column);
+    section.append(sectionHeading, column);
+    taskList.append(section);
     return;
   }
 

@@ -8998,6 +8998,27 @@ body.theme-dark .notes-editor-actions button.secondary:hover {
   letter-spacing: 0.04em;
 }
 
+/* Heading that appears above archived tasks in the Archive tab */
+.archive-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 0 8px;
+}
+
+.archive-section-heading h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.archive-section-group {
+  margin-bottom: 8px;
+}
+
 #sprint-editor-hint {
   margin: 6px 0 0;
   color: var(--muted);
