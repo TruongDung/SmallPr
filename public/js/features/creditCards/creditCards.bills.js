@@ -387,12 +387,50 @@
     const render = () => {
       if (!elements.fastAccessBillsList) return;
 
+      // Helper: days until a date string (negative = overdue)
+      const daysUntil = (dateStr) => {
+        if (!dateStr) return null;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const d = new Date(`${dateStr}T00:00:00`);
+        if (isNaN(d.getTime())) return null;
+        return Math.ceil((d - today) / (1000 * 60 * 60 * 24));
+      };
+
+      // Helper: status badge <span>
+      const buildStatusBadge = (status) => {
+        const badge = document.createElement('span');
+        const normalized = String(status || '').toLowerCase();
+        badge.className = `bill-status-badge bill-status-${normalized || 'unpaid'}`;
+        badge.textContent = status || t('notAvailable');
+        return badge;
+      };
+
+      // Helper: date cell with urgency class
+      const buildDateCell = (label, dateStr) => {
+        const cell = document.createElement('td');
+        cell.dataset.label = label;
+        if (!dateStr) {
+          cell.textContent = t('notAvailable');
+          return cell;
+        }
+        cell.textContent = dateStr;
+        const days = daysUntil(dateStr);
+        if (days !== null) {
+          if (days < 0) cell.classList.add('cc-date-overdue');
+          else if (days <= 7) cell.classList.add('cc-date-soon');
+        }
+        return cell;
+      };
+
       elements.fastAccessBillsList.innerHTML = '';
       getBillGroups().forEach((group) => {
         elements.fastAccessBillsList.append(createBillGroupSummaryRow(group));
 
         group.bills.forEach((bill) => {
+          const status = String(bill.status || '').toLowerCase();
           const row = document.createElement('tr');
+          row.className = `bill-row bill-status-row-${status || 'unpaid'}`;
 
           const itemCell = document.createElement('td');
           itemCell.dataset.label = t('billItem');
@@ -402,19 +440,16 @@
 
           const amountCell = document.createElement('td');
           amountCell.dataset.label = t('amount');
-          amountCell.textContent = formatters.formatCurrency(bill.amount);
+          const amount = formatters.normalizeAmount(bill.amount);
+          amountCell.textContent = formatters.formatCurrency(amount);
+          if (amount > 0) amountCell.classList.add('bill-amount-nonzero');
 
-          const dueDateCell = document.createElement('td');
-          dueDateCell.dataset.label = t('dueDate');
-          dueDateCell.textContent = bill.due_date || t('notAvailable');
-
-          const payBeforeCell = document.createElement('td');
-          payBeforeCell.dataset.label = t('payBefore');
-          payBeforeCell.textContent = bill.pay_before || t('notAvailable');
+          const dueDateCell = buildDateCell(t('dueDate'), bill.due_date || null);
+          const payBeforeCell = buildDateCell(t('payBefore'), bill.pay_before || null);
 
           const statusCell = document.createElement('td');
           statusCell.dataset.label = t('status');
-          statusCell.textContent = bill.status || t('notAvailable');
+          statusCell.append(buildStatusBadge(bill.status));
 
           const actionsCell = document.createElement('td');
           actionsCell.dataset.label = t('actions');

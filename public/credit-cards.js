@@ -70,6 +70,24 @@
 
     const formatIssuer = (issuer) => issuerLabels[issuer] || t('notAvailable');
 
+    // Returns a colored pill <span> for the issuer
+    const buildIssuerBadge = (issuer) => {
+      const badge = document.createElement('span');
+      badge.className = `cc-issuer-badge cc-issuer-${issuer || 'other'}`;
+      badge.textContent = formatIssuer(issuer);
+      return badge;
+    };
+
+    // Returns days until closing date (negative = overdue)
+    const daysUntilClosing = (dateString) => {
+      if (!dateString) return null;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const closing = new Date(`${dateString}T00:00:00`);
+      if (isNaN(closing.getTime())) return null;
+      return Math.ceil((closing - today) / (1000 * 60 * 60 * 24));
+    };
+
     const userGroupKey = (card) => (card.card_user || '').trim() || t('notAvailable');
 
     const mergeCardUsers = (savedUsers = [], cardsToMerge = cards) => {
@@ -235,6 +253,7 @@
 
         group.cards.forEach((card) => {
           const row = document.createElement('tr');
+          row.className = `cc-row cc-issuer-row-${card.issuer || 'other'}`;
 
           const nameCell = document.createElement('td');
           nameCell.dataset.label = t('cardName');
@@ -248,15 +267,22 @@
 
           const issuerCell = document.createElement('td');
           issuerCell.dataset.label = t('creditCardIssuer');
-          issuerCell.textContent = formatIssuer(card.issuer);
+          issuerCell.append(buildIssuerBadge(card.issuer));
 
           const balanceCell = document.createElement('td');
           balanceCell.dataset.label = t('totalBalance');
-          balanceCell.textContent = formatCurrency(card.total_balance);
+          const balanceAmount = Number(card.total_balance || 0);
+          balanceCell.textContent = formatCurrency(balanceAmount);
+          if (balanceAmount > 0) balanceCell.classList.add('cc-balance-nonzero');
 
           const closingDateCell = document.createElement('td');
           closingDateCell.dataset.label = t('closingDate');
+          const days = daysUntilClosing(card.closing_date);
           closingDateCell.textContent = formatDateOnly(card.closing_date);
+          if (days !== null) {
+            if (days < 0) closingDateCell.classList.add('cc-date-overdue');
+            else if (days <= 7) closingDateCell.classList.add('cc-date-soon');
+          }
 
           const actionsCell = document.createElement('td');
           actionsCell.dataset.label = t('actions');

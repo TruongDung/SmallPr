@@ -4018,6 +4018,90 @@ body.theme-dark .audit-log-pagination button.secondary:focus-visible:not(:disabl
   font-weight: 700;
 }
 
+/* ── Credit card polish ──────────────────────────────────────────────────── */
+
+/* Issuer badge pills */
+.cc-issuer-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: #fff;
+  background: var(--muted);
+}
+
+.cc-issuer-citi        { background: #003b8e; }
+.cc-issuer-amex        { background: #007bc1; }
+.cc-issuer-discover    { background: #e67800; }
+.cc-issuer-boa         { background: #c0392b; }
+.cc-issuer-chase       { background: #117aca; }
+.cc-issuer-capital_one { background: #d0021b; }
+.cc-issuer-wells_fargo { background: #cc0000; }
+.cc-issuer-other       { background: #6b7280; }
+
+/* Row left-border accent per issuer */
+.cc-issuer-row-citi        td:first-child { border-left: 4px solid #003b8e !important; }
+.cc-issuer-row-amex        td:first-child { border-left: 4px solid #007bc1 !important; }
+.cc-issuer-row-discover    td:first-child { border-left: 4px solid #e67800 !important; }
+.cc-issuer-row-boa         td:first-child { border-left: 4px solid #c0392b !important; }
+.cc-issuer-row-chase       td:first-child { border-left: 4px solid #117aca !important; }
+.cc-issuer-row-capital_one td:first-child { border-left: 4px solid #d0021b !important; }
+.cc-issuer-row-wells_fargo td:first-child { border-left: 4px solid #cc0000 !important; }
+.cc-issuer-row-other       td:first-child { border-left: 4px solid #6b7280 !important; }
+
+/* Balance — highlight non-zero amounts */
+.cc-balance-nonzero {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+/* Closing date urgency */
+.cc-date-soon {
+  color: #d97706;
+  font-weight: 700;
+}
+
+.cc-date-overdue {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+/* ── Expense (bills) polish ─────────────────────────────────────────────── */
+
+/* Status badge pills */
+.bill-status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.bill-status-paid    { background: #dcfce7; color: #15803d; }
+.bill-status-unpaid  { background: #fee2e2; color: #b91c1c; }
+.bill-status-pending { background: #fef9c3; color: #92400e; }
+
+/* Dark mode badge adjustments */
+body.theme-dark .bill-status-paid    { background: #14532d; color: #86efac; }
+body.theme-dark .bill-status-unpaid  { background: #450a0a; color: #fca5a5; }
+body.theme-dark .bill-status-pending { background: #422006; color: #fcd34d; }
+
+/* Row left-border accent by status */
+.bill-status-row-paid    td:first-child { border-left: 4px solid #16a34a !important; }
+.bill-status-row-unpaid  td:first-child { border-left: 4px solid #dc2626 !important; }
+.bill-status-row-pending td:first-child { border-left: 4px solid #d97706 !important; }
+
+/* Amount — non-zero stands out */
+.bill-amount-nonzero {
+  font-weight: 700;
+  color: var(--text);
+}
+
 .user-table {
   width: 100%;
   border-collapse: collapse;
