@@ -1,5 +1,5 @@
 (function () {
-  const create = ({ request, t, showStatusToast, getLanguage, confirmDelete, confirmDeleteFastAccessLink }) => {
+  const create = ({ request, t, showStatusToast, getLanguage, isAdminUser, confirmDelete, confirmDeleteFastAccessLink }) => {
     const feature = window.CreditCardFeature;
     const elements = feature.dom.getElements();
     const formatters = feature.createFormatters({ t, getLanguage });
@@ -407,6 +407,7 @@
         transactions: transactionsResult.transactions || []
       });
       financialCalendar.render();
+      loadTabLabels();
     };
 
     const openAddModal = () => {
@@ -543,6 +544,72 @@
       financialCalendar.render();
     };
 
+    // --- Editable tab labels (admin-only, double-click to rename) ---
+    let customTabLabels = {};
+
+    const applyTabLabels = () => {
+      elements.financialTabs.forEach((tab) => {
+        const key = tab.dataset.financialTab;
+        if (customTabLabels[key]) {
+          tab.textContent = customTabLabels[key];
+        }
+      });
+    };
+
+    const loadTabLabels = async () => {
+      const result = await request('/api/admin/tab-labels');
+      if (!result.error && result.labels) {
+        customTabLabels = result.labels;
+        applyTabLabels();
+      }
+    };
+
+    const saveTabLabel = async (tabKey, label) => {
+      customTabLabels[tabKey] = label;
+      const result = await request('/api/admin/tab-labels', {
+        method: 'PUT',
+        body: JSON.stringify({ labels: customTabLabels }),
+      });
+      if (result.error) {
+        showStatusToast(result.error, 'error');
+        return;
+      }
+      showStatusToast('Tab label saved.');
+    };
+
+    const startTabLabelEdit = (tab) => {
+      const tabKey = tab.dataset.financialTab;
+      const currentLabel = tab.textContent;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'financial-tab-edit-input';
+      input.value = currentLabel;
+      input.maxLength = 50;
+      tab.textContent = '';
+      tab.append(input);
+      input.focus();
+      input.select();
+
+      const finish = (save) => {
+        const newLabel = input.value.trim();
+        input.remove();
+        if (save && newLabel && newLabel !== currentLabel) {
+          tab.textContent = newLabel;
+          saveTabLabel(tabKey, newLabel);
+        } else {
+          tab.textContent = currentLabel;
+        }
+      };
+
+      input.addEventListener('blur', () => finish(true));
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') { event.preventDefault(); input.blur(); }
+        if (event.key === 'Escape') { event.preventDefault(); finish(false); }
+      });
+      // Prevent the click from propagating to the tab's click handler
+      input.addEventListener('click', (event) => event.stopPropagation());
+    };
+
     const bind = () => {
       elements.financialTabs.forEach((tab) => {
         tab.addEventListener('click', () => {
@@ -573,6 +640,15 @@
             });
           }
         });
+
+        // Admin can double-click a tab to rename it
+        if (typeof isAdminUser === 'function') {
+          tab.addEventListener('dblclick', (event) => {
+            if (!isAdminUser()) return;
+            event.preventDefault();
+            startTabLabelEdit(tab);
+          });
+        }
       });
 
       feature.dom.setActiveFinancialTab({

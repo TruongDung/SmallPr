@@ -141,7 +141,7 @@
 
     const updateTotals = () => {
       const billsTotal = bills.reduce((sum, bill) => sum + formatters.normalizeAmount(bill.amount), 0);
-      const paidCount = bills.filter((bill) => bill.status === 'paid').length;
+      const paidCount = bills.filter((bill) => String(bill.status || '').toLowerCase() === 'paid').length;
       const unpaidCount = bills.length - paidCount;
 
       const statsEl = document.getElementById('expense-stats');

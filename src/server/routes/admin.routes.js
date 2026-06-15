@@ -83,6 +83,45 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsyn
     }
   });
 
+  // --- Financial tab labels (admin-editable) ---
+  router.get('/admin/tab-labels', async (req, res) => {
+    try {
+      const row = await getAsync(
+        "SELECT setting_value FROM app_settings WHERE setting_key = 'financial_tab_labels'"
+      );
+      res.json({ labels: row?.setting_value || {} });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to load tab labels');
+      res.status(500).json({ error: 'Failed to load tab labels' });
+    }
+  });
+
+  router.put('/admin/tab-labels', adminRequired, async (req, res) => {
+    const labels = req.body?.labels;
+    if (!labels || typeof labels !== 'object') {
+      return res.status(400).json({ error: 'Labels object is required' });
+    }
+    // Sanitize: only allow string values, max 50 chars
+    const sanitized = {};
+    for (const [key, value] of Object.entries(labels)) {
+      if (typeof value === 'string' && value.trim()) {
+        sanitized[key] = value.trim().slice(0, 50);
+      }
+    }
+    try {
+      await runAsync(
+        `INSERT INTO app_settings (setting_key, setting_value, updated_at)
+         VALUES ('financial_tab_labels', $1::jsonb, CURRENT_TIMESTAMP)
+         ON CONFLICT (setting_key) DO UPDATE SET setting_value = $1::jsonb, updated_at = CURRENT_TIMESTAMP`,
+        [JSON.stringify(sanitized)]
+      );
+      res.json({ labels: sanitized });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to save tab labels');
+      res.status(500).json({ error: 'Failed to save tab labels' });
+    }
+  });
+
   router.get('/admin/users', adminRequired, async (req, res) => {
     try {
       const users = await allAsync(

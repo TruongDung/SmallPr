@@ -3494,6 +3494,7 @@ const creditCardModule = window.CreditCardModule.create({
   t,
   showStatusToast,
   getLanguage: () => currentLanguage,
+  isAdminUser,
   confirmDelete: showCreditCardDeleteConfirm,
   confirmDeleteFastAccessLink: showFastAccessLinkDeleteConfirm,
 });
