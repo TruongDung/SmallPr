@@ -141,10 +141,37 @@
 
     const updateTotals = () => {
       const billsTotal = bills.reduce((sum, bill) => sum + formatters.normalizeAmount(bill.amount), 0);
+      const paidCount = bills.filter((bill) => bill.status === 'paid').length;
+      const unpaidCount = bills.length - paidCount;
 
-      if (elements.fastAccessGrandTotal) {
-        elements.fastAccessGrandTotal.textContent = formatters.formatCurrency(billsTotal);
+      const statsEl = document.getElementById('expense-stats');
+      if (!statsEl) return;
+      statsEl.innerHTML = '';
+
+      if (!bills.length) {
+        statsEl.classList.add('hidden');
+        return;
       }
+      statsEl.classList.remove('hidden');
+
+      const stats = [
+        { label: t('totalExpense') || 'Total Expense', value: formatters.formatCurrency(billsTotal), tone: 'balance' },
+        { label: t('paid') || 'Paid', value: String(paidCount), tone: 'count' },
+        { label: t('unpaid') || 'Unpaid', value: String(unpaidCount), tone: 'interest' },
+      ];
+
+      stats.forEach((stat) => {
+        const card = document.createElement('div');
+        card.className = `credit-card-stat credit-card-stat-${stat.tone}`;
+        const label = document.createElement('span');
+        label.className = 'credit-card-stat-label';
+        label.textContent = stat.label;
+        const value = document.createElement('strong');
+        value.className = 'credit-card-stat-value';
+        value.textContent = stat.value;
+        card.append(label, value);
+        statsEl.append(card);
+      });
     };
 
     const sortBills = (billsToSort) => {
