@@ -106,6 +106,28 @@ const createTasksRouter = ({
     }
   });
 
+  // Purge old trash (called on login or by admin; removes tasks deleted > 30 days ago)
+  router.post('/tasks/trash/purge', async (req, res) => {
+    try {
+      await tasks.purgeOldDeletedTasks();
+      res.json({ success: true });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to purge old trash');
+      res.status(500).json({ error: 'Failed to purge old trash' });
+    }
+  });
+
+  // List deleted tasks (trash)
+  router.get('/tasks/trash', async (req, res) => {
+    try {
+      const deletedTasks = await tasks.listDeletedTasks(req.session.userId);
+      res.json({ tasks: deletedTasks });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to load trash');
+      res.status(500).json({ error: 'Failed to load trash' });
+    }
+  });
+
   router.get('/tasks/:id', async (req, res) => {
     try {
       const task = await tasks.getTaskForUser(req.params.id, req.session.userId);
@@ -510,6 +532,39 @@ const createTasksRouter = ({
     } catch (error) {
       logger.error({ err: error }, 'Failed to delete task');
       res.status(500).json({ error: 'Failed to delete task' });
+    }
+  });
+
+  // --- Trash (soft-delete) endpoints ---
+
+  // Restore a task from trash
+  router.post('/tasks/:id/restore', async (req, res) => {
+    const { id } = req.params;
+    try {
+      await tasks.restoreTask(id, req.session.userId);
+      const task = await tasks.getTaskForUser(id, req.session.userId);
+      if (!task) {
+        return res.status(404).json({ error: 'Task not found in trash' });
+      }
+      await clearTaskCachesForUsers(cache, [req.session.userId]);
+      emitTaskEventToUsers([req.session.userId], 'task:restored', { task });
+      res.json({ task });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to restore task');
+      res.status(500).json({ error: 'Failed to restore task' });
+    }
+  });
+
+  // Permanently delete a task from trash
+  router.delete('/tasks/:id/permanent', async (req, res) => {
+    const { id } = req.params;
+    try {
+      await tasks.permanentlyDeleteTask(id, req.session.userId);
+      await clearTaskCachesForUsers(cache, [req.session.userId]);
+      res.json({ success: true });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to permanently delete task');
+      res.status(500).json({ error: 'Failed to permanently delete task' });
     }
   });
 

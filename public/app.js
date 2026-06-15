@@ -55,6 +55,8 @@ const savePasswordSettings = document.getElementById('save-password-settings');
 const taskList = document.getElementById('task-list');
 const calendarSection = document.getElementById('calendar-section');
 const sprintsSection = document.getElementById('sprints-section');
+const trashSection = document.getElementById('trash-section');
+const trashList = document.getElementById('trash-list');
 const authMessage = document.getElementById('auth-message');
 const showLogin = document.getElementById('show-login');
 const showSignup = document.getElementById('show-signup');
@@ -190,7 +192,7 @@ const SAVED_VIEW_KEY = 'task-manager-current-view';
 const REMEMBER_ME_KEY = 'task-manager-remember-me';
 const rememberMeCheckbox = document.getElementById('remember-me');
 const rememberMeText = document.getElementById('remember-me-text');
-const VIEW_NAMES = new Set(['dashboard', 'notes', 'tasks', 'calendar', 'sprints', 'archived', 'tags', 'weather', 'credit-cards', 'admin']);
+const VIEW_NAMES = new Set(['dashboard', 'notes', 'tasks', 'calendar', 'sprints', 'archived', 'trash', 'tags', 'weather', 'credit-cards', 'admin']);
 const isAdminUser = () => currentUser?.username === 'admin';
 const isImpersonating = () => Boolean(currentUser?.impersonator);
 const getSavedView = () => {
@@ -368,6 +370,7 @@ const applyTranslations = () => {
   setText('#calendar-subtab', t('calendar'));
   setText('#sprints-subtab', t('sprints'));
   setText('#archived-subtab', t('archive'));
+  setText('#trash-subtab', t('trash'));
   setText('#tag-subtab', t('tag'));
   setText('#calendar-title', t('calendar'));
   setText('#calendar-today', t('calendarToday'));
@@ -930,7 +933,88 @@ const scheduleTaskReminders = (loadedTasks) => {
   });
 };
 
-const isTaskWorkspaceView = () => ['tasks', 'calendar', 'sprints', 'archived', 'tags'].includes(currentView);
+// --- Trash (deleted tasks) ---
+const loadTrashTasks = async () => {
+  if (!trashList) return;
+  trashList.innerHTML = '';
+  
+  const result = await request('/api/tasks/trash');
+  if (result.error) {
+    showStatusToast(result.error, 'error');
+    return;
+  }
+
+  const trashTasks = result.tasks || [];
+  if (!trashTasks.length) {
+    const empty = document.createElement('p');
+    empty.className = 'trash-empty';
+    empty.textContent = t('noTrashTasks');
+    trashList.append(empty);
+    return;
+  }
+
+  trashTasks.forEach((task) => {
+    const card = document.createElement('div');
+    card.className = 'trash-task-card';
+
+    const meta = document.createElement('div');
+    meta.className = 'trash-task-meta';
+    
+    const title = document.createElement('strong');
+    title.textContent = task.title;
+    
+    const deletedAt = document.createElement('span');
+    deletedAt.className = 'trash-task-date';
+    const deletedDate = new Date(task.deleted_at);
+    const daysLeft = Math.max(0, 30 - Math.floor((Date.now() - deletedDate.getTime()) / (24 * 60 * 60 * 1000)));
+    deletedAt.textContent = `${t('deletedOn')}: ${formatDateEST(task.deleted_at)} • ${daysLeft} ${t('daysLeft')}`;
+    
+    meta.append(title, deletedAt);
+
+    const actions = document.createElement('div');
+    actions.className = 'trash-task-actions';
+
+    const restoreBtn = document.createElement('button');
+    restoreBtn.type = 'button';
+    restoreBtn.className = 'secondary';
+    restoreBtn.textContent = t('restore');
+    restoreBtn.addEventListener('click', async () => {
+      restoreBtn.disabled = true;
+      const restoreResult = await request(`/api/tasks/${task.id}/restore`, { method: 'POST' });
+      if (restoreResult.error) {
+        showStatusToast(restoreResult.error, 'error');
+        restoreBtn.disabled = false;
+        return;
+      }
+      showStatusToast(t('taskRestored'));
+      loadTrashTasks();
+    });
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'secondary';
+    deleteBtn.style.color = 'var(--danger)';
+    deleteBtn.textContent = t('deletePermanently');
+    deleteBtn.addEventListener('click', async () => {
+      if (!confirm(t('permanentDeleteConfirm'))) return;
+      deleteBtn.disabled = true;
+      const delResult = await request(`/api/tasks/${task.id}/permanent`, { method: 'DELETE' });
+      if (delResult.error) {
+        showStatusToast(delResult.error, 'error');
+        deleteBtn.disabled = false;
+        return;
+      }
+      showStatusToast(t('taskPermanentlyDeleted'));
+      loadTrashTasks();
+    });
+
+    actions.append(restoreBtn, deleteBtn);
+    card.append(meta, actions);
+    trashList.append(card);
+  });
+};
+
+const isTaskWorkspaceView = () => ['tasks', 'calendar', 'sprints', 'archived', 'trash', 'tags'].includes(currentView);
 
 const setCurrentView = (view, { persist = true } = {}) => {
   const previousView = currentView;
@@ -981,7 +1065,7 @@ const showSection = () => {
   creditCardSection.classList.toggle('hidden', !showCreditCards);
   notesSection.classList.toggle('hidden', !showNotes);
   if (dashboardSection) dashboardSection.classList.toggle('hidden', !showDashboard);
-  floatingAddTask.classList.toggle('hidden', showDashboard || showAdmin || showCreditCards || showNotes || currentView === 'weather' || currentView === 'tags' || currentView === 'sprints');
+  floatingAddTask.classList.toggle('hidden', showDashboard || showAdmin || showCreditCards || showNotes || currentView === 'weather' || currentView === 'tags' || currentView === 'sprints' || currentView === 'trash');
 
   if (showDashboard) {
     if (window.dashboardModule) {
@@ -1012,14 +1096,16 @@ const showSection = () => {
   const showCalendar = currentView === 'calendar';
   const showSprints = currentView === 'sprints';
   const showArchive = currentView === 'archived';
+  const showTrash = currentView === 'trash';
   taskSubtabNav.classList.toggle('hidden', !showTaskWorkspace);
   setActiveTaskSubtab();
   weatherModule.hideQuoteWidget();
-  taskHeader.classList.toggle('hidden', showWeather || showTags || showCalendar || showSprints);
+  taskHeader.classList.toggle('hidden', showWeather || showTags || showCalendar || showSprints || showTrash);
   tagManager.classList.toggle('hidden', !showTags);
   calendarSection.classList.toggle('hidden', !showCalendar);
   sprintsSection?.classList.toggle('hidden', !(showSprints || showArchive));
-  taskList.classList.toggle('hidden', showWeather || showTags || showCalendar || showSprints);
+  trashSection?.classList.toggle('hidden', !showTrash);
+  taskList.classList.toggle('hidden', showWeather || showTags || showCalendar || showSprints || showTrash);
   weatherSection.classList.toggle('hidden', !showWeather);
 
   if (showWeather) {
@@ -1051,6 +1137,12 @@ const showSection = () => {
     taskForm.classList.add('hidden');
     loadTasks();
     sprintsModule.loadSprints({ archived: true });
+    return;
+  }
+
+  if (showTrash) {
+    taskForm.classList.add('hidden');
+    loadTrashTasks();
     return;
   }
 
@@ -1447,6 +1539,8 @@ const init = async () => {
     window.history.replaceState({}, document.title, window.location.pathname);
   }
   if (currentUser) connectRealtime();
+  // Auto-purge trash (tasks deleted > 30 days) on session start
+  if (currentUser) request('/api/tasks/trash/purge', { method: 'POST' }).catch(() => {});
 };
 
 // Real-time sync — keeps web and iOS WebView in lockstep.
@@ -1857,7 +1951,7 @@ const renderTasks = (tasks) => {
     const sectionHeading = document.createElement('div');
     sectionHeading.className = 'archive-section-heading';
     const sectionTitle = document.createElement('h3');
-    sectionTitle.textContent = t('archivedTasks') || 'Archived Tasks';
+    sectionTitle.textContent = t('tasks') || 'Tasks';
     sectionHeading.append(sectionTitle);
 
     const column = document.createElement('section');

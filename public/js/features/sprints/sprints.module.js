@@ -576,9 +576,7 @@
 
       const title = document.getElementById('sprints-title');
       if (title) {
-        title.textContent = archived
-          ? (t('archivedSprints') || 'Archived sprints')
-          : (t('sprints') || 'Sprints');
+        title.textContent = t('sprints') || 'Sprints';
       }
       if (openAddButton) {
         openAddButton.classList.toggle('hidden', archived);

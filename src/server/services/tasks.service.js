@@ -120,6 +120,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
          ON task_editor.sprint_id = tasks.sprint_id
         AND task_editor.user_id = ?
        WHERE tasks.archived = ?
+         AND tasks.deleted_at IS NULL
          AND (tasks.user_id = ? OR sprint.user_id = ? OR task_editor.user_id IS NOT NULL)
        ORDER BY ${TASK_PRIORITY_ORDER_SQL}`,
       [userId, userId, userId, userId, archived, userId, userId]
@@ -140,7 +141,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
 
   const listAllTasksForEmail = (userId) => allAsync(
     `SELECT * FROM tasks
-     WHERE user_id = ?
+     WHERE user_id = ? AND deleted_at IS NULL
      ORDER BY ${TASK_PRIORITY_ORDER_SQL}`,
     [userId]
   );
@@ -457,7 +458,33 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     return getTaskForUser(id, existingTask.user_id, { includeActivityHistory: false });
   };
 
-  const deleteTask = (id, userId) => runAsync('DELETE FROM tasks WHERE id = ? AND user_id = ?', [id, userId]);
+  const deleteTask = (id, userId) => runAsync(
+    'UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?',
+    [id, userId]
+  );
+
+  // Permanently remove a task from the trash
+  const permanentlyDeleteTask = (id, userId) => runAsync(
+    'DELETE FROM tasks WHERE id = ? AND user_id = ? AND deleted_at IS NOT NULL',
+    [id, userId]
+  );
+
+  // Restore a soft-deleted task back to the active list
+  const restoreTask = (id, userId) => runAsync(
+    'UPDATE tasks SET deleted_at = NULL WHERE id = ? AND user_id = ? AND deleted_at IS NOT NULL',
+    [id, userId]
+  );
+
+  // List soft-deleted tasks (trash) for a user
+  const listDeletedTasks = (userId) => allAsync(
+    `SELECT * FROM tasks WHERE user_id = ? AND deleted_at IS NOT NULL ORDER BY deleted_at DESC`,
+    [userId]
+  );
+
+  // Purge tasks that have been in trash for more than 30 days
+  const purgeOldDeletedTasks = () => runAsync(
+    `DELETE FROM tasks WHERE deleted_at IS NOT NULL AND deleted_at < CURRENT_TIMESTAMP - INTERVAL '30 days'`
+  );
 
   return {
     createTask,
@@ -468,11 +495,15 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     getAccessibleSprintForUser,
     getTagForUser,
     getTaskForUser,
+    listDeletedTasks,
     listTaskAccessUserIds,
     listAllTasksForEmail,
     listTags,
     listTasks,
     mergeTagIntoExisting,
+    permanentlyDeleteTask,
+    purgeOldDeletedTasks,
+    restoreTask,
     updateTag,
     updateTask,
   };

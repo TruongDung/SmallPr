@@ -943,6 +943,27 @@ body.theme-dark #user-area .nav-button.active-nav {
 .task-subtab[aria-selected="true"] {
   border-color: var(--border);
   background: var(--surface);
+}
+
+/* Drag-and-drop reordering for sub-tabs */
+.task-subtab[draggable="true"] {
+  cursor: grab;
+}
+
+.task-subtab[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.task-subtab.subtab-dragging {
+  opacity: 0.4;
+  box-shadow: 0 0 0 2px var(--primary);
+  border-radius: 8px;
+}
+
+.task-subtab.subtab-drag-over {
+  background: rgba(37, 99, 235, 0.08);
+  border-color: var(--primary);
+}
   color: var(--primary);
   font-weight: 700;
   box-shadow: 0 2px 8px var(--card-shadow);
@@ -9314,6 +9335,105 @@ body.theme-dark .notes-editor-actions button.secondary:hover {
 .archive-section-group {
   grid-column: 1 / -1;
   margin-bottom: 8px;
+}
+
+/* --- Trash section --- */
+.trash-section {
+  width: min(100%, 900px);
+  animation: fadeIn 0.3s ease;
+}
+
+.trash-header {
+  margin-bottom: 20px;
+}
+
+.trash-header h2 {
+  margin: 0 0 6px;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.trash-hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.trash-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.trash-empty {
+  color: var(--muted);
+  font-weight: 600;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.trash-task-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  opacity: 0.82;
+  transition: opacity 0.15s ease, border-color 0.15s ease;
+}
+
+.trash-task-card:hover {
+  opacity: 1;
+  border-color: var(--primary);
+}
+
+.trash-task-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.trash-task-meta strong {
+  font-size: 0.95rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trash-task-date {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.trash-task-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.trash-task-actions button {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .trash-task-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .trash-task-actions {
+    justify-content: flex-end;
+  }
 }
 
 #sprint-editor-hint {

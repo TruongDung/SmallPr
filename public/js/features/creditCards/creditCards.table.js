@@ -189,8 +189,6 @@
         });
       });
 
-      elements.list.append(createGrandTotalRow(cardsToRender));
-
       updateSortHeaders();
     };
 

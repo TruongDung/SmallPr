@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=cache-clear-20260611-sprint-header-hidden-1" />
+  <link rel="stylesheet" href="styles.css?v=cache-clear-20260611-subtab-drag-1" />
 </head>
 <body>
   <div class="container">
@@ -180,6 +180,7 @@
           <button id="calendar-subtab" class="task-subtab" type="button" role="tab" aria-selected="false" data-task-tab="calendar">Calendar</button>
           <button id="sprints-subtab" class="task-subtab" type="button" role="tab" aria-selected="false" data-task-tab="sprints">Sprints</button>
           <button id="archived-subtab" class="task-subtab" type="button" role="tab" aria-selected="false" data-task-tab="archived">Archive</button>
+          <button id="trash-subtab" class="task-subtab" type="button" role="tab" aria-selected="false" data-task-tab="trash">Trash</button>
           <button id="tag-subtab" class="task-subtab" type="button" role="tab" aria-selected="false" data-task-tab="tags">Tag</button>
         </div>
 
@@ -403,9 +404,17 @@
             <button id="open-add-sprint" type="button" class="primary task-action-icon" aria-label="Add Sprint" title="Add Sprint">+</button>
           </div>
           <div id="sprints-archived-heading" class="sprints-archived-heading hidden">
-            <h3 data-i18n-key="archivedSprints">Archived sprints</h3>
+            <h3 data-i18n-key="sprints">Sprints</h3>
           </div>
           <div id="sprints-list" class="sprints-list"></div>
+        </section>
+
+        <section id="trash-section" class="trash-section hidden" aria-labelledby="trash-title" role="tabpanel">
+          <div class="trash-header">
+            <h2 id="trash-title">Trash</h2>
+            <p class="trash-hint">Deleted tasks are permanently removed after 30 days.</p>
+          </div>
+          <div id="trash-list" class="trash-list"></div>
         </section>
 
         <div id="task-list" class="task-list"></div>
@@ -1454,6 +1463,7 @@
   <script src="/socket.io/socket.io.js"></script>
   <script src="js/monitoring.js?v=cache-clear-20260603-1"></script>
   <script src="js/i18n.js?v=cache-clear-20260611-new-badge-1"></script>
+  <script src="js/subtabDragSort.js?v=1"></script>
   <script src="app.js?v=cache-clear-20260611-new-badge-1"></script>
 </body>
 </html>
