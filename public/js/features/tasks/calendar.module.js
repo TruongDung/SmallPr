@@ -128,12 +128,21 @@
       
       // Add lunar badge if enabled
       if (showLunar && window.LunarCalendar) {
-        const lunarInfo = window.LunarCalendar.getKeyLunarDates(date);
-        if (lunarInfo) {
+        const lunar = window.LunarCalendar.toLunar(date);
+        if (lunar) {
           const badge = document.createElement('span');
           badge.className = 'calendar-lunar-badge';
-          badge.textContent = lunarInfo.label;
-          badge.title = `Lunar calendar: ${lunarInfo.label}`;
+          // Show full label on 1st and 15th, just the day number otherwise
+          if (lunar.lunar_day === 1) {
+            badge.textContent = `${lunar.lunar_day}/${lunar.lunar_month}`;
+            badge.classList.add('calendar-lunar-badge-key');
+          } else if (lunar.lunar_day === 15) {
+            badge.textContent = `${lunar.lunar_day}/${lunar.lunar_month}`;
+            badge.classList.add('calendar-lunar-badge-key');
+          } else {
+            badge.textContent = String(lunar.lunar_day);
+          }
+          badge.title = `Lunar: ${lunar.lunar_day}/${lunar.lunar_month} (${lunar.lunar_year})`;
           title.append(' ');
           title.append(badge);
         }
