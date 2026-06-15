@@ -680,7 +680,16 @@
 
     const renderAll = (payload) => {
       grid.innerHTML = '';
-      const order = (payload.preferences?.cards || [])
+      const savedCards = payload.preferences?.cards || [];
+      // Merge: include any new cards from CARD_DEFINITIONS that aren't in saved prefs
+      const savedIds = new Set(savedCards.map((c) => c.id));
+      const merged = [...savedCards];
+      CARD_DEFINITIONS.forEach((def, index) => {
+        if (!savedIds.has(def.id)) {
+          merged.push({ id: def.id, visible: true, order: merged.length + index });
+        }
+      });
+      const order = merged
         .filter((c) => c.visible)
         .sort((a, b) => a.order - b.order);
       for (const entry of order) {

@@ -3540,16 +3540,36 @@ const dashboardModule = window.DashboardModule.create({
     showSection();
     if (typeof notesModule.addNote === 'function') notesModule.addNote();
   },
-  navigateTo: ({ view, taskId, noteId }) => {
+  navigateTo: async ({ view, taskId, noteId }) => {
     if (!view) return;
     setCurrentView(view);
     showSection();
     if (taskId && view === 'tasks') {
-      const task = tasks.find((item) => Number(item.id) === Number(taskId));
-      if (task) showPreviewTaskModal(task);
+      // Wait for tasks to load, then open the preview.
+      // If the task is already in memory, use it; otherwise fetch it.
+      const tryOpen = () => {
+        const task = tasks.find((item) => Number(item.id) === Number(taskId));
+        if (task) {
+          showPreviewTaskModal(task);
+          return true;
+        }
+        return false;
+      };
+      if (!tryOpen()) {
+        // Tasks might still be loading from showSection(); wait and retry
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        if (!tryOpen()) {
+          // Last resort: fetch the task directly
+          const result = await request(`/api/tasks/${taskId}`);
+          if (result && result.task) {
+            showPreviewTaskModal(result.task);
+          }
+        }
+      }
     }
     if (noteId && view === 'notes') {
-      notesModule.openNoteById?.(noteId);
+      // Notes might still be loading; give it time
+      setTimeout(() => notesModule.openNoteById?.(noteId), 500);
     }
   },
 });
