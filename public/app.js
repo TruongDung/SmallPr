@@ -543,6 +543,19 @@ const isTaskOverdue = (task) => {
   return Boolean(dueDate && dueDate < getTodayDateKey() && taskStatus(task) !== 'done');
 };
 
+// "NEW" is a derived UI state, not a stored flag: a task counts as new when it
+// was created within the last 24 hours. The badge disappears on its own once
+// the timestamp ages past the window — no schema or background job needed.
+const NEW_TASK_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+const isTaskNew = (task) => {
+  if (!task?.created_at || Number(task.archived)) return false;
+  if (taskStatus(task) === 'done') return false;
+  const createdAt = new Date(task.created_at).getTime();
+  if (Number.isNaN(createdAt)) return false;
+  return Date.now() - createdAt < NEW_TASK_WINDOW_MS;
+};
+
 const savePreviewChecklistField = async (field, container) => {
   if (!pendingPreviewTask) return;
   const value = sanitizeRichText(container.innerHTML);
@@ -1954,6 +1967,13 @@ const createTaskCard = (task) => {
     }
     const badges = document.createElement('div');
     badges.className = 'task-badges';
+    if (isTaskNew(task)) {
+      const newBadge = document.createElement('span');
+      newBadge.className = 'new-badge';
+      newBadge.textContent = t('newBadge');
+      newBadge.title = t('newBadgeHint');
+      badges.append(newBadge);
+    }
     const priority = document.createElement('span');
     priority.className = `priority-badge priority-${task.priority || 'medium'}`;
     priority.textContent = priorityLabel(task.priority);

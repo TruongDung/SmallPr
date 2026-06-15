@@ -2010,6 +2010,34 @@ body.theme-dark .tag-badge {
   color: #99f6e4;
 }
 
+/* "NEW" badge — derived from created_at, fades in then gently pulses to draw
+   attention to recently created tasks. */
+.new-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #ffffff;
+  background: linear-gradient(135deg, #16a34a 0%, #059669 100%);
+  box-shadow: 0 1px 4px rgba(5, 150, 105, 0.4);
+  animation: newBadgePulse 2s ease-in-out infinite;
+}
+
+@keyframes newBadgePulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.06); opacity: 0.85; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .new-badge { animation: none; }
+}
+
+body.theme-dark .new-badge {
+  background: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
+}
+
 .status-todo {
   background: #eef2ff;
   color: #3730a3;
@@ -3825,6 +3853,107 @@ body.theme-dark .audit-log-pagination button.secondary:focus-visible:not(:disabl
 .icon-btn.danger:hover {
   background: var(--danger);
   color: white;
+}
+
+/* Stats summary bar — at-a-glance totals above the card table */
+.credit-card-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.credit-card-stats.hidden {
+  display: none;
+}
+
+.credit-card-stat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.05);
+  overflow: hidden;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.credit-card-stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.1);
+}
+
+.credit-card-stat::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 14px 0 0 14px;
+}
+
+.credit-card-stat-balance::before {
+  background: linear-gradient(180deg, #2563eb, #1d4ed8);
+}
+
+.credit-card-stat-interest::before {
+  background: linear-gradient(180deg, #dc2626, #b91c1c);
+}
+
+.credit-card-stat-count::before {
+  background: linear-gradient(180deg, #16a34a, #059669);
+}
+
+.credit-card-stat-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.credit-card-stat-value {
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.credit-card-stat-balance .credit-card-stat-value {
+  color: #1d4ed8;
+}
+
+.credit-card-stat-interest .credit-card-stat-value {
+  color: #dc2626;
+}
+
+body.theme-dark .credit-card-stat-balance .credit-card-stat-value {
+  color: #60a5fa;
+}
+
+body.theme-dark .credit-card-stat-interest .credit-card-stat-value {
+  color: #f87171;
+}
+
+@media (max-width: 640px) {
+  .credit-card-stats {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .credit-card-stat {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+  }
+
+  .credit-card-stat-value {
+    font-size: 1.2rem;
+  }
 }
 
 /* Table */
@@ -9179,6 +9308,7 @@ body.theme-dark .notes-editor-actions button.secondary:hover {
 }
 
 .archive-section-group {
+  grid-column: 1 / -1;
   margin-bottom: 8px;
 }
 

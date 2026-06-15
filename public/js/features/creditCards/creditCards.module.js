@@ -270,8 +270,47 @@
       load();
     };
 
+    const renderCardStats = (cardsToRender = []) => {
+      const statsEl = document.getElementById('credit-card-stats');
+      if (!statsEl) return;
+
+      const totalBalance = cardsToRender.reduce((sum, card) => sum + formatters.normalizeAmount(card.total_balance), 0);
+      const totalInterest = cardsToRender.reduce((sum, card) => sum + formatters.normalizeAmount(card.interest_charge), 0);
+      const cardCount = cardsToRender.length;
+
+      const stats = [
+        { key: 'totalBalance', label: t('totalBalance') || 'Total Balance', value: formatters.formatCurrency(totalBalance), tone: 'balance' },
+        { key: 'interestCharge', label: t('interestCharge') || 'Interest', value: formatters.formatCurrency(totalInterest), tone: 'interest' },
+        { key: 'cards', label: t('creditCardSubTab') || 'Cards', value: String(cardCount), tone: 'count' },
+      ];
+
+      statsEl.innerHTML = '';
+      if (!cardCount) {
+        statsEl.classList.add('hidden');
+        return;
+      }
+      statsEl.classList.remove('hidden');
+
+      stats.forEach((stat) => {
+        const card = document.createElement('div');
+        card.className = `credit-card-stat credit-card-stat-${stat.tone}`;
+
+        const label = document.createElement('span');
+        label.className = 'credit-card-stat-label';
+        label.textContent = stat.label;
+
+        const value = document.createElement('strong');
+        value.className = 'credit-card-stat-value';
+        value.textContent = stat.value;
+
+        card.append(label, value);
+        statsEl.append(card);
+      });
+    };
+
     const render = (cardsToRender = cards) => {
       cardTable.render(cardsToRender);
+      renderCardStats(cardsToRender);
     };
 
     const renderFastAccessLinks = () => {
