@@ -8764,6 +8764,10 @@ body.theme-dark .notes-editor-actions button.secondary:hover {
   margin-bottom: 16px;
 }
 
+.sprints-header.hidden {
+  display: none;
+}
+
 .sprints-header h2,
 .sprint-list-header h2 {
   margin: 0;
