@@ -41,6 +41,13 @@
     };
 
     const loadSprints = async ({ archived = false, renderView = true } = {}) => {
+      // Immediately hide/show the "+" button to avoid a flash while loading.
+      const sprintsHeader = document.querySelector('.sprints-header');
+      if (sprintsHeader) sprintsHeader.classList.toggle('hidden', archived);
+      if (openAddButton) openAddButton.classList.toggle('hidden', archived);
+      const archivedHeading = document.getElementById('sprints-archived-heading');
+      if (archivedHeading) archivedHeading.classList.toggle('hidden', !archived);
+
       const [sprintsResult, tasksResult] = await Promise.all([
         request(`/api/sprints${archived ? '?archived=true' : ''}`),
         request('/api/tasks'),
