@@ -690,7 +690,14 @@
       updatePreview();
     };
 
-    return { applyTranslations, bind, load, deleteNote, reset };
+    const openNoteById = (id) => {
+      const note = notes.find((entry) => Number(entry.id) === Number(id));
+      if (note) {
+        selectNote(note.id);
+      }
+    };
+
+    return { applyTranslations, bind, load, deleteNote, openNoteById, reset };
   };
 
   window.NotesModule = { create };

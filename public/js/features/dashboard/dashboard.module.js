@@ -9,6 +9,7 @@
 (function () {
   const CARD_DEFINITIONS = [
     { id: 'todaysTasks',       titleKey: 'cardTodaysTasks',       canHide: true },
+    { id: 'activeSprints',     titleKey: 'cardActiveSprints',     canHide: true },
     { id: 'taskStatusSummary', titleKey: 'cardTaskStatusSummary', canHide: true },
     { id: 'bills',             titleKey: 'cardBills',             canHide: true },
     { id: 'creditCards',       titleKey: 'cardCreditCards',       canHide: true },
@@ -590,8 +591,60 @@
       return section;
     };
 
+    const renderActiveSprintsCard = (data) => {
+      const shell = cardShell('activeSprints');
+      const { section, header } = shell;
+
+      const link = document.createElement('button');
+      link.type = 'button';
+      link.className = 'dashboard-link';
+      link.textContent = t('viewAllSprints') || 'View all';
+      link.addEventListener('click', () => navigateTo({ view: 'sprints' }));
+      header.append(link);
+
+      const sprints = data.sprints || [];
+      if (!sprints.length) {
+        renderEmpty(section, t('dashboardEmptySprints') || 'No active sprints.');
+        return section;
+      }
+
+      const body = document.createElement('div');
+      body.className = 'dashboard-card-body';
+      const list = document.createElement('ul');
+      list.className = 'dashboard-sprint-list';
+      list.setAttribute('role', 'list');
+
+      sprints.forEach((sprint) => {
+        const li = document.createElement('li');
+        li.className = 'dashboard-sprint-row';
+        li.dataset.status = sprint.status;
+        li.addEventListener('click', () => navigateTo({ view: 'sprints' }));
+
+        const name = document.createElement('span');
+        name.className = 'dashboard-sprint-name';
+        name.textContent = sprint.name;
+
+        const meta = document.createElement('span');
+        meta.className = 'dashboard-sprint-meta';
+        const percent = sprint.task_count ? Math.round((sprint.done_count / sprint.task_count) * 100) : 0;
+        meta.textContent = `${sprint.done_count}/${sprint.task_count} (${percent}%)`;
+
+        const badge = document.createElement('span');
+        badge.className = `dashboard-sprint-badge dashboard-sprint-badge-${sprint.status}`;
+        badge.textContent = t(`sprint_${sprint.status}`) || sprint.status;
+
+        li.append(name, badge, meta);
+        list.append(li);
+      });
+
+      body.append(list);
+      section.append(body);
+      return section;
+    };
+
     const RENDERERS = {
       todaysTasks:       renderTodaysTasksCard,
+      activeSprints:     renderActiveSprintsCard,
       taskStatusSummary: renderTaskStatusCard,
       recentNotes:       renderRecentNotesCard,
       bills:             renderBillsCard,

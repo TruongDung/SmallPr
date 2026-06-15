@@ -374,6 +374,33 @@ const wrapSettled = async (label, loader) => {
   }
 };
 
+const loadActiveSprints = async ({ allAsync, userId }) => {
+  const rows = await allAsync(
+    `SELECT s.id, s.name, s.goal, s.status, s.start_date, s.end_date,
+            (SELECT COUNT(*) FROM tasks t WHERE t.sprint_id = s.id AND t.archived = 0 AND t.deleted_at IS NULL) AS task_count,
+            (SELECT COUNT(*) FROM tasks t WHERE t.sprint_id = s.id AND t.archived = 0 AND t.deleted_at IS NULL AND t.status = 'done') AS done_count
+     FROM sprints s
+     LEFT JOIN sprint_editors se ON se.sprint_id = s.id AND se.user_id = ?
+     WHERE s.archived = 0
+       AND (s.user_id = ? OR se.user_id IS NOT NULL)
+       AND s.status IN ('active', 'planned')
+     ORDER BY CASE s.status WHEN 'active' THEN 0 ELSE 1 END, s.start_date DESC
+     LIMIT 5`,
+    [userId, userId]
+  );
+  return {
+    sprints: rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      status: row.status,
+      start_date: row.start_date,
+      end_date: row.end_date,
+      task_count: Number(row.task_count) || 0,
+      done_count: Number(row.done_count) || 0,
+    })),
+  };
+};
+
 const createDashboardService = ({ allAsync }) => {
   const loadDashboard = async (userId, { tz, dueSoonDays } = {}) => {
     const { timezone, fallback } = resolveTimezone(tz);
@@ -389,6 +416,7 @@ const createDashboardService = ({ allAsync }) => {
       wrapSettled('creditCards',       () => loadCreditCardSummary(ctx)),
       wrapSettled('weather',           () => loadWeatherCard(ctx)),
       wrapSettled('dailyQuote',        () => loadDailyQuoteCard()),
+      wrapSettled('activeSprints',     () => loadActiveSprints(ctx)),
     ]);
 
     const cards = {};

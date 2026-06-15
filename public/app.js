@@ -3540,10 +3540,17 @@ const dashboardModule = window.DashboardModule.create({
     showSection();
     if (typeof notesModule.addNote === 'function') notesModule.addNote();
   },
-  navigateTo: ({ view }) => {
+  navigateTo: ({ view, taskId, noteId }) => {
     if (!view) return;
     setCurrentView(view);
     showSection();
+    if (taskId && view === 'tasks') {
+      const task = tasks.find((item) => Number(item.id) === Number(taskId));
+      if (task) showPreviewTaskModal(task);
+    }
+    if (noteId && view === 'notes') {
+      notesModule.openNoteById?.(noteId);
+    }
   },
 });
 window.dashboardModule = dashboardModule;

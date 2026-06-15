@@ -4072,6 +4072,22 @@ body.theme-dark .credit-card-stat-interest .credit-card-stat-value {
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
 }
 
+/* Highlight rows where interest charged > 0 */
+.credit-card-row-has-interest td {
+  background: rgba(220, 38, 38, 0.04);
+  border-color: rgba(220, 38, 38, 0.2);
+}
+
+.credit-card-row-has-interest td:first-child {
+  border-left-color: #dc2626;
+  border-left-width: 3px;
+}
+
+body.theme-dark .credit-card-row-has-interest td {
+  background: rgba(248, 113, 113, 0.06);
+  border-color: rgba(248, 113, 113, 0.2);
+}
+
 .credit-card-table td {
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
@@ -7212,6 +7228,74 @@ button.related-tasks-chip-name-link:focus-visible {
 .dashboard-task-title { font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dashboard-task-meta  { min-width: 0; font-size: 0.78rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dashboard-task-done  { min-width: 36px; }
+
+/* Sprint card in dashboard */
+.dashboard-sprint-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.dashboard-sprint-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.dashboard-sprint-row:hover {
+  background: var(--hover-bg);
+  border-color: var(--primary);
+}
+
+.dashboard-sprint-row[data-status="active"] {
+  box-shadow: inset 4px 0 0 var(--primary);
+}
+
+.dashboard-sprint-row[data-status="planned"] {
+  box-shadow: inset 4px 0 0 #6b7280;
+}
+
+.dashboard-sprint-name {
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-sprint-meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.dashboard-sprint-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.dashboard-sprint-badge-active {
+  background: rgba(37, 99, 235, 0.1);
+  color: #2563eb;
+}
+
+.dashboard-sprint-badge-planned {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
 
 /* Status Summary -------------------------------------------------------- */
 

@@ -76,7 +76,7 @@
       row.className = className;
 
       const cell = document.createElement('td');
-      cell.colSpan = 6;
+      cell.colSpan = 5;
 
       const inner = document.createElement('div');
       inner.className = 'credit-card-summary-inner';
@@ -122,7 +122,7 @@
       if (!cardsToRender.length) {
         const row = document.createElement('tr');
         const cell = document.createElement('td');
-        cell.colSpan = 6;
+        cell.colSpan = 5;
         cell.className = 'credit-card-empty';
         cell.textContent = t('noCreditCards');
         row.append(cell);
@@ -136,16 +136,15 @@
 
         group.cards.forEach((card) => {
           const row = document.createElement('tr');
+          if (getCardInterestCharge(card) > 0) {
+            row.classList.add('credit-card-row-has-interest');
+          }
 
           const nameCell = document.createElement('td');
           nameCell.dataset.label = t('cardName');
           const name = document.createElement('strong');
           name.textContent = card.name;
           nameCell.append(name);
-
-          const issuerCell = document.createElement('td');
-          issuerCell.dataset.label = t('creditCardIssuer');
-          issuerCell.textContent = formatters.formatIssuer(card.issuer);
 
           const balanceCell = document.createElement('td');
           balanceCell.dataset.label = t('totalBalance');
@@ -184,7 +183,7 @@
 
           actions.append(editButton, deleteButton);
           actionsCell.append(actions);
-          row.append(nameCell, issuerCell, balanceCell, interestChargeCell, closingDateCell, actionsCell);
+          row.append(nameCell, balanceCell, interestChargeCell, closingDateCell, actionsCell);
           elements.list.append(row);
         });
       });
@@ -222,22 +221,20 @@
       const headerCells = document.querySelectorAll('.credit-card-table th');
       const labels = [
         t('cardName'),
-        t('creditCardIssuer'),
         t('totalBalance'),
         t('interestCharge'),
         t('closingDate'),
         t('actions'),
       ];
       const sortableHeaders = {
-        1: 'issuer',
-        2: 'balance',
-        3: 'interestCharge',
-        4: 'closingDate',
+        1: 'balance',
+        2: 'interestCharge',
+        3: 'closingDate',
       };
 
       headerCells.forEach((cell, index) => {
         cell.innerHTML = '';
-        cell.classList.toggle('credit-card-table-nowrap', index === 3);
+        cell.classList.toggle('credit-card-table-nowrap', index === 2);
         if (sortableHeaders[index]) {
           cell.append(createSortableHeader(sortableHeaders[index], labels[index], getCards));
         } else {
