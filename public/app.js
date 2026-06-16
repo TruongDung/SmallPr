@@ -2059,15 +2059,15 @@ const createTaskCard = (task) => {
       recurringBadge.title = task.recurrence_rule_status === 'paused' ? 'Recurring task paused' : 'Recurring task';
       title.append(' ', recurringBadge);
     }
-    const badges = document.createElement('div');
-    badges.className = 'task-badges';
     if (isTaskNew(task)) {
       const newBadge = document.createElement('span');
       newBadge.className = 'new-badge';
       newBadge.textContent = t('newBadge');
       newBadge.title = t('newBadgeHint');
-      badges.append(newBadge);
+      title.append(' ', newBadge);
     }
+    const badges = document.createElement('div');
+    badges.className = 'task-badges';
     const priority = document.createElement('span');
     priority.className = `priority-badge priority-${task.priority || 'medium'}`;
     priority.textContent = priorityLabel(task.priority);
