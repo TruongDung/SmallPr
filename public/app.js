@@ -2103,14 +2103,22 @@ const createTaskCard = (task) => {
     dueDate.textContent = `${t('dueDate')}: ${getTaskDueDateKey(task)}`;
 
     const attachment = document.createElement('a');
-    if ((task.attachment_data || task.has_attachment) && task.attachment_name) {
+    if ((task.attachment_data || task.has_attachment || task.attachment_url) && task.attachment_name) {
       attachment.className = 'task-attachment';
-      attachment.href = task.attachment_data || '#';
-      attachment.download = task.attachment_name;
-      attachment.textContent = `${t('attachment')}: ${task.attachment_name}`;
-      if (isPdfAttachment(task) || isImageAttachment(task)) {
+      if (task.attachment_url) {
+        // File is stored in Google Drive — open the Drive link
+        attachment.href = task.attachment_url;
+        attachment.target = '_blank';
+        attachment.rel = 'noopener noreferrer';
+        attachment.textContent = `${t('attachment')}: ${task.attachment_name}`;
+      } else {
+        attachment.href = task.attachment_data || '#';
+        attachment.download = task.attachment_name;
+        attachment.textContent = `${t('attachment')}: ${task.attachment_name}`;
+      }
+      if (!task.attachment_url && (isPdfAttachment(task) || isImageAttachment(task))) {
         attachAttachmentPreviewHandler(attachment, task);
-      } else if (!task.attachment_data) {
+      } else if (!task.attachment_url && !task.attachment_data) {
         // Non-previewable file without loaded data: fetch on click, then download.
         attachment.addEventListener('click', async (event) => {
           event.preventDefault();

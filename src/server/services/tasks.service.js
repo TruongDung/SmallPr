@@ -133,7 +133,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     // fetched on demand through getTaskForUser (GET /api/tasks/:id).
     const lightRows = rows.map(({ attachment_data, ...rest }) => ({
       ...rest,
-      has_attachment: Boolean(attachment_data),
+      has_attachment: Boolean(attachment_data || rest.attachment_drive_id),
     }));
 
     return attachRelatedTasks(userId, lightRows, { includeActivityHistory: false });
@@ -322,15 +322,17 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     nextOccurrenceDate,
     relatedTaskIds,
     sprintId,
+    attachmentDriveId,
+    attachmentUrl,
   }) => {
     const result = await runAsync(
       `INSERT INTO tasks (
         user_id, title, tag, description, comment, priority, status, completed, time_spent_minutes, due_date, reminder_at,
-        attachment_name, attachment_type, attachment_data, attachment_size,
+        attachment_name, attachment_type, attachment_data, attachment_size, attachment_drive_id, attachment_url,
         is_recurring, recurrence_pattern, recurrence_interval, recurrence_days, recurrence_timezone,
         recurrence_end_date, recurrence_occurrence_limit, recurring_rule_id, recurrence_occurrence_index,
         parent_task_id, next_occurrence_date, sprint_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`,
       [
         userId,
         title,
@@ -347,6 +349,8 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         attachment?.type || null,
         attachment?.data || null,
         attachment?.size || 0,
+        attachmentDriveId || null,
+        attachmentUrl || null,
         isRecurring || false,
         recurrencePattern || null,
         recurrenceInterval || null,
@@ -383,6 +387,8 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     reminderAt,
     hasAttachmentUpdate,
     attachment,
+    attachmentDriveId,
+    attachmentUrl,
     isRecurring,
     recurrencePattern,
     recurrenceInterval,
@@ -412,6 +418,8 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         attachment_type = ?,
         attachment_data = ?,
         attachment_size = ?,
+        attachment_drive_id = ?,
+        attachment_url = ?,
         is_recurring = ?,
         recurrence_pattern = ?,
         recurrence_interval = ?,
@@ -438,6 +446,8 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         hasAttachmentUpdate ? attachment?.type || null : existingTask.attachment_type,
         hasAttachmentUpdate ? attachment?.data || null : existingTask.attachment_data,
         hasAttachmentUpdate ? attachment?.size || 0 : existingTask.attachment_size,
+        hasAttachmentUpdate ? (attachmentDriveId || null) : existingTask.attachment_drive_id,
+        hasAttachmentUpdate ? (attachmentUrl || null) : existingTask.attachment_url,
         isRecurring !== undefined ? isRecurring : existingTask.is_recurring,
         recurrencePattern !== undefined ? recurrencePattern : existingTask.recurrence_pattern,
         recurrenceInterval !== undefined ? recurrenceInterval : existingTask.recurrence_interval,

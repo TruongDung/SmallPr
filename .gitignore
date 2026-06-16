@@ -4,3 +4,6 @@ data.db
 tmp/*.log
 .kiro/settings/mcp.json
 mcp-servers/
+
+# Google service account credentials
+google-service-account.json

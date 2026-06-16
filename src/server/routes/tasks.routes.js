@@ -6,6 +6,7 @@ const { createAuditContext } = require('../services/auditLog.service');
 const { createTasksService } = require('../services/tasks.service');
 const { createEmailImportService } = require('../services/emailImport.service');
 const { createRecurrenceService } = require('../services/recurrence.service');
+const googleDrive = require('../services/googleDrive.service');
 const { emitToUser } = require('../realtime');
 const {
   validateCreateTask,
@@ -354,6 +355,20 @@ const createTasksRouter = ({
         return res.status(404).json({ error: sprintAccess.error });
       }
 
+      // Upload attachment to Google Drive if enabled
+      if (taskInput.attachment?.data && googleDrive.isEnabled()) {
+        const driveResult = await googleDrive.uploadFile({
+          fileName: taskInput.attachment.name,
+          mimeType: taskInput.attachment.type || 'application/octet-stream',
+          data: taskInput.attachment.data,
+        });
+        if (driveResult) {
+          taskInput.attachment.data = null;
+          taskInput.attachmentDriveId = driveResult.fileId;
+          taskInput.attachmentUrl = driveResult.webViewLink;
+        }
+      }
+
       const task = await tasks.createTask({
         userId: req.session.userId,
         ...taskInput,
@@ -441,6 +456,25 @@ const createTasksRouter = ({
       }
 
       const previousAccessUserIds = await tasks.listTaskAccessUserIds(id);
+
+      // Upload attachment to Google Drive if enabled (on update)
+      if (taskInput.hasAttachmentUpdate && taskInput.attachment?.data && googleDrive.isEnabled()) {
+        const driveResult = await googleDrive.uploadFile({
+          fileName: taskInput.attachment.name,
+          mimeType: taskInput.attachment.type || 'application/octet-stream',
+          data: taskInput.attachment.data,
+        });
+        if (driveResult) {
+          taskInput.attachment.data = null;
+          taskInput.attachmentDriveId = driveResult.fileId;
+          taskInput.attachmentUrl = driveResult.webViewLink;
+          // Delete old Drive file if replacing
+          if (task.attachment_drive_id) {
+            googleDrive.deleteFile(task.attachment_drive_id).catch(() => {});
+          }
+        }
+      }
+
       const updatedTask = await tasks.updateTask({
         id,
         userId: req.session.userId,
