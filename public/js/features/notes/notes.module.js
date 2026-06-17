@@ -526,42 +526,6 @@
         });
       }
 
-      // Paste clipboard contents onto a new last line of the note body.
-      if (pasteButton) {
-        pasteButton.addEventListener('click', async () => {
-          // Nothing to paste into until a note is open in the editor.
-          if (editorForm.classList.contains('hidden')) return;
-
-          let text = '';
-          try {
-            text = await navigator.clipboard.readText();
-          } catch (_error) {
-            // Silently fail on iOS or when clipboard read is blocked.
-            // No need to show error message - just do nothing.
-            return;
-          }
-          
-          if (!text) return;
-
-          // Append on a fresh last line, adding a separating newline only when
-          // the body is non-empty and doesn't already end with one.
-          const current = bodyInput.value;
-          const needsNewline = current.length > 0 && !current.endsWith('\n');
-          bodyInput.value = current + (needsNewline ? '\n' : '') + text;
-
-          // Move the caret to the end so the user continues after the paste.
-          bodyInput.focus();
-          const end = bodyInput.value.length;
-          bodyInput.setSelectionRange(end, end);
-
-          // Persist and refresh the preview, mirroring the input handler.
-          scheduleSave();
-          if (showPreview) {
-            updatePreview();
-          }
-        });
-      }
-
       // --- OCR: detect image paste and extract text ---
       const ocrBar = document.getElementById('note-ocr-bar');
       const ocrStatus = document.getElementById('note-ocr-status');
@@ -593,11 +557,10 @@
       ocrExtractBtn?.addEventListener('click', insertOcrText);
       ocrDismissBtn?.addEventListener('click', hideOcrBar);
 
+      // Handle Ctrl+V / Cmd+V image paste directly on the textarea
       bodyInput.addEventListener('paste', async (event) => {
-        // Only handle if an image is in the clipboard
         const items = event.clipboardData?.items;
         if (!items) return;
-
         let imageFile = null;
         for (const item of items) {
           if (item.type.startsWith('image/')) {
@@ -605,35 +568,22 @@
             break;
           }
         }
-        if (!imageFile) return; // Normal text paste — let it proceed naturally.
-
-        // Don't insert the image blob into the textarea
+        if (!imageFile) return;
         event.preventDefault();
-
-        // Check if Tesseract is available
-        if (!window.Tesseract) {
-          // Tesseract not loaded — silently skip
-          return;
-        }
-
-        // Show the OCR bar with progress
+        if (!window.Tesseract) return;
         ocrBar?.classList.remove('hidden');
         ocrExtractBtn?.classList.add('hidden');
         ocrDismissBtn?.classList.remove('hidden');
         if (ocrStatus) ocrStatus.textContent = 'Detecting text in image...';
-
         try {
           const result = await window.Tesseract.recognize(imageFile, 'eng+vie', {
             logger: (info) => {
               if (info.status === 'recognizing text' && ocrStatus) {
-                const percent = Math.round((info.progress || 0) * 100);
-                ocrStatus.textContent = `Extracting text... ${percent}%`;
+                ocrStatus.textContent = `Extracting text... ${Math.round((info.progress || 0) * 100)}%`;
               }
             },
           });
-
           const text = (result.data?.text || '').trim();
-
           if (text) {
             ocrPendingText = text;
             if (ocrStatus) ocrStatus.textContent = `Found ${text.split('\n').length} line(s) of text.`;
@@ -642,11 +592,95 @@
             if (ocrStatus) ocrStatus.textContent = 'No text found in image.';
             setTimeout(hideOcrBar, 3000);
           }
-        } catch (error) {
+        } catch (_err) {
           if (ocrStatus) ocrStatus.textContent = 'OCR failed. Try again.';
           setTimeout(hideOcrBar, 3000);
         }
       });
+
+      // Paste clipboard contents onto a new last line of the note body.
+      if (pasteButton) {
+        pasteButton.addEventListener('click', async () => {
+          // Nothing to paste into until a note is open in the editor.
+          if (editorForm.classList.contains('hidden')) return;
+
+          // Try reading clipboard items (supports images + text)
+          let handledImage = false;
+          try {
+            if (navigator.clipboard.read) {
+              const items = await navigator.clipboard.read();
+              for (const item of items) {
+                // Check for image types first
+                const imageType = item.types.find((type) => type.startsWith('image/'));
+                if (imageType && window.Tesseract) {
+                  const blob = await item.getType(imageType);
+                  handledImage = true;
+                  // Trigger OCR
+                  ocrBar?.classList.remove('hidden');
+                  ocrExtractBtn?.classList.add('hidden');
+                  ocrDismissBtn?.classList.remove('hidden');
+                  if (ocrStatus) ocrStatus.textContent = 'Detecting text in image...';
+                  try {
+                    const result = await window.Tesseract.recognize(blob, 'eng+vie', {
+                      logger: (info) => {
+                        if (info.status === 'recognizing text' && ocrStatus) {
+                          const percent = Math.round((info.progress || 0) * 100);
+                          ocrStatus.textContent = `Extracting text... ${percent}%`;
+                        }
+                      },
+                    });
+                    const ocrText = (result.data?.text || '').trim();
+                    if (ocrText) {
+                      ocrPendingText = ocrText;
+                      if (ocrStatus) ocrStatus.textContent = `Found ${ocrText.split('\n').length} line(s) of text.`;
+                      ocrExtractBtn?.classList.remove('hidden');
+                    } else {
+                      if (ocrStatus) ocrStatus.textContent = 'No text found in image.';
+                      setTimeout(hideOcrBar, 3000);
+                    }
+                  } catch (_ocrError) {
+                    if (ocrStatus) ocrStatus.textContent = 'OCR failed. Try again.';
+                    setTimeout(hideOcrBar, 3000);
+                  }
+                  break;
+                }
+              }
+            }
+          } catch (_error) {
+            // clipboard.read() not supported or permission denied — fall through to readText
+          }
+
+          if (handledImage) return;
+
+          // Fall back to text paste
+          let text = '';
+          try {
+            text = await navigator.clipboard.readText();
+          } catch (_error) {
+            // Silently fail on iOS or when clipboard read is blocked.
+            return;
+          }
+          
+          if (!text) return;
+
+          // Append on a fresh last line, adding a separating newline only when
+          // the body is non-empty and doesn't already end with one.
+          const current = bodyInput.value;
+          const needsNewline = current.length > 0 && !current.endsWith('\n');
+          bodyInput.value = current + (needsNewline ? '\n' : '') + text;
+
+          // Move the caret to the end so the user continues after the paste.
+          bodyInput.focus();
+          const end = bodyInput.value.length;
+          bodyInput.setSelectionRange(end, end);
+
+          // Persist and refresh the preview, mirroring the input handler.
+          scheduleSave();
+          if (showPreview) {
+            updatePreview();
+          }
+        });
+      }
 
       // Make links clickable in the note body with Ctrl/Cmd + Click
       bodyInput.addEventListener('click', (e) => {
