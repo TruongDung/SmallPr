@@ -149,6 +149,11 @@
                 </select>
               </label>
               <textarea id="note-body-input" class="notes-editor-body hidden" placeholder="Start writing..." rows="14"></textarea>
+              <div id="note-ocr-bar" class="note-ocr-bar hidden">
+                <span id="note-ocr-status" class="note-ocr-status"></span>
+                <button id="note-ocr-extract" type="button" class="secondary note-ocr-button hidden">Extract Text</button>
+                <button id="note-ocr-dismiss" type="button" class="secondary note-ocr-dismiss hidden">×</button>
+              </div>
               <div id="note-preview" class="note-preview"></div>
               <div class="notes-editor-actions">
                 <button id="note-checkbox-button" type="button" class="secondary" title="Insert checkbox">☐ Check</button>
@@ -1440,7 +1445,8 @@
   <script src="js/features/creditCards/creditCards.calendar.js?v=cache-clear-20260610-day-detail-1"></script>
   <script src="js/features/creditCards/creditCards.translations.js?v=cache-clear-20260601-7"></script>
   <script src="js/features/creditCards/creditCards.module.js?v=cache-clear-20260611-cc-stats-1"></script>
-  <script src="js/features/notes/notes.module.js?v=cache-clear-20260608-note-cursor-end-1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="js/features/notes/notes.module.js?v=cache-clear-20260615-ocr-paste-1"></script>
   <script src="js/features/dashboard/dashboard.module.js?v=cache-clear-20260601-7"></script>
   <script src="js/features/admin/admin.module.js?v=cache-clear-20260610-audit-refresh-feedback-1"></script>
   <script src="js/tasks.js?v=cache-clear-20260604-1"></script>

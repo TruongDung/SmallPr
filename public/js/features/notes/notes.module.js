@@ -562,6 +562,92 @@
         });
       }
 
+      // --- OCR: detect image paste and extract text ---
+      const ocrBar = document.getElementById('note-ocr-bar');
+      const ocrStatus = document.getElementById('note-ocr-status');
+      const ocrExtractBtn = document.getElementById('note-ocr-extract');
+      const ocrDismissBtn = document.getElementById('note-ocr-dismiss');
+      let ocrPendingText = '';
+
+      const hideOcrBar = () => {
+        ocrBar?.classList.add('hidden');
+        ocrExtractBtn?.classList.add('hidden');
+        ocrDismissBtn?.classList.add('hidden');
+        ocrPendingText = '';
+      };
+
+      const insertOcrText = () => {
+        if (!ocrPendingText) return;
+        const current = bodyInput.value;
+        const needsNewline = current.length > 0 && !current.endsWith('\n');
+        const insertion = (needsNewline ? '\n' : '') + '--- OCR Text ---\n' + ocrPendingText + '\n';
+        bodyInput.value = current + insertion;
+        bodyInput.focus();
+        const end = bodyInput.value.length;
+        bodyInput.setSelectionRange(end, end);
+        scheduleSave();
+        if (showPreview) updatePreview();
+        hideOcrBar();
+      };
+
+      ocrExtractBtn?.addEventListener('click', insertOcrText);
+      ocrDismissBtn?.addEventListener('click', hideOcrBar);
+
+      bodyInput.addEventListener('paste', async (event) => {
+        // Only handle if an image is in the clipboard
+        const items = event.clipboardData?.items;
+        if (!items) return;
+
+        let imageFile = null;
+        for (const item of items) {
+          if (item.type.startsWith('image/')) {
+            imageFile = item.getAsFile();
+            break;
+          }
+        }
+        if (!imageFile) return; // Normal text paste — let it proceed naturally.
+
+        // Don't insert the image blob into the textarea
+        event.preventDefault();
+
+        // Check if Tesseract is available
+        if (!window.Tesseract) {
+          // Tesseract not loaded — silently skip
+          return;
+        }
+
+        // Show the OCR bar with progress
+        ocrBar?.classList.remove('hidden');
+        ocrExtractBtn?.classList.add('hidden');
+        ocrDismissBtn?.classList.remove('hidden');
+        if (ocrStatus) ocrStatus.textContent = 'Detecting text in image...';
+
+        try {
+          const result = await window.Tesseract.recognize(imageFile, 'eng+vie', {
+            logger: (info) => {
+              if (info.status === 'recognizing text' && ocrStatus) {
+                const percent = Math.round((info.progress || 0) * 100);
+                ocrStatus.textContent = `Extracting text... ${percent}%`;
+              }
+            },
+          });
+
+          const text = (result.data?.text || '').trim();
+
+          if (text) {
+            ocrPendingText = text;
+            if (ocrStatus) ocrStatus.textContent = `Found ${text.split('\n').length} line(s) of text.`;
+            ocrExtractBtn?.classList.remove('hidden');
+          } else {
+            if (ocrStatus) ocrStatus.textContent = 'No text found in image.';
+            setTimeout(hideOcrBar, 3000);
+          }
+        } catch (error) {
+          if (ocrStatus) ocrStatus.textContent = 'OCR failed. Try again.';
+          setTimeout(hideOcrBar, 3000);
+        }
+      });
+
       // Make links clickable in the note body with Ctrl/Cmd + Click
       bodyInput.addEventListener('click', (e) => {
         if (!e.ctrlKey && !e.metaKey) return;
