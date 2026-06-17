@@ -8155,6 +8155,192 @@ body.theme-dark .finance-export-button.secondary:disabled {
   gap: 12px;
 }
 
+/* Budget hero card (remaining this month) */
+.finance-budget-hero {
+  text-align: center;
+  padding: 20px 16px;
+  margin-bottom: 16px;
+}
+
+.finance-budget-hero-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.finance-budget-hero-amount {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 12px;
+}
+
+.finance-budget-progress {
+  height: 8px;
+  background: var(--surface-soft);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.finance-budget-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #16a34a 0%, #22c55e 100%);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+.finance-budget-progress-label {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* Stats row (expense / income / count) */
+.finance-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.finance-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.finance-stat-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.finance-stat-value {
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+/* Daily spending bar chart */
+.finance-daily-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.finance-daily-header strong {
+  color: var(--text);
+}
+
+.finance-daily-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 100px;
+  padding-bottom: 20px;
+  position: relative;
+}
+
+.finance-daily-bar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  position: relative;
+}
+
+.finance-daily-bar-fill {
+  width: 100%;
+  min-width: 4px;
+  background: var(--primary);
+  border-radius: 3px 3px 0 0;
+  opacity: 0.6;
+  transition: opacity 0.15s;
+}
+
+.finance-daily-bar:hover .finance-daily-bar-fill {
+  opacity: 1;
+}
+
+.finance-daily-bar.is-today .finance-daily-bar-fill {
+  background: #16a34a;
+  opacity: 1;
+}
+
+.finance-daily-bar-label {
+  position: absolute;
+  bottom: -18px;
+  font-size: 0.6rem;
+  color: var(--muted);
+}
+
+/* Category breakdown */
+.finance-category-breakdown {
+  margin-top: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.finance-category-row {
+  display: grid;
+  grid-template-columns: 10px 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.finance-category-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.finance-category-name {
+  color: var(--text);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.finance-category-pct {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.finance-category-amount {
+  color: var(--text);
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .finance-stats-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .finance-stat {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .finance-daily-chart {
+    height: 70px;
+  }
+}
+
 .finance-chart-row {
   display: grid;
   grid-template-columns: minmax(88px, 0.9fr) minmax(120px, 2fr) auto;

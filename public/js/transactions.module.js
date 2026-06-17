@@ -435,35 +435,93 @@
 
     const renderMonthlyReport = ({ income, expense, net, sortedCategories, transactionCount }) => {
       if (!monthlyReportList) return;
-      const topCategory = sortedCategories[0];
+      const budget = income || 0;
+      const remaining = budget - expense;
+      const percent = budget > 0 ? Math.min(100, Math.round((expense / budget) * 100)) : 0;
+
       monthlyReportList.innerHTML = `
-        <div><span>Period</span><strong>${escapeHtml(getMonthLabel())}</strong></div>
-        <div><span>Transactions</span><strong>${transactionCount}</strong></div>
-        <div><span>Top expense</span><strong>${topCategory ? `${escapeHtml(topCategory[0])} - ${formatCurrency(topCategory[1])}` : 'None'}</strong></div>
-        <div><span>Net savings</span><strong class="${net >= 0 ? 'amount-income' : 'amount-expense'}">${formatCurrency(net)}</strong></div>
-        <div><span>Savings rate</span><strong>${income > 0 ? `${Math.round((net / income) * 100)}%` : 'N/A'}</strong></div>
-        <div><span>Expense total</span><strong>${formatCurrency(expense)}</strong></div>
+        <div class="finance-budget-hero">
+          <div class="finance-budget-hero-label">${t('remainingThisMonth') || 'Remaining this month'}</div>
+          <div class="finance-budget-hero-amount ${remaining >= 0 ? 'amount-income' : 'amount-expense'}">${formatCurrency(Math.abs(remaining))}</div>
+          <div class="finance-budget-progress">
+            <div class="finance-budget-progress-fill" style="width: ${percent}%"></div>
+          </div>
+          <div class="finance-budget-progress-label">${t('spent') || 'Spent'} ${formatCurrency(expense)} / ${formatCurrency(budget)} &nbsp; ${percent}%</div>
+        </div>
+        <div class="finance-stats-row">
+          <div class="finance-stat">
+            <span class="finance-stat-label">${t('totalExpenses') || 'TOTAL EXPENSES'}</span>
+            <strong class="finance-stat-value amount-expense">${formatCurrency(expense)}</strong>
+          </div>
+          <div class="finance-stat">
+            <span class="finance-stat-label">${t('totalIncome') || 'TOTAL INCOME'}</span>
+            <strong class="finance-stat-value amount-income">${formatCurrency(income)}</strong>
+          </div>
+          <div class="finance-stat">
+            <span class="finance-stat-label">${t('transactions') || 'TRANSACTIONS'}</span>
+            <strong class="finance-stat-value">${transactionCount}</strong>
+          </div>
+        </div>
       `;
     };
 
     const renderCharts = ({ income, expense, sortedCategories }) => {
       if (!financeChartBars) return;
-      const maxTotal = Math.max(income, expense, ...sortedCategories.map(([, total]) => total), 1);
-      const rows = [
-        ['Income', income, 'income'],
-        ['Expenses', expense, 'expense'],
-        ...sortedCategories.slice(0, 5).map(([category, total]) => [category, total, 'category']),
-      ];
 
-      financeChartBars.innerHTML = rows.map(([label, total, type]) => `
-        <div class="finance-chart-row">
-          <span>${escapeHtml(label)}</span>
-          <div class="finance-chart-track">
-            <div class="finance-chart-fill ${type}" style="width: ${Math.max(4, Math.round((total / maxTotal) * 100))}%"></div>
-          </div>
-          <strong>${formatCurrency(total)}</strong>
-        </div>
-      `).join('');
+      // Build daily spending data for current month
+      const daysInMonth = new Date(
+        Number(currentFilters.year) || new Date().getFullYear(),
+        Number(currentFilters.month) || (new Date().getMonth() + 1),
+        0
+      ).getDate();
+
+      const dailySpending = new Array(daysInMonth).fill(0);
+      transactions
+        .filter((t) => t.kind === 'expense')
+        .forEach((t) => {
+          const day = t.occurred_on ? new Date(t.occurred_on).getDate() : 0;
+          if (day >= 1 && day <= daysInMonth) {
+            dailySpending[day - 1] += normalizeAmount(t.amount);
+          }
+        });
+
+      const maxDaily = Math.max(...dailySpending, 1);
+      const totalExpense = dailySpending.reduce((s, v) => s + v, 0);
+
+      let html = `<div class="finance-daily-header">
+        <span>${t('dailySpending') || 'Daily Spending'}</span>
+        <strong>${t('total') || 'Total'}: ${formatCurrency(totalExpense)}</strong>
+      </div>`;
+      html += '<div class="finance-daily-chart">';
+      dailySpending.forEach((amount, index) => {
+        const height = Math.max(2, Math.round((amount / maxDaily) * 100));
+        const isToday = (index + 1) === new Date().getDate()
+          && Number(currentFilters.month) === (new Date().getMonth() + 1)
+          && Number(currentFilters.year) === new Date().getFullYear();
+        html += `<div class="finance-daily-bar${isToday ? ' is-today' : ''}" title="Day ${index + 1}: ${formatCurrency(amount)}">
+          <div class="finance-daily-bar-fill" style="height: ${height}%"></div>
+          ${(index + 1) % 5 === 0 || index === 0 ? `<span class="finance-daily-bar-label">${index + 1}</span>` : ''}
+        </div>`;
+      });
+      html += '</div>';
+
+      // Category breakdown (donut-style list)
+      if (sortedCategories.length) {
+        const catColors = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899'];
+        html += '<div class="finance-category-breakdown">';
+        sortedCategories.slice(0, 6).forEach(([category, total], i) => {
+          const pct = expense > 0 ? Math.round((total / expense) * 100) : 0;
+          html += `<div class="finance-category-row">
+            <span class="finance-category-dot" style="background:${catColors[i % catColors.length]}"></span>
+            <span class="finance-category-name">${escapeHtml(category)}</span>
+            <span class="finance-category-pct">${pct}%</span>
+            <strong class="finance-category-amount">${formatCurrency(total)}</strong>
+          </div>`;
+        });
+        html += '</div>';
+      }
+
+      financeChartBars.innerHTML = html;
     };
 
     const renderBudgets = ({ sortedCategories }) => {
