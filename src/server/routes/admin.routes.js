@@ -183,6 +183,41 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsyn
     }
   });
 
+  // Reindex a single table to reclaim bloat in its indexes.
+  router.post('/admin/database/reindex', adminRequired, async (req, res) => {
+    const schemaName = String(req.body?.schemaName || '').trim();
+    const tableName = String(req.body?.tableName || '').trim();
+
+    // Strict allow-list: only safe identifier chars (letters, numbers, underscores)
+    // to defend against SQL injection since identifiers can't be parameterized.
+    if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(schemaName) || !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(tableName)) {
+      return res.status(400).json({ error: 'Invalid schema or table name' });
+    }
+
+    // Verify the table actually exists before issuing REINDEX.
+    try {
+      const exists = await getAsync(
+        `SELECT 1 FROM pg_class cls
+         JOIN pg_namespace ns ON ns.oid = cls.relnamespace
+         WHERE ns.nspname = ? AND cls.relname = ? AND cls.relkind IN ('r', 'p')`,
+        [schemaName, tableName]
+      );
+      if (!exists) {
+        return res.status(404).json({ error: 'Table not found' });
+      }
+
+      // REINDEX rebuilds all indexes on the table, reclaiming bloat.
+      // Identifiers are quoted with double-quotes; the regex above already
+      // restricted them to safe characters so injection is not possible.
+      await runAsync(`REINDEX TABLE "${schemaName}"."${tableName}"`);
+      logger.info({ schemaName, tableName, actorUserId: req.currentUser.id }, 'Indexes reclaimed for table');
+      res.json({ success: true });
+    } catch (error) {
+      logger.error({ err: error, schemaName, tableName }, 'Failed to reindex table');
+      res.status(500).json({ error: 'Failed to reindex table' });
+    }
+  });
+
   router.delete('/admin/users/test', adminRequired, async (req, res) => {
     try {
       const testUsers = await allAsync(

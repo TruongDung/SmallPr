@@ -191,7 +191,7 @@
         databaseStorageSummary.textContent = t('databaseStorageNotLoaded');
         const row = document.createElement('tr');
         const cell = document.createElement('td');
-        cell.colSpan = 5;
+        cell.colSpan = 6;
         cell.className = 'empty-table-cell';
         cell.textContent = t('databaseStorageNotLoaded');
         row.append(cell);
@@ -209,7 +209,7 @@
       if (!tables.length) {
         const row = document.createElement('tr');
         const cell = document.createElement('td');
-        cell.colSpan = 5;
+        cell.colSpan = 6;
         cell.className = 'empty-table-cell';
         cell.textContent = t('databaseStorageEmpty');
         row.append(cell);
@@ -235,8 +235,57 @@
           row.append(cell);
         });
 
+        // Actions cell: per-table "Clear indexes" (REINDEX) button
+        const actionsCell = document.createElement('td');
+        actionsCell.dataset.label = t('actions') || 'Actions';
+        actionsCell.className = 'db-storage-actions';
+
+        const reindexBtn = document.createElement('button');
+        reindexBtn.type = 'button';
+        reindexBtn.className = 'task-action-icon secondary';
+        reindexBtn.textContent = '↻';
+        reindexBtn.title = t('clearIndexes') || 'Clear indexes';
+        reindexBtn.setAttribute('aria-label', t('clearIndexes') || 'Clear indexes');
+        // Disable for tables with no index storage — nothing to reclaim
+        if (!table.indexBytes) {
+          reindexBtn.disabled = true;
+          reindexBtn.title = t('clearIndexesNoData') || 'No indexes to clear';
+        }
+        reindexBtn.addEventListener('click', () => clearTableIndexes(table, reindexBtn));
+        actionsCell.append(reindexBtn);
+        row.append(actionsCell);
+
         databaseStorageList.append(row);
       });
+    };
+
+    const clearTableIndexes = async (table, button) => {
+      if (!table) return;
+      const fullName = [table.schemaName, table.tableName].filter(Boolean).join('.');
+      const confirmMsg = (t('clearIndexesConfirm') || 'Rebuild indexes for "{name}"?').replace('{name}', fullName);
+      if (!confirm(confirmMsg)) return;
+
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = '…';
+      try {
+        const result = await request('/api/admin/database/reindex', {
+          method: 'POST',
+          body: JSON.stringify({ schemaName: table.schemaName, tableName: table.tableName }),
+        });
+        if (result.error) {
+          showStatusToast(result.error, 'error');
+          return;
+        }
+        showStatusToast(t('clearIndexesDone') || 'Indexes rebuilt.');
+        // Reload storage data to reflect any reclaimed space
+        await loadDatabaseStorage();
+      } catch (error) {
+        showStatusToast(error.message || 'Failed to clear indexes', 'error');
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
     };
 
     const loadDatabaseStorage = async () => {
@@ -886,6 +935,7 @@
       setText('.user-table th:nth-child(6)', t('notes'));
       setText('.user-table th:nth-child(7)', t('actions'));
       setText('#database-storage-title', t('databaseStorage'));
+      setText('#db-storage-actions-header', t('actions'));
       renderDatabaseStorage();
       setText('#audit-log-title', t('auditLog'));
       setText('label[for="audit-log-search-input"]', t('searchAuditLog'));

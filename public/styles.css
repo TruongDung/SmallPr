@@ -3081,6 +3081,19 @@ body.theme-dark .calendar-lunar-badge-key {
   white-space: nowrap;
 }
 
+/* Actions column for the Reindex button */
+.database-storage-table .db-storage-actions {
+  text-align: center;
+  width: 64px;
+}
+
+.database-storage-table .db-storage-actions .task-action-icon {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  font-size: 1rem;
+}
+
 .database-storage-sort {
   appearance: none;
   display: inline-flex;
