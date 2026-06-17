@@ -1480,10 +1480,18 @@ const togglePasswordVisibility = () => {
 };
 
 // request() is provided by js/apiClient.js (window.ApiClient)
-// In demo mode, intercept all requests and use localStorage mock instead.
+// In demo mode, intercept most requests and use localStorage mock instead.
+// Auth endpoints always go to the real server so login/register still works.
+const DEMO_BYPASS_URLS = ['/api/login', '/api/register', '/api/logout', '/api/me', '/api/config/public'];
+
 const request = (...args) => {
   if (window.DemoMode?.isDemo()) {
-    return window.DemoMode.mockRequest(args[0], args[1]);
+    const url = args[0] || '';
+    // Let auth-related requests pass through to the real server
+    if (DEMO_BYPASS_URLS.some((bypass) => url === bypass || url.startsWith(bypass + '?'))) {
+      return apiClient.request(...args);
+    }
+    return window.DemoMode.mockRequest(url, args[1]);
   }
   return apiClient.request(...args);
 };
@@ -1541,6 +1549,11 @@ const init = async () => {
   prefillRememberedCredentials();
   const result = await request('/api/me');
   currentUser = result.user;
+  // If a real user session exists, exit demo mode (user previously logged in)
+  if (currentUser && window.DemoMode?.isDemo()) {
+    window.DemoMode.exitDemo();
+    document.getElementById('demo-banner')?.classList.add('hidden');
+  }
   applyUserPreferences(currentUser);
   applyTranslations();
   identifyMonitoringUser();
@@ -1718,6 +1731,11 @@ const handleAuthSubmit = async (event) => {
   }
 
   resetFinancialModules();
+  // Exit demo mode when a real login succeeds
+  if (window.DemoMode?.isDemo()) {
+    window.DemoMode.exitDemo();
+    document.getElementById('demo-banner')?.classList.add('hidden');
+  }
   currentUser = result.user;
   applyUserPreferences(currentUser);
   applyTranslations();
