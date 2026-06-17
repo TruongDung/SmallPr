@@ -357,15 +357,6 @@
         amountCell.className = `txn-amount ${isIncome ? 'amount-income' : 'amount-expense'}`;
         amountCell.textContent = formatCurrency(transaction.amount);
 
-        // Account
-        const accountCell = document.createElement('td');
-        if (transaction.account) {
-          accountCell.textContent = transaction.account;
-        } else {
-          accountCell.textContent = '—';
-          accountCell.className = 'txn-muted';
-        }
-
         // Note
         const noteCell = document.createElement('td');
         if (transaction.note) {
@@ -401,7 +392,7 @@
         deleteBtn.addEventListener('click', () => window.transactionsModule.confirmDelete(transaction.id));
 
         actionsCell.append(editBtn, deleteBtn);
-        row.append(dateCell, kindCell, categoryCell, amountCell, accountCell, noteCell, actionsCell);
+        row.append(dateCell, kindCell, categoryCell, amountCell, noteCell, actionsCell);
         list.append(row);
       });
 

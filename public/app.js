@@ -209,6 +209,7 @@ let tags = [];
 let sprintOptions = [];
 const reminderTimers = new Map();
 let pendingDeleteTaskId = null;
+let pendingPermanentDeleteTaskId = null;
 let pendingDeleteUser = null;
 let pendingDeleteTag = null;
 let pendingDeleteCard = null;
@@ -995,17 +996,21 @@ const loadTrashTasks = async () => {
     deleteBtn.className = 'secondary';
     deleteBtn.style.color = 'var(--danger)';
     deleteBtn.textContent = t('deletePermanently');
-    deleteBtn.addEventListener('click', async () => {
-      if (!confirm(t('permanentDeleteConfirm'))) return;
-      deleteBtn.disabled = true;
-      const delResult = await request(`/api/tasks/${task.id}/permanent`, { method: 'DELETE' });
-      if (delResult.error) {
-        showStatusToast(delResult.error, 'error');
-        deleteBtn.disabled = false;
-        return;
-      }
-      showStatusToast(t('taskPermanentlyDeleted'));
-      loadTrashTasks();
+    deleteBtn.addEventListener('click', () => {
+      pendingPermanentDeleteTaskId = task.id;
+      pendingDeleteTaskId = null;
+      pendingDeleteUser = null;
+      pendingDeleteTag = null;
+      pendingDeleteCard = null;
+      pendingDeleteFastAccessLink = null;
+      pendingDeleteNote = null;
+      pendingDeleteTransaction = null;
+      pendingDeleteSprint = null;
+      pendingDeleteTestUsers = false;
+      pendingClearAuditLogs = false;
+      deleteConfirmTitle.textContent = t('deletePermanently');
+      deleteConfirmMessage.textContent = t('permanentDeleteConfirm');
+      deleteConfirmModal.classList.remove('hidden');
     });
 
     actions.append(restoreBtn, deleteBtn);
@@ -2495,6 +2500,7 @@ const showClearAuditLogsConfirm = (message) => {
 
 const hideDeleteConfirm = () => {
   pendingDeleteTaskId = null;
+  pendingPermanentDeleteTaskId = null;
   pendingDeleteUser = null;
   pendingDeleteTag = null;
   pendingDeleteCard = null;
@@ -2510,8 +2516,9 @@ const hideDeleteConfirm = () => {
 confirmDeleteNo.addEventListener('click', hideDeleteConfirm);
 
 confirmDeleteYes.addEventListener('click', async () => {
-  if (!pendingDeleteTaskId && !pendingDeleteUser && !pendingDeleteTag && !pendingDeleteCard && !pendingDeleteFastAccessLink && !pendingDeleteNote && !pendingDeleteTransaction && !pendingDeleteSprint && !pendingDeleteTestUsers && !pendingClearAuditLogs) return;
+  if (!pendingDeleteTaskId && !pendingPermanentDeleteTaskId && !pendingDeleteUser && !pendingDeleteTag && !pendingDeleteCard && !pendingDeleteFastAccessLink && !pendingDeleteNote && !pendingDeleteTransaction && !pendingDeleteSprint && !pendingDeleteTestUsers && !pendingClearAuditLogs) return;
   const taskId = pendingDeleteTaskId;
+  const permanentTaskId = pendingPermanentDeleteTaskId;
   const user = pendingDeleteUser;
   const tag = pendingDeleteTag;
   const card = pendingDeleteCard;
@@ -2522,6 +2529,16 @@ confirmDeleteYes.addEventListener('click', async () => {
   const shouldDeleteTestUsers = pendingDeleteTestUsers;
   const shouldClearAuditLogs = pendingClearAuditLogs;
   hideDeleteConfirm();
+  if (permanentTaskId) {
+    const delResult = await request(`/api/tasks/${permanentTaskId}/permanent`, { method: 'DELETE' });
+    if (delResult.error) {
+      showStatusToast(delResult.error, 'error');
+      return;
+    }
+    showStatusToast(t('taskPermanentlyDeleted'));
+    loadTrashTasks();
+    return;
+  }
   if (taskId) {
     await deleteTask(taskId);
     return;
