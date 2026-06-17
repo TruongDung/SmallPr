@@ -47,6 +47,7 @@
     const confirmImportButton = document.getElementById('confirm-import-statement');
 
     let transactions = [];
+    let txnSort = { field: null, direction: 'desc' };
     let categories = [];
     let creditCards = [];
     let pendingEditTransaction = null;
@@ -308,8 +309,33 @@
       creditCardInput.value = currentValue;
     };
 
+    const updateTxnSortHeaders = () => {
+      document.querySelectorAll('[data-txn-sort]').forEach((button) => {
+        const isActive = button.dataset.txnSort === txnSort.field;
+        button.classList.toggle('active', isActive);
+        button.setAttribute('aria-sort', isActive ? (txnSort.direction === 'asc' ? 'ascending' : 'descending') : 'none');
+        const arrow = button.querySelector('.sort-arrow');
+        if (arrow) {
+          arrow.textContent = isActive ? (txnSort.direction === 'asc' ? '▲' : '▼') : '⇅';
+        }
+      });
+    };
+
+    const sortTransactions = (rows) => {
+      if (!txnSort.field) return rows;
+      const sorted = [...rows];
+      if (txnSort.field === 'amount') {
+        sorted.sort((a, b) => {
+          const result = normalizeAmount(a.amount) - normalizeAmount(b.amount);
+          return txnSort.direction === 'asc' ? result : -result;
+        });
+      }
+      return sorted;
+    };
+
     const renderTransactions = () => {
       list.innerHTML = '';
+      updateTxnSortHeaders();
 
       if (transactions.length === 0) {
         const row = document.createElement('tr');
@@ -323,7 +349,8 @@
         return;
       }
 
-      transactions.forEach((transaction) => {
+      const rowsToRender = sortTransactions(transactions);
+      rowsToRender.forEach((transaction) => {
         const isIncome = transaction.kind === 'income';
         const row = document.createElement('tr');
         row.className = `txn-row txn-row-${isIncome ? 'income' : 'expense'}`;
@@ -948,6 +975,19 @@
       exportCsvButton?.addEventListener('click', exportCsv);
       exportPdfButton?.addEventListener('click', exportPdf);
       exportExcelButton?.addEventListener('click', exportExcel);
+
+      // Sort header for amount column
+      document.querySelectorAll('[data-txn-sort]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const field = button.dataset.txnSort;
+          if (txnSort.field === field) {
+            txnSort.direction = txnSort.direction === 'asc' ? 'desc' : 'asc';
+          } else {
+            txnSort = { field, direction: 'desc' };
+          }
+          renderTransactions();
+        });
+      });
 
       // Statement import wiring.
       if (importButton) {
