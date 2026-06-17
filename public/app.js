@@ -1480,7 +1480,13 @@ const togglePasswordVisibility = () => {
 };
 
 // request() is provided by js/apiClient.js (window.ApiClient)
-const request = apiClient.request;
+// In demo mode, intercept all requests and use localStorage mock instead.
+const request = (...args) => {
+  if (window.DemoMode?.isDemo()) {
+    return window.DemoMode.mockRequest(args[0], args[1]);
+  }
+  return apiClient.request(...args);
+};
 
 const setSprintOptions = (select, selectedValue = '') => {
   if (!select) return;
@@ -3637,6 +3643,38 @@ const adminModule = window.AdminModule.create({
 
 showLogin.addEventListener('click', () => setMode('login'));
 showSignup.addEventListener('click', () => setMode('signup'));
+
+// --- Demo mode ---
+const tryDemoBtn = document.getElementById('try-demo');
+const demoBanner = document.getElementById('demo-banner');
+const demoExitBtn = document.getElementById('demo-exit');
+
+const enterDemoMode = () => {
+  window.DemoMode.enterDemo();
+  demoBanner?.classList.remove('hidden');
+  // Act as if user is logged in with a fake demo user
+  currentUser = { id: 0, username: 'demo', name: 'Demo User' };
+  setCurrentView('tasks');
+  applyTranslations();
+  showSection();
+};
+
+const exitDemoMode = () => {
+  window.DemoMode.exitDemo();
+  demoBanner?.classList.add('hidden');
+  currentUser = null;
+  setCurrentView('tasks', { persist: false });
+  showSection();
+};
+
+tryDemoBtn?.addEventListener('click', enterDemoMode);
+demoExitBtn?.addEventListener('click', exitDemoMode);
+
+// Restore demo mode on page load if it was active
+if (window.DemoMode?.isDemo()) {
+  currentUser = { id: 0, username: 'demo', name: 'Demo User' };
+  demoBanner?.classList.remove('hidden');
+}
 themeToggle.addEventListener('click', toggleTheme);
 togglePasswordButton.addEventListener('click', togglePasswordVisibility);
 const taskSubtabAddButton = document.getElementById('task-subtab-add-button');

@@ -33,6 +33,10 @@
     </header>
 
     <main>
+      <div id="demo-banner" class="demo-banner hidden">
+        <span>🧪 Demo Mode — data stored locally only.</span>
+        <button id="demo-exit" type="button" class="demo-banner-btn">Sign up to save</button>
+      </div>
       <section id="auth-section" class="card hidden">
         <div class="tabs">
           <button id="show-login" class="active">Login</button>
@@ -75,6 +79,10 @@
           <button type="submit">Submit</button>
           <p id="auth-message" class="message"></p>
         </form>
+        <div class="demo-divider">
+          <span>or</span>
+        </div>
+        <button id="try-demo" type="button" class="demo-button">Try Demo — No sign up needed</button>
       </section>
 
       <section id="dashboard-section" class="card hidden" aria-labelledby="dashboard-title">
@@ -1464,6 +1472,7 @@
   <script src="js/monitoring.js?v=cache-clear-20260603-1"></script>
   <script src="js/i18n.js?v=cache-clear-20260611-new-badge-1"></script>
   <script src="js/subtabDragSort.js?v=1"></script>
-  <script src="app.js?v=cache-clear-20260611-new-badge-1"></script>
+  <script src="js/demo.js?v=1"></script>
+  <script src="app.js?v=cache-clear-20260615-demo-mode-1"></script>
 </body>
 </html>
