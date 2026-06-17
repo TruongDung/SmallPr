@@ -329,6 +329,13 @@
           const result = normalizeAmount(a.amount) - normalizeAmount(b.amount);
           return txnSort.direction === 'asc' ? result : -result;
         });
+      } else if (txnSort.field === 'date') {
+        sorted.sort((a, b) => {
+          const aTime = a.occurred_on ? new Date(a.occurred_on).getTime() : 0;
+          const bTime = b.occurred_on ? new Date(b.occurred_on).getTime() : 0;
+          const result = aTime - bTime;
+          return txnSort.direction === 'asc' ? result : -result;
+        });
       }
       return sorted;
     };
