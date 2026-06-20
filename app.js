@@ -29,6 +29,7 @@ const logger = require('./src/server/logger');
 
 // ===== Service Layer =====
 const { createAuditLogService } = require('./src/server/services/auditLog.service');
+const createFeatureFlagsService = require('./src/server/services/featureFlags.service');
 const { createAuthService } = require('./src/server/services/auth/auth.service');
 const { sendTaskAlertEmail, sendTaskSummaryEmail, sendVerificationEmail } = require('./src/server/services/email/email.service');
 const { createLunarCalendarService } = require('./src/server/services/lunarCalendar.service');
@@ -152,6 +153,7 @@ setupStaticFiles(app);
 const { getUserById } = createAuthService({ getAsync });
 const { adminRequired, authRequired } = createAuthMiddleware({ getUserById });
 const auditLogs = createAuditLogService({ allAsync, runAsync });
+const featureFlags = createFeatureFlagsService({ allAsync, runAsync });
 
 // ===== API Routes Registration =====
 
@@ -164,6 +166,7 @@ registerRoutes(app, {
   adminRequired,      // Middleware: Requires admin role
   authRequired,       // Middleware: Requires authentication
   auditLogs,          // Service: Audit logging
+  featureFlags,       // Service: Feature flags (e.g. weather-for-demo)
   allAsync,           // DB: Query all rows
   getAsync,           // DB: Query single row
   queryAsync,         // DB: Raw query with result object
@@ -212,7 +215,7 @@ if (process.env.NODE_ENV !== 'test' && process.env.DISABLE_LUNAR_REMINDER_SCHEDU
  * Public configuration endpoint
  * Exposes non-sensitive config to frontend (feature flags, etc.)
  */
-setupConfigEndpoint(app);
+setupConfigEndpoint(app, { featureFlags });
 
 // ===== SPA Fallback Route =====
 

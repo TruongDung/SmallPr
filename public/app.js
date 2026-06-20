@@ -186,6 +186,9 @@ const uploadProgressPercent = document.getElementById('upload-progress-percent')
 
 let currentMode = 'login';
 let currentUser = null;
+// Admin-controlled flag: whether demo users may access the Weather feature.
+// Defaults to true; refreshed from /api/config/public at startup.
+let weatherEnabledForDemo = true;
 let registrationStartedAt = Date.now();
 let registrationInteractionCount = 0;
 const SAVED_VIEW_KEY = 'task-manager-current-view';
@@ -195,6 +198,10 @@ const rememberMeText = document.getElementById('remember-me-text');
 const VIEW_NAMES = new Set(['dashboard', 'notes', 'tasks', 'calendar', 'sprints', 'archived', 'trash', 'tags', 'weather', 'credit-cards', 'admin']);
 const isAdminUser = () => currentUser?.username === 'admin';
 const isImpersonating = () => Boolean(currentUser?.impersonator);
+// Demo users are a client-only construct (id === 0). Weather is always available
+// to real authenticated users; for demo users it depends on the admin flag.
+const isDemoUser = () => Boolean(window.DemoMode?.isDemo()) || currentUser?.id === 0;
+const isWeatherAccessible = () => !isDemoUser() || weatherEnabledForDemo;
 const getSavedView = () => {
   const savedView = localStorage.getItem(SAVED_VIEW_KEY);
   return VIEW_NAMES.has(savedView) ? savedView : 'dashboard';
@@ -1057,6 +1064,11 @@ const showSection = () => {
     setCurrentView('tasks');
   }
 
+  // Demo users cannot open Weather when the admin has disabled it for demo mode.
+  if (currentView === 'weather' && !isWeatherAccessible()) {
+    setCurrentView('tasks');
+  }
+
   authSection.classList.add('hidden');
   renderUserArea();
 
@@ -1249,7 +1261,11 @@ const renderUserArea = () => {
     showSection();
   });
 
-  userArea.append(dashboardButton, notesButton, tasksButton, weatherButton, creditCardsButton);
+  userArea.append(dashboardButton, notesButton, tasksButton);
+  if (isWeatherAccessible()) {
+    userArea.append(weatherButton);
+  }
+  userArea.append(creditCardsButton);
 
   if (isAdminUser()) {
     const adminButton = document.createElement('button');
@@ -1545,8 +1561,21 @@ const prefillRememberedCredentials = () => {
   }
 };
 
+const loadPublicFeatureFlags = async () => {
+  try {
+    const config = await request('/api/config/public');
+    if (config?.features && typeof config.features.weatherEnabledForDemo === 'boolean') {
+      weatherEnabledForDemo = config.features.weatherEnabledForDemo;
+    }
+  } catch (error) {
+    // Non-fatal: fall back to the permissive default so the app still loads.
+    console.error('Failed to load feature flags', error);
+  }
+};
+
 const init = async () => {
   prefillRememberedCredentials();
+  await loadPublicFeatureFlags();
   const result = await request('/api/me');
   currentUser = result.user;
   // If a real user session exists, exit demo mode (user previously logged in)

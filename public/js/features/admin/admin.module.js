@@ -46,6 +46,7 @@
     const refreshAuditLog = document.getElementById('refresh-audit-log');
     const clearAuditLog = document.getElementById('clear-audit-log');
     const auditLogSavingToggle = document.getElementById('toggle-audit-log-saving');
+    const weatherDemoToggle = document.getElementById('toggle-weather-demo');
     const loadDatabaseStorageButton = document.getElementById('load-database-storage');
     const databaseStorageSummary = document.getElementById('database-storage-summary');
     const databaseStorageList = document.getElementById('database-storage-list');
@@ -75,6 +76,7 @@
     let auditLogPage = 1;
     let auditLogSearchTimer = null;
     let auditLogSavingEnabled = true;
+    let weatherDemoEnabled = true;
     let databaseStorage = null;
     let databaseStorageSort = { ...DATABASE_STORAGE_DEFAULT_SORT };
     let pendingAdminUser = null;
@@ -103,6 +105,51 @@
       }
       auditLogSavingEnabled = result.settings?.enabled !== false;
       renderAuditLogSavingToggle();
+    };
+
+    const renderWeatherDemoToggle = () => {
+      if (!weatherDemoToggle) return;
+      weatherDemoToggle.setAttribute('aria-checked', String(weatherDemoEnabled));
+      weatherDemoToggle.title = weatherDemoEnabled
+        ? t('disableWeatherForDemo')
+        : t('enableWeatherForDemo');
+      weatherDemoToggle.setAttribute('aria-label', weatherDemoToggle.title);
+    };
+
+    const loadWeatherDemoSettings = async () => {
+      if (!isAdminUser() || !weatherDemoToggle) return;
+      const result = await request('/api/admin/settings/weather-demo');
+      if (result.error) {
+        showStatusToast(result.error, 'error');
+        return;
+      }
+      weatherDemoEnabled = result.settings?.weatherEnabledForDemo !== false;
+      renderWeatherDemoToggle();
+    };
+
+    const updateWeatherDemoSetting = async () => {
+      if (!weatherDemoToggle) return;
+      const nextEnabled = !weatherDemoEnabled;
+      weatherDemoToggle.disabled = true;
+
+      try {
+        const result = await request('/api/admin/settings/weather-demo', {
+          method: 'PUT',
+          body: JSON.stringify({ enabled: nextEnabled }),
+        });
+        if (result.error) {
+          showStatusToast(result.error, 'error');
+          return;
+        }
+
+        weatherDemoEnabled = result.settings?.weatherEnabledForDemo !== false;
+        renderWeatherDemoToggle();
+        showStatusToast(t(weatherDemoEnabled ? 'weatherForDemoEnabled' : 'weatherForDemoDisabled'));
+      } catch (error) {
+        showStatusToast(error.message || 'Failed to save weather setting', 'error');
+      } finally {
+        weatherDemoToggle.disabled = false;
+      }
     };
 
     const formatInteger = (value) => new Intl.NumberFormat(undefined, {
@@ -323,6 +370,7 @@
       renderUsers(users);
       auditLogPage = 1;
       await loadAuditLogSettings();
+      await loadWeatherDemoSettings();
       await loadAuditLogs();
     };
 
@@ -1020,6 +1068,7 @@
       refreshAuditLog?.addEventListener('click', refreshAuditLogsWithFeedback);
       clearAuditLog?.addEventListener('click', requestClearAuditLogs);
       auditLogSavingToggle?.addEventListener('click', updateAuditLogSaving);
+      weatherDemoToggle?.addEventListener('click', updateWeatherDemoSetting);
       loadDatabaseStorageButton?.addEventListener('click', loadDatabaseStorage);
       databaseStorageSortButtons.forEach((button) => {
         button.addEventListener('click', () => updateDatabaseStorageSort(button.dataset.dbStorageSort));

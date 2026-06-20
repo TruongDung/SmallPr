@@ -66,9 +66,21 @@ const setupStaticFiles = (app) => {
   app.use(express.static(path.join(__dirname, '../../..', 'public')));
 };
 
-const setupConfigEndpoint = (app) => {
-  app.get('/api/config/public', (req, res) => {
+const setupConfigEndpoint = (app, { featureFlags } = {}) => {
+  app.get('/api/config/public', async (req, res) => {
     res.set('Cache-Control', 'no-store');
+
+    // Feature flags are best-effort: never let a settings read failure break
+    // the config endpoint that the whole frontend depends on at boot.
+    let features = { weatherEnabledForDemo: true };
+    if (featureFlags?.getPublicFlags) {
+      try {
+        features = await featureFlags.getPublicFlags();
+      } catch (error) {
+        logger.error({ err: error }, 'Failed to load public feature flags');
+      }
+    }
+
     res.json({
       sentry: {
         dsn: process.env.PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN || '',
@@ -82,6 +94,7 @@ const setupConfigEndpoint = (app) => {
         apiKey: process.env.PUBLIC_POSTHOG_API_KEY || process.env.POSTHOG_API_KEY || '',
         apiHost: process.env.PUBLIC_POSTHOG_HOST || process.env.POSTHOG_HOST || 'https://us.i.posthog.com',
       },
+      features,
     });
   });
 };

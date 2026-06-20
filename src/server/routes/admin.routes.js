@@ -28,7 +28,7 @@ const TEST_USER_MATCH_SQL = `LOWER(username) = 'test'
 
 const toNumber = (value) => Number(value || 0);
 
-const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsync, runAsync }) => {
+const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, bcrypt, getAsync, runAsync }) => {
   const router = express.Router();
 
   router.get('/admin/audit-logs', adminRequired, async (req, res) => {
@@ -80,6 +80,53 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, bcrypt, getAsyn
     } catch (error) {
       logger.error({ err: error }, 'Failed to save audit log settings');
       res.status(500).json({ error: 'Failed to save audit log settings' });
+    }
+  });
+
+  // --- Feature flags: Weather access for demo users ---
+  router.get('/admin/settings/weather-demo', adminRequired, async (req, res) => {
+    if (!featureFlags) {
+      return res.status(500).json({ error: 'Feature flags are not configured' });
+    }
+    try {
+      const settings = await featureFlags.getSettings();
+      res.json({ settings });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to load weather demo setting');
+      res.status(500).json({ error: 'Failed to load weather demo setting' });
+    }
+  });
+
+  router.put('/admin/settings/weather-demo', adminRequired, async (req, res) => {
+    if (!featureFlags) {
+      return res.status(500).json({ error: 'Feature flags are not configured' });
+    }
+    if (typeof req.body?.enabled !== 'boolean') {
+      return res.status(400).json({ error: 'Weather demo setting is required' });
+    }
+
+    try {
+      const before = await featureFlags.getWeatherEnabledForDemo();
+      const settings = await featureFlags.setWeatherEnabledForDemo(req.body.enabled);
+
+      // Record the change in the audit log for accountability.
+      if (auditLogs?.record && before !== settings.weatherEnabledForDemo) {
+        await auditLogs.record({
+          actorUserId: req.currentUser.id,
+          userId: req.currentUser.id,
+          action: 'edit',
+          entityType: 'user',
+          entityId: req.currentUser.id,
+          summary: `Weather feature for demo users ${settings.weatherEnabledForDemo ? 'enabled' : 'disabled'}`,
+          before: { weather_enabled_for_demo: before },
+          after: { weather_enabled_for_demo: settings.weatherEnabledForDemo },
+        });
+      }
+
+      res.json({ settings });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to save weather demo setting');
+      res.status(500).json({ error: 'Failed to save weather demo setting' });
     }
   });
 

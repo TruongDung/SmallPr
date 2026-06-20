@@ -17,6 +17,7 @@ const registerRoutes = (app, {
   adminRequired,
   authRequired,
   auditLogs,
+  featureFlags,
   allAsync,
   getAsync,
   queryAsync,
@@ -134,6 +135,7 @@ const registerRoutes = (app, {
   app.use('/api', createAdminRouter({
     adminRequired,
     auditLogs,
+    featureFlags,
     bcrypt,
     allAsync,
     getAsync,

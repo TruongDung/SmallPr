@@ -3215,6 +3215,108 @@ body.theme-dark .calendar-lunar-badge-key {
   border-top: 2px solid var(--border);
 }
 
+/* Feature settings (admin) */
+.feature-settings-section {
+  margin-top: 48px;
+  padding-top: 32px;
+  border-top: 2px solid var(--border);
+}
+
+.feature-settings-header h3 {
+  margin: 0 0 18px;
+  color: var(--text);
+  font-size: 1.2rem;
+  font-weight: 700;
+}
+
+.feature-settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.feature-settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.feature-settings-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.feature-settings-info strong {
+  color: var(--text);
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.feature-settings-hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+/* Toggle switch */
+.feature-toggle-switch {
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.feature-toggle-switch:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.feature-toggle-track {
+  display: inline-block;
+  width: 46px;
+  height: 26px;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background-color 0.2s ease;
+  position: relative;
+}
+
+.feature-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.feature-toggle-switch[aria-checked="true"] .feature-toggle-track {
+  background: #16a34a;
+}
+
+.feature-toggle-switch[aria-checked="true"] .feature-toggle-thumb {
+  transform: translateX(20px);
+}
+
+.feature-toggle-switch:focus-visible .feature-toggle-track {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+
+
 .audit-log-header {
   display: flex;
   align-items: center;
