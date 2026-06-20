@@ -53,6 +53,58 @@
 
   const saveTransactions = (txns) => localStorage.setItem(DEMO_TRANSACTIONS_KEY, JSON.stringify(txns));
 
+  // Build a dashboard payload shaped like the real /api/dashboard response.
+  // Each card must be { ok: true, data: ... } or the UI renders a load error.
+  const buildDashboardPayload = () => {
+    const tasks = getTasks();
+    const todayKey = new Date().toISOString().slice(0, 10);
+
+    const isDone = (task) => task.status === 'done';
+    const inProgress = tasks.filter((task) => task.status === 'in_progress');
+    const todoTasks = tasks.filter((task) => task.status === 'todo');
+
+    // Overdue = has a due_date strictly before today and not done.
+    const overdue = tasks.filter((task) => (
+      task.due_date && task.due_date < todayKey && !isDone(task)
+    ));
+    // Today = due today, or undated todo tasks (so the card isn't empty in demo).
+    const today = tasks.filter((task) => (
+      !isDone(task) && (task.due_date === todayKey || (!task.due_date && task.status === 'todo'))
+    ));
+
+    const cards = {
+      todaysTasks: {
+        ok: true,
+        data: { overdue, today, in_progress: inProgress },
+      },
+      activeSprints: { ok: true, data: { sprints: [] } },
+      taskStatusSummary: {
+        ok: true,
+        data: {
+          todo: todoTasks.length,
+          in_progress: inProgress.length,
+          done: tasks.filter(isDone).length,
+        },
+      },
+      bills: { ok: true, data: { overdue: [], dueSoon: [], undated: [] } },
+      creditCards: {
+        ok: true,
+        data: { cardCount: 0, totalBalance: 0, totalInterest: 0, approachingClose: [] },
+      },
+      recentNotes: { ok: true, data: [] },
+      weather: { ok: true, data: { city: null } },
+      dailyQuote: {
+        ok: true,
+        data: {
+          text: 'The secret of getting ahead is getting started.',
+          author: 'Mark Twain',
+        },
+      },
+    };
+
+    return { cards, preferences: null, today: todayKey };
+  };
+
   // Intercepts fetch-like requests in demo mode and returns mock responses.
   const mockRequest = async (url, options = {}) => {
     const method = (options.method || 'GET').toUpperCase();
@@ -154,7 +206,7 @@
     if (url === '/api/credit-cards/fast-access-links') return { links: [] };
     if (url === '/api/weather-cities') return { cities: [] };
     if (url === '/api/notes') return { notes: [] };
-    if (url === '/api/dashboard') return { cards: {}, preferences: null, today: new Date().toISOString().slice(0, 10) };
+    if (url === '/api/dashboard' || url.startsWith('/api/dashboard?')) return buildDashboardPayload();
 
     // Default: return empty success
     return {};
