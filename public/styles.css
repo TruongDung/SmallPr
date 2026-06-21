@@ -8469,9 +8469,9 @@ body.theme-dark .finance-export-button.secondary:disabled {
   font-size: 0.8rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.12em;
   color: var(--muted);
-  margin-bottom: 6px;
+  margin-bottom: 12px;
 }
 
 .finance-budget-hero-amount {
@@ -8538,6 +8538,13 @@ body.theme-dark .finance-export-button.secondary:disabled {
   margin-bottom: 12px;
   font-size: 0.82rem;
   color: var(--muted);
+}
+
+.finance-daily-header > span {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
 }
 
 .finance-daily-header strong {
