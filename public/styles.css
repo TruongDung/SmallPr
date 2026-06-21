@@ -278,40 +278,57 @@ h2 {
 }
 
 #auth-section {
-  width: min(100%, 380px);
+  width: min(100%, 400px);
   margin: 18px auto 0;
-  padding: 22px;
-  border-radius: 14px;
+  padding: 26px 26px 28px;
+  border-radius: 18px;
   box-shadow: 0 18px 45px var(--card-shadow);
 }
 
+/* Logged-out (auth) view: brand + theme toggle on one tidy centered row,
+   aligned to the same width as the login card below it. */
 .container:has(#auth-section:not(.hidden)) .app-header {
-  width: min(100%, 380px);
-  grid-template-columns: 1fr;
-  align-content: start;
-  align-items: start;
-  gap: 10px;
-  margin-right: auto;
-  margin-left: auto;
-  padding-top: 10px;
+  width: min(100%, 400px);
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 auto 6px;
+  padding: 8px 4px;
 }
 
 .container:has(#auth-section:not(.hidden)) .header-actions {
-  grid-template-columns: 1fr 1fr;
+  flex: 0 0 auto;
+  width: auto;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.container:has(#auth-section:not(.hidden)) .app-brand-copy {
+  margin-bottom: 0;
 }
 
 .container:has(#auth-section:not(.hidden)) .app-brand {
-  align-self: start;
+  align-self: center;
 }
 
 .container:has(#auth-section:not(.hidden)) #user-area {
   display: none;
 }
 
+/* Align the demo banner to the login card width so they look cohesive. */
+.container:has(#auth-section:not(.hidden)) #demo-banner {
+  width: min(100%, 400px);
+  margin-left: auto;
+  margin-right: auto;
+}
+
 #auth-section .tabs {
   gap: 4px;
   padding: 4px;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface-soft);
@@ -319,12 +336,16 @@ h2 {
 
 #auth-section .tabs button {
   flex: 1;
-  padding: 9px 12px;
+  padding: 10px 12px;
   border-color: transparent;
   border-radius: 9px;
+  font-weight: 700;
+  color: var(--muted);
+  transition: all 0.18s ease;
 }
 
 #auth-section .tabs button.active {
+  color: #fff;
   box-shadow: 0 8px 20px rgba(47, 112, 255, 0.22);
 }
 
