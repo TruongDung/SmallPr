@@ -27,6 +27,7 @@
     const monthlyReportList = document.getElementById('monthly-report-list');
     const financeChartBars = document.getElementById('finance-chart-bars');
     const budgetCategoryList = document.getElementById('budget-category-list');
+    const budgetCategoryToggle = document.getElementById('budget-category-toggle');
     const creditCardPaymentList = document.getElementById('credit-card-payment-list');
     const exportCsvButton = document.getElementById('export-transactions-csv');
     const exportPdfButton = document.getElementById('export-transactions-pdf');
@@ -1218,6 +1219,17 @@
       quickEntryForm?.addEventListener('submit', handleQuickEntrySubmit);
       quickEntryAddSuggestion?.addEventListener('click', addCurrentAsSuggestion);
       renderQuickSuggestions();
+
+      // Collapsible "Budget by Category" panel.
+      budgetCategoryToggle?.addEventListener('click', () => {
+        const expanded = budgetCategoryToggle.getAttribute('aria-expanded') === 'true';
+        const next = !expanded;
+        budgetCategoryToggle.setAttribute('aria-expanded', String(next));
+        budgetCategoryToggle.textContent = next ? '−' : '+';
+        budgetCategoryToggle.title = next ? 'Hide' : 'Show';
+        budgetCategoryToggle.setAttribute('aria-label', next ? 'Hide budget table' : 'Show budget table');
+        budgetCategoryList?.classList.toggle('collapsed', !next);
+      });
 
       // Sort header for amount column
       document.querySelectorAll('[data-txn-sort]').forEach((button) => {

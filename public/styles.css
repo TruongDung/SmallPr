@@ -8385,6 +8385,47 @@ body.theme-dark .finance-export-button.secondary:disabled {
   font-weight: 700;
 }
 
+/* Collapsible panel header (e.g. Budget by Category) */
+.finance-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.finance-panel-header h3 {
+  margin: 0;
+}
+
+.finance-panel-toggle {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 1.1rem;
+  line-height: 1;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.finance-panel-toggle:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.budget-category-list.collapsed {
+  display: none;
+}
+
 .finance-report-list {
   display: grid;
   gap: 10px;
