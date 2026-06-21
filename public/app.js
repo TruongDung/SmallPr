@@ -308,7 +308,8 @@ const applyTheme = () => {
   document.body.classList.toggle('theme-dark', isDark);
   themeToggle.setAttribute('aria-pressed', String(isDark));
   themeToggle.setAttribute('aria-label', isDark ? t('switchToLightMode') : t('switchToDarkMode'));
-  themeToggle.querySelector('.theme-toggle-text').textContent = isDark ? t('lightMode') : t('darkMode');
+  const themeToggleText = themeToggle.querySelector('.theme-toggle-text');
+  if (themeToggleText) themeToggleText.textContent = isDark ? t('lightMode') : t('darkMode');
 };
 
 const toggleTheme = () => {

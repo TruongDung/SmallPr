@@ -8,6 +8,9 @@
   --text: #22272e;
   --muted: #6b7280;
   --danger: #dc2626;
+  /* Theme toggle line-art icons (masked, colored via currentColor). */
+  --theme-icon-sun: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='4'/%3E%3Cpath d='M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M19.07 4.93l-1.41 1.41M6.34 17.66l-1.41 1.41'/%3E%3C/svg%3E");
+  --theme-icon-moon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'/%3E%3C/svg%3E");
   --border: #d1d5db;
   --card-shadow: rgba(15, 23, 42, 0.08);
   --card-bg: #ffffff;
@@ -198,15 +201,18 @@ body.theme-dark .app-brand-mark {
   position: relative;
   width: 22px;
   height: 22px;
-  border-radius: 6px;
-  background: url("favicon.svg") center / contain no-repeat;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  flex: 0 0 auto;
+  /* Crescent moon (line-art) shown in light mode — click to go dark. */
+  background-color: currentColor;
+  -webkit-mask: var(--theme-icon-moon) center / 20px 20px no-repeat;
+  mask: var(--theme-icon-moon) center / 20px 20px no-repeat;
+  transition: background-color 0.3s ease;
 }
 
-/* Dark mode: keep the logo but soften its shadow for contrast. */
+/* Dark mode: swap to a sun (line-art) — click to go light. */
 body.theme-dark .theme-toggle-icon {
-  box-shadow: 0 0 10px rgba(96, 165, 250, 0.35);
+  -webkit-mask: var(--theme-icon-sun) center / 20px 20px no-repeat;
+  mask: var(--theme-icon-sun) center / 20px 20px no-repeat;
 }
 
 .theme-toggle-text {
