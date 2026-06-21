@@ -165,11 +165,14 @@ body.theme-dark .app-brand-mark {
   position: relative;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   min-height: 36px;
-  padding: 5px 14px 5px 10px;
+  width: 36px;
+  height: 36px;
+  padding: 0;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 50%;
   background: linear-gradient(135deg, var(--surface) 0%, var(--surface-soft) 100%);
   color: var(--text);
   font-weight: 600;
