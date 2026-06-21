@@ -129,7 +129,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
     }
   });
 
-  // --- Feature flags: Granular demo feature visibility ---
+  // --- Feature flags: Granular feature visibility (demo + all users) ---
   router.get('/admin/settings/demo-visibility', adminRequired, async (req, res) => {
     if (!featureFlags) {
       return res.status(500).json({ error: 'Feature flags are not configured' });
@@ -138,44 +138,48 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
       const settings = await featureFlags.getSettings();
       res.json({ settings });
     } catch (error) {
-      logger.error({ err: error }, 'Failed to load demo visibility settings');
-      res.status(500).json({ error: 'Failed to load demo visibility settings' });
+      logger.error({ err: error }, 'Failed to load visibility settings');
+      res.status(500).json({ error: 'Failed to load visibility settings' });
     }
   });
 
-  router.put('/admin/settings/demo-visibility', adminRequired, async (req, res) => {
-    if (!featureFlags) {
-      return res.status(500).json({ error: 'Feature flags are not configured' });
-    }
-
-    const updates = req.body?.visibility;
+  // Validate an incoming partial visibility update. Returns an error string or
+  // null when valid.
+  const validateVisibilityUpdates = (updates) => {
     if (!updates || typeof updates !== 'object' || Array.isArray(updates)) {
-      return res.status(400).json({ error: 'A visibility object is required' });
+      return 'A visibility object is required';
     }
-
-    // Validate provided fields are booleans (financialTabs is a nested map).
     const isBoolIfPresent = (value) => value === undefined || typeof value === 'boolean';
     if (!isBoolIfPresent(updates.weather) || !isBoolIfPresent(updates.financial) || !isBoolIfPresent(updates.userSettings)) {
-      return res.status(400).json({ error: 'Visibility flags must be boolean' });
+      return 'Visibility flags must be boolean';
     }
     if (updates.financialTabs !== undefined) {
       if (typeof updates.financialTabs !== 'object' || updates.financialTabs === null || Array.isArray(updates.financialTabs)) {
-        return res.status(400).json({ error: 'financialTabs must be an object' });
+        return 'financialTabs must be an object';
       }
       const validTabIds = new Set(featureFlags.FINANCIAL_TAB_IDS || []);
       for (const [tabId, value] of Object.entries(updates.financialTabs)) {
-        if (!validTabIds.has(tabId)) {
-          return res.status(400).json({ error: `Unknown financial tab: ${tabId}` });
-        }
-        if (typeof value !== 'boolean') {
-          return res.status(400).json({ error: 'financialTabs values must be boolean' });
-        }
+        if (!validTabIds.has(tabId)) return `Unknown financial tab: ${tabId}`;
+        if (typeof value !== 'boolean') return 'financialTabs values must be boolean';
       }
+    }
+    return null;
+  };
+
+  // Shared PUT handler for a given audience scope ('demo' | 'user').
+  const handleVisibilityPut = (scope, resultKey, label) => async (req, res) => {
+    if (!featureFlags) {
+      return res.status(500).json({ error: 'Feature flags are not configured' });
+    }
+    const updates = req.body?.visibility;
+    const validationError = validateVisibilityUpdates(updates);
+    if (validationError) {
+      return res.status(400).json({ error: validationError });
     }
 
     try {
-      const before = await featureFlags.getDemoVisibility();
-      const after = await featureFlags.setDemoVisibility(updates);
+      const before = await featureFlags.getVisibility(scope);
+      const after = await featureFlags.setVisibility(scope, updates);
 
       if (auditLogs?.record && JSON.stringify(before) !== JSON.stringify(after)) {
         await auditLogs.record({
@@ -184,18 +188,21 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
           action: 'edit',
           entityType: 'user',
           entityId: req.currentUser.id,
-          summary: 'Demo feature visibility updated',
+          summary: `${label} feature visibility updated`,
           before,
           after,
         });
       }
 
-      res.json({ settings: { demoVisibility: after } });
+      res.json({ settings: { [resultKey]: after } });
     } catch (error) {
-      logger.error({ err: error }, 'Failed to save demo visibility settings');
-      res.status(500).json({ error: 'Failed to save demo visibility settings' });
+      logger.error({ err: error }, `Failed to save ${label} visibility settings`);
+      res.status(500).json({ error: `Failed to save ${label} visibility settings` });
     }
-  });
+  };
+
+  router.put('/admin/settings/demo-visibility', adminRequired, handleVisibilityPut('demo', 'demoVisibility', 'Demo'));
+  router.put('/admin/settings/user-visibility', adminRequired, handleVisibilityPut('user', 'userVisibility', 'User'));
 
   // --- Financial tab labels (admin-editable) ---
   router.get('/admin/tab-labels', async (req, res) => {

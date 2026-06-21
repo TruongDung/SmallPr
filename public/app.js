@@ -186,14 +186,16 @@ const uploadProgressPercent = document.getElementById('upload-progress-percent')
 
 let currentMode = 'login';
 let currentUser = null;
-// Admin-controlled visibility for demo users. Defaults to everything visible;
-// refreshed from /api/config/public at startup.
-let demoVisibility = {
+// Admin-controlled feature visibility. Two audiences, each defaulting to fully
+// visible: demo users and all regular (non-admin) users. Admins see everything.
+const fullVisibility = () => ({
   weather: true,
   financial: true,
   userSettings: true,
   financialTabs: { cards: true, info: true, links: true, transactions: true, calendar: true },
-};
+});
+let demoVisibility = fullVisibility();
+let userVisibility = fullVisibility();
 let registrationStartedAt = Date.now();
 let registrationInteractionCount = 0;
 const SAVED_VIEW_KEY = 'task-manager-current-view';
@@ -203,16 +205,31 @@ const rememberMeText = document.getElementById('remember-me-text');
 const VIEW_NAMES = new Set(['dashboard', 'notes', 'tasks', 'calendar', 'sprints', 'archived', 'trash', 'tags', 'weather', 'credit-cards', 'admin']);
 const isAdminUser = () => currentUser?.username === 'admin';
 const isImpersonating = () => Boolean(currentUser?.impersonator);
-// Demo users are a client-only construct (id === 0). Real authenticated users
-// always have full access; for demo users access depends on the admin flags.
+// Demo users are a client-only construct (id === 0).
 const isDemoUser = () => Boolean(window.DemoMode?.isDemo()) || currentUser?.id === 0;
-const isWeatherAccessible = () => !isDemoUser() || demoVisibility.weather !== false;
-const isFinancialAccessible = () => !isDemoUser() || demoVisibility.financial !== false;
-const isUserSettingsAccessible = () => !isDemoUser() || demoVisibility.userSettings !== false;
-const isFinancialTabAccessible = (tabId) => (
-  !isDemoUser()
-  || (demoVisibility.financial !== false && demoVisibility.financialTabs?.[tabId] !== false)
-);
+// The visibility object that applies to the current user, or null when the user
+// is an admin (admins always see every feature). Demo users use demoVisibility,
+// everyone else uses the all-users userVisibility.
+const activeVisibility = () => {
+  if (isAdminUser()) return null;
+  return isDemoUser() ? demoVisibility : userVisibility;
+};
+const isWeatherAccessible = () => {
+  const v = activeVisibility();
+  return !v || v.weather !== false;
+};
+const isFinancialAccessible = () => {
+  const v = activeVisibility();
+  return !v || v.financial !== false;
+};
+const isUserSettingsAccessible = () => {
+  const v = activeVisibility();
+  return !v || v.userSettings !== false;
+};
+const isFinancialTabAccessible = (tabId) => {
+  const v = activeVisibility();
+  return !v || (v.financial !== false && v.financialTabs?.[tabId] !== false);
+};
 const getSavedView = () => {
   const savedView = localStorage.getItem(SAVED_VIEW_KEY);
   return VIEW_NAMES.has(savedView) ? savedView : 'dashboard';
@@ -1604,25 +1621,29 @@ const prefillRememberedCredentials = () => {
 };
 
 const loadPublicFeatureFlags = async () => {
+  const parseVisibility = (v) => ({
+    weather: v?.weather !== false,
+    financial: v?.financial !== false,
+    userSettings: v?.userSettings !== false,
+    financialTabs: {
+      cards: v?.financialTabs?.cards !== false,
+      info: v?.financialTabs?.info !== false,
+      links: v?.financialTabs?.links !== false,
+      transactions: v?.financialTabs?.transactions !== false,
+      calendar: v?.financialTabs?.calendar !== false,
+    },
+  });
   try {
     const config = await request('/api/config/public');
-    if (config?.features?.demoVisibility && typeof config.features.demoVisibility === 'object') {
-      const v = config.features.demoVisibility;
-      demoVisibility = {
-        weather: v.weather !== false,
-        financial: v.financial !== false,
-        userSettings: v.userSettings !== false,
-        financialTabs: {
-          cards: v.financialTabs?.cards !== false,
-          info: v.financialTabs?.info !== false,
-          links: v.financialTabs?.links !== false,
-          transactions: v.financialTabs?.transactions !== false,
-          calendar: v.financialTabs?.calendar !== false,
-        },
-      };
-    } else if (config?.features && typeof config.features.weatherEnabledForDemo === 'boolean') {
+    const features = config?.features;
+    if (features?.demoVisibility && typeof features.demoVisibility === 'object') {
+      demoVisibility = parseVisibility(features.demoVisibility);
+    } else if (features && typeof features.weatherEnabledForDemo === 'boolean') {
       // Backward compatibility with older config payloads.
-      demoVisibility.weather = config.features.weatherEnabledForDemo;
+      demoVisibility.weather = features.weatherEnabledForDemo;
+    }
+    if (features?.userVisibility && typeof features.userVisibility === 'object') {
+      userVisibility = parseVisibility(features.userVisibility);
     }
   } catch (error) {
     // Non-fatal: fall back to the permissive default so the app still loads.

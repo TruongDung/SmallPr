@@ -47,7 +47,6 @@
     const clearAuditLog = document.getElementById('clear-audit-log');
     const auditLogSavingToggle = document.getElementById('toggle-audit-log-saving');
     const demoVisibilityToggles = [...document.querySelectorAll('[data-visibility-path]')];
-    const financialTabsSubgroup = document.getElementById('financial-tabs-subgroup');
     const loadDatabaseStorageButton = document.getElementById('load-database-storage');
     const databaseStorageSummary = document.getElementById('database-storage-summary');
     const databaseStorageList = document.getElementById('database-storage-list');
@@ -77,11 +76,6 @@
     let auditLogPage = 1;
     let auditLogSearchTimer = null;
     let auditLogSavingEnabled = true;
-    let demoVisibility = {
-      weather: true,
-      financial: true,
-      financialTabs: { cards: true, info: true, links: true, transactions: true, calendar: true },
-    };
     let databaseStorage = null;
     let databaseStorageSort = { ...DATABASE_STORAGE_DEFAULT_SORT };
     let pendingAdminUser = null;
@@ -112,11 +106,19 @@
       renderAuditLogSavingToggle();
     };
 
-    // Read a boolean at a dotted path (e.g. "financialTabs.cards") from the
-    // current demoVisibility state.
-    const getVisibilityAt = (path) => {
+    // Visibility state per audience scope.
+    const visibilityState = { demo: {}, user: {} };
+    const scopeConfig = {
+      demo: { endpoint: '/api/admin/settings/demo-visibility', resultKey: 'demoVisibility' },
+      user: { endpoint: '/api/admin/settings/user-visibility', resultKey: 'userVisibility' },
+    };
+    const scopeOfToggle = (toggle) => toggle.closest('[data-visibility-scope]')?.dataset.visibilityScope || 'demo';
+
+    // Read a boolean at a dotted path (e.g. "financialTabs.cards") from a scope's
+    // visibility state.
+    const getVisibilityAt = (scope, path) => {
       const parts = path.split('.');
-      let node = demoVisibility;
+      let node = visibilityState[scope];
       for (const part of parts) {
         if (node == null) return true;
         node = node[part];
@@ -124,29 +126,30 @@
       return node !== false;
     };
 
-    const renderDemoVisibilityToggles = () => {
+    const renderVisibilityToggles = () => {
       demoVisibilityToggles.forEach((toggle) => {
-        const path = toggle.dataset.visibilityPath;
-        const enabled = getVisibilityAt(path);
+        const scope = scopeOfToggle(toggle);
+        const enabled = getVisibilityAt(scope, toggle.dataset.visibilityPath);
         toggle.setAttribute('aria-checked', String(enabled));
       });
-      // When the master Financial toggle is off, visually disable the sub-tabs.
-      if (financialTabsSubgroup) {
-        financialTabsSubgroup.classList.toggle('is-disabled', demoVisibility.financial === false);
-      }
+      // When a scope's master Financial toggle is off, dim its sub-tab group.
+      document.querySelectorAll('[data-financial-subgroup]').forEach((group) => {
+        const scope = group.closest('[data-visibility-scope]')?.dataset.visibilityScope || 'demo';
+        group.classList.toggle('is-disabled', visibilityState[scope].financial === false);
+      });
     };
 
-    const loadDemoVisibilitySettings = async () => {
+    const loadVisibilitySettings = async () => {
       if (!isAdminUser() || !demoVisibilityToggles.length) return;
+      // A single GET returns both scopes.
       const result = await request('/api/admin/settings/demo-visibility');
       if (result.error) {
         showStatusToast(result.error, 'error');
         return;
       }
-      if (result.settings?.demoVisibility) {
-        demoVisibility = result.settings.demoVisibility;
-      }
-      renderDemoVisibilityToggles();
+      if (result.settings?.demoVisibility) visibilityState.demo = result.settings.demoVisibility;
+      if (result.settings?.userVisibility) visibilityState.user = result.settings.userVisibility;
+      renderVisibilityToggles();
     };
 
     // Build a minimal partial update payload for a single toggle path.
@@ -158,13 +161,15 @@
       return { [path]: value };
     };
 
-    const updateDemoVisibility = async (toggle) => {
+    const updateVisibility = async (toggle) => {
+      const scope = scopeOfToggle(toggle);
+      const { endpoint, resultKey } = scopeConfig[scope];
       const path = toggle.dataset.visibilityPath;
-      const nextValue = !getVisibilityAt(path);
+      const nextValue = !getVisibilityAt(scope, path);
       demoVisibilityToggles.forEach((t) => { t.disabled = true; });
 
       try {
-        const result = await request('/api/admin/settings/demo-visibility', {
+        const result = await request(endpoint, {
           method: 'PUT',
           body: JSON.stringify({ visibility: buildVisibilityUpdate(path, nextValue) }),
         });
@@ -172,11 +177,11 @@
           showStatusToast(result.error, 'error');
           return;
         }
-        if (result.settings?.demoVisibility) {
-          demoVisibility = result.settings.demoVisibility;
+        if (result.settings?.[resultKey]) {
+          visibilityState[scope] = result.settings[resultKey];
         }
-        renderDemoVisibilityToggles();
-        showStatusToast(t('demoVisibilityUpdated') || 'Demo visibility updated');
+        renderVisibilityToggles();
+        showStatusToast(t('demoVisibilityUpdated') || 'Visibility updated');
       } catch (error) {
         showStatusToast(error.message || 'Failed to save visibility setting', 'error');
       } finally {
@@ -402,7 +407,7 @@
       renderUsers(users);
       auditLogPage = 1;
       await loadAuditLogSettings();
-      await loadDemoVisibilitySettings();
+      await loadVisibilitySettings();
       await loadAuditLogs();
     };
 
@@ -1101,7 +1106,7 @@
       clearAuditLog?.addEventListener('click', requestClearAuditLogs);
       auditLogSavingToggle?.addEventListener('click', updateAuditLogSaving);
       demoVisibilityToggles.forEach((toggle) => {
-        toggle.addEventListener('click', () => updateDemoVisibility(toggle));
+        toggle.addEventListener('click', () => updateVisibility(toggle));
       });
       loadDatabaseStorageButton?.addEventListener('click', loadDatabaseStorage);
       databaseStorageSortButtons.forEach((button) => {

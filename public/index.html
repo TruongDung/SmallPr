@@ -501,7 +501,7 @@
             <h3 id="feature-settings-title">Demo Feature Visibility</h3>
             <p class="feature-settings-subtitle">Control which features are visible to demo users.</p>
           </div>
-          <div class="feature-settings-list" id="demo-visibility-list">
+          <div class="feature-settings-list" id="demo-visibility-list" data-visibility-scope="demo">
             <div class="feature-settings-row">
               <div class="feature-settings-info">
                 <strong>Weather</strong>
@@ -532,7 +532,7 @@
               </button>
             </div>
 
-            <div class="feature-settings-subgroup" id="financial-tabs-subgroup">
+            <div class="feature-settings-subgroup" data-financial-subgroup>
               <p class="feature-settings-subgroup-title">Financial sub-tabs</p>
 
               <div class="feature-settings-row feature-settings-row-nested">
@@ -576,6 +576,93 @@
                   <strong>Calendar</strong>
                 </div>
                 <button type="button" class="feature-toggle-switch" role="switch" aria-checked="true" data-visibility-path="financialTabs.calendar" aria-label="Toggle Calendar tab for demo users">
+                  <span class="feature-toggle-track"><span class="feature-toggle-thumb"></span></span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="feature-settings-section" aria-labelledby="user-feature-settings-title">
+          <div class="feature-settings-header">
+            <h3 id="user-feature-settings-title">All Users Feature Visibility</h3>
+            <p class="feature-settings-subtitle">Control which features are visible to every regular user. Admins always see everything.</p>
+          </div>
+          <div class="feature-settings-list" id="user-visibility-list" data-visibility-scope="user">
+            <div class="feature-settings-row">
+              <div class="feature-settings-info">
+                <strong>Weather</strong>
+                <span class="feature-settings-hint">Allow all users to access the Weather feature.</span>
+              </div>
+              <button type="button" class="feature-toggle-switch" role="switch" aria-checked="true" data-visibility-path="weather" aria-label="Toggle Weather for all users">
+                <span class="feature-toggle-track"><span class="feature-toggle-thumb"></span></span>
+              </button>
+            </div>
+
+            <div class="feature-settings-row">
+              <div class="feature-settings-info">
+                <strong>User Settings</strong>
+                <span class="feature-settings-hint">Allow all users to open the User Settings panel.</span>
+              </div>
+              <button type="button" class="feature-toggle-switch" role="switch" aria-checked="true" data-visibility-path="userSettings" aria-label="Toggle User Settings for all users">
+                <span class="feature-toggle-track"><span class="feature-toggle-thumb"></span></span>
+              </button>
+            </div>
+
+            <div class="feature-settings-row">
+              <div class="feature-settings-info">
+                <strong>Financial</strong>
+                <span class="feature-settings-hint">Master toggle for the entire Financial section.</span>
+              </div>
+              <button type="button" class="feature-toggle-switch" role="switch" aria-checked="true" data-visibility-path="financial" aria-label="Toggle Financial section for all users">
+                <span class="feature-toggle-track"><span class="feature-toggle-thumb"></span></span>
+              </button>
+            </div>
+
+            <div class="feature-settings-subgroup" data-financial-subgroup>
+              <p class="feature-settings-subgroup-title">Financial sub-tabs</p>
+
+              <div class="feature-settings-row feature-settings-row-nested">
+                <div class="feature-settings-info">
+                  <strong>Credit card</strong>
+                </div>
+                <button type="button" class="feature-toggle-switch" role="switch" aria-checked="true" data-visibility-path="financialTabs.cards" aria-label="Toggle Credit card tab for all users">
+                  <span class="feature-toggle-track"><span class="feature-toggle-thumb"></span></span>
+                </button>
+              </div>
+
+              <div class="feature-settings-row feature-settings-row-nested">
+                <div class="feature-settings-info">
+                  <strong>Expense</strong>
+                </div>
+                <button type="button" class="feature-toggle-switch" role="switch" aria-checked="true" data-visibility-path="financialTabs.info" aria-label="Toggle Expense tab for all users">
+                  <span class="feature-toggle-track"><span class="feature-toggle-thumb"></span></span>
+                </button>
+              </div>
+
+              <div class="feature-settings-row feature-settings-row-nested">
+                <div class="feature-settings-info">
+                  <strong>Bill Payment Websites</strong>
+                </div>
+                <button type="button" class="feature-toggle-switch" role="switch" aria-checked="true" data-visibility-path="financialTabs.links" aria-label="Toggle Bill Payment Websites tab for all users">
+                  <span class="feature-toggle-track"><span class="feature-toggle-thumb"></span></span>
+                </button>
+              </div>
+
+              <div class="feature-settings-row feature-settings-row-nested">
+                <div class="feature-settings-info">
+                  <strong>Transactions</strong>
+                </div>
+                <button type="button" class="feature-toggle-switch" role="switch" aria-checked="true" data-visibility-path="financialTabs.transactions" aria-label="Toggle Transactions tab for all users">
+                  <span class="feature-toggle-track"><span class="feature-toggle-thumb"></span></span>
+                </button>
+              </div>
+
+              <div class="feature-settings-row feature-settings-row-nested">
+                <div class="feature-settings-info">
+                  <strong>Calendar</strong>
+                </div>
+                <button type="button" class="feature-toggle-switch" role="switch" aria-checked="true" data-visibility-path="financialTabs.calendar" aria-label="Toggle Calendar tab for all users">
                   <span class="feature-toggle-track"><span class="feature-toggle-thumb"></span></span>
                 </button>
               </div>

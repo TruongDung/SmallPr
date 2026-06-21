@@ -1,13 +1,15 @@
 // Feature flag service backed by the app_settings table.
-// Controls granular feature visibility for demo users:
-//   - Weather feature
-//   - Financial tab (master)
-//   - Each Financial sub-tab independently
+// Controls granular feature visibility, independently for two audiences:
+//   - demo users  → `demo_feature_visibility`
+//   - all regular (non-admin) users → `user_feature_visibility`
 //
-// Stored as a single JSON object under the `demo_feature_visibility` key so the
-// whole visibility model can be read/written atomically.
+// Each is a single JSON object so the whole visibility model can be read/written
+// atomically. Admins always see every feature regardless of these flags.
 
-const DEMO_VISIBILITY_KEY = 'demo_feature_visibility';
+const VISIBILITY_KEYS = {
+  demo: 'demo_feature_visibility',
+  user: 'user_feature_visibility',
+};
 
 // The Financial sub-tabs that can be toggled independently. Keep in sync with
 // the `data-financial-tab` values in index.html / creditCards.dom.js.
@@ -53,19 +55,21 @@ const normalizeVisibility = (raw) => {
   return result;
 };
 
+const resolveKey = (scope) => VISIBILITY_KEYS[scope] || VISIBILITY_KEYS.demo;
+
 const createFeatureFlagsService = ({ allAsync, runAsync }) => {
-  const getDemoVisibility = async () => {
+  const getVisibility = async (scope) => {
     const rows = await allAsync(
       'SELECT setting_value FROM app_settings WHERE setting_key = ?',
-      [DEMO_VISIBILITY_KEY]
+      [resolveKey(scope)]
     );
     return normalizeVisibility(rows[0]?.setting_value);
   };
 
-  const setDemoVisibility = async (updates) => {
+  const setVisibility = async (scope, updates) => {
     // Merge incoming partial updates over the current persisted state so the
     // admin UI can send just the field that changed.
-    const current = await getDemoVisibility();
+    const current = await getVisibility(scope);
     const merged = normalizeVisibility({
       weather: updates?.weather ?? current.weather,
       financial: updates?.financial ?? current.financial,
@@ -84,10 +88,16 @@ const createFeatureFlagsService = ({ allAsync, runAsync }) => {
        ON CONFLICT (setting_key)
        DO UPDATE SET setting_value = EXCLUDED.setting_value,
                      updated_at = CURRENT_TIMESTAMP`,
-      [DEMO_VISIBILITY_KEY, JSON.stringify(merged)]
+      [resolveKey(scope), JSON.stringify(merged)]
     );
     return merged;
   };
+
+  // --- Scope-specific convenience wrappers ---
+  const getDemoVisibility = () => getVisibility('demo');
+  const setDemoVisibility = (updates) => setVisibility('demo', updates);
+  const getUserVisibility = () => getVisibility('user');
+  const setUserVisibility = (updates) => setVisibility('user', updates);
 
   // --- Weather convenience wrappers (kept for backward compatibility) ---
   const getWeatherEnabledForDemo = async () => (await getDemoVisibility()).weather;
@@ -99,22 +109,31 @@ const createFeatureFlagsService = ({ allAsync, runAsync }) => {
 
   const getSettings = async () => ({
     demoVisibility: await getDemoVisibility(),
+    userVisibility: await getUserVisibility(),
   });
 
   // Flags exposed publicly (consumed by the frontend, including demo mode).
   const getPublicFlags = async () => {
-    const demoVisibility = await getDemoVisibility();
+    const [demoVisibility, userVisibility] = await Promise.all([
+      getDemoVisibility(),
+      getUserVisibility(),
+    ]);
     return {
       // Retained so older clients keep working.
       weatherEnabledForDemo: demoVisibility.weather,
       demoVisibility,
+      userVisibility,
     };
   };
 
   return {
     FINANCIAL_TAB_IDS,
+    getVisibility,
+    setVisibility,
     getDemoVisibility,
     setDemoVisibility,
+    getUserVisibility,
+    setUserVisibility,
     getWeatherEnabledForDemo,
     setWeatherEnabledForDemo,
     getSettings,
