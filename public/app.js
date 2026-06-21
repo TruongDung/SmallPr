@@ -191,6 +191,7 @@ let currentUser = null;
 let demoVisibility = {
   weather: true,
   financial: true,
+  userSettings: true,
   financialTabs: { cards: true, info: true, links: true, transactions: true, calendar: true },
 };
 let registrationStartedAt = Date.now();
@@ -207,6 +208,7 @@ const isImpersonating = () => Boolean(currentUser?.impersonator);
 const isDemoUser = () => Boolean(window.DemoMode?.isDemo()) || currentUser?.id === 0;
 const isWeatherAccessible = () => !isDemoUser() || demoVisibility.weather !== false;
 const isFinancialAccessible = () => !isDemoUser() || demoVisibility.financial !== false;
+const isUserSettingsAccessible = () => !isDemoUser() || demoVisibility.userSettings !== false;
 const isFinancialTabAccessible = (tabId) => (
   !isDemoUser()
   || (demoVisibility.financial !== false && demoVisibility.financialTabs?.[tabId] !== false)
@@ -1330,7 +1332,9 @@ const renderUserArea = () => {
   settingsButton.className = 'secondary nav-button';
   setNavButtonContent(settingsButton, t('userSettings'), '⚙');
   settingsButton.addEventListener('click', showUserSettingsModal);
-  userArea.append(settingsButton);
+  if (isUserSettingsAccessible()) {
+    userArea.append(settingsButton);
+  }
 
   userArea.append(logoutButton);
 };
@@ -1410,6 +1414,7 @@ const setSettingsError = (element, text) => {
 
 const showUserSettingsModal = () => {
   if (!currentUser || !userSettingsModal) return;
+  if (!isUserSettingsAccessible()) return;
   setSettingsError(userSettingsFormError, '');
   setSettingsError(passwordSettingsFormError, '');
   userSettingsForm?.reset();
@@ -1605,6 +1610,7 @@ const loadPublicFeatureFlags = async () => {
       demoVisibility = {
         weather: v.weather !== false,
         financial: v.financial !== false,
+        userSettings: v.userSettings !== false,
         financialTabs: {
           cards: v.financialTabs?.cards !== false,
           info: v.financialTabs?.info !== false,

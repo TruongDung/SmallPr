@@ -23,6 +23,7 @@ const toBool = (value, fallback = true) => {
 const defaultVisibility = () => ({
   weather: true,
   financial: true,
+  userSettings: true,
   financialTabs: FINANCIAL_TAB_IDS.reduce((acc, id) => {
     acc[id] = true;
     return acc;
@@ -38,6 +39,7 @@ const normalizeVisibility = (raw) => {
   const result = {
     weather: toBool(raw.weather, base.weather),
     financial: toBool(raw.financial, base.financial),
+    userSettings: toBool(raw.userSettings, base.userSettings),
     financialTabs: { ...base.financialTabs },
   };
 
@@ -67,6 +69,7 @@ const createFeatureFlagsService = ({ allAsync, runAsync }) => {
     const merged = normalizeVisibility({
       weather: updates?.weather ?? current.weather,
       financial: updates?.financial ?? current.financial,
+      userSettings: updates?.userSettings ?? current.userSettings,
       financialTabs: {
         ...current.financialTabs,
         ...(updates?.financialTabs && typeof updates.financialTabs === 'object'

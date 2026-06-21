@@ -155,7 +155,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
 
     // Validate provided fields are booleans (financialTabs is a nested map).
     const isBoolIfPresent = (value) => value === undefined || typeof value === 'boolean';
-    if (!isBoolIfPresent(updates.weather) || !isBoolIfPresent(updates.financial)) {
+    if (!isBoolIfPresent(updates.weather) || !isBoolIfPresent(updates.financial) || !isBoolIfPresent(updates.userSettings)) {
       return res.status(400).json({ error: 'Visibility flags must be boolean' });
     }
     if (updates.financialTabs !== undefined) {
