@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=cache-clear-20260615-theme-toggle-polish-1" />
+  <link rel="stylesheet" href="styles.css?v=cache-clear-20260620-theme-toggle-logo-1" />
 </head>
 <body>
   <div class="container">
@@ -737,6 +737,20 @@
               <button id="open-add-transaction" type="button" class="primary task-action-icon" aria-label="Add Transaction" title="Add Transaction">+</button>
             </div>
             <input id="import-statement-file" type="file" accept="application/pdf" class="hidden" aria-hidden="true" />
+          </div>
+
+          <div class="quick-entry">
+            <form id="quick-entry-form" class="quick-entry-form">
+              <span class="quick-entry-icon" aria-hidden="true">✎</span>
+              <input id="quick-entry-input" type="text" class="quick-entry-input" autocomplete="off"
+                placeholder='Type naturally: "breakfast 35k", "gas 80k", "+salary 15m"...' aria-label="Quick add transaction" />
+              <button id="quick-entry-submit" type="submit" class="primary quick-entry-submit">Record</button>
+            </form>
+            <div class="quick-entry-suggestions">
+              <span class="quick-entry-suggestions-label" id="quick-entry-suggestions-label">Quick add:</span>
+              <div id="quick-entry-chips" class="quick-entry-chips" role="list"></div>
+              <button id="quick-entry-add-suggestion" type="button" class="quick-entry-add" title="Save current text as a suggestion" aria-label="Add suggestion">+ Add</button>
+            </div>
           </div>
 
           <div class="transactions-summary">

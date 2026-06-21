@@ -32,6 +32,12 @@
     const exportPdfButton = document.getElementById('export-transactions-pdf');
     const exportExcelButton = document.getElementById('export-transactions-excel');
 
+    // Natural-language quick entry elements.
+    const quickEntryForm = document.getElementById('quick-entry-form');
+    const quickEntryInput = document.getElementById('quick-entry-input');
+    const quickEntryChips = document.getElementById('quick-entry-chips');
+    const quickEntryAddSuggestion = document.getElementById('quick-entry-add-suggestion');
+
     // Statement import (PDF → expenses) elements.
     const importButton = document.getElementById('import-statement');
     const importFileInput = document.getElementById('import-statement-file');
@@ -59,6 +65,14 @@
       category: '',
     };
     const budgetStorageKey = 'finance-category-budgets';
+    const quickSuggestionsKey = 'transaction-quick-suggestions';
+    const defaultQuickSuggestions = [
+      'breakfast 35k',
+      'gas 80k',
+      'milk tea 65k yesterday',
+      'electricity 850k',
+      '+salary 15m',
+    ];
 
     const formatCurrency = (value) => {
       const amount = Number(value || 0);
@@ -606,6 +620,162 @@
       renderCreditCardPayments();
     };
 
+    // --- Natural-language quick entry --------------------------------------
+
+    // Parse free text like "breakfast 35k", "gas 80 nghin", "milk tea 65k
+    // yesterday", "+salary 15m" into a transaction draft. Returns null when no
+    // amount can be found.
+    const parseQuickEntry = (rawText) => {
+      const text = String(rawText || '').trim();
+      if (!text) return null;
+
+      // Income when prefixed with "+" or when an income keyword is present.
+      const incomeKeywords = /\b(salary|income|bonus|lương|luong|thưởng|thuong|thu nhập|thu nhap)\b/i;
+      let kind = 'expense';
+      let working = text;
+      if (working.startsWith('+')) {
+        kind = 'income';
+        working = working.slice(1).trim();
+      } else if (incomeKeywords.test(working)) {
+        kind = 'income';
+      }
+
+      // Date keywords: yesterday / hôm qua. Default is today.
+      let occurredOn = new Date();
+      const yesterday = /\b(yesterday|hôm qua|hom qua)\b/i;
+      const today = /\b(today|hôm nay|hom nay)\b/i;
+      if (yesterday.test(working)) {
+        occurredOn = new Date(occurredOn.getTime() - 86400000);
+        working = working.replace(yesterday, ' ');
+      } else if (today.test(working)) {
+        working = working.replace(today, ' ');
+      }
+
+      // Amount: a number optionally followed by a magnitude suffix.
+      //   k / nghìn / nghin            → x1,000
+      //   m / tr / triệu / trieu / mil → x1,000,000
+      const amountRegex = /(\d+(?:[.,]\d+)?)\s*(k|nghìn|nghin|m|tr|triệu|trieu|mil|million)?\b/i;
+      const match = working.match(amountRegex);
+      if (!match) return null;
+
+      const numeric = Number(String(match[1]).replace(',', '.'));
+      if (!Number.isFinite(numeric)) return null;
+      const suffix = (match[2] || '').toLowerCase();
+      let amount = numeric;
+      if (['k', 'nghìn', 'nghin'].includes(suffix)) amount = numeric * 1000;
+      else if (['m', 'tr', 'triệu', 'trieu', 'mil', 'million'].includes(suffix)) amount = numeric * 1000000;
+      if (amount <= 0) return null;
+
+      // Whatever text remains after removing the amount token becomes the
+      // category/description.
+      const description = working.replace(match[0], ' ').replace(/\s+/g, ' ').trim();
+
+      return {
+        kind,
+        amount,
+        category: description || (kind === 'income' ? 'Income' : 'Expense'),
+        note: text,
+        occurred_on: occurredOn.toISOString().slice(0, 10),
+        credit_card_id: null,
+      };
+    };
+
+    const getQuickSuggestions = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem(quickSuggestionsKey) || 'null');
+        if (Array.isArray(stored) && stored.length) return stored;
+      } catch { /* fall through to defaults */ }
+      return [...defaultQuickSuggestions];
+    };
+
+    const saveQuickSuggestions = (list) => {
+      localStorage.setItem(quickSuggestionsKey, JSON.stringify(list));
+    };
+
+    const renderQuickSuggestions = () => {
+      if (!quickEntryChips) return;
+      const suggestions = getQuickSuggestions();
+      quickEntryChips.innerHTML = '';
+      suggestions.forEach((suggestion) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'quick-entry-chip';
+        chip.setAttribute('role', 'listitem');
+        chip.textContent = suggestion;
+        // Click fills the input so the user can review/edit before recording.
+        chip.addEventListener('click', () => {
+          if (quickEntryInput) {
+            quickEntryInput.value = suggestion;
+            quickEntryInput.focus();
+          }
+        });
+        // A small remove control on each chip.
+        const remove = document.createElement('span');
+        remove.className = 'quick-entry-chip-remove';
+        remove.textContent = '×';
+        remove.setAttribute('role', 'button');
+        remove.setAttribute('aria-label', `Remove suggestion ${suggestion}`);
+        remove.addEventListener('click', (event) => {
+          event.stopPropagation();
+          const next = getQuickSuggestions().filter((item) => item !== suggestion);
+          saveQuickSuggestions(next);
+          renderQuickSuggestions();
+        });
+        chip.append(remove);
+        quickEntryChips.append(chip);
+      });
+    };
+
+    const addCurrentAsSuggestion = () => {
+      const text = (quickEntryInput?.value || '').trim();
+      if (!text) {
+        showStatusToast(t('quickEntryTypeFirst') || 'Type something to save as a suggestion', 'error');
+        return;
+      }
+      const list = getQuickSuggestions();
+      if (list.includes(text)) {
+        showStatusToast(t('quickEntryExists') || 'That suggestion already exists', 'error');
+        return;
+      }
+      list.push(text);
+      saveQuickSuggestions(list);
+      renderQuickSuggestions();
+      showStatusToast(t('quickEntryAdded') || 'Suggestion added', 'success');
+    };
+
+    const handleQuickEntrySubmit = async (event) => {
+      event.preventDefault();
+      const draft = parseQuickEntry(quickEntryInput?.value);
+      if (!draft) {
+        showStatusToast(t('quickEntryParseFailed') || 'Could not read an amount. Try "lunch 35k".', 'error');
+        quickEntryInput?.focus();
+        return;
+      }
+
+      try {
+        const result = await request('/api/transactions', {
+          method: 'POST',
+          body: JSON.stringify(draft),
+        });
+        if (result.error) {
+          showStatusToast(result.error, 'error');
+          return;
+        }
+        showStatusToast(t('transactionAdded') || 'Transaction added', 'success');
+        if (quickEntryInput) quickEntryInput.value = '';
+
+        // Jump the month filter to the new transaction's month, then reload.
+        const d = new Date(draft.occurred_on);
+        monthFilter.value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        currentFilters.year = d.getFullYear().toString();
+        currentFilters.month = (d.getMonth() + 1).toString();
+        await load();
+      } catch (error) {
+        console.error('Quick entry failed:', error);
+        showStatusToast(t('failedToSaveTransaction') || 'Failed to save transaction', 'error');
+      }
+    };
+
     const handleSubmit = async (event) => {
       event.preventDefault();
       clearFormError();
@@ -1040,6 +1210,11 @@
       exportCsvButton?.addEventListener('click', exportCsv);
       exportPdfButton?.addEventListener('click', exportPdf);
       exportExcelButton?.addEventListener('click', exportExcel);
+
+      // Natural-language quick entry wiring.
+      quickEntryForm?.addEventListener('submit', handleQuickEntrySubmit);
+      quickEntryAddSuggestion?.addEventListener('click', addCurrentAsSuggestion);
+      renderQuickSuggestions();
 
       // Sort header for amount column
       document.querySelectorAll('[data-txn-sort]').forEach((button) => {
