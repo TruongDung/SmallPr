@@ -208,11 +208,14 @@ const isImpersonating = () => Boolean(currentUser?.impersonator);
 // Demo users are a client-only construct (id === 0).
 const isDemoUser = () => Boolean(window.DemoMode?.isDemo()) || currentUser?.id === 0;
 // The visibility object that applies to the current user, or null when the user
-// is an admin (admins always see every feature). Demo users use demoVisibility,
-// everyone else uses the all-users userVisibility.
+// is an admin (admins always see every feature). Demo users use demoVisibility
+// (from public config); regular users use their per-user visibility delivered
+// on the session (currentUser.featureVisibility), falling back to the global
+// all-users default.
 const activeVisibility = () => {
   if (isAdminUser()) return null;
-  return isDemoUser() ? demoVisibility : userVisibility;
+  if (isDemoUser()) return demoVisibility;
+  return currentUser?.featureVisibility || userVisibility;
 };
 const isWeatherAccessible = () => {
   const v = activeVisibility();

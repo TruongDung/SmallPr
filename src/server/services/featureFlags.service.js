@@ -107,6 +107,58 @@ const createFeatureFlagsService = ({ allAsync, runAsync }) => {
     return { weatherEnabledForDemo: merged.weather };
   };
 
+  // --- Per-user overrides ---
+  // Returns the stored override for a user, or null when none exists.
+  const getUserOverride = async (userId) => {
+    const rows = await allAsync(
+      'SELECT visibility FROM user_feature_overrides WHERE user_id = ?',
+      [userId]
+    );
+    if (!rows.length) return null;
+    return normalizeVisibility(rows[0].visibility);
+  };
+
+  // The visibility that actually applies to a user: their override if present,
+  // otherwise the global all-users default.
+  const getEffectiveUserVisibility = async (userId) => {
+    const override = await getUserOverride(userId);
+    if (override) return override;
+    return getUserVisibility();
+  };
+
+  // Merge a partial update for a user over their current effective visibility
+  // and persist it as a full override row.
+  const setUserOverride = async (userId, updates) => {
+    const current = await getEffectiveUserVisibility(userId);
+    const merged = normalizeVisibility({
+      weather: updates?.weather ?? current.weather,
+      financial: updates?.financial ?? current.financial,
+      userSettings: updates?.userSettings ?? current.userSettings,
+      financialTabs: {
+        ...current.financialTabs,
+        ...(updates?.financialTabs && typeof updates.financialTabs === 'object'
+          ? updates.financialTabs
+          : {}),
+      },
+    });
+
+    await runAsync(
+      `INSERT INTO user_feature_overrides (user_id, visibility, updated_at)
+       VALUES (?, ?::jsonb, CURRENT_TIMESTAMP)
+       ON CONFLICT (user_id)
+       DO UPDATE SET visibility = EXCLUDED.visibility,
+                     updated_at = CURRENT_TIMESTAMP`,
+      [userId, JSON.stringify(merged)]
+    );
+    return merged;
+  };
+
+  // Remove a user's override so they fall back to the global default.
+  const clearUserOverride = async (userId) => {
+    await runAsync('DELETE FROM user_feature_overrides WHERE user_id = ?', [userId]);
+    return getUserVisibility();
+  };
+
   const getSettings = async () => ({
     demoVisibility: await getDemoVisibility(),
     userVisibility: await getUserVisibility(),
@@ -134,6 +186,10 @@ const createFeatureFlagsService = ({ allAsync, runAsync }) => {
     setDemoVisibility,
     getUserVisibility,
     setUserVisibility,
+    getUserOverride,
+    getEffectiveUserVisibility,
+    setUserOverride,
+    clearUserOverride,
     getWeatherEnabledForDemo,
     setWeatherEnabledForDemo,
     getSettings,

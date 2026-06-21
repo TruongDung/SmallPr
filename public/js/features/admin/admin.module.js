@@ -47,6 +47,8 @@
     const clearAuditLog = document.getElementById('clear-audit-log');
     const auditLogSavingToggle = document.getElementById('toggle-audit-log-saving');
     const demoVisibilityToggles = [...document.querySelectorAll('[data-visibility-path]')];
+    const userVisibilitySelect = document.getElementById('user-visibility-user-select');
+    const userVisibilityReset = document.getElementById('user-visibility-reset');
     const loadDatabaseStorageButton = document.getElementById('load-database-storage');
     const databaseStorageSummary = document.getElementById('database-storage-summary');
     const databaseStorageList = document.getElementById('database-storage-list');
@@ -108,10 +110,9 @@
 
     // Visibility state per audience scope.
     const visibilityState = { demo: {}, user: {} };
-    const scopeConfig = {
-      demo: { endpoint: '/api/admin/settings/demo-visibility', resultKey: 'demoVisibility' },
-      user: { endpoint: '/api/admin/settings/user-visibility', resultKey: 'userVisibility' },
-    };
+    // When set (a user id string), the "user" scope edits that user's override
+    // instead of the global all-users default.
+    let selectedUserId = '';
     const scopeOfToggle = (toggle) => toggle.closest('[data-visibility-scope]')?.dataset.visibilityScope || 'demo';
 
     // Read a boolean at a dotted path (e.g. "financialTabs.cards") from a scope's
@@ -132,16 +133,62 @@
         const enabled = getVisibilityAt(scope, toggle.dataset.visibilityPath);
         toggle.setAttribute('aria-checked', String(enabled));
       });
-      // When a scope's master Financial toggle is off, dim its sub-tab group.
       document.querySelectorAll('[data-financial-subgroup]').forEach((group) => {
         const scope = group.closest('[data-visibility-scope]')?.dataset.visibilityScope || 'demo';
         group.classList.toggle('is-disabled', visibilityState[scope].financial === false);
       });
     };
 
+    // Populate the per-user dropdown (excludes the admin account).
+    const populateUserVisibilitySelect = () => {
+      if (!userVisibilitySelect) return;
+      const previous = userVisibilitySelect.value;
+      userVisibilitySelect.innerHTML = '';
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = t('allUsersDefault') || 'All users (default)';
+      userVisibilitySelect.append(defaultOption);
+      users
+        .filter((u) => u.username !== 'admin')
+        .forEach((u) => {
+          const option = document.createElement('option');
+          option.value = String(u.id);
+          option.textContent = u.name ? `${u.name} (${u.username})` : u.username;
+          userVisibilitySelect.append(option);
+        });
+      userVisibilitySelect.value = users.some((u) => String(u.id) === previous) ? previous : '';
+      selectedUserId = userVisibilitySelect.value;
+    };
+
+    // Load the "user" scope state: global default when no user selected, else
+    // that user's effective visibility.
+    const loadUserScope = async () => {
+      if (selectedUserId) {
+        const result = await request(`/api/admin/users/${selectedUserId}/visibility`);
+        if (result.error) {
+          showStatusToast(result.error, 'error');
+          return;
+        }
+        visibilityState.user = result.visibility || {};
+        if (userVisibilityReset) {
+          userVisibilityReset.classList.toggle('hidden', !result.hasOverride);
+        }
+      } else {
+        // Global default comes from the combined settings endpoint.
+        const result = await request('/api/admin/settings/demo-visibility');
+        if (result.error) {
+          showStatusToast(result.error, 'error');
+          return;
+        }
+        if (result.settings?.userVisibility) visibilityState.user = result.settings.userVisibility;
+        if (userVisibilityReset) userVisibilityReset.classList.add('hidden');
+      }
+      renderVisibilityToggles();
+    };
+
     const loadVisibilitySettings = async () => {
       if (!isAdminUser() || !demoVisibilityToggles.length) return;
-      // A single GET returns both scopes.
+      // A single GET returns both demo + global user defaults.
       const result = await request('/api/admin/settings/demo-visibility');
       if (result.error) {
         showStatusToast(result.error, 'error');
@@ -149,6 +196,7 @@
       }
       if (result.settings?.demoVisibility) visibilityState.demo = result.settings.demoVisibility;
       if (result.settings?.userVisibility) visibilityState.user = result.settings.userVisibility;
+      populateUserVisibilitySelect();
       renderVisibilityToggles();
     };
 
@@ -161,12 +209,20 @@
       return { [path]: value };
     };
 
+    // Resolve the endpoint + response key for a scope, honoring the selected
+    // user for the "user" scope.
+    const endpointForScope = (scope) => {
+      if (scope === 'demo') return { endpoint: '/api/admin/settings/demo-visibility', resultKey: 'demoVisibility', nested: 'settings' };
+      if (selectedUserId) return { endpoint: `/api/admin/users/${selectedUserId}/visibility`, resultKey: 'visibility', nested: null };
+      return { endpoint: '/api/admin/settings/user-visibility', resultKey: 'userVisibility', nested: 'settings' };
+    };
+
     const updateVisibility = async (toggle) => {
       const scope = scopeOfToggle(toggle);
-      const { endpoint, resultKey } = scopeConfig[scope];
+      const { endpoint, resultKey, nested } = endpointForScope(scope);
       const path = toggle.dataset.visibilityPath;
       const nextValue = !getVisibilityAt(scope, path);
-      demoVisibilityToggles.forEach((t) => { t.disabled = true; });
+      demoVisibilityToggles.forEach((tg) => { tg.disabled = true; });
 
       try {
         const result = await request(endpoint, {
@@ -177,16 +233,31 @@
           showStatusToast(result.error, 'error');
           return;
         }
-        if (result.settings?.[resultKey]) {
-          visibilityState[scope] = result.settings[resultKey];
+        const payload = nested ? result[nested]?.[resultKey] : result[resultKey];
+        if (payload) visibilityState[scope] = payload;
+        if (scope === 'user' && selectedUserId && userVisibilityReset) {
+          userVisibilityReset.classList.remove('hidden');
         }
         renderVisibilityToggles();
         showStatusToast(t('demoVisibilityUpdated') || 'Visibility updated');
       } catch (error) {
         showStatusToast(error.message || 'Failed to save visibility setting', 'error');
       } finally {
-        demoVisibilityToggles.forEach((t) => { t.disabled = false; });
+        demoVisibilityToggles.forEach((tg) => { tg.disabled = false; });
       }
+    };
+
+    const resetSelectedUserOverride = async () => {
+      if (!selectedUserId) return;
+      const result = await request(`/api/admin/users/${selectedUserId}/visibility`, { method: 'DELETE' });
+      if (result.error) {
+        showStatusToast(result.error, 'error');
+        return;
+      }
+      visibilityState.user = result.visibility || {};
+      userVisibilityReset?.classList.add('hidden');
+      renderVisibilityToggles();
+      showStatusToast(t('userOverrideCleared') || 'Reset to default');
     };
 
     const formatInteger = (value) => new Intl.NumberFormat(undefined, {
@@ -1108,6 +1179,11 @@
       demoVisibilityToggles.forEach((toggle) => {
         toggle.addEventListener('click', () => updateVisibility(toggle));
       });
+      userVisibilitySelect?.addEventListener('change', () => {
+        selectedUserId = userVisibilitySelect.value;
+        loadUserScope();
+      });
+      userVisibilityReset?.addEventListener('click', resetSelectedUserOverride);
       loadDatabaseStorageButton?.addEventListener('click', loadDatabaseStorage);
       databaseStorageSortButtons.forEach((button) => {
         button.addEventListener('click', () => updateDatabaseStorageSort(button.dataset.dbStorageSort));

@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=cache-clear-20260620-quick-entry-mobile-1" />
+  <link rel="stylesheet" href="styles.css?v=cache-clear-20260620-per-user-visibility-1" />
 </head>
 <body>
   <div class="container">
@@ -585,8 +585,15 @@
 
         <section class="feature-settings-section" aria-labelledby="user-feature-settings-title">
           <div class="feature-settings-header">
-            <h3 id="user-feature-settings-title">All Users Feature Visibility</h3>
-            <p class="feature-settings-subtitle">Control which features are visible to every regular user. Admins always see everything.</p>
+            <h3 id="user-feature-settings-title">User Feature Visibility</h3>
+            <p class="feature-settings-subtitle">Set the default for all users, or pick a specific user to override. Admins always see everything.</p>
+            <div class="feature-settings-user-picker">
+              <label for="user-visibility-user-select" class="sr-only">Choose user</label>
+              <select id="user-visibility-user-select" class="feature-settings-user-select">
+                <option value="">All users (default)</option>
+              </select>
+              <button id="user-visibility-reset" type="button" class="secondary hidden" title="Remove this user's override">Reset to default</button>
+            </div>
           </div>
           <div class="feature-settings-list" id="user-visibility-list" data-visibility-scope="user">
             <div class="feature-settings-row">

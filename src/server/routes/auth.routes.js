@@ -98,8 +98,22 @@ const validateHumanRegistration = (req, res, next) => {
   return next();
 };
 
-const createAuthRouter = ({ auditLogs, bcrypt, getAsync, getUserById, runAsync, sendVerificationEmail }) => {
+const createAuthRouter = ({ auditLogs, featureFlags, bcrypt, getAsync, getUserById, runAsync, sendVerificationEmail }) => {
   const router = express.Router();
+
+  // Attach the effective per-user feature visibility to a session-user payload.
+  // Admins are never restricted, so they receive null (full access).
+  const withFeatureVisibility = async (sessionUser, user) => {
+    if (!sessionUser || !featureFlags || !user) return sessionUser;
+    try {
+      if (user.username === 'admin') return { ...sessionUser, featureVisibility: null };
+      const featureVisibility = await featureFlags.getEffectiveUserVisibility(user.id);
+      return { ...sessionUser, featureVisibility };
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to resolve feature visibility');
+      return sessionUser;
+    }
+  };
 
   router.post(['/signup', '/register'], registrationRateLimit, validateHumanRegistration, async (req, res) => {
     const { username, password } = req.body;
@@ -245,7 +259,7 @@ const createAuthRouter = ({ auditLogs, bcrypt, getAsync, getUserById, runAsync, 
         after: createSessionUser(user),
         ipAddress: userIp,
       });
-      res.json({ user: createSessionUser(user) });
+      res.json({ user: await withFeatureVisibility(createSessionUser(user), user) });
     } catch (error) {
       logger.error({ err: error }, 'Login failed');
       res.status(500).json({ error: 'Login failed' });
@@ -385,7 +399,7 @@ const createAuthRouter = ({ auditLogs, bcrypt, getAsync, getUserById, runAsync, 
         }
       }
 
-      res.json({ user: createSessionUser(user, impersonator) });
+      res.json({ user: await withFeatureVisibility(createSessionUser(user, impersonator), user) });
     } catch (error) {
       logger.error({ err: error }, 'Failed to retrieve user');
       res.status(500).json({ error: 'Failed to retrieve user' });

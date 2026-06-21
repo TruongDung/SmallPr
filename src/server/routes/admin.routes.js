@@ -204,6 +204,79 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
   router.put('/admin/settings/demo-visibility', adminRequired, handleVisibilityPut('demo', 'demoVisibility', 'Demo'));
   router.put('/admin/settings/user-visibility', adminRequired, handleVisibilityPut('user', 'userVisibility', 'User'));
 
+  // --- Per-user feature visibility overrides ---
+  router.get('/admin/users/:id/visibility', adminRequired, async (req, res) => {
+    if (!featureFlags) {
+      return res.status(500).json({ error: 'Feature flags are not configured' });
+    }
+    try {
+      const user = await getAsync('SELECT id, username FROM users WHERE id = ?', [req.params.id]);
+      if (!user) return res.status(404).json({ error: 'User not found' });
+
+      const override = await featureFlags.getUserOverride(user.id);
+      const visibility = override || await featureFlags.getUserVisibility();
+      res.json({ visibility, hasOverride: Boolean(override) });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to load user visibility');
+      res.status(500).json({ error: 'Failed to load user visibility' });
+    }
+  });
+
+  router.put('/admin/users/:id/visibility', adminRequired, async (req, res) => {
+    if (!featureFlags) {
+      return res.status(500).json({ error: 'Feature flags are not configured' });
+    }
+    const updates = req.body?.visibility;
+    const validationError = validateVisibilityUpdates(updates);
+    if (validationError) {
+      return res.status(400).json({ error: validationError });
+    }
+
+    try {
+      const user = await getAsync('SELECT id, username FROM users WHERE id = ?', [req.params.id]);
+      if (!user) return res.status(404).json({ error: 'User not found' });
+      if (user.username === 'admin') {
+        return res.status(400).json({ error: 'The admin account is never restricted' });
+      }
+
+      const before = await featureFlags.getEffectiveUserVisibility(user.id);
+      const after = await featureFlags.setUserOverride(user.id, updates);
+
+      if (auditLogs?.record && JSON.stringify(before) !== JSON.stringify(after)) {
+        await auditLogs.record({
+          actorUserId: req.currentUser.id,
+          userId: user.id,
+          action: 'edit',
+          entityType: 'user',
+          entityId: user.id,
+          summary: `Feature visibility updated for ${user.username}`,
+          before,
+          after,
+        });
+      }
+
+      res.json({ visibility: after, hasOverride: true });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to save user visibility');
+      res.status(500).json({ error: 'Failed to save user visibility' });
+    }
+  });
+
+  router.delete('/admin/users/:id/visibility', adminRequired, async (req, res) => {
+    if (!featureFlags) {
+      return res.status(500).json({ error: 'Feature flags are not configured' });
+    }
+    try {
+      const user = await getAsync('SELECT id, username FROM users WHERE id = ?', [req.params.id]);
+      if (!user) return res.status(404).json({ error: 'User not found' });
+      const visibility = await featureFlags.clearUserOverride(user.id);
+      res.json({ visibility, hasOverride: false });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to clear user visibility');
+      res.status(500).json({ error: 'Failed to clear user visibility' });
+    }
+  });
+
   // --- Financial tab labels (admin-editable) ---
   router.get('/admin/tab-labels', async (req, res) => {
     try {

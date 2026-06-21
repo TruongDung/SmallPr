@@ -3228,6 +3228,26 @@ body.theme-dark .calendar-lunar-badge-key {
   font-size: 0.88rem;
 }
 
+/* Per-user picker in the User Feature Visibility panel */
+.feature-settings-user-picker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.feature-settings-user-select {
+  min-height: 38px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.9rem;
+  min-width: 220px;
+}
+
 .feature-settings-subgroup {
   margin-top: 4px;
   padding: 8px 0 8px 16px;

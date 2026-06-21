@@ -39,6 +39,7 @@ const registerRoutes = (app, {
   // Auth routes
   app.use('/api', createAuthRouter({
     auditLogs,
+    featureFlags,
     bcrypt,
     getAsync,
     getUserById,
