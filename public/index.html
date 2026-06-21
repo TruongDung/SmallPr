@@ -11,7 +11,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=cache-clear-20260620-per-user-visibility-1" />
+  <link rel="stylesheet" href="styles.css?v=cache-clear-20260620-txn-redesign-1" />
 </head>
 <body>
   <div class="container">
@@ -827,13 +827,19 @@
                 <input type="month" id="transaction-month-filter" aria-label="Filter by month" />
                 <button id="transaction-next-month" type="button" class="secondary month-nav-button" aria-label="Next month" title="Next month">›</button>
               </div>
-              <select id="transaction-kind-filter" aria-label="Filter by type">
+              <select id="transaction-kind-filter" class="txn-filter-select" aria-label="Filter by type">
                 <option value="">All Types</option>
                 <option value="income">Income</option>
                 <option value="expense">Expense</option>
               </select>
-              <select id="transaction-category-filter" aria-label="Filter by category">
+              <select id="transaction-category-filter" class="txn-filter-select" aria-label="Filter by category">
                 <option value="">All Categories</option>
+              </select>
+              <select id="transaction-sort" class="txn-filter-select" aria-label="Sort transactions">
+                <option value="date-desc">Newest first</option>
+                <option value="date-asc">Oldest first</option>
+                <option value="amount-desc">Amount: high to low</option>
+                <option value="amount-asc">Amount: low to high</option>
               </select>
             </div>
             <div class="transactions-toolbar-actions">
@@ -889,20 +895,12 @@
             </section>
           </div>
 
-          <div class="transactions-table-wrap">
-            <table class="transactions-table">
-              <thead>
-                <tr>
-                  <th><button type="button" class="table-sort-button" data-txn-sort="date"><span>Date</span><span class="sort-arrow" aria-hidden="true"></span></button></th>
-                  <th>Type</th>
-                  <th>Category</th>
-                  <th class="txn-sortable-header"><button type="button" class="table-sort-button" data-txn-sort="amount"><span>Amount</span><span class="sort-arrow" aria-hidden="true"></span></button></th>
-                  <th>Note</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody id="transactions-list"></tbody>
-            </table>
+          <div class="txn-list-wrap">
+            <div class="txn-list-header">
+              <h3 class="txn-list-title">Transactions</h3>
+              <span id="txn-list-count" class="txn-list-count"></span>
+            </div>
+            <div id="transactions-list" class="txn-list"></div>
           </div>
         </section>
 

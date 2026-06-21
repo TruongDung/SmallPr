@@ -19,6 +19,8 @@
     const nextMonthButton = document.getElementById('transaction-next-month');
     const kindFilter = document.getElementById('transaction-kind-filter');
     const categoryFilter = document.getElementById('transaction-category-filter');
+    const sortSelect = document.getElementById('transaction-sort');
+    const txnListCount = document.getElementById('txn-list-count');
     const categorySuggestions = document.getElementById('transaction-category-suggestions');
     const summaryIncome = document.getElementById('summary-income');
     const summaryExpense = document.getElementById('summary-expense');
@@ -55,7 +57,7 @@
     const confirmImportButton = document.getElementById('confirm-import-statement');
 
     let transactions = [];
-    let txnSort = { field: null, direction: 'desc' };
+    let txnSort = { field: 'date', direction: 'desc' };
     let categories = [];
     let creditCards = [];
     let pendingEditTransaction = null;
@@ -324,125 +326,195 @@
       creditCardInput.value = currentValue;
     };
 
-    const updateTxnSortHeaders = () => {
-      document.querySelectorAll('[data-txn-sort]').forEach((button) => {
-        const isActive = button.dataset.txnSort === txnSort.field;
-        button.classList.toggle('active', isActive);
-        button.setAttribute('aria-sort', isActive ? (txnSort.direction === 'asc' ? 'ascending' : 'descending') : 'none');
-        const arrow = button.querySelector('.sort-arrow');
-        if (arrow) {
-          arrow.textContent = isActive ? (txnSort.direction === 'asc' ? '▲' : '▼') : '⇅';
-        }
-      });
+    // Map the sort <select> value to the internal txnSort shape.
+    const applySortFromSelect = () => {
+      const value = sortSelect?.value || 'date-desc';
+      const [field, direction] = value.split('-');
+      txnSort = { field, direction };
     };
 
     const sortTransactions = (rows) => {
-      if (!txnSort.field) return rows;
       const sorted = [...rows];
-      if (txnSort.field === 'amount') {
+      const field = txnSort.field || 'date';
+      const direction = txnSort.direction || 'desc';
+      if (field === 'amount') {
         sorted.sort((a, b) => {
           const result = normalizeAmount(a.amount) - normalizeAmount(b.amount);
-          return txnSort.direction === 'asc' ? result : -result;
+          return direction === 'asc' ? result : -result;
         });
-      } else if (txnSort.field === 'date') {
+      } else {
         sorted.sort((a, b) => {
           const aTime = a.occurred_on ? new Date(a.occurred_on).getTime() : 0;
           const bTime = b.occurred_on ? new Date(b.occurred_on).getTime() : 0;
           const result = aTime - bTime;
-          return txnSort.direction === 'asc' ? result : -result;
+          return direction === 'asc' ? result : -result;
         });
       }
       return sorted;
     };
 
+    // A stable, pleasant color per category derived from its name.
+    const categoryPalette = ['#6366f1', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#ec4899', '#0ea5e9', '#14b8a6'];
+    const categoryColor = (name) => {
+      const key = String(name || '').toLowerCase();
+      let hash = 0;
+      for (let i = 0; i < key.length; i += 1) hash = (hash * 31 + key.charCodeAt(i)) >>> 0;
+      return categoryPalette[hash % categoryPalette.length];
+    };
+
+    // Human-friendly group label for a YYYY-MM-DD style date.
+    const groupDateLabel = (dateString) => {
+      const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+      if (!dateString) return capitalize(t('noDate') || 'No date');
+      const d = new Date(`${String(dateString).slice(0, 10)}T00:00:00`);
+      if (Number.isNaN(d.getTime())) return dateString;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const diffDays = Math.round((today - d) / 86400000);
+      if (diffDays === 0) return capitalize(t('today') || 'Today');
+      if (diffDays === 1) return capitalize(t('yesterday') || 'Yesterday');
+      return d.toLocaleDateString(getLanguage() === 'vi' ? 'vi-VN' : 'en-US', {
+        weekday: 'short', month: 'short', day: 'numeric',
+        year: d.getFullYear() === today.getFullYear() ? undefined : 'numeric',
+      });
+    };
+
+    // Build one transaction row (clean list item, not a table cell).
+    const buildTransactionItem = (transaction) => {
+      const isIncome = transaction.kind === 'income';
+      const item = document.createElement('div');
+      item.className = `txn-item txn-item-${isIncome ? 'income' : 'expense'}`;
+
+      const label = transaction.category || (isIncome ? (t('income') || 'Income') : (t('expense') || 'Expense'));
+
+      const icon = document.createElement('span');
+      icon.className = 'txn-item-icon';
+      const color = categoryColor(label);
+      icon.style.color = color;
+      icon.style.background = `color-mix(in srgb, ${color} 16%, transparent)`;
+      icon.textContent = (label.trim()[0] || '?').toUpperCase();
+
+      const main = document.createElement('div');
+      main.className = 'txn-item-main';
+      const title = document.createElement('span');
+      title.className = 'txn-item-title';
+      title.textContent = label;
+      const sub = document.createElement('span');
+      sub.className = 'txn-item-sub';
+      const subParts = [];
+      if (transaction.account) subParts.push(transaction.account);
+      if (transaction.note) subParts.push(transaction.note);
+      sub.textContent = subParts.join(' · ');
+      main.append(title);
+      if (sub.textContent) main.append(sub);
+
+      const amount = document.createElement('span');
+      amount.className = `txn-item-amount ${isIncome ? 'amount-income' : 'amount-expense'}`;
+      amount.textContent = `${isIncome ? '+' : '−'}${formatCurrency(transaction.amount)}`;
+
+      const actions = document.createElement('div');
+      actions.className = 'txn-item-actions';
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'task-action-icon secondary';
+      editBtn.setAttribute('aria-label', t('edit') || 'Edit');
+      editBtn.title = t('edit') || 'Edit';
+      editBtn.textContent = '✎';
+      editBtn.addEventListener('click', () => window.transactionsModule.edit(transaction.id));
+      const deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'task-action-icon danger';
+      deleteBtn.setAttribute('aria-label', t('delete') || 'Delete');
+      deleteBtn.title = t('delete') || 'Delete';
+      deleteBtn.textContent = '×';
+      deleteBtn.addEventListener('click', () => window.transactionsModule.confirmDelete(transaction.id));
+      actions.append(editBtn, deleteBtn);
+
+      // Tapping the row (outside the action buttons) opens edit.
+      item.addEventListener('click', (event) => {
+        if (event.target.closest('.txn-item-actions')) return;
+        window.transactionsModule.edit(transaction.id);
+      });
+
+      item.append(icon, main, amount, actions);
+      return item;
+    };
+
+    const renderEmptyTransactions = () => {
+      const empty = document.createElement('div');
+      empty.className = 'txn-empty';
+      const emptyIcon = document.createElement('div');
+      emptyIcon.className = 'txn-empty-icon';
+      emptyIcon.textContent = '🧾';
+      const emptyText = document.createElement('p');
+      emptyText.textContent = t('noTransactions') || 'No transactions found';
+      empty.append(emptyIcon, emptyText);
+      list.append(empty);
+    };
+
     const renderTransactions = () => {
       list.innerHTML = '';
-      updateTxnSortHeaders();
+
+      if (txnListCount) {
+        const n = transactions.length;
+        txnListCount.textContent = n ? `${n} ${n === 1 ? 'transaction' : 'transactions'}` : '';
+      }
 
       if (transactions.length === 0) {
-        const row = document.createElement('tr');
-        const cell = document.createElement('td');
-        cell.colSpan = 7;
-        cell.className = 'transactions-empty';
-        cell.textContent = t('noTransactions') || 'No transactions found';
-        row.append(cell);
-        list.append(row);
+        renderEmptyTransactions();
         renderFinanceInsights();
         return;
       }
 
-      const rowsToRender = sortTransactions(transactions);
-      rowsToRender.forEach((transaction) => {
-        const isIncome = transaction.kind === 'income';
-        const row = document.createElement('tr');
-        row.className = `txn-row txn-row-${isIncome ? 'income' : 'expense'}`;
+      const rows = sortTransactions(transactions);
 
-        // Date
-        const dateCell = document.createElement('td');
-        dateCell.textContent = formatDate(transaction.occurred_on);
-        dateCell.className = 'txn-date';
+      // Amount sorts render a flat list; date sorts group by day for scanning.
+      if (txnSort.field === 'amount') {
+        const flat = document.createElement('div');
+        flat.className = 'txn-group-items';
+        rows.forEach((transaction) => flat.append(buildTransactionItem(transaction)));
+        list.append(flat);
+        renderFinanceInsights();
+        return;
+      }
 
-        // Kind badge
-        const kindCell = document.createElement('td');
-        const badge = document.createElement('span');
-        badge.className = `transaction-kind-badge ${isIncome ? 'income-badge' : 'expense-badge'}`;
-        badge.textContent = isIncome ? (t('income') || 'Income') : (t('expense') || 'Expense');
-        kindCell.append(badge);
-
-        // Category chip
-        const categoryCell = document.createElement('td');
-        if (transaction.category) {
-          const chip = document.createElement('span');
-          chip.className = 'txn-category-chip';
-          chip.textContent = transaction.category;
-          categoryCell.append(chip);
-        } else {
-          categoryCell.textContent = '—';
-          categoryCell.className = 'txn-muted';
+      // Group consecutive rows by their day (rows already sorted by date).
+      const groups = [];
+      const groupIndex = new Map();
+      rows.forEach((transaction) => {
+        const key = String(transaction.occurred_on || '').slice(0, 10) || 'none';
+        if (!groupIndex.has(key)) {
+          groupIndex.set(key, groups.length);
+          groups.push({ key, date: transaction.occurred_on, items: [] });
         }
+        groups[groupIndex.get(key)].items.push(transaction);
+      });
 
-        // Amount
-        const amountCell = document.createElement('td');
-        amountCell.className = `txn-amount ${isIncome ? 'amount-income' : 'amount-expense'}`;
-        amountCell.textContent = formatCurrency(transaction.amount);
+      groups.forEach((group) => {
+        const groupEl = document.createElement('div');
+        groupEl.className = 'txn-group';
 
-        // Note
-        const noteCell = document.createElement('td');
-        if (transaction.note) {
-          const noteSpan = document.createElement('span');
-          noteSpan.className = 'txn-note';
-          noteSpan.title = transaction.note;
-          noteSpan.textContent = transaction.note.length > 30
-            ? `${transaction.note.substring(0, 30)}…`
-            : transaction.note;
-          noteCell.append(noteSpan);
-        } else {
-          noteCell.textContent = '—';
-          noteCell.className = 'txn-muted';
-        }
+        const header = document.createElement('div');
+        header.className = 'txn-group-header';
+        const dateLabel = document.createElement('span');
+        dateLabel.className = 'txn-group-date';
+        dateLabel.textContent = groupDateLabel(group.date);
 
-        // Actions
-        const actionsCell = document.createElement('td');
-        actionsCell.className = 'txn-actions';
-        const editBtn = document.createElement('button');
-        editBtn.type = 'button';
-        editBtn.className = 'task-action-icon secondary';
-        editBtn.setAttribute('aria-label', t('edit') || 'Edit');
-        editBtn.title = t('edit') || 'Edit';
-        editBtn.textContent = '✎';
-        editBtn.addEventListener('click', () => window.transactionsModule.edit(transaction.id));
+        const dayNet = group.items.reduce((sum, tx) => (
+          sum + (tx.kind === 'income' ? normalizeAmount(tx.amount) : -normalizeAmount(tx.amount))
+        ), 0);
+        const total = document.createElement('span');
+        total.className = `txn-group-total ${dayNet >= 0 ? 'amount-income' : 'amount-expense'}`;
+        total.textContent = `${dayNet >= 0 ? '+' : '−'}${formatCurrency(Math.abs(dayNet))}`;
 
-        const deleteBtn = document.createElement('button');
-        deleteBtn.type = 'button';
-        deleteBtn.className = 'task-action-icon danger';
-        deleteBtn.setAttribute('aria-label', t('delete') || 'Delete');
-        deleteBtn.title = t('delete') || 'Delete';
-        deleteBtn.textContent = '×';
-        deleteBtn.addEventListener('click', () => window.transactionsModule.confirmDelete(transaction.id));
+        header.append(dateLabel, total);
+        groupEl.append(header);
 
-        actionsCell.append(editBtn, deleteBtn);
-        row.append(dateCell, kindCell, categoryCell, amountCell, noteCell, actionsCell);
-        list.append(row);
+        const items = document.createElement('div');
+        items.className = 'txn-group-items';
+        group.items.forEach((transaction) => items.append(buildTransactionItem(transaction)));
+        groupEl.append(items);
+        list.append(groupEl);
       });
 
       renderFinanceInsights();
@@ -1237,17 +1309,10 @@
       bindPanelToggle(budgetCategoryToggle, budgetCategoryList);
       bindPanelToggle(creditCardPaymentToggle, creditCardPaymentList);
 
-      // Sort header for amount column
-      document.querySelectorAll('[data-txn-sort]').forEach((button) => {
-        button.addEventListener('click', () => {
-          const field = button.dataset.txnSort;
-          if (txnSort.field === field) {
-            txnSort.direction = txnSort.direction === 'asc' ? 'desc' : 'asc';
-          } else {
-            txnSort = { field, direction: 'desc' };
-          }
-          renderTransactions();
-        });
+      // Sort dropdown.
+      sortSelect?.addEventListener('change', () => {
+        applySortFromSelect();
+        renderTransactions();
       });
 
       // Statement import wiring.
