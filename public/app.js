@@ -186,9 +186,13 @@ const uploadProgressPercent = document.getElementById('upload-progress-percent')
 
 let currentMode = 'login';
 let currentUser = null;
-// Admin-controlled flag: whether demo users may access the Weather feature.
-// Defaults to true; refreshed from /api/config/public at startup.
-let weatherEnabledForDemo = true;
+// Admin-controlled visibility for demo users. Defaults to everything visible;
+// refreshed from /api/config/public at startup.
+let demoVisibility = {
+  weather: true,
+  financial: true,
+  financialTabs: { cards: true, info: true, links: true, transactions: true, calendar: true },
+};
 let registrationStartedAt = Date.now();
 let registrationInteractionCount = 0;
 const SAVED_VIEW_KEY = 'task-manager-current-view';
@@ -198,10 +202,15 @@ const rememberMeText = document.getElementById('remember-me-text');
 const VIEW_NAMES = new Set(['dashboard', 'notes', 'tasks', 'calendar', 'sprints', 'archived', 'trash', 'tags', 'weather', 'credit-cards', 'admin']);
 const isAdminUser = () => currentUser?.username === 'admin';
 const isImpersonating = () => Boolean(currentUser?.impersonator);
-// Demo users are a client-only construct (id === 0). Weather is always available
-// to real authenticated users; for demo users it depends on the admin flag.
+// Demo users are a client-only construct (id === 0). Real authenticated users
+// always have full access; for demo users access depends on the admin flags.
 const isDemoUser = () => Boolean(window.DemoMode?.isDemo()) || currentUser?.id === 0;
-const isWeatherAccessible = () => !isDemoUser() || weatherEnabledForDemo;
+const isWeatherAccessible = () => !isDemoUser() || demoVisibility.weather !== false;
+const isFinancialAccessible = () => !isDemoUser() || demoVisibility.financial !== false;
+const isFinancialTabAccessible = (tabId) => (
+  !isDemoUser()
+  || (demoVisibility.financial !== false && demoVisibility.financialTabs?.[tabId] !== false)
+);
 const getSavedView = () => {
   const savedView = localStorage.getItem(SAVED_VIEW_KEY);
   return VIEW_NAMES.has(savedView) ? savedView : 'dashboard';
@@ -1047,6 +1056,25 @@ const setActiveTaskSubtab = () => {
   });
 };
 
+// For demo users, hide any Financial sub-tab buttons the admin disabled. If the
+// currently active tab becomes hidden, switch to the first visible one. No-op
+// for real authenticated users (all tabs accessible).
+const applyDemoFinancialTabVisibility = () => {
+  const tabs = [...document.querySelectorAll('[data-financial-tab]')];
+  if (!tabs.length) return;
+  let firstVisible = null;
+  let activeHidden = false;
+  tabs.forEach((tab) => {
+    const id = tab.dataset.financialTab;
+    const accessible = isFinancialTabAccessible(id);
+    tab.classList.toggle('hidden', !accessible);
+    if (accessible && !firstVisible) firstVisible = tab;
+    if (!accessible && tab.classList.contains('active')) activeHidden = true;
+  });
+  // Clicking re-uses the credit-card module's own tab handler to swap panels.
+  if (activeHidden && firstVisible) firstVisible.click();
+};
+
 const showSection = () => {
   if (!currentUser) {
     authSection.classList.remove('hidden');
@@ -1066,6 +1094,11 @@ const showSection = () => {
 
   // Demo users cannot open Weather when the admin has disabled it for demo mode.
   if (currentView === 'weather' && !isWeatherAccessible()) {
+    setCurrentView('tasks');
+  }
+
+  // Demo users cannot open the Financial section when it's hidden for demo mode.
+  if (currentView === 'credit-cards' && !isFinancialAccessible()) {
     setCurrentView('tasks');
   }
 
@@ -1098,6 +1131,7 @@ const showSection = () => {
   }
 
   if (showCreditCards) {
+    applyDemoFinancialTabVisibility();
     creditCardModule.load();
     creditCardModule.refreshActivePanel?.();
     return;
@@ -1265,7 +1299,9 @@ const renderUserArea = () => {
   if (isWeatherAccessible()) {
     userArea.append(weatherButton);
   }
-  userArea.append(creditCardsButton);
+  if (isFinancialAccessible()) {
+    userArea.append(creditCardsButton);
+  }
 
   if (isAdminUser()) {
     const adminButton = document.createElement('button');
@@ -1564,8 +1600,22 @@ const prefillRememberedCredentials = () => {
 const loadPublicFeatureFlags = async () => {
   try {
     const config = await request('/api/config/public');
-    if (config?.features && typeof config.features.weatherEnabledForDemo === 'boolean') {
-      weatherEnabledForDemo = config.features.weatherEnabledForDemo;
+    if (config?.features?.demoVisibility && typeof config.features.demoVisibility === 'object') {
+      const v = config.features.demoVisibility;
+      demoVisibility = {
+        weather: v.weather !== false,
+        financial: v.financial !== false,
+        financialTabs: {
+          cards: v.financialTabs?.cards !== false,
+          info: v.financialTabs?.info !== false,
+          links: v.financialTabs?.links !== false,
+          transactions: v.financialTabs?.transactions !== false,
+          calendar: v.financialTabs?.calendar !== false,
+        },
+      };
+    } else if (config?.features && typeof config.features.weatherEnabledForDemo === 'boolean') {
+      // Backward compatibility with older config payloads.
+      demoVisibility.weather = config.features.weatherEnabledForDemo;
     }
   } catch (error) {
     // Non-fatal: fall back to the permissive default so the app still loads.

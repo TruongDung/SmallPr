@@ -3229,6 +3229,41 @@ body.theme-dark .calendar-lunar-badge-key {
   font-weight: 700;
 }
 
+.feature-settings-subtitle {
+  margin: -12px 0 18px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.feature-settings-subgroup {
+  margin-top: 4px;
+  padding: 8px 0 8px 16px;
+  border-left: 2px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.feature-settings-subgroup-title {
+  margin: 4px 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.feature-settings-row-nested {
+  padding: 12px 16px;
+  background: var(--surface-soft);
+}
+
+/* When the master Financial toggle is off, dim the sub-tab group. */
+.feature-settings-subgroup.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
 .feature-settings-list {
   display: flex;
   flex-direction: column;

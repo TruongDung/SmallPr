@@ -46,7 +46,8 @@
     const refreshAuditLog = document.getElementById('refresh-audit-log');
     const clearAuditLog = document.getElementById('clear-audit-log');
     const auditLogSavingToggle = document.getElementById('toggle-audit-log-saving');
-    const weatherDemoToggle = document.getElementById('toggle-weather-demo');
+    const demoVisibilityToggles = [...document.querySelectorAll('[data-visibility-path]')];
+    const financialTabsSubgroup = document.getElementById('financial-tabs-subgroup');
     const loadDatabaseStorageButton = document.getElementById('load-database-storage');
     const databaseStorageSummary = document.getElementById('database-storage-summary');
     const databaseStorageList = document.getElementById('database-storage-list');
@@ -76,7 +77,11 @@
     let auditLogPage = 1;
     let auditLogSearchTimer = null;
     let auditLogSavingEnabled = true;
-    let weatherDemoEnabled = true;
+    let demoVisibility = {
+      weather: true,
+      financial: true,
+      financialTabs: { cards: true, info: true, links: true, transactions: true, calendar: true },
+    };
     let databaseStorage = null;
     let databaseStorageSort = { ...DATABASE_STORAGE_DEFAULT_SORT };
     let pendingAdminUser = null;
@@ -107,48 +112,75 @@
       renderAuditLogSavingToggle();
     };
 
-    const renderWeatherDemoToggle = () => {
-      if (!weatherDemoToggle) return;
-      weatherDemoToggle.setAttribute('aria-checked', String(weatherDemoEnabled));
-      weatherDemoToggle.title = weatherDemoEnabled
-        ? t('disableWeatherForDemo')
-        : t('enableWeatherForDemo');
-      weatherDemoToggle.setAttribute('aria-label', weatherDemoToggle.title);
+    // Read a boolean at a dotted path (e.g. "financialTabs.cards") from the
+    // current demoVisibility state.
+    const getVisibilityAt = (path) => {
+      const parts = path.split('.');
+      let node = demoVisibility;
+      for (const part of parts) {
+        if (node == null) return true;
+        node = node[part];
+      }
+      return node !== false;
     };
 
-    const loadWeatherDemoSettings = async () => {
-      if (!isAdminUser() || !weatherDemoToggle) return;
-      const result = await request('/api/admin/settings/weather-demo');
+    const renderDemoVisibilityToggles = () => {
+      demoVisibilityToggles.forEach((toggle) => {
+        const path = toggle.dataset.visibilityPath;
+        const enabled = getVisibilityAt(path);
+        toggle.setAttribute('aria-checked', String(enabled));
+      });
+      // When the master Financial toggle is off, visually disable the sub-tabs.
+      if (financialTabsSubgroup) {
+        financialTabsSubgroup.classList.toggle('is-disabled', demoVisibility.financial === false);
+      }
+    };
+
+    const loadDemoVisibilitySettings = async () => {
+      if (!isAdminUser() || !demoVisibilityToggles.length) return;
+      const result = await request('/api/admin/settings/demo-visibility');
       if (result.error) {
         showStatusToast(result.error, 'error');
         return;
       }
-      weatherDemoEnabled = result.settings?.weatherEnabledForDemo !== false;
-      renderWeatherDemoToggle();
+      if (result.settings?.demoVisibility) {
+        demoVisibility = result.settings.demoVisibility;
+      }
+      renderDemoVisibilityToggles();
     };
 
-    const updateWeatherDemoSetting = async () => {
-      if (!weatherDemoToggle) return;
-      const nextEnabled = !weatherDemoEnabled;
-      weatherDemoToggle.disabled = true;
+    // Build a minimal partial update payload for a single toggle path.
+    const buildVisibilityUpdate = (path, value) => {
+      if (path.startsWith('financialTabs.')) {
+        const tabId = path.split('.')[1];
+        return { financialTabs: { [tabId]: value } };
+      }
+      return { [path]: value };
+    };
+
+    const updateDemoVisibility = async (toggle) => {
+      const path = toggle.dataset.visibilityPath;
+      const nextValue = !getVisibilityAt(path);
+      demoVisibilityToggles.forEach((t) => { t.disabled = true; });
 
       try {
-        const result = await request('/api/admin/settings/weather-demo', {
+        const result = await request('/api/admin/settings/demo-visibility', {
           method: 'PUT',
-          body: JSON.stringify({ enabled: nextEnabled }),
+          body: JSON.stringify({ visibility: buildVisibilityUpdate(path, nextValue) }),
         });
         if (result.error) {
           showStatusToast(result.error, 'error');
           return;
         }
-
-        weatherDemoEnabled = result.settings?.weatherEnabledForDemo !== false;
-        renderWeatherDemoToggle();
-        showStatusToast(t(weatherDemoEnabled ? 'weatherForDemoEnabled' : 'weatherForDemoDisabled'));
+        if (result.settings?.demoVisibility) {
+          demoVisibility = result.settings.demoVisibility;
+        }
+        renderDemoVisibilityToggles();
+        showStatusToast(t('demoVisibilityUpdated') || 'Demo visibility updated');
       } catch (error) {
-        showStatusToast(error.message || 'Failed to save weather setting', 'error');
+        showStatusToast(error.message || 'Failed to save visibility setting', 'error');
       } finally {
-        weatherDemoToggle.disabled = false;
+        demoVisibilityToggles.forEach((t) => { t.disabled = false; });
       }
     };
 
@@ -370,7 +402,7 @@
       renderUsers(users);
       auditLogPage = 1;
       await loadAuditLogSettings();
-      await loadWeatherDemoSettings();
+      await loadDemoVisibilitySettings();
       await loadAuditLogs();
     };
 
@@ -1068,7 +1100,9 @@
       refreshAuditLog?.addEventListener('click', refreshAuditLogsWithFeedback);
       clearAuditLog?.addEventListener('click', requestClearAuditLogs);
       auditLogSavingToggle?.addEventListener('click', updateAuditLogSaving);
-      weatherDemoToggle?.addEventListener('click', updateWeatherDemoSetting);
+      demoVisibilityToggles.forEach((toggle) => {
+        toggle.addEventListener('click', () => updateDemoVisibility(toggle));
+      });
       loadDatabaseStorageButton?.addEventListener('click', loadDatabaseStorage);
       databaseStorageSortButtons.forEach((button) => {
         button.addEventListener('click', () => updateDatabaseStorageSort(button.dataset.dbStorageSort));

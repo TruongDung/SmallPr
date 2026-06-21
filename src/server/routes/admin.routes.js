@@ -83,14 +83,14 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
     }
   });
 
-  // --- Feature flags: Weather access for demo users ---
+  // --- Feature flags: Weather access for demo users (legacy alias) ---
   router.get('/admin/settings/weather-demo', adminRequired, async (req, res) => {
     if (!featureFlags) {
       return res.status(500).json({ error: 'Feature flags are not configured' });
     }
     try {
-      const settings = await featureFlags.getSettings();
-      res.json({ settings });
+      const enabled = await featureFlags.getWeatherEnabledForDemo();
+      res.json({ settings: { weatherEnabledForDemo: enabled } });
     } catch (error) {
       logger.error({ err: error }, 'Failed to load weather demo setting');
       res.status(500).json({ error: 'Failed to load weather demo setting' });
@@ -107,26 +107,93 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
 
     try {
       const before = await featureFlags.getWeatherEnabledForDemo();
-      const settings = await featureFlags.setWeatherEnabledForDemo(req.body.enabled);
+      const result = await featureFlags.setWeatherEnabledForDemo(req.body.enabled);
 
-      // Record the change in the audit log for accountability.
-      if (auditLogs?.record && before !== settings.weatherEnabledForDemo) {
+      if (auditLogs?.record && before !== result.weatherEnabledForDemo) {
         await auditLogs.record({
           actorUserId: req.currentUser.id,
           userId: req.currentUser.id,
           action: 'edit',
           entityType: 'user',
           entityId: req.currentUser.id,
-          summary: `Weather feature for demo users ${settings.weatherEnabledForDemo ? 'enabled' : 'disabled'}`,
-          before: { weather_enabled_for_demo: before },
-          after: { weather_enabled_for_demo: settings.weatherEnabledForDemo },
+          summary: `Weather feature for demo users ${result.weatherEnabledForDemo ? 'enabled' : 'disabled'}`,
+          before: { weather: before },
+          after: { weather: result.weatherEnabledForDemo },
         });
       }
 
-      res.json({ settings });
+      res.json({ settings: result });
     } catch (error) {
       logger.error({ err: error }, 'Failed to save weather demo setting');
       res.status(500).json({ error: 'Failed to save weather demo setting' });
+    }
+  });
+
+  // --- Feature flags: Granular demo feature visibility ---
+  router.get('/admin/settings/demo-visibility', adminRequired, async (req, res) => {
+    if (!featureFlags) {
+      return res.status(500).json({ error: 'Feature flags are not configured' });
+    }
+    try {
+      const settings = await featureFlags.getSettings();
+      res.json({ settings });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to load demo visibility settings');
+      res.status(500).json({ error: 'Failed to load demo visibility settings' });
+    }
+  });
+
+  router.put('/admin/settings/demo-visibility', adminRequired, async (req, res) => {
+    if (!featureFlags) {
+      return res.status(500).json({ error: 'Feature flags are not configured' });
+    }
+
+    const updates = req.body?.visibility;
+    if (!updates || typeof updates !== 'object' || Array.isArray(updates)) {
+      return res.status(400).json({ error: 'A visibility object is required' });
+    }
+
+    // Validate provided fields are booleans (financialTabs is a nested map).
+    const isBoolIfPresent = (value) => value === undefined || typeof value === 'boolean';
+    if (!isBoolIfPresent(updates.weather) || !isBoolIfPresent(updates.financial)) {
+      return res.status(400).json({ error: 'Visibility flags must be boolean' });
+    }
+    if (updates.financialTabs !== undefined) {
+      if (typeof updates.financialTabs !== 'object' || updates.financialTabs === null || Array.isArray(updates.financialTabs)) {
+        return res.status(400).json({ error: 'financialTabs must be an object' });
+      }
+      const validTabIds = new Set(featureFlags.FINANCIAL_TAB_IDS || []);
+      for (const [tabId, value] of Object.entries(updates.financialTabs)) {
+        if (!validTabIds.has(tabId)) {
+          return res.status(400).json({ error: `Unknown financial tab: ${tabId}` });
+        }
+        if (typeof value !== 'boolean') {
+          return res.status(400).json({ error: 'financialTabs values must be boolean' });
+        }
+      }
+    }
+
+    try {
+      const before = await featureFlags.getDemoVisibility();
+      const after = await featureFlags.setDemoVisibility(updates);
+
+      if (auditLogs?.record && JSON.stringify(before) !== JSON.stringify(after)) {
+        await auditLogs.record({
+          actorUserId: req.currentUser.id,
+          userId: req.currentUser.id,
+          action: 'edit',
+          entityType: 'user',
+          entityId: req.currentUser.id,
+          summary: 'Demo feature visibility updated',
+          before,
+          after,
+        });
+      }
+
+      res.json({ settings: { demoVisibility: after } });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to save demo visibility settings');
+      res.status(500).json({ error: 'Failed to save demo visibility settings' });
     }
   });
 
