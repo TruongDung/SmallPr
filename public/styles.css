@@ -1010,14 +1010,14 @@ body.theme-dark #user-area .nav-button.active-nav {
 .header-actions .theme-toggle {
   min-height: 36px;
   height: 36px;
-  border-radius: 999px;
+  width: 36px;
+  border-radius: 50%;
   font-size: 0.92rem;
 }
 
 .header-actions .theme-toggle {
-  width: auto;
-  min-width: 112px;
-  padding: 6px 12px;
+  min-width: 36px;
+  padding: 0;
   justify-self: end;
 }
 
