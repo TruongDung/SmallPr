@@ -67,11 +67,10 @@
     const budgetStorageKey = 'finance-category-budgets';
     const quickSuggestionsKey = 'transaction-quick-suggestions';
     const defaultQuickSuggestions = [
-      'breakfast 35k',
-      'gas 80k',
+      'breakfast 5$',
+      'gas 40$',
       'milk tea 65k yesterday',
       'electricity 850k',
-      '+salary 15m',
     ];
 
     const formatCurrency = (value) => {
@@ -667,8 +666,12 @@
       if (amount <= 0) return null;
 
       // Whatever text remains after removing the amount token becomes the
-      // category/description.
-      const description = working.replace(match[0], ' ').replace(/\s+/g, ' ').trim();
+      // category/description. Strip currency symbols so they don't leak in.
+      const description = working
+        .replace(match[0], ' ')
+        .replace(/[$₫€£]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
 
       return {
         kind,
