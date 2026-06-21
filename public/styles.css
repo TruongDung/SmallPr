@@ -8212,10 +8212,20 @@ body.theme-dark .month-nav-button.secondary:focus-visible:not(:disabled) {
 @media (max-width: 640px) {
   .quick-entry-form {
     flex-wrap: wrap;
+    row-gap: 10px;
+  }
+  .quick-entry-icon {
+    order: 1;
   }
   .quick-entry-input {
-    flex-basis: 100%;
+    order: 2;
+    flex: 1 1 auto;
+    flex-basis: auto;
+  }
+  .quick-entry-submit {
     order: 3;
+    flex-basis: 100%;
+    width: 100%;
   }
 }
 
@@ -8515,6 +8525,8 @@ body.theme-dark .finance-export-button.secondary:disabled {
   flex-direction: column;
   align-items: center;
   gap: 4px;
+  min-width: 0;
+  text-align: center;
 }
 
 .finance-stat-label {
@@ -8523,11 +8535,15 @@ body.theme-dark .finance-export-button.secondary:disabled {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--muted);
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .finance-stat-value {
   font-size: 1.1rem;
   font-weight: 800;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 /* Daily spending bar chart */
