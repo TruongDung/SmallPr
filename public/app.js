@@ -1264,6 +1264,7 @@ const hideAddTaskModal = () => {
 const renderUserArea = () => {
   userArea.innerHTML = '';
   const welcome = document.createElement('span');
+  welcome.className = 'user-greeting';
   welcome.textContent = isImpersonating()
     ? t('impersonatingAs', { username: currentUser.name || currentUser.username })
     : t('welcome', { name: currentUser.name || currentUser.username });
