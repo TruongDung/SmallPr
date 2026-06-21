@@ -712,6 +712,20 @@
         </section>
 
         <section id="transactions-panel" class="financial-panel hidden" role="tabpanel" aria-labelledby="transactions-tab">
+          <div class="quick-entry">
+            <form id="quick-entry-form" class="quick-entry-form">
+              <span class="quick-entry-icon" aria-hidden="true">✎</span>
+              <input id="quick-entry-input" type="text" class="quick-entry-input" autocomplete="off"
+                placeholder='Type naturally: "breakfast 5$", "gas 40$", "milk tea 65k yesterday"...' aria-label="Quick add transaction" />
+              <button id="quick-entry-submit" type="submit" class="primary quick-entry-submit">Record</button>
+            </form>
+            <div class="quick-entry-suggestions">
+              <span class="quick-entry-suggestions-label" id="quick-entry-suggestions-label">Quick add:</span>
+              <div id="quick-entry-chips" class="quick-entry-chips" role="list"></div>
+              <button id="quick-entry-add-suggestion" type="button" class="quick-entry-add" title="Save current text as a suggestion" aria-label="Add suggestion">+ Add</button>
+            </div>
+          </div>
+
           <div class="transactions-toolbar">
             <div class="transactions-filters">
               <div class="transaction-month-nav">
@@ -736,20 +750,6 @@
               <button id="open-add-transaction" type="button" class="primary task-action-icon" aria-label="Add Transaction" title="Add Transaction">+</button>
             </div>
             <input id="import-statement-file" type="file" accept="application/pdf" class="hidden" aria-hidden="true" />
-          </div>
-
-          <div class="quick-entry">
-            <form id="quick-entry-form" class="quick-entry-form">
-              <span class="quick-entry-icon" aria-hidden="true">✎</span>
-              <input id="quick-entry-input" type="text" class="quick-entry-input" autocomplete="off"
-                placeholder='Type naturally: "breakfast 5$", "gas 40$", "milk tea 65k yesterday"...' aria-label="Quick add transaction" />
-              <button id="quick-entry-submit" type="submit" class="primary quick-entry-submit">Record</button>
-            </form>
-            <div class="quick-entry-suggestions">
-              <span class="quick-entry-suggestions-label" id="quick-entry-suggestions-label">Quick add:</span>
-              <div id="quick-entry-chips" class="quick-entry-chips" role="list"></div>
-              <button id="quick-entry-add-suggestion" type="button" class="quick-entry-add" title="Save current text as a suggestion" aria-label="Add suggestion">+ Add</button>
-            </div>
           </div>
 
           <div class="transactions-summary">
