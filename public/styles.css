@@ -8422,7 +8422,8 @@ body.theme-dark .finance-export-button.secondary:disabled {
   color: var(--primary);
 }
 
-.budget-category-list.collapsed {
+.budget-category-list.collapsed,
+.finance-report-list.collapsed {
   display: none;
 }
 

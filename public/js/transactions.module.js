@@ -29,6 +29,7 @@
     const budgetCategoryList = document.getElementById('budget-category-list');
     const budgetCategoryToggle = document.getElementById('budget-category-toggle');
     const creditCardPaymentList = document.getElementById('credit-card-payment-list');
+    const creditCardPaymentToggle = document.getElementById('credit-card-payment-toggle');
     const exportCsvButton = document.getElementById('export-transactions-csv');
     const exportPdfButton = document.getElementById('export-transactions-pdf');
     const exportExcelButton = document.getElementById('export-transactions-excel');
@@ -1220,16 +1221,21 @@
       quickEntryAddSuggestion?.addEventListener('click', addCurrentAsSuggestion);
       renderQuickSuggestions();
 
-      // Collapsible "Budget by Category" panel.
-      budgetCategoryToggle?.addEventListener('click', () => {
-        const expanded = budgetCategoryToggle.getAttribute('aria-expanded') === 'true';
-        const next = !expanded;
-        budgetCategoryToggle.setAttribute('aria-expanded', String(next));
-        budgetCategoryToggle.textContent = next ? '−' : '+';
-        budgetCategoryToggle.title = next ? 'Hide' : 'Show';
-        budgetCategoryToggle.setAttribute('aria-label', next ? 'Hide budget table' : 'Show budget table');
-        budgetCategoryList?.classList.toggle('collapsed', !next);
-      });
+      // Collapsible insight panels (Budget by Category, Credit Card Payment).
+      const bindPanelToggle = (toggle, list) => {
+        toggle?.addEventListener('click', () => {
+          const expanded = toggle.getAttribute('aria-expanded') === 'true';
+          const next = !expanded;
+          toggle.setAttribute('aria-expanded', String(next));
+          toggle.textContent = next ? '−' : '+';
+          toggle.title = next ? 'Hide' : 'Show';
+          const baseLabel = toggle.getAttribute('aria-label')?.replace(/^(Show|Hide)\s/i, '') || 'table';
+          toggle.setAttribute('aria-label', `${next ? 'Hide' : 'Show'} ${baseLabel}`);
+          list?.classList.toggle('collapsed', !next);
+        });
+      };
+      bindPanelToggle(budgetCategoryToggle, budgetCategoryList);
+      bindPanelToggle(creditCardPaymentToggle, creditCardPaymentList);
 
       // Sort header for amount column
       document.querySelectorAll('[data-txn-sort]').forEach((button) => {
