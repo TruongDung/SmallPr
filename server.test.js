@@ -180,6 +180,11 @@ describe('Auth API', () => {
         apiKey: expect.any(String),
         apiHost: expect.any(String),
       }),
+      features: expect.objectContaining({
+        weatherEnabledForDemo: expect.any(Boolean),
+        demoVisibility: expect.any(Object),
+        userVisibility: expect.any(Object),
+      }),
     });
   });
 
