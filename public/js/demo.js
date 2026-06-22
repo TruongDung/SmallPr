@@ -4,6 +4,8 @@
   const DEMO_KEY = 'demoMode';
   const DEMO_TASKS_KEY = 'demoTasks';
   const DEMO_TRANSACTIONS_KEY = 'demoTransactions';
+  const DEMO_NOTES_KEY = 'demoNotes';
+  const DEMO_SPRINTS_KEY = 'demoSprints';
 
   const isDemo = () => localStorage.getItem(DEMO_KEY) === 'true';
 
@@ -27,12 +29,43 @@
       ];
       localStorage.setItem(DEMO_TRANSACTIONS_KEY, JSON.stringify(sampleTransactions));
     }
+    if (!localStorage.getItem(DEMO_NOTES_KEY)) {
+      const now = new Date().toISOString();
+      const sampleNotes = [
+        { id: 1, title: 'Welcome to Notes', body: '# Getting Started\n\nThis is a sample note. Try editing it!\n\n- You can use **markdown** formatting\n- Create checklists with `- [ ]`\n- Paste images to extract text (OCR)', pinned: 1, created_at: now, updated_at: now },
+        { id: 2, title: 'Meeting Notes', body: '## Team Meeting - June 2026\n\n**Attendees:** Alice, Bob, Charlie\n\n### Action Items\n- [ ] Review project timeline\n- [ ] Update documentation\n- [x] Send weekly report\n\n### Notes\nDiscussed upcoming release. Need to finalize by end of month.', pinned: 0, created_at: now, updated_at: now },
+        { id: 3, title: 'Shopping List', body: '- [ ] Milk\n- [ ] Bread\n- [ ] Eggs\n- [ ] Coffee\n- [x] Butter\n- [ ] Vegetables', pinned: 0, created_at: now, updated_at: now },
+        { id: 4, title: 'Quick Ideas', body: 'Some random ideas to explore later:\n\n1. Build a habit tracker\n2. Learn a new programming language\n3. Read more books this month\n\n> "The best time to start is now."', pinned: 0, created_at: now, updated_at: now },
+      ];
+      localStorage.setItem(DEMO_NOTES_KEY, JSON.stringify(sampleNotes));
+    }
+    if (!localStorage.getItem(DEMO_SPRINTS_KEY)) {
+      const now = new Date().toISOString();
+      const today = new Date().toISOString().slice(0, 10);
+      const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+      const lastWeek = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+      const sampleSprints = [
+        { id: 1, name: 'Sprint 1 - MVP', goal: 'Deliver the minimum viable product with core task management features.', status: 'active', start_date: lastWeek, end_date: nextWeek, archived: 0, task_count: 2, created_at: now, updated_at: now },
+        { id: 2, name: 'Sprint 2 - Polish', goal: 'UI improvements and bug fixes based on user feedback.', status: 'planned', start_date: nextWeek, end_date: null, archived: 0, task_count: 1, created_at: now, updated_at: now },
+      ];
+      localStorage.setItem(DEMO_SPRINTS_KEY, JSON.stringify(sampleSprints));
+      // Assign some tasks to sprints
+      const tasks = getTasks();
+      if (tasks.length >= 3) {
+        tasks[0].sprint_id = 1;
+        tasks[1].sprint_id = 1;
+        tasks[2].sprint_id = 2;
+        saveTasks(tasks);
+      }
+    }
   };
 
   const exitDemo = () => {
     localStorage.removeItem(DEMO_KEY);
     localStorage.removeItem(DEMO_TASKS_KEY);
     localStorage.removeItem(DEMO_TRANSACTIONS_KEY);
+    localStorage.removeItem(DEMO_NOTES_KEY);
+    localStorage.removeItem(DEMO_SPRINTS_KEY);
   };
 
   // --- Mock API for demo mode ---
@@ -52,6 +85,23 @@
   };
 
   const saveTransactions = (txns) => localStorage.setItem(DEMO_TRANSACTIONS_KEY, JSON.stringify(txns));
+
+  const getNotes = () => {
+    try { return JSON.parse(localStorage.getItem(DEMO_NOTES_KEY) || '[]'); }
+    catch { return []; }
+  };
+
+  const saveNotes = (notes) => localStorage.setItem(DEMO_NOTES_KEY, JSON.stringify(notes));
+
+  const getSprints = () => {
+    try { return JSON.parse(localStorage.getItem(DEMO_SPRINTS_KEY) || '[]'); }
+    catch { return []; }
+  };
+
+  const saveSprints = (sprints) => localStorage.setItem(DEMO_SPRINTS_KEY, JSON.stringify(sprints));
+
+  let nextNoteId = 100;
+  let nextSprintId = 100;
 
   // Build a dashboard payload shaped like the real /api/dashboard response.
   // Each card must be { ok: true, data: ... } or the UI renders a load error.
@@ -193,9 +243,50 @@
       return { success: true };
     }
 
+    // --- Sprints ---
+    if ((url === '/api/sprints' || url.startsWith('/api/sprints?')) && method === 'GET') {
+      const archived = url.includes('archived=true');
+      const sprints = getSprints().filter((s) => archived ? s.archived : !s.archived);
+      // Attach task_count dynamically
+      const tasks = getTasks();
+      return { sprints: sprints.map((s) => ({ ...s, task_count: tasks.filter((t) => t.sprint_id === s.id && !t.archived).length })) };
+    }
+    if (url === '/api/sprints' && method === 'POST') {
+      const sprints = getSprints();
+      const sprint = {
+        id: nextSprintId++,
+        name: body.name || 'Untitled Sprint',
+        goal: body.goal || '',
+        status: body.status || 'planned',
+        start_date: body.start_date || null,
+        end_date: body.end_date || null,
+        archived: 0,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      sprints.push(sprint);
+      saveSprints(sprints);
+      return { sprint };
+    }
+    if (url.match(/^\/api\/sprints\/\d+$/) && method === 'PUT') {
+      const id = Number(url.split('/').pop());
+      const sprints = getSprints();
+      const index = sprints.findIndex((s) => s.id === id);
+      if (index === -1) return { error: 'Sprint not found' };
+      sprints[index] = { ...sprints[index], ...body, updated_at: new Date().toISOString() };
+      if (body.archived !== undefined) sprints[index].archived = body.archived ? 1 : 0;
+      saveSprints(sprints);
+      return { sprint: sprints[index] };
+    }
+    if (url.match(/^\/api\/sprints\/\d+$/) && method === 'DELETE') {
+      const id = Number(url.split('/').pop());
+      const sprints = getSprints().filter((s) => s.id !== id);
+      saveSprints(sprints);
+      return { success: true };
+    }
+
     // --- Stubs for other endpoints (return empty/safe defaults) ---
     if (url === '/api/tags') return { tags: [] };
-    if (url === '/api/sprints') return { sprints: [] };
     if (url === '/api/me') return { user: null };
     if (url === '/api/config/public') return { sentry: {}, posthog: {} };
     if (url.includes('/trash')) return { tasks: [] };
@@ -205,7 +296,52 @@
     if (url === '/api/credit-cards/fast-access-bills') return { bills: [] };
     if (url === '/api/credit-cards/fast-access-links') return { links: [] };
     if (url === '/api/weather-cities') return { cities: [] };
-    if (url === '/api/notes') return { notes: [] };
+    if (url === '/api/notes' && method === 'GET') {
+      return { notes: getNotes() };
+    }
+    if (url === '/api/notes' && method === 'POST') {
+      const notes = getNotes();
+      const note = {
+        id: nextNoteId++,
+        title: body.title || '',
+        body: body.body || '',
+        pinned: 0,
+        task_id: body.task_id || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      notes.unshift(note);
+      saveNotes(notes);
+      return { note };
+    }
+    if (url.match(/^\/api\/notes\/\d+$/) && method === 'PUT') {
+      const id = Number(url.split('/').pop());
+      const notes = getNotes();
+      const index = notes.findIndex((n) => n.id === id);
+      if (index === -1) return { error: 'Note not found' };
+      notes[index] = { ...notes[index], ...body, updated_at: new Date().toISOString() };
+      saveNotes(notes);
+      return { note: notes[index] };
+    }
+    if (url.match(/^\/api\/notes\/\d+\/pin$/) && method === 'PATCH') {
+      const id = Number(url.split('/')[3]);
+      const notes = getNotes();
+      const index = notes.findIndex((n) => n.id === id);
+      if (index === -1) return { error: 'Note not found' };
+      notes[index].pinned = body.pinned ? 1 : 0;
+      notes[index].updated_at = new Date().toISOString();
+      saveNotes(notes);
+      return { note: notes[index] };
+    }
+    if (url.match(/^\/api\/notes\/\d+$/) && method === 'DELETE') {
+      const id = Number(url.split('/').pop());
+      const notes = getNotes().filter((n) => n.id !== id);
+      saveNotes(notes);
+      return { success: true };
+    }
+    if (url.match(/^\/api\/notes\/\d+\/versions/) && method === 'GET') {
+      return { versions: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 1, hasPreviousPage: false, hasNextPage: false } };
+    }
     if (url === '/api/dashboard' || url.startsWith('/api/dashboard?')) return buildDashboardPayload();
 
     // Default: return empty success
