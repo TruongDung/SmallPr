@@ -136,43 +136,79 @@
       return `<pre class="code-block" data-language="${detectedLang}"><code>${highlighted}</code></pre>`;
     });
 
-    // Detect indented code blocks (4+ spaces at start of consecutive lines)
+    // Detect indented code blocks. A block is a run of indented lines, plus a
+    // preceding non-indented "header" line (e.g. `class Solution:` or `def f():`)
+    // when it is immediately followed by indented code — so the signature stays
+    // inside the snippet. The block is dedented by its minimum indentation,
+    // preserving the original relative structure.
     const lines = result.split('\n');
-    let inCodeBlock = false;
-    let codeBlockLines = [];
-    let processedLines = [];
+    const processedLines = [];
+    const isIndentedLine = (l) => /^(?: {4}|\t)/.test(l);
+    const isBlankLine = (l) => l.trim() === '';
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      const isIndented = /^    /.test(line) || /^\t/.test(line);
-      const isBlank = line.trim() === '';
-
-      if (isIndented || (inCodeBlock && isBlank)) {
-        if (!inCodeBlock) {
-          inCodeBlock = true;
-          codeBlockLines = [];
-        }
-        codeBlockLines.push(isBlank ? '' : line.replace(/^    |^\t/, ''));
-      } else {
-        if (inCodeBlock && codeBlockLines.length > 0) {
-          // End of code block
-          const code = codeBlockLines.join('\n');
-          const detectedLang = detectLanguage(code);
-          const highlighted = highlightCode(code, detectedLang);
-          processedLines.push(`<pre class="code-block" data-language="${detectedLang}"><code>${highlighted}</code></pre>`);
-          codeBlockLines = [];
-          inCodeBlock = false;
-        }
-        processedLines.push(line);
-      }
-    }
-
-    // Handle remaining code block at end
-    if (inCodeBlock && codeBlockLines.length > 0) {
-      const code = codeBlockLines.join('\n');
+    const flushCodeBlock = (blockLines) => {
+      while (blockLines.length && isBlankLine(blockLines[blockLines.length - 1])) blockLines.pop();
+      if (!blockLines.length) return;
+      // Smallest leading-whitespace width among non-blank lines (tab = 4 cols).
+      let minIndent = Infinity;
+      blockLines.forEach((l) => {
+        if (isBlankLine(l)) return;
+        const lead = l.match(/^[ \t]*/)[0].replace(/\t/g, '    ').length;
+        if (lead < minIndent) minIndent = lead;
+      });
+      if (!Number.isFinite(minIndent)) minIndent = 0;
+      const dedented = blockLines.map((l) => (isBlankLine(l) ? '' : l.replace(/\t/g, '    ').slice(minIndent)));
+      const code = dedented.join('\n');
       const detectedLang = detectLanguage(code);
       const highlighted = highlightCode(code, detectedLang);
       processedLines.push(`<pre class="code-block" data-language="${detectedLang}"><code>${highlighted}</code></pre>`);
+    };
+
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+
+      // Pass through already-rendered fenced code blocks untouched.
+      if (line.startsWith('<pre class="code-block"')) {
+        processedLines.push(line);
+        i += 1;
+        while (i < lines.length && !lines[i - 1].includes('</pre>')) {
+          processedLines.push(lines[i]);
+          i += 1;
+        }
+        continue;
+      }
+
+      // Does this position begin an indented code block?
+      let startsCode = isIndentedLine(line);
+      if (!startsCode && !isBlankLine(line)) {
+        // Header line (col 0) whose next non-blank line is indented joins the block.
+        let j = i + 1;
+        while (j < lines.length && isBlankLine(lines[j])) j += 1;
+        if (j < lines.length && isIndentedLine(lines[j])) startsCode = true;
+      }
+
+      if (startsCode) {
+        const blockLines = [line];
+        i += 1;
+        while (i < lines.length) {
+          const l = lines[i];
+          if (isIndentedLine(l)) { blockLines.push(l); i += 1; continue; }
+          if (isBlankLine(l)) {
+            // Keep an internal blank line only if more indented code follows.
+            let k = i + 1;
+            while (k < lines.length && isBlankLine(lines[k])) k += 1;
+            if (k < lines.length && isIndentedLine(lines[k])) { blockLines.push(''); i += 1; continue; }
+            break;
+          }
+          break;
+        }
+        flushCodeBlock(blockLines);
+        continue;
+      }
+
+      processedLines.push(line);
+      i += 1;
     }
 
     result = processedLines.join('\n');

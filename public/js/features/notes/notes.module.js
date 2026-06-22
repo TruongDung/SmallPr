@@ -506,6 +506,8 @@
       // Toggle a task-list checkbox when its rendered counterpart is clicked in
       // the preview. The input's checked state is driven by the source body, so
       // prevent the default toggle and let toggleCheckboxLine re-render.
+      // Clicking elsewhere in the preview does NOT enter edit mode — use the
+      // Edit button for that.
       if (previewDiv) {
         previewDiv.addEventListener('click', (event) => {
           const input = event.target.closest('.note-check-input');
@@ -514,15 +516,8 @@
             const label = input.closest('[data-check-index]');
             const index = Number(label?.dataset.checkIndex);
             if (Number.isInteger(index)) toggleCheckboxLine(index);
-            return;
           }
-
-          // Tapping anywhere else in the rendered preview enters edit mode and
-          // drops the caret at the end of the note. Handled synchronously so
-          // iOS opens the keyboard within the tap gesture for long notes.
-          if (event.target.closest('a[href]')) return;
-          setPreviewMode(false);
-          focusBodyAtEnd();
+          // Links still work; all other clicks are inert (no edit-on-tap).
         });
       }
 
