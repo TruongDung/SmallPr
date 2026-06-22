@@ -171,8 +171,25 @@
           done: tasks.filter(isDone).length,
         },
       },
-      bills: { ok: false, data: null },
-      creditCards: { ok: false, data: null },
+      bills: {
+        ok: true,
+        data: {
+          overdue: [],
+          dueSoon: getTransactions()
+            .slice()
+            .sort((a, b) => (b.occurred_on || '').localeCompare(a.occurred_on || ''))
+            .slice(0, 5)
+            .map((tx) => ({
+              id: tx.id,
+              item: `${tx.note || tx.category}${tx.kind === 'income' ? ' (income)' : ''}`,
+              amount: tx.amount,
+              due_date: tx.occurred_on,
+              status: tx.kind === 'income' ? 'Income' : 'Expense',
+            })),
+          undated: [],
+        },
+      },
+      creditCards: { ok: true, data: { cardCount: 0, totalBalance: 0, totalInterest: 0, approachingClose: [] } },
       recentNotes: {
         ok: true,
         data: getNotes().slice(0, 5).map((note) => ({
@@ -182,7 +199,7 @@
           updated_at: note.updated_at,
         })),
       },
-      weather: { ok: false, data: null },
+      weather: { ok: true, data: { city: null } },
       dailyQuote: {
         ok: true,
         data: {
@@ -192,7 +209,25 @@
       },
     };
 
-    return { cards, preferences: null, today: todayKey };
+    // Hide Bills, Credit Cards, and Weather cards in demo mode by marking
+    // them not visible in the dashboard preferences. Order matches the
+    // default card order in dashboard.module.js.
+    const demoPreferences = {
+      version: 1,
+      defaultLanding: 'today',
+      cards: [
+        { id: 'todaysTasks', visible: true, order: 0 },
+        { id: 'activeSprints', visible: true, order: 1 },
+        { id: 'taskStatusSummary', visible: true, order: 2 },
+        { id: 'bills', visible: true, order: 3 },
+        { id: 'creditCards', visible: false, order: 4 },
+        { id: 'recentNotes', visible: true, order: 5 },
+        { id: 'weather', visible: false, order: 6 },
+        { id: 'dailyQuote', visible: true, order: 7 },
+      ],
+    };
+
+    return { cards, preferences: demoPreferences, today: todayKey };
   };
 
   // Intercepts fetch-like requests in demo mode and returns mock responses.
