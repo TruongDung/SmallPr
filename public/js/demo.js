@@ -127,7 +127,25 @@
         ok: true,
         data: { overdue, today, in_progress: inProgress },
       },
-      activeSprints: { ok: true, data: { sprints: [] } },
+      activeSprints: {
+        ok: true,
+        data: {
+          sprints: getSprints()
+            .filter((s) => !s.archived && (s.status === 'active' || s.status === 'planned'))
+            .map((s) => {
+              const sprintTasks = tasks.filter((t) => t.sprint_id === s.id && !t.archived);
+              return {
+                id: s.id,
+                name: s.name,
+                status: s.status,
+                start_date: s.start_date,
+                end_date: s.end_date,
+                task_count: sprintTasks.length,
+                done_count: sprintTasks.filter(isDone).length,
+              };
+            }),
+        },
+      },
       taskStatusSummary: {
         ok: true,
         data: {
@@ -141,7 +159,15 @@
         ok: true,
         data: { cardCount: 0, totalBalance: 0, totalInterest: 0, approachingClose: [] },
       },
-      recentNotes: { ok: true, data: [] },
+      recentNotes: {
+        ok: true,
+        data: getNotes().slice(0, 5).map((note) => ({
+          id: note.id,
+          title: note.title || 'Untitled',
+          excerpt: (note.body || '').slice(0, 120),
+          updated_at: note.updated_at,
+        })),
+      },
       weather: { ok: true, data: { city: null } },
       dailyQuote: {
         ok: true,
