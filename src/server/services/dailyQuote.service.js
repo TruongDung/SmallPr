@@ -20,6 +20,8 @@ const QUOTE_CACHE_TTL_SECONDS = 6 * 60 * 60; // 6 hours — it's a *daily* quote
 const fetchJsonWithTimeout = async (url, timeoutMs = 2500) => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  // Never let this timer keep the process (or a Jest worker) alive on its own.
+  if (typeof timeout.unref === 'function') timeout.unref();
 
   try {
     const response = await fetch(url, {
@@ -41,6 +43,13 @@ const fetchJsonWithTimeout = async (url, timeoutMs = 2500) => {
 };
 
 const fetchFreshQuote = async () => {
+  // In tests (and anywhere external calls are explicitly disabled) skip the
+  // network entirely. Real upstream calls cause flaky failures and leak pending
+  // requests that prevent the Jest worker from exiting cleanly.
+  if (process.env.NODE_ENV === 'test' || process.env.DISABLE_EXTERNAL_QUOTES === 'true') {
+    return DEFAULT_DAILY_QUOTE;
+  }
+
   const providers = [
     async () => {
       const data = await fetchJsonWithTimeout('https://zenquotes.io/api/random');
