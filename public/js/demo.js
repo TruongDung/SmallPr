@@ -22,10 +22,27 @@
       localStorage.setItem(DEMO_TASKS_KEY, JSON.stringify(sampleTasks));
     }
     if (!localStorage.getItem(DEMO_TRANSACTIONS_KEY)) {
+      const today = new Date().toISOString().slice(0, 10);
+      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toISOString().slice(0, 10);
+      const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString().slice(0, 10);
+      const fiveDaysAgo = new Date(Date.now() - 5 * 86400000).toISOString().slice(0, 10);
+      const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
       const sampleTransactions = [
-        { id: 1, kind: 'expense', category: 'Food', amount: 25.50, occurred_on: new Date().toISOString().slice(0, 10), note: 'Lunch', account: '' },
-        { id: 2, kind: 'expense', category: 'Transport', amount: 15.00, occurred_on: new Date().toISOString().slice(0, 10), note: 'Uber', account: '' },
-        { id: 3, kind: 'income', category: 'Salary', amount: 5000.00, occurred_on: new Date().toISOString().slice(0, 10), note: 'Monthly salary', account: '' },
+        { id: 1, kind: 'income', category: 'Salary', amount: 5000.00, occurred_on: today, note: 'Monthly salary', account: '' },
+        { id: 2, kind: 'expense', category: 'Food', amount: 35.00, occurred_on: today, note: 'Breakfast', account: '' },
+        { id: 3, kind: 'expense', category: 'Bills & Home', amount: 850.00, occurred_on: today, note: 'Electricity bill', account: '' },
+        { id: 4, kind: 'expense', category: 'Transport', amount: 80.00, occurred_on: yesterday, note: 'Gas station', account: '' },
+        { id: 5, kind: 'expense', category: 'Food', amount: 65.00, occurred_on: yesterday, note: 'Bubble tea', account: '' },
+        { id: 6, kind: 'expense', category: 'Food', amount: 42.00, occurred_on: twoDaysAgo, note: 'Lunch with team', account: '' },
+        { id: 7, kind: 'expense', category: 'Shopping', amount: 120.00, occurred_on: twoDaysAgo, note: 'New headphones', account: '' },
+        { id: 8, kind: 'expense', category: 'Transport', amount: 25.00, occurred_on: threeDaysAgo, note: 'Uber to office', account: '' },
+        { id: 9, kind: 'expense', category: 'Food', amount: 18.50, occurred_on: threeDaysAgo, note: 'Coffee & snack', account: '' },
+        { id: 10, kind: 'expense', category: 'Entertainment', amount: 15.99, occurred_on: fiveDaysAgo, note: 'Netflix subscription', account: '' },
+        { id: 11, kind: 'expense', category: 'Health', amount: 50.00, occurred_on: fiveDaysAgo, note: 'Gym monthly', account: '' },
+        { id: 12, kind: 'income', category: 'Freelance', amount: 800.00, occurred_on: weekAgo, note: 'Side project payment', account: '' },
+        { id: 13, kind: 'expense', category: 'Food', amount: 95.00, occurred_on: weekAgo, note: 'Grocery shopping', account: '' },
+        { id: 14, kind: 'expense', category: 'Bills & Home', amount: 200.00, occurred_on: weekAgo, note: 'Internet + phone', account: '' },
       ];
       localStorage.setItem(DEMO_TRANSACTIONS_KEY, JSON.stringify(sampleTransactions));
     }
@@ -154,11 +171,8 @@
           done: tasks.filter(isDone).length,
         },
       },
-      bills: { ok: true, data: { overdue: [], dueSoon: [], undated: [] } },
-      creditCards: {
-        ok: true,
-        data: { cardCount: 0, totalBalance: 0, totalInterest: 0, approachingClose: [] },
-      },
+      bills: { ok: false, data: null },
+      creditCards: { ok: false, data: null },
       recentNotes: {
         ok: true,
         data: getNotes().slice(0, 5).map((note) => ({
@@ -168,7 +182,7 @@
           updated_at: note.updated_at,
         })),
       },
-      weather: { ok: true, data: { city: null } },
+      weather: { ok: false, data: null },
       dailyQuote: {
         ok: true,
         data: {
