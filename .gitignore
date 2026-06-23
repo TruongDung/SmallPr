@@ -2,6 +2,7 @@ node_modules/
 data.db
 .env
 tmp/*.log
+logs/
 .kiro/settings/mcp.json
 mcp-servers/
 
