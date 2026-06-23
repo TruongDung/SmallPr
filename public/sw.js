@@ -1,4 +1,4 @@
-const CACHE_NAME = 'task-manager-ios-v97';
+const CACHE_NAME = 'task-manager-ios-v98';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -10,6 +10,11 @@ const APP_SHELL = [
   '/manifest.webmanifest',
   '/fonts/arial.ttf',
 ];
+
+// Extensions that should always prefer the network so code/markup updates are
+// picked up immediately (no hard refresh required). Cache is only a fallback
+// for offline use.
+const NETWORK_FIRST = /\.(?:js|css|html)$/i;
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -31,36 +36,49 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// Network-first: try the network, cache the fresh copy, fall back to cache when
+// offline. Used for navigation and for JS/CSS/HTML so deploys take effect right
+// away.
+const networkFirst = (request, fallbackPath) => fetch(request)
+  .then((response) => {
+    if (request.method === 'GET' && response && response.ok) {
+      const responseClone = response.clone();
+      caches.open(CACHE_NAME).then((cache) => {
+        cache.put(fallbackPath || request, responseClone);
+      });
+    }
+    return response;
+  })
+  .catch(() => caches.match(fallbackPath || request).then((cached) => cached || caches.match('/index.html')));
+
+// Cache-first: good for static, rarely-changing assets (images, fonts).
+const cacheFirst = (request) => caches.match(request).then((cached) => cached || fetch(request)
+  .then((response) => {
+    if (request.method === 'GET' && response && response.ok) {
+      const responseClone = response.clone();
+      caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+    }
+    return response;
+  }));
+
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
+  // Never intercept cross-origin, API, or realtime/socket traffic.
   if (url.origin !== self.location.origin || url.pathname.startsWith('/api/') || url.pathname.startsWith('/socket.io/')) {
     return;
   }
 
   if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', responseClone));
-          return response;
-        })
-        .catch(() => caches.match('/index.html'))
-    );
+    event.respondWith(networkFirst(request, '/index.html'));
     return;
   }
 
-  event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      return cachedResponse || fetch(request).then((response) => {
-        if (request.method === 'GET' && response.ok) {
-          const responseClone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
-        }
-        return response;
-      });
-    })
-  );
+  if (request.method === 'GET' && NETWORK_FIRST.test(url.pathname)) {
+    event.respondWith(networkFirst(request));
+    return;
+  }
+
+  event.respondWith(cacheFirst(request));
 });
