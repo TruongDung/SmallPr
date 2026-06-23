@@ -283,6 +283,27 @@
     }
 
     // --- Transactions ---
+    // Summary feeds the Income / Expense / Net cards. Must be matched before the
+    // generic /api/transactions GET below, which would otherwise swallow it.
+    if (url.match(/^\/api\/transactions\/summary/) && method === 'GET') {
+      const txns = getTransactions();
+      const num = (value) => Number(value) || 0;
+      const income = txns
+        .filter((tx) => tx.kind === 'income')
+        .reduce((sum, tx) => sum + num(tx.amount), 0);
+      const expense = txns
+        .filter((tx) => tx.kind === 'expense')
+        .reduce((sum, tx) => sum + num(tx.amount), 0);
+      return { summary: { income, expense, net: income - expense } };
+    }
+    if (url.match(/^\/api\/transactions\/categories/) && method === 'GET') {
+      const categories = [...new Set(
+        getTransactions()
+          .map((tx) => tx.category)
+          .filter(Boolean)
+      )];
+      return { categories };
+    }
     if (url.match(/^\/api\/transactions/) && method === 'GET') {
       return { transactions: getTransactions() };
     }
