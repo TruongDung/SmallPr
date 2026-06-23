@@ -496,101 +496,15 @@
           </div>
         </section>
 
-        <section class="feature-settings-section" aria-labelledby="feature-settings-title">
-          <div class="feature-settings-header">
-            <h3 id="feature-settings-title">Demo Feature Visibility</h3>
-            <p class="feature-settings-subtitle">Control which features are visible to demo users.</p>
-          </div>
-          <div class="feature-settings-list" id="demo-visibility-list" data-visibility-scope="demo">
-            <div class="feature-settings-row">
-              <div class="feature-settings-info">
-                <strong>Weather</strong>
-                <span class="feature-settings-hint">Allow demo users to access the Weather feature.</span>
-              </div>
-              <button type="button" class="feature-toggle-switch" role="switch" aria-checked="true" data-visibility-path="weather" aria-label="Toggle Weather for demo users">
-                <span class="feature-toggle-track"><span class="feature-toggle-thumb"></span></span>
-              </button>
-            </div>
-
-            <div class="feature-settings-row">
-              <div class="feature-settings-info">
-                <strong>User Settings</strong>
-                <span class="feature-settings-hint">Allow demo users to open the User Settings panel.</span>
-              </div>
-              <button type="button" class="feature-toggle-switch" role="switch" aria-checked="true" data-visibility-path="userSettings" aria-label="Toggle User Settings for demo users">
-                <span class="feature-toggle-track"><span class="feature-toggle-thumb"></span></span>
-              </button>
-            </div>
-
-            <div class="feature-settings-row">
-              <div class="feature-settings-info">
-                <strong>Financial</strong>
-                <span class="feature-settings-hint">Master toggle for the entire Financial section.</span>
-              </div>
-              <button type="button" class="feature-toggle-switch" role="switch" aria-checked="true" data-visibility-path="financial" aria-label="Toggle Financial section for demo users">
-                <span class="feature-toggle-track"><span class="feature-toggle-thumb"></span></span>
-              </button>
-            </div>
-
-            <div class="feature-settings-subgroup" data-financial-subgroup>
-              <p class="feature-settings-subgroup-title">Financial sub-tabs</p>
-
-              <div class="feature-settings-row feature-settings-row-nested">
-                <div class="feature-settings-info">
-                  <strong>Credit card</strong>
-                </div>
-                <button type="button" class="feature-toggle-switch" role="switch" aria-checked="true" data-visibility-path="financialTabs.cards" aria-label="Toggle Credit card tab for demo users">
-                  <span class="feature-toggle-track"><span class="feature-toggle-thumb"></span></span>
-                </button>
-              </div>
-
-              <div class="feature-settings-row feature-settings-row-nested">
-                <div class="feature-settings-info">
-                  <strong>Expense</strong>
-                </div>
-                <button type="button" class="feature-toggle-switch" role="switch" aria-checked="true" data-visibility-path="financialTabs.info" aria-label="Toggle Expense tab for demo users">
-                  <span class="feature-toggle-track"><span class="feature-toggle-thumb"></span></span>
-                </button>
-              </div>
-
-              <div class="feature-settings-row feature-settings-row-nested">
-                <div class="feature-settings-info">
-                  <strong>Bill Payment Websites</strong>
-                </div>
-                <button type="button" class="feature-toggle-switch" role="switch" aria-checked="true" data-visibility-path="financialTabs.links" aria-label="Toggle Bill Payment Websites tab for demo users">
-                  <span class="feature-toggle-track"><span class="feature-toggle-thumb"></span></span>
-                </button>
-              </div>
-
-              <div class="feature-settings-row feature-settings-row-nested">
-                <div class="feature-settings-info">
-                  <strong>Transactions</strong>
-                </div>
-                <button type="button" class="feature-toggle-switch" role="switch" aria-checked="true" data-visibility-path="financialTabs.transactions" aria-label="Toggle Transactions tab for demo users">
-                  <span class="feature-toggle-track"><span class="feature-toggle-thumb"></span></span>
-                </button>
-              </div>
-
-              <div class="feature-settings-row feature-settings-row-nested">
-                <div class="feature-settings-info">
-                  <strong>Calendar</strong>
-                </div>
-                <button type="button" class="feature-toggle-switch" role="switch" aria-checked="true" data-visibility-path="financialTabs.calendar" aria-label="Toggle Calendar tab for demo users">
-                  <span class="feature-toggle-track"><span class="feature-toggle-thumb"></span></span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
         <section class="feature-settings-section" aria-labelledby="user-feature-settings-title">
           <div class="feature-settings-header">
-            <h3 id="user-feature-settings-title">User Feature Visibility</h3>
-            <p class="feature-settings-subtitle">Set the default for all users, or pick a specific user to override. Admins always see everything.</p>
+            <h3 id="user-feature-settings-title">Feature Visibility</h3>
+            <p class="feature-settings-subtitle">Set the default for all users, pick a specific user to override, or choose Demo users. Admins always see everything.</p>
             <div class="feature-settings-user-picker">
               <label for="user-visibility-user-select" class="sr-only">Choose user</label>
               <select id="user-visibility-user-select" class="feature-settings-user-select">
                 <option value="">All users (default)</option>
+                <option value="__demo__">Demo users</option>
               </select>
               <button id="user-visibility-reset" type="button" class="secondary hidden" title="Remove this user's override">Reset to default</button>
             </div>
@@ -1654,7 +1568,7 @@
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="js/features/notes/notes.module.js?v=cache-clear-20260615-ocr-paste-1"></script>
   <script src="js/features/dashboard/dashboard.module.js?v=cache-clear-20260601-7"></script>
-  <script src="js/features/admin/admin.module.js?v=cache-clear-20260610-audit-refresh-feedback-1"></script>
+  <script src="js/features/admin/admin.module.js?v=cache-clear-20260623-merge-visibility-1"></script>
   <script src="js/tasks.js?v=cache-clear-20260604-1"></script>
   <script src="js/usHolidays.js?v=1"></script>
   <script src="js/features/tasks/calendar.module.js?v=cache-clear-20260611-lunar-alldays-1"></script>
@@ -1668,7 +1582,7 @@
   <script src="js/notes-code-highlighter.js?v=cache-clear-20260601-7"></script>
   <script src="/socket.io/socket.io.js"></script>
   <script src="js/monitoring.js?v=cache-clear-20260603-1"></script>
-  <script src="js/i18n.js?v=cache-clear-20260611-new-badge-1"></script>
+  <script src="js/i18n.js?v=cache-clear-20260623-merge-visibility-1"></script>
   <script src="js/subtabDragSort.js?v=1"></script>
   <script src="js/demo.js?v=1"></script>
   <script src="app.js?v=cache-clear-20260615-demo-mode-1"></script>
