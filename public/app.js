@@ -3783,7 +3783,7 @@ const enterDemoMode = () => {
   demoBanner?.classList.remove('hidden');
   // Act as if user is logged in with a fake demo user
   currentUser = { id: 0, username: 'demo', name: 'Demo User' };
-  setCurrentView('tasks');
+  setCurrentView('dashboard');
   applyTranslations();
   showSection();
 };
