@@ -38,6 +38,38 @@ pool.on('error', (error) => {
   logger.error({ err: error }, 'Unexpected Postgres pool error');
 });
 
+const idleTimeoutMs = parsePositiveInt(process.env.PG_IDLE_TIMEOUT_MS, 30000);
+
+let keepAliveTimer = null;
+
+// Keep one pooled connection warm. The remote database lives in another region,
+// so opening a fresh TLS + auth connection after the pool goes idle costs a
+// second or more, which the user feels as a slow first response after being
+// away. Pinging just under the idle timeout prevents the pool from dropping its
+// last connection, so requests stay fast even after long idle periods.
+// Long-lived process only (no effect on serverless, where intervals don't
+// persist between invocations).
+const startKeepAlive = () => {
+  if (keepAliveTimer || isLocalDatabase) return;
+  // Ping a bit before the idle timeout so the connection never expires.
+  const intervalMs = Math.max(5000, Math.floor(idleTimeoutMs * 0.8));
+  keepAliveTimer = setInterval(() => {
+    pool.query('SELECT 1').catch((error) => {
+      logger.warn({ err: error }, 'Database keep-alive ping failed');
+    });
+  }, intervalMs);
+  // Don't let this timer keep the event loop alive on shutdown.
+  if (typeof keepAliveTimer.unref === 'function') keepAliveTimer.unref();
+  logger.info({ intervalMs }, 'Database keep-alive started');
+};
+
+const stopKeepAlive = () => {
+  if (keepAliveTimer) {
+    clearInterval(keepAliveTimer);
+    keepAliveTimer = null;
+  }
+};
+
 const toPostgresSql = (sql) => {
   let index = 0;
   return sql.replace(/\?/g, () => `$${++index}`);
@@ -72,4 +104,6 @@ module.exports = {
   queryAsync,
   runAsync,
   toPostgresSql,
+  startKeepAlive,
+  stopKeepAlive,
 };

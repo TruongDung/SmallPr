@@ -27,6 +27,32 @@ sessionPool.on('error', (error) => {
   logger.error({ err: error }, 'Unexpected Postgres session pool error');
 });
 
+const sessionIdleTimeoutMs = parsePositiveInt(process.env.PG_SESSION_IDLE_TIMEOUT_MS, 10000);
+
+let sessionKeepAliveTimer = null;
+
+// Session lookups run on every request (before route handlers), so a cold
+// session pool after an idle period directly slows the first response. Keep one
+// connection warm for the long-lived server. No-op for local DB / serverless.
+const startSessionKeepAlive = () => {
+  if (sessionKeepAliveTimer || isLocalDatabase) return;
+  const intervalMs = Math.max(5000, Math.floor(sessionIdleTimeoutMs * 0.8));
+  sessionKeepAliveTimer = setInterval(() => {
+    sessionPool.query('SELECT 1').catch((error) => {
+      logger.warn({ err: error }, 'Session pool keep-alive ping failed');
+    });
+  }, intervalMs);
+  if (typeof sessionKeepAliveTimer.unref === 'function') sessionKeepAliveTimer.unref();
+  logger.info({ intervalMs }, 'Session pool keep-alive started');
+};
+
+const stopSessionKeepAlive = () => {
+  if (sessionKeepAliveTimer) {
+    clearInterval(sessionKeepAliveTimer);
+    sessionKeepAliveTimer = null;
+  }
+};
+
 const createSessionMiddleware = (isProduction = false) => {
   const store = new PgSession({
     pool: sessionPool,
@@ -53,4 +79,4 @@ const createSessionMiddleware = (isProduction = false) => {
   });
 };
 
-module.exports = { createSessionMiddleware };
+module.exports = { createSessionMiddleware, startSessionKeepAlive, stopSessionKeepAlive };
