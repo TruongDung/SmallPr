@@ -48,15 +48,29 @@
 
       // Remove non-content nodes that Word/Office and browsers inject into the
       // clipboard HTML. If left in, <style>/<xml> text would leak as visible
-      // text once their (disallowed) tags get unwrapped.
-      template.content.querySelectorAll('style, script, meta, link, title, head, xml, o\\:p').forEach((node) => node.remove());
-      // Strip clipboard fragment markers and Office conditional comments.
-      const commentWalker = document.createTreeWalker(template.content, NodeFilter.SHOW_COMMENT);
-      const comments = [];
-      while (commentWalker.nextNode()) comments.push(commentWalker.currentNode);
-      comments.forEach((comment) => comment.remove());
+      // text once their (disallowed) tags get unwrapped. Best-effort: never let
+      // cleanup throw, since sanitize feeds both saving and rendering.
+      try {
+        template.content
+          .querySelectorAll('style, script, meta, link, title, head, xml, noscript')
+          .forEach((node) => node.remove());
+        // Strip clipboard fragment markers and Office conditional comments.
+        const commentWalker = document.createTreeWalker(template.content, NodeFilter.SHOW_COMMENT);
+        const comments = [];
+        while (commentWalker.nextNode()) comments.push(commentWalker.currentNode);
+        comments.forEach((comment) => comment.remove());
+      } catch (_error) {
+        /* best-effort cleanup */
+      }
 
       template.content.querySelectorAll('*').forEach((element) => {
+        // Drop namespaced Office tags (e.g. <o:p>) entirely. Done here instead
+        // of via an escaped CSS selector, which can throw in some engines.
+        if (element.tagName.includes(':')) {
+          element.remove();
+          return;
+        }
+
         const style = element.getAttribute('style') || '';
 
         // Promote inline-style formatting to semantic tags before attributes
