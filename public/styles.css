@@ -5147,28 +5147,30 @@ body.theme-dark .user-status-badge.disabled {
 }
 
 .task-detail-editor {
-  border-color: #8f969f;
-  border-radius: 10px;
+  border-color: var(--border);
+  border-radius: 12px;
   background: var(--surface);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 
 .add-task-modal .task-detail-editor,
 .edit-task-modal .task-detail-editor {
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .task-detail-editor:focus-within {
-  border-color: #68707a;
-  box-shadow: 0 0 0 3px rgba(104, 112, 122, 0.14);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(47, 112, 255, 0.14);
 }
 
 .task-detail-editor .rich-editor-toolbar {
   align-items: center;
-  gap: 12px;
-  min-height: 54px;
-  padding: 8px 16px;
+  gap: 6px;
+  min-height: 50px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--surface-soft, color-mix(in srgb, var(--surface) 92%, var(--border)));
+  border-radius: 12px 12px 0 0;
 }
 
 .task-detail-editor .rich-editor-toolbar button {
@@ -5180,11 +5182,23 @@ body.theme-dark .user-status-badge.disabled {
   height: 34px;
   padding: 0;
   border: 0;
-  border-radius: 7px;
+  border-radius: 8px;
   background: transparent;
-  color: color-mix(in srgb, var(--text) 72%, var(--muted));
+  color: color-mix(in srgb, var(--text) 70%, var(--muted));
   font-size: 1.05rem;
   line-height: 1;
+  transition: background-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+/* Group separators: [B I U S] | [checklist] | [bullet  numbered] */
+.task-detail-editor .rich-editor-toolbar button:nth-child(5),
+.task-detail-editor .rich-editor-toolbar button:nth-child(6) {
+  margin-left: 7px;
+  border-left: 1px solid var(--border);
+  border-radius: 0 8px 8px 0;
+  padding-left: 7px;
+  width: auto;
+  min-width: 41px;
 }
 
 .task-detail-footer-actions {
@@ -5308,15 +5322,19 @@ body.theme-dark .user-status-badge.disabled {
 
 .task-detail-editor .rich-editor-toolbar button:hover,
 .task-detail-editor .rich-editor-toolbar button:focus-visible {
-  background: var(--surface-soft);
-  color: var(--text);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--primary);
+}
+
+.task-detail-editor .rich-editor-toolbar button:active {
+  transform: scale(0.92);
 }
 
 .task-detail-editor .rich-editor-surface {
   min-height: 156px;
-  padding: 10px 12px;
+  padding: 14px 16px;
   color: var(--text);
-  font-size: 1.04rem;
+  font-size: 1.02rem;
   line-height: 1.65;
   text-align: left;
 }
@@ -5327,8 +5345,9 @@ body.theme-dark .user-status-badge.disabled {
 
 .task-detail-editor .rich-editor-surface:empty::before {
   color: var(--muted);
-  font-size: 1.12rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 400;
+  opacity: 0.75;
 }
 
 @media (max-width: 640px) {
