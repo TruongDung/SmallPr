@@ -769,7 +769,7 @@
       if (!sock || typeof sock.on !== 'function') return;
       ['task:created', 'task:updated', 'task:deleted',
        'note:created', 'note:updated', 'note:deleted',
-       'bill:updated', 'card:updated'].forEach((event) => sock.on(event, scheduleRefresh));
+       'bill:created', 'bill:updated', 'bill:deleted', 'card:updated'].forEach((event) => sock.on(event, scheduleRefresh));
       sock.on('connect', handleConnect);
       sock.on('disconnect', handleDisconnect);
       listenersBound = true;
@@ -780,7 +780,7 @@
       if (!sock || typeof sock.off !== 'function') return;
       ['task:created', 'task:updated', 'task:deleted',
        'note:created', 'note:updated', 'note:deleted',
-       'bill:updated', 'card:updated'].forEach((event) => sock.off(event, scheduleRefresh));
+       'bill:created', 'bill:updated', 'bill:deleted', 'card:updated'].forEach((event) => sock.off(event, scheduleRefresh));
       sock.off('connect', handleConnect);
       sock.off('disconnect', handleDisconnect);
       listenersBound = false;

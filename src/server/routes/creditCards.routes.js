@@ -303,6 +303,32 @@ const createCreditCardsRouter = ({ authRequired, auditLogs, allAsync, getAsync, 
     }
   });
 
+  router.delete('/fast-access-bills/:id', async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      const bill = await creditCards.findFastAccessBillForUser(id, req.session.userId);
+      if (!bill) {
+        return res.status(404).json({ error: 'Fast access bill not found' });
+      }
+
+      await creditCards.removeFastAccessBill(id, req.session.userId);
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'delete',
+        entityType: 'expense',
+        entityId: bill.id,
+        summary: bill.item,
+        before: bill,
+      });
+      emitToUser(req.session.userId, 'bill:deleted', { id: Number(id) });
+      res.json({ success: true });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to delete fast access bill');
+      res.status(500).json({ error: 'Failed to delete fast access bill' });
+    }
+  });
+
   router.get('/users', async (req, res) => {
     try {
       const [accountUser, savedUsers] = await Promise.all([

@@ -312,6 +312,26 @@
       return result.bill;
     };
 
+    const deleteBill = async (bill) => {
+      const result = await request(`/api/credit-cards/fast-access-bills/${bill.id}`, {
+        method: 'DELETE',
+      });
+      if (result.error) {
+        elements.message.textContent = result.error;
+        if (typeof showStatusToast === 'function') {
+          showStatusToast(result.error || t('failedToDeleteExpense') || 'Failed to delete expense', 'error');
+        }
+        render();
+        return;
+      }
+      bills = bills.filter((entry) => entry.id !== bill.id);
+      elements.message.textContent = '';
+      render();
+      if (typeof showStatusToast === 'function') {
+        showStatusToast(t('expenseDeleted') || 'Expense deleted', 'success');
+      }
+    };
+
     const updateFromModal = async () => {
       clearEditBillError();
       elements.message.textContent = '';
@@ -492,7 +512,31 @@
             editButton.title = t('edit');
             editButton.addEventListener('click', () => openEditModal(bill));
 
-            actions.append(editButton);
+            const deleteButton = document.createElement('button');
+            deleteButton.type = 'button';
+            deleteButton.className = 'task-action-icon danger';
+            deleteButton.textContent = '🗑';
+            deleteButton.setAttribute('aria-label', t('delete'));
+            deleteButton.title = t('delete');
+            deleteButton.addEventListener('click', () => {
+              // Inline confirm: swap the action buttons for ✓ / ✕.
+              actions.innerHTML = '';
+              const confirmBtn = document.createElement('button');
+              confirmBtn.type = 'button';
+              confirmBtn.className = 'task-action-icon danger';
+              confirmBtn.textContent = '✓';
+              confirmBtn.title = t('confirm') || 'Confirm';
+              confirmBtn.addEventListener('click', () => deleteBill(bill));
+              const cancelBtn = document.createElement('button');
+              cancelBtn.type = 'button';
+              cancelBtn.className = 'task-action-icon secondary';
+              cancelBtn.textContent = '✕';
+              cancelBtn.title = t('cancel') || 'Cancel';
+              cancelBtn.addEventListener('click', () => render());
+              actions.append(confirmBtn, cancelBtn);
+            });
+
+            actions.append(editButton, deleteButton);
           }
           actionsCell.append(actions);
           row.append(itemCell, amountCell, dueDateCell, payBeforeCell, statusCell, actionsCell);

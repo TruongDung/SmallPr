@@ -174,6 +174,11 @@ const createCreditCardsService = ({ allAsync, getAsync, runAsync }) => {
     return findFastAccessBillById(result.lastID);
   };
 
+  const removeFastAccessBill = (id, userId) => runAsync(
+    'DELETE FROM fast_access_bills WHERE id = ? AND user_id = ?',
+    [id, userId]
+  );
+
   return {
     create,
     createFastAccessBill,
@@ -189,6 +194,7 @@ const createCreditCardsService = ({ allAsync, getAsync, runAsync }) => {
     seedFastAccessBillsForUser,
     listForUser,
     remove,
+    removeFastAccessBill,
     removeFastAccessLink,
     update,
     updateFastAccessBill,
