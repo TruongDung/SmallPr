@@ -148,10 +148,17 @@
     };
 
     const selectFolder = (folderId) => {
-      if (activeFolderId === folderId) return;
       activeFolderId = folderId;
       renderFolders();
       renderList();
+      // Open the first note in the selected folder (if any), else clear editor.
+      const firstNote = filteredNotes()[0];
+      if (firstNote) {
+        selectNote(firstNote.id);
+      } else {
+        activeNoteId = null;
+        showEditor(null);
+      }
     };
 
     const buildFolderRow = ({ id, icon, name, isActive, count, renamable }) => {
