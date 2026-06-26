@@ -7078,6 +7078,68 @@ button.related-tasks-chip-name-link:focus-visible {
   box-shadow: 0 0 0 3px rgba(47, 112, 255, 0.1);
 }
 
+.notes-folders-section {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.notes-folders-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 12px 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.notes-folders-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.notes-folder-item {
+  padding: 8px 12px;
+  margin: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s;
+  font-size: 0.95rem;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.notes-folder-item:hover {
+  background: var(--surface);
+}
+
+.notes-folder-item.active {
+  background: color-mix(in srgb, var(--primary) 15%, var(--surface));
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.notes-folder-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notes-folder-item .notes-folder-actions {
+  display: none;
+  margin-left: auto;
+  gap: 4px;
+}
+
+.notes-folder-item:hover .notes-folder-actions {
+  display: flex;
+}
+
 .notes-list {
   list-style: none;
   margin: 0;

@@ -9,6 +9,7 @@ const NOTE_SELECT = `
   notes.title,
   notes.body,
   notes.pinned,
+  notes.folder_id,
   notes.task_id,
   tasks.title AS task_title,
   notes.created_at,
@@ -378,7 +379,231 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
     }
   });
 
+  router.get('/note-folders', authRequired, async (req, res) => {
+    try {
+      const folders = await allAsync(
+        `SELECT id, name, description, sort_order, created_at, updated_at
+         FROM note_folders
+         WHERE user_id = ?
+         ORDER BY sort_order ASC, name ASC`,
+        [req.session.userId]
+      );
+      res.json({ folders });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to load note folders');
+      res.status(500).json({ error: 'Failed to load note folders' });
+    }
+  });
+
+  router.post('/note-folders', authRequired, async (req, res) => {
+    const name = String(req.body?.name || '').slice(0, 100).trim();
+    const description = String(req.body?.description || '').slice(0, 500);
+
+    if (!name) {
+      return res.status(400).json({ error: 'Folder name is required' });
+    }
+
+    try {
+      const result = await queryAsync(
+        `INSERT INTO note_folders (user_id, name, description, sort_order)
+         VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM note_folders WHERE user_id = ?))
+         RETURNING id`,
+        [req.session.userId, name, description, req.session.userId]
+      );
+
+      const folder = (await allAsync(
+        'SELECT id, name, description, sort_order, created_at, updated_at FROM note_folders WHERE id = ?',
+        [result.rows[0].id]
+      ))[0];
+
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'create',
+        entityType: 'note_folder',
+        entityId: folder.id,
+        summary: folder.name,
+        after: folder,
+      });
+
+      emitToUser(req.session.userId, 'folder:created', { folder });
+      res.json({ folder });
+    } catch (error) {
+      if (error.message?.includes('UNIQUE')) {
+        return res.status(400).json({ error: 'Folder name already exists' });
+      }
+      logger.error({ err: error }, 'Failed to create note folder');
+      res.status(500).json({ error: 'Failed to create note folder' });
+    }
+  });
+
+  router.put('/note-folders/:id', authRequired, async (req, res) => {
+    const { id } = req.params;
+    const name = String(req.body?.name || '').slice(0, 100).trim();
+    const description = String(req.body?.description || '').slice(0, 500);
+
+    if (!name) {
+      return res.status(400).json({ error: 'Folder name is required' });
+    }
+
+    try {
+      const existing = (await allAsync(
+        'SELECT id, name, description FROM note_folders WHERE id = ? AND user_id = ? LIMIT 1',
+        [id, req.session.userId]
+      ))[0];
+
+      if (!existing) {
+        return res.status(404).json({ error: 'Folder not found' });
+      }
+
+      const result = await queryAsync(
+        `UPDATE note_folders
+         SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE id = ? AND user_id = ?
+         RETURNING id`,
+        [name, description, id, req.session.userId]
+      );
+
+      if (!result.rows.length) {
+        return res.status(404).json({ error: 'Folder not found' });
+      }
+
+      const folder = (await allAsync(
+        'SELECT id, name, description, sort_order, created_at, updated_at FROM note_folders WHERE id = ?',
+        [id]
+      ))[0];
+
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'edit',
+        entityType: 'note_folder',
+        entityId: folder.id,
+        summary: folder.name,
+        before: existing,
+        after: folder,
+      });
+
+      emitToUser(req.session.userId, 'folder:updated', { folder });
+      res.json({ folder });
+    } catch (error) {
+      if (error.message?.includes('UNIQUE')) {
+        return res.status(400).json({ error: 'Folder name already exists' });
+      }
+      logger.error({ err: error }, 'Failed to update note folder');
+      res.status(500).json({ error: 'Failed to update note folder' });
+    }
+  });
+
+  router.delete('/note-folders/:id', authRequired, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+      const existing = (await allAsync(
+        'SELECT id, name FROM note_folders WHERE id = ? AND user_id = ? LIMIT 1',
+        [id, req.session.userId]
+      ))[0];
+
+      if (!existing) {
+        return res.status(404).json({ error: 'Folder not found' });
+      }
+
+      // Move notes in this folder to root (null folder_id)
+      await queryAsync(
+        'UPDATE notes SET folder_id = NULL WHERE folder_id = ? AND user_id = ?',
+        [id, req.session.userId]
+      );
+
+      const result = await runAsync(
+        'DELETE FROM note_folders WHERE id = ? AND user_id = ? RETURNING id',
+        [id, req.session.userId]
+      );
+
+      if (!result.lastID) {
+        return res.status(404).json({ error: 'Folder not found' });
+      }
+
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'delete',
+        entityType: 'note_folder',
+        entityId: existing.id,
+        summary: existing.name,
+        before: existing,
+      });
+
+      emitToUser(req.session.userId, 'folder:deleted', { id: Number(id) });
+      res.json({ success: true });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to delete note folder');
+      res.status(500).json({ error: 'Failed to delete note folder' });
+    }
+  });
+
+  // Update note's folder
+  router.patch('/notes/:id/folder', authRequired, async (req, res) => {
+    const { id } = req.params;
+    const folderId = normalizePositiveInteger(req.body?.folder_id, null);
+
+    try {
+      const note = (await allAsync(
+        'SELECT id, folder_id FROM notes WHERE id = ? AND user_id = ? LIMIT 1',
+        [id, req.session.userId]
+      ))[0];
+
+      if (!note) {
+        return res.status(404).json({ error: 'Note not found' });
+      }
+
+      // Verify folder exists if provided
+      if (folderId) {
+        const folder = await allAsync(
+          'SELECT id FROM note_folders WHERE id = ? AND user_id = ? LIMIT 1',
+          [folderId, req.session.userId]
+        );
+        if (!folder.length) {
+          return res.status(400).json({ error: 'Folder not found' });
+        }
+      }
+
+      const result = await queryAsync(
+        `UPDATE notes
+         SET folder_id = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE id = ? AND user_id = ?
+         RETURNING id`,
+        [folderId, id, req.session.userId]
+      );
+
+      if (!result.rows.length) {
+        return res.status(404).json({ error: 'Note not found' });
+      }
+
+      const updatedNote = (await allAsync(
+        `SELECT ${NOTE_SELECT}
+         FROM notes
+         LEFT JOIN tasks ON tasks.id = notes.task_id AND tasks.user_id = notes.user_id
+         WHERE notes.id = ? AND notes.user_id = ?`,
+        [id, req.session.userId]
+      ))[0];
+
+      await auditLogs.record({
+        ...createAuditContext(req),
+        action: 'edit',
+        entityType: 'note',
+        entityId: updatedNote.id,
+        summary: updatedNote.title,
+        before: { folder_id: note.folder_id },
+        after: { folder_id: folderId },
+      });
+
+      emitToUser(req.session.userId, 'note:updated', { note: updatedNote });
+      res.json({ note: updatedNote });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to move note to folder');
+      res.status(500).json({ error: 'Failed to move note to folder' });
+    }
+  });
+
   return router;
+
 };
 
 module.exports = createNotesRouter;

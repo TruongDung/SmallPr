@@ -17,9 +17,17 @@
     const checkboxButton = document.getElementById('note-checkbox-button');
     const taskLabel = document.getElementById('note-task-label');
     const taskSelect = document.getElementById('note-task-select');
+    
+    // Folder management
+    const foldersList = document.getElementById('notes-folders-list');
+    const addFolderButton = document.getElementById('add-folder-button');
+    const rootFolderItem = document.getElementById('root-folder-item');
+    
     let notes = [];
     let tasks = [];
+    let folders = [];
     let activeNoteId = null;
+    let activeFolderId = null; // null = root (all notes)
     let saveTimer = null;
     let pendingSave = false;
     let showPreview = true;
@@ -82,12 +90,79 @@
     };
 
     const filteredNotes = () => {
+      let filtered = notes;
+      // Filter by active folder
+      filtered = filtered.filter((note) => {
+        if (activeFolderId === null) {
+          return note.folder_id === null || note.folder_id === undefined;
+        }
+        return note.folder_id === activeFolderId;
+      });
+      // Filter by search query
       const query = searchInput.value.trim().toLowerCase();
-      if (!query) return notes;
-      return notes.filter((note) => {
+      if (!query) return filtered;
+      return filtered.filter((note) => {
         const haystack = `${note.title || ''} ${note.body || ''}`.toLowerCase();
         return haystack.includes(query);
       });
+    };
+
+    const renderFolders = () => {
+      if (!foldersList) return;
+      foldersList.innerHTML = '';
+      folders.forEach((folder) => {
+        const item = document.createElement('li');
+        item.className = `notes-folder-item ${folder.id === activeFolderId ? 'active' : ''}`;
+        item.dataset.folderId = String(folder.id);
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'notes-folder-name';
+        nameSpan.textContent = `📁 ${folder.name}`;
+        
+        nameSpan.addEventListener('click', () => {
+          activeFolderId = folder.id;
+          renderFolders();
+          renderList();
+        });
+        
+        const actions = document.createElement('div');
+        actions.className = 'notes-folder-actions';
+        
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'task-action-icon danger';
+        deleteBtn.textContent = '🗑';
+        deleteBtn.title = t('delete') || 'Delete';
+        deleteBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (confirm(`Delete folder "${folder.name}"? Notes in it will move to root.`)) {
+            const result = await request(`/api/note-folders/${folder.id}`, { method: 'DELETE' });
+            if (!result.error) {
+              await load();
+            } else {
+              showStatusToast(result.error || 'Failed to delete folder', 'error');
+            }
+          }
+        });
+        
+        actions.append(deleteBtn);
+        item.append(nameSpan, actions);
+        foldersList.append(item);
+      });
+      
+      // Update root folder active state
+      if (rootFolderItem) {
+        if (activeFolderId === null) {
+          rootFolderItem.classList.add('active');
+        } else {
+          rootFolderItem.classList.remove('active');
+        }
+        rootFolderItem.addEventListener('click', () => {
+          activeFolderId = null;
+          renderFolders();
+          renderList();
+        });
+      }
     };
 
     const showEditor = (note) => {
@@ -370,10 +445,13 @@
       }
       notes = [];
       tasks = [];
+      folders = [];
       activeNoteId = null;
+      activeFolderId = null;
       pendingSave = false;
       setMessage('');
       showEditor(null);
+      renderFolders();
       renderList();
     };
 
@@ -391,10 +469,11 @@
 
     const load = async () => {
       const version = dataVersion;
-      const [notesResult, tasksResult, archivedTasksResult] = await Promise.all([
+      const [notesResult, tasksResult, archivedTasksResult, foldersResult] = await Promise.all([
         request('/api/notes', { cache: 'no-store' }),
         request('/api/tasks', { cache: 'no-store' }),
         request('/api/tasks?archived=true', { cache: 'no-store' }),
+        request('/api/note-folders', { cache: 'no-store' }),
       ]);
       if (version !== dataVersion) return;
       if (notesResult.error) {
@@ -407,7 +486,10 @@
         ...(tasksResult.error ? [] : (tasksResult.tasks || [])),
         ...(archivedTasksResult.error ? [] : (archivedTasksResult.tasks || [])),
       ];
+      folders = foldersResult.folders || [];
+      
       updateTaskOptions();
+      renderFolders();
       setMessage('');
 
       if (!notes.length) {
@@ -452,6 +534,24 @@
     const bind = () => {
       addButton.addEventListener('click', addNote);
       deleteButton.addEventListener('click', requestDeleteActive);
+      
+      // Add folder functionality
+      if (addFolderButton) {
+        addFolderButton.addEventListener('click', async () => {
+          const folderName = prompt(t('newFolder') || 'Folder name:');
+          if (!folderName || !folderName.trim()) return;
+          const result = await request('/api/note-folders', {
+            method: 'POST',
+            body: JSON.stringify({ name: folderName.trim(), description: '' }),
+          });
+          if (result.error) {
+            showStatusToast(result.error || 'Failed to create folder', 'error');
+          } else {
+            await load();
+            showStatusToast(t('folderCreated') || 'Folder created', 'success');
+          }
+        });
+      }
       titleInput.addEventListener('input', scheduleSave);
       bodyInput.addEventListener('input', () => {
         scheduleSave();

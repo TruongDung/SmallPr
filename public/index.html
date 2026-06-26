@@ -139,6 +139,16 @@
               <span class="task-search-icon" aria-hidden="true">⌕</span>
               <input id="notes-search-input" type="search" placeholder="Search notes" autocomplete="off" />
             </div>
+            <div class="notes-folders-section">
+              <div class="notes-folders-header">
+                <strong>Folders</strong>
+                <button id="add-folder-button" type="button" class="task-action-icon secondary" aria-label="New folder" title="New folder">+</button>
+              </div>
+              <ul id="notes-folders-list" class="notes-folders-list" role="list"></ul>
+              <li id="root-folder-item" class="notes-folder-item active" data-folder-id="">
+                <span class="notes-folder-name">📝 All Notes</span>
+              </li>
+            </div>
             <ul id="notes-list" class="notes-list" role="list"></ul>
           </aside>
           <article class="notes-editor" aria-label="Note editor">
@@ -1567,7 +1577,7 @@
   <script src="js/features/creditCards/creditCards.translations.js?v=cache-clear-20260601-7"></script>
   <script src="js/features/creditCards/creditCards.module.js?v=cache-clear-20260611-cc-stats-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script src="js/features/notes/notes.module.js?v=cache-clear-20260615-ocr-paste-1"></script>
+  <script src="js/features/notes/notes.module.js?v=cache-clear-20260623-folders-1"></script>
   <script src="js/features/dashboard/dashboard.module.js?v=cache-clear-20260601-7"></script>
   <script src="js/features/admin/admin.module.js?v=cache-clear-20260623-merge-visibility-1"></script>
   <script src="js/tasks.js?v=cache-clear-20260604-1"></script>
@@ -1583,7 +1593,7 @@
   <script src="js/notes-code-highlighter.js?v=cache-clear-20260601-7"></script>
   <script src="/socket.io/socket.io.js?v=cache-clear-20260623-1"></script>
   <script src="js/monitoring.js?v=cache-clear-20260603-1"></script>
-  <script src="js/i18n.js?v=cache-clear-20260623-merge-visibility-1"></script>
+  <script src="js/i18n.js?v=cache-clear-20260623-folders-1"></script>
   <script src="js/subtabDragSort.js?v=1"></script>
   <script src="js/demo.js?v=cache-clear-20260623-summary-1"></script>
   <script src="app.js?v=cache-clear-20260623-demo-today-1"></script>
