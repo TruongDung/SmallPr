@@ -2406,6 +2406,61 @@ body.theme-dark .status-in_progress {
   overflow-wrap: anywhere;
 }
 
+/* Pasted rich content (Word / Google Docs): keep headings, quotes and code
+   readable and proportional inside editors and rendered views. */
+.task-description :is(h1, h2, h3, h4, h5, h6),
+.preview-task-description :is(h1, h2, h3, h4, h5, h6),
+.task-comment :is(h1, h2, h3, h4, h5, h6),
+.preview-task-comment-display :is(h1, h2, h3, h4, h5, h6),
+.rich-editor-surface :is(h1, h2, h3, h4, h5, h6) {
+  margin: 0.6em 0 0.3em;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.task-description h1, .preview-task-description h1, .task-comment h1,
+.preview-task-comment-display h1, .rich-editor-surface h1 { font-size: 1.5rem; }
+.task-description h2, .preview-task-description h2, .task-comment h2,
+.preview-task-comment-display h2, .rich-editor-surface h2 { font-size: 1.3rem; }
+.task-description h3, .preview-task-description h3, .task-comment h3,
+.preview-task-comment-display h3, .rich-editor-surface h3 { font-size: 1.15rem; }
+.task-description :is(h4, h5, h6), .preview-task-description :is(h4, h5, h6),
+.task-comment :is(h4, h5, h6), .preview-task-comment-display :is(h4, h5, h6),
+.rich-editor-surface :is(h4, h5, h6) { font-size: 1.02rem; }
+
+.task-description blockquote,
+.preview-task-description blockquote,
+.task-comment blockquote,
+.preview-task-comment-display blockquote,
+.rich-editor-surface blockquote {
+  margin: 0.5em 0;
+  padding: 4px 0 4px 12px;
+  border-left: 3px solid var(--border);
+  color: var(--muted);
+}
+
+.task-description :is(pre, code),
+.preview-task-description :is(pre, code),
+.task-comment :is(pre, code),
+.preview-task-comment-display :is(pre, code),
+.rich-editor-surface :is(pre, code) {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92em;
+}
+
+.task-description pre,
+.preview-task-description pre,
+.task-comment pre,
+.preview-task-comment-display pre,
+.rich-editor-surface pre {
+  margin: 0.5em 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--surface-soft, rgba(127, 127, 127, 0.12));
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
 .task-comment {
   min-width: 0;
   max-width: 100%;
@@ -4950,18 +5005,60 @@ body.theme-dark .user-status-badge.disabled {
   scrollbar-width: thin;
   border-radius: 16px;
   box-shadow: 0 24px 70px rgba(15, 23, 42, 0.28);
+  transform-origin: center bottom;
+  animation: addTaskModalIn 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Animated, blurred backdrop for a more refined entrance. */
+#add-task-modal.modal-backdrop {
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: addTaskBackdropIn 0.2s ease;
+}
+
+@keyframes addTaskBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes addTaskModalIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal.add-task-modal,
+  #add-task-modal.modal-backdrop {
+    animation: none;
+  }
 }
 
 .modal.add-task-modal h3 {
+  position: sticky;
+  top: 0;
+  z-index: 3;
   margin: 0;
-  padding: 24px 24px 20px;
+  padding: 20px 24px 18px;
   border-bottom: 1px solid var(--border);
   background:
     linear-gradient(180deg, var(--surface) 0%, var(--surface-soft) 100%);
   color: var(--text);
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 700;
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Accent bar before the title for a polished header. */
+.modal.add-task-modal h3::before {
+  content: "";
+  width: 4px;
+  height: 22px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--primary), #1f5fd0);
 }
 
 .modal.add-task-modal .task-form {
@@ -4993,6 +5090,16 @@ body.theme-dark .user-status-badge.disabled {
 .add-task-modal .rich-editor {
   border-radius: 10px;
   transition: all 0.2s ease;
+}
+
+.add-task-modal input:not([type="checkbox"]),
+.add-task-modal select {
+  min-height: 44px;
+}
+
+.add-task-modal input:not([type="checkbox"]):hover,
+.add-task-modal select:hover {
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
 }
 
 .add-task-modal input:not([type="checkbox"]):focus,
@@ -6265,9 +6372,18 @@ button.related-tasks-chip-name-link:focus-visible {
 .add-task-modal .modal-actions {
   align-items: center;
   gap: 10px;
-  margin-top: 2px;
-  padding-top: 16px;
+  /* Sticky, full-bleed footer so Cancel / Add Task stay reachable on long
+     forms. Negative margins cancel the .task-form 24px padding. */
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  margin: 8px -24px -24px;
+  padding: 16px 24px;
   border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 -8px 18px -12px rgba(15, 23, 42, 0.25);
 }
 
 .add-task-modal .modal-text-action {
@@ -6831,6 +6947,9 @@ button.related-tasks-chip-name-link:focus-visible {
     align-items: stretch;
     flex-direction: column-reverse;
     gap: 10px;
+    /* Mobile form padding is 18px; match it for the full-bleed sticky footer. */
+    margin: 8px -18px -18px;
+    padding: 14px 18px calc(14px + env(safe-area-inset-bottom));
   }
 
   .add-task-modal .modal-text-action {
