@@ -96,6 +96,7 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
     const title = String(req.body?.title || '').slice(0, 200);
     const body = String(req.body?.body || '').slice(0, 100000);
     const taskId = normalizeTaskId(req.body?.task_id);
+    const folderId = normalizePositiveInteger(req.body?.folder_id, null);
 
     try {
       if (taskId) {
@@ -108,11 +109,21 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
         }
       }
 
+      if (folderId) {
+        const folder = await allAsync(
+          'SELECT id FROM note_folders WHERE id = ? AND user_id = ? LIMIT 1',
+          [folderId, req.session.userId]
+        );
+        if (!folder.length) {
+          return res.status(400).json({ error: 'Folder not found' });
+        }
+      }
+
       const result = await queryAsync(
-        `INSERT INTO notes (user_id, title, body, task_id)
-         VALUES (?, ?, ?, ?)
+        `INSERT INTO notes (user_id, title, body, task_id, folder_id)
+         VALUES (?, ?, ?, ?, ?)
          RETURNING id`,
-        [req.session.userId, title, body, taskId]
+        [req.session.userId, title, body, taskId, folderId]
       );
       const note = (await allAsync(
         `SELECT ${NOTE_SELECT}

@@ -7079,39 +7079,74 @@ button.related-tasks-chip-name-link:focus-visible {
 }
 
 .notes-folders-section {
-  padding: 12px 0;
+  padding: 4px 0 12px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .notes-folders-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 12px 8px;
-  font-size: 0.85rem;
-  font-weight: 600;
+  padding: 0 4px 8px;
+}
+
+.notes-folders-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--muted);
+}
+
+.notes-folder-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  color: var(--primary);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.18s ease, transform 0.18s ease;
+}
+
+.notes-folder-add-btn:hover {
+  background: color-mix(in srgb, var(--primary) 22%, transparent);
+  transform: scale(1.08);
+}
+
+.notes-folder-add-btn:active {
+  transform: scale(0.94);
 }
 
 .notes-folders-list {
   list-style: none;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .notes-folder-item {
-  padding: 8px 12px;
-  margin: 0;
-  border-radius: 4px;
-  cursor: pointer;
-  user-select: none;
-  transition: background-color 0.2s;
-  font-size: 0.95rem;
-  color: var(--text);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  margin: 0;
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.9rem;
+  color: var(--text);
+  border: 1px solid transparent;
+  transition: background-color 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 }
 
 .notes-folder-item:hover {
@@ -7119,25 +7154,104 @@ button.related-tasks-chip-name-link:focus-visible {
 }
 
 .notes-folder-item.active {
-  background: color-mix(in srgb, var(--primary) 15%, var(--surface));
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+  border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
   color: var(--primary);
-  font-weight: 500;
+  font-weight: 600;
+}
+
+.notes-folder-item.drop-target {
+  background: color-mix(in srgb, var(--primary) 20%, var(--surface));
+  border-color: var(--primary);
+  border-style: dashed;
+}
+
+.notes-folder-icon {
+  font-size: 1rem;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .notes-folder-name {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.notes-folder-item .notes-folder-actions {
+.notes-folder-name-input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--primary);
+  border-radius: 6px;
+  padding: 3px 6px;
+  outline: none;
+}
+
+.notes-folder-count {
+  flex-shrink: 0;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--muted) 18%, transparent);
+  color: var(--muted);
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+
+.notes-folder-item.active .notes-folder-count {
+  background: color-mix(in srgb, var(--primary) 22%, transparent);
+  color: var(--primary);
+}
+
+.notes-folder-actions {
   display: none;
-  margin-left: auto;
-  gap: 4px;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
 }
 
 .notes-folder-item:hover .notes-folder-actions {
   display: flex;
+}
+
+.notes-folder-item:hover .notes-folder-count {
+  display: none;
+}
+
+.notes-folder-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+
+.notes-folder-action-btn:hover {
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
+  color: var(--primary);
+}
+
+.notes-folder-action-btn.danger:hover {
+  background: color-mix(in srgb, var(--danger) 16%, transparent);
+  color: var(--danger);
 }
 
 .notes-list {
@@ -7149,6 +7263,14 @@ button.related-tasks-chip-name-link:focus-visible {
   gap: 8px;
   overflow-y: auto;
   min-height: 0;
+}
+
+.notes-list-item[draggable="true"] {
+  cursor: grab;
+}
+
+.notes-list-item.dragging {
+  opacity: 0.5;
 }
 
 .notes-list-item {

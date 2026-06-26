@@ -1739,6 +1739,10 @@ const connectRealtime = () => {
     realtimeSocket.on(event, scheduleNoteRefresh);
   });
 
+  ['folder:created', 'folder:updated', 'folder:deleted'].forEach((event) => {
+    realtimeSocket.on(event, scheduleNoteRefresh);
+  });
+
   ['sprint:created', 'sprint:updated', 'sprint:deleted'].forEach((event) => {
     realtimeSocket.on(event, scheduleSprintRefresh);
   });

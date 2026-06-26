@@ -21,13 +21,15 @@
     // Folder management
     const foldersList = document.getElementById('notes-folders-list');
     const addFolderButton = document.getElementById('add-folder-button');
-    const rootFolderItem = document.getElementById('root-folder-item');
+    const folderSelect = document.getElementById('note-folder-select');
+    const folderLabel = document.getElementById('note-folder-label');
     
     let notes = [];
     let tasks = [];
     let folders = [];
     let activeNoteId = null;
     let activeFolderId = null; // null = root (all notes)
+    let creatingFolder = false; // inline create-folder input is open
     let saveTimer = null;
     let pendingSave = false;
     let showPreview = true;
@@ -107,62 +109,321 @@
       });
     };
 
+    const folderNoteCount = (folderId) => notes.filter((note) => {
+      if (folderId === null) return note.folder_id === null || note.folder_id === undefined;
+      return note.folder_id === folderId;
+    }).length;
+
+    // Persist a note's folder assignment (used by the editor select and by
+    // drag-and-drop onto a folder).
+    const moveNoteToFolder = async (noteId, folderId) => {
+      const note = notes.find((entry) => entry.id === noteId);
+      if (!note) return;
+      const previous = note.folder_id ?? null;
+      const next = folderId ?? null;
+      if (previous === next) return;
+
+      // Optimistic update so the list and counts react instantly.
+      note.folder_id = next;
+      renderFolders();
+      renderList();
+      if (folderSelect && activeNoteId === noteId) folderSelect.value = next ? String(next) : '';
+
+      const result = await request(`/api/notes/${noteId}/folder`, {
+        method: 'PATCH',
+        body: JSON.stringify({ folder_id: next }),
+      });
+
+      if (result.error) {
+        note.folder_id = previous; // roll back
+        renderFolders();
+        renderList();
+        showStatusToast(result.error || t('folderMoveFailed') || 'Failed to move note', 'error');
+        return;
+      }
+      if (result.note) {
+        notes = notes.map((entry) => (entry.id === result.note.id ? result.note : entry));
+      }
+      renderFolders();
+    };
+
+    const selectFolder = (folderId) => {
+      if (activeFolderId === folderId) return;
+      activeFolderId = folderId;
+      renderFolders();
+      renderList();
+    };
+
+    const buildFolderRow = ({ id, icon, name, isActive, count, renamable }) => {
+      const item = document.createElement('li');
+      item.className = `notes-folder-item ${isActive ? 'active' : ''}`;
+      item.dataset.folderId = id === null ? '' : String(id);
+
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'notes-folder-icon';
+      iconSpan.textContent = icon;
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'notes-folder-name';
+      nameSpan.textContent = name;
+
+      const countBadge = document.createElement('span');
+      countBadge.className = 'notes-folder-count';
+      countBadge.textContent = String(count);
+
+      item.append(iconSpan, nameSpan, countBadge);
+      item.addEventListener('click', () => selectFolder(id));
+
+      // Accept notes dragged onto this folder.
+      item.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        item.classList.add('drop-target');
+      });
+      item.addEventListener('dragleave', () => item.classList.remove('drop-target'));
+      item.addEventListener('drop', (event) => {
+        event.preventDefault();
+        item.classList.remove('drop-target');
+        const draggedId = Number(event.dataTransfer?.getData('text/note-id'));
+        if (Number.isInteger(draggedId)) moveNoteToFolder(draggedId, id);
+      });
+
+      if (renamable) {
+        const actions = document.createElement('div');
+        actions.className = 'notes-folder-actions';
+
+        const renameBtn = document.createElement('button');
+        renameBtn.type = 'button';
+        renameBtn.className = 'notes-folder-action-btn';
+        renameBtn.innerHTML = '✎';
+        renameBtn.title = t('renameFolder') || 'Rename';
+        renameBtn.addEventListener('click', (event) => {
+          event.stopPropagation();
+          startInlineRename(item, id, name);
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'notes-folder-action-btn danger';
+        deleteBtn.innerHTML = '🗑';
+        deleteBtn.title = t('delete') || 'Delete';
+        deleteBtn.addEventListener('click', (event) => {
+          event.stopPropagation();
+          deleteFolder(id, name);
+        });
+
+        actions.append(renameBtn, deleteBtn);
+        item.append(actions);
+      }
+
+      return item;
+    };
+
     const renderFolders = () => {
       if (!foldersList) return;
       foldersList.innerHTML = '';
+
+      // "All Notes" pseudo-folder (root).
+      foldersList.append(buildFolderRow({
+        id: null,
+        icon: '🗒',
+        name: t('allNotes') || 'All Notes',
+        isActive: activeFolderId === null,
+        count: folderNoteCount(null),
+        renamable: false,
+      }));
+
       folders.forEach((folder) => {
-        const item = document.createElement('li');
-        item.className = `notes-folder-item ${folder.id === activeFolderId ? 'active' : ''}`;
-        item.dataset.folderId = String(folder.id);
-        
-        const nameSpan = document.createElement('span');
-        nameSpan.className = 'notes-folder-name';
-        nameSpan.textContent = `📁 ${folder.name}`;
-        
-        nameSpan.addEventListener('click', () => {
-          activeFolderId = folder.id;
-          renderFolders();
-          renderList();
-        });
-        
-        const actions = document.createElement('div');
-        actions.className = 'notes-folder-actions';
-        
-        const deleteBtn = document.createElement('button');
-        deleteBtn.type = 'button';
-        deleteBtn.className = 'task-action-icon danger';
-        deleteBtn.textContent = '🗑';
-        deleteBtn.title = t('delete') || 'Delete';
-        deleteBtn.addEventListener('click', async (e) => {
-          e.stopPropagation();
-          if (confirm(`Delete folder "${folder.name}"? Notes in it will move to root.`)) {
-            const result = await request(`/api/note-folders/${folder.id}`, { method: 'DELETE' });
-            if (!result.error) {
-              await load();
-            } else {
-              showStatusToast(result.error || 'Failed to delete folder', 'error');
-            }
-          }
-        });
-        
-        actions.append(deleteBtn);
-        item.append(nameSpan, actions);
-        foldersList.append(item);
+        foldersList.append(buildFolderRow({
+          id: folder.id,
+          icon: '📁',
+          name: folder.name,
+          isActive: folder.id === activeFolderId,
+          count: folderNoteCount(folder.id),
+          renamable: true,
+        }));
       });
-      
-      // Update root folder active state
-      if (rootFolderItem) {
-        if (activeFolderId === null) {
-          rootFolderItem.classList.add('active');
-        } else {
-          rootFolderItem.classList.remove('active');
-        }
-        rootFolderItem.addEventListener('click', () => {
-          activeFolderId = null;
-          renderFolders();
-          renderList();
+
+      // Keep the editor's folder dropdown in sync.
+      updateFolderOptions();
+    };
+
+    const updateFolderOptions = () => {
+      if (!folderSelect) return;
+      const selected = folderSelect.value;
+      folderSelect.innerHTML = '';
+      const none = document.createElement('option');
+      none.value = '';
+      none.textContent = t('noFolder') || 'No folder';
+      folderSelect.append(none);
+      folders.forEach((folder) => {
+        const option = document.createElement('option');
+        option.value = String(folder.id);
+        option.textContent = folder.name;
+        folderSelect.append(option);
+      });
+      folderSelect.value = folders.some((f) => String(f.id) === selected) ? selected : '';
+    };
+
+    // Inline create: replaces prompt() with an in-list text input.
+    const startInlineCreate = () => {
+      if (creatingFolder || !foldersList) return;
+      creatingFolder = true;
+
+      const item = document.createElement('li');
+      item.className = 'notes-folder-item';
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'notes-folder-icon';
+      iconSpan.textContent = '📁';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'notes-folder-name-input';
+      input.maxLength = 100;
+      input.placeholder = t('folderNamePlaceholder') || 'Folder name';
+      item.append(iconSpan, input);
+      foldersList.append(item);
+      input.focus();
+
+      let finished = false;
+      const commit = async () => {
+        if (finished) return;
+        finished = true;
+        const name = input.value.trim();
+        creatingFolder = false;
+        if (!name) { renderFolders(); return; }
+        const result = await request('/api/note-folders', {
+          method: 'POST',
+          body: JSON.stringify({ name, description: '' }),
         });
-      }
+        if (result.error) {
+          showStatusToast(result.error, 'error');
+          renderFolders();
+          return;
+        }
+        if (result.folder) {
+          folders.push(result.folder);
+          folders.sort((a, b) => (a.sort_order - b.sort_order) || a.name.localeCompare(b.name));
+          activeFolderId = result.folder.id;
+        }
+        renderFolders();
+        renderList();
+        showStatusToast(t('folderCreated') || 'Folder created', 'success');
+      };
+      const cancel = () => {
+        if (finished) return;
+        finished = true;
+        creatingFolder = false;
+        renderFolders();
+      };
+
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') { event.preventDefault(); commit(); }
+        else if (event.key === 'Escape') { event.preventDefault(); cancel(); }
+      });
+      input.addEventListener('blur', commit);
+    };
+
+    const startInlineRename = (item, folderId, currentName) => {
+      const folder = folders.find((f) => f.id === folderId);
+      if (!folder) return;
+      item.innerHTML = '';
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'notes-folder-icon';
+      iconSpan.textContent = '📁';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'notes-folder-name-input';
+      input.maxLength = 100;
+      input.value = currentName;
+      item.append(iconSpan, input);
+      input.focus();
+      input.select();
+
+      let finished = false;
+      const commit = async () => {
+        if (finished) return;
+        finished = true;
+        const name = input.value.trim();
+        if (!name || name === currentName) { renderFolders(); return; }
+        const result = await request(`/api/note-folders/${folderId}`, {
+          method: 'PUT',
+          body: JSON.stringify({ name, description: folder.description || '' }),
+        });
+        if (result.error) {
+          showStatusToast(result.error, 'error');
+          renderFolders();
+          return;
+        }
+        if (result.folder) {
+          folders = folders.map((f) => (f.id === result.folder.id ? result.folder : f));
+        }
+        renderFolders();
+        renderList();
+      };
+      const cancel = () => {
+        if (finished) return;
+        finished = true;
+        renderFolders();
+      };
+
+      input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') { event.preventDefault(); commit(); }
+        else if (event.key === 'Escape') { event.preventDefault(); cancel(); }
+      });
+      input.addEventListener('blur', commit);
+    };
+
+    const deleteFolder = (folderId, folderName) => {
+      const item = foldersList?.querySelector(`.notes-folder-item[data-folder-id="${folderId}"]`);
+      if (!item) return;
+
+      // Inline confirm row: keeps things smooth (no native dialog).
+      item.innerHTML = '';
+      item.classList.add('confirming');
+
+      const label = document.createElement('span');
+      label.className = 'notes-folder-name';
+      label.textContent = `${t('deleteFolderQuestion') || 'Delete'} "${folderName}"?`;
+
+      const actions = document.createElement('div');
+      actions.className = 'notes-folder-actions';
+      actions.style.display = 'flex';
+
+      const yesBtn = document.createElement('button');
+      yesBtn.type = 'button';
+      yesBtn.className = 'notes-folder-action-btn danger';
+      yesBtn.innerHTML = '✓';
+      yesBtn.title = t('confirm') || 'Confirm';
+
+      const noBtn = document.createElement('button');
+      noBtn.type = 'button';
+      noBtn.className = 'notes-folder-action-btn';
+      noBtn.innerHTML = '✕';
+      noBtn.title = t('cancel') || 'Cancel';
+
+      yesBtn.addEventListener('click', async (event) => {
+        event.stopPropagation();
+        const result = await request(`/api/note-folders/${folderId}`, { method: 'DELETE' });
+        if (result.error) {
+          showStatusToast(result.error || 'Failed to delete folder', 'error');
+          renderFolders();
+          return;
+        }
+        folders = folders.filter((f) => f.id !== folderId);
+        // Notes in that folder were moved to root server-side.
+        notes = notes.map((n) => (n.folder_id === folderId ? { ...n, folder_id: null } : n));
+        if (activeFolderId === folderId) activeFolderId = null;
+        renderFolders();
+        renderList();
+        showStatusToast(t('folderDeleted') || 'Folder deleted', 'success');
+      });
+
+      noBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        renderFolders();
+      });
+
+      actions.append(yesBtn, noBtn);
+      item.append(label, actions);
     };
 
     const showEditor = (note) => {
@@ -172,6 +433,7 @@
         titleInput.value = '';
         bodyInput.value = '';
         if (taskSelect) taskSelect.value = '';
+        if (folderSelect) folderSelect.value = '';
         if (showPreview) updatePreview();
         savedIndicator.textContent = '';
         return;
@@ -183,6 +445,10 @@
       if (taskSelect) {
         updateTaskOptions();
         taskSelect.value = note.task_id ? String(note.task_id) : '';
+      }
+      if (folderSelect) {
+        updateFolderOptions();
+        folderSelect.value = note.folder_id ? String(note.folder_id) : '';
       }
       savedIndicator.textContent = '';
       if (showPreview) {
@@ -206,6 +472,15 @@
         const item = document.createElement('li');
         item.className = `notes-list-item ${note.id === activeNoteId ? 'active' : ''} ${note.pinned ? 'pinned' : ''}`;
         item.dataset.noteId = String(note.id);
+        item.draggable = true;
+
+        // Drag a note onto a folder to move it.
+        item.addEventListener('dragstart', (event) => {
+          event.dataTransfer?.setData('text/note-id', String(note.id));
+          if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+          item.classList.add('dragging');
+        });
+        item.addEventListener('dragend', () => item.classList.remove('dragging'));
 
         const content = document.createElement('div');
         content.className = 'notes-list-content';
@@ -399,6 +674,7 @@
             title: titleInput.value,
             body: bodyInput.value,
             task_id: normalizeTaskId(taskSelect?.value),
+            folder_id: activeFolderId,
           }),
         });
 
@@ -410,6 +686,7 @@
         notes.unshift(result.note);
         activeNoteId = result.note.id;
         sortNotes();
+        renderFolders();
         renderList();
       })();
     };
@@ -434,6 +711,7 @@
         activeNoteId = notes[0]?.id || null;
         showEditor(notes.find((entry) => entry.id === activeNoteId) || null);
       }
+      renderFolders();
       renderList();
     };
 
@@ -522,7 +800,9 @@
         checkboxButton.title = t('noteCheckbox');
       }
       if (taskLabel) taskLabel.textContent = t('linkedTask');
+      if (folderLabel) folderLabel.textContent = t('folder') || 'Folder';
       updateTaskOptions();
+      updateFolderOptions();
       searchInput.placeholder = t('searchNotes');
       const editorEmptyText = section.querySelector('#notes-editor-empty p');
       if (editorEmptyText) editorEmptyText.textContent = t('notesEmpty');
@@ -537,19 +817,13 @@
       
       // Add folder functionality
       if (addFolderButton) {
-        addFolderButton.addEventListener('click', async () => {
-          const folderName = prompt(t('newFolder') || 'Folder name:');
-          if (!folderName || !folderName.trim()) return;
-          const result = await request('/api/note-folders', {
-            method: 'POST',
-            body: JSON.stringify({ name: folderName.trim(), description: '' }),
-          });
-          if (result.error) {
-            showStatusToast(result.error || 'Failed to create folder', 'error');
-          } else {
-            await load();
-            showStatusToast(t('folderCreated') || 'Folder created', 'success');
-          }
+        addFolderButton.addEventListener('click', startInlineCreate);
+      }
+      if (folderSelect) {
+        folderSelect.addEventListener('change', () => {
+          if (!activeNoteId) return;
+          const value = folderSelect.value;
+          moveNoteToFolder(activeNoteId, value ? Number(value) : null);
         });
       }
       titleInput.addEventListener('input', scheduleSave);

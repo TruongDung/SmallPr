@@ -12,7 +12,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=cache-clear-20260623-sw-networkfirst-1" />
+  <link rel="stylesheet" href="styles.css?v=cache-clear-20260624-folders-2" />
 </head>
 <body>
   <div class="container">
@@ -141,13 +141,12 @@
             </div>
             <div class="notes-folders-section">
               <div class="notes-folders-header">
-                <strong>Folders</strong>
-                <button id="add-folder-button" type="button" class="task-action-icon secondary" aria-label="New folder" title="New folder">+</button>
+                <span class="notes-folders-title">Folders</span>
+                <button id="add-folder-button" type="button" class="notes-folder-add-btn" aria-label="New folder" title="New folder">
+                  <span aria-hidden="true">+</span>
+                </button>
               </div>
               <ul id="notes-folders-list" class="notes-folders-list" role="list"></ul>
-              <li id="root-folder-item" class="notes-folder-item active" data-folder-id="">
-                <span class="notes-folder-name">📝 All Notes</span>
-              </li>
             </div>
             <ul id="notes-list" class="notes-list" role="list"></ul>
           </aside>
@@ -164,6 +163,12 @@
                 <span id="note-task-label">Linked task</span>
                 <select id="note-task-select">
                   <option value="">No linked task</option>
+                </select>
+              </label>
+              <label class="notes-task-link">
+                <span id="note-folder-label">Folder</span>
+                <select id="note-folder-select">
+                  <option value="">No folder</option>
                 </select>
               </label>
               <textarea id="note-body-input" class="notes-editor-body hidden" placeholder="Start writing..." rows="14"></textarea>
@@ -1577,7 +1582,7 @@
   <script src="js/features/creditCards/creditCards.translations.js?v=cache-clear-20260601-7"></script>
   <script src="js/features/creditCards/creditCards.module.js?v=cache-clear-20260611-cc-stats-1"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script src="js/features/notes/notes.module.js?v=cache-clear-20260623-folders-1"></script>
+  <script src="js/features/notes/notes.module.js?v=cache-clear-20260624-folders-2"></script>
   <script src="js/features/dashboard/dashboard.module.js?v=cache-clear-20260601-7"></script>
   <script src="js/features/admin/admin.module.js?v=cache-clear-20260623-merge-visibility-1"></script>
   <script src="js/tasks.js?v=cache-clear-20260604-1"></script>
@@ -1593,9 +1598,9 @@
   <script src="js/notes-code-highlighter.js?v=cache-clear-20260601-7"></script>
   <script src="/socket.io/socket.io.js?v=cache-clear-20260623-1"></script>
   <script src="js/monitoring.js?v=cache-clear-20260603-1"></script>
-  <script src="js/i18n.js?v=cache-clear-20260623-folders-1"></script>
+  <script src="js/i18n.js?v=cache-clear-20260624-folders-2"></script>
   <script src="js/subtabDragSort.js?v=1"></script>
   <script src="js/demo.js?v=cache-clear-20260623-summary-1"></script>
-  <script src="app.js?v=cache-clear-20260623-demo-today-1"></script>
+  <script src="app.js?v=cache-clear-20260624-folders-2"></script>
 </body>
 </html>

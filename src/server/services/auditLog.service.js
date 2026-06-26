@@ -1,4 +1,4 @@
-const AUDIT_ENTITY_TYPES = new Set(['task', 'transaction', 'note', 'credit_card', 'expense', 'user', 'recurrence']);
+const AUDIT_ENTITY_TYPES = new Set(['task', 'transaction', 'note', 'note_folder', 'credit_card', 'expense', 'user', 'recurrence']);
 const AUDIT_LOGS_ENABLED_KEY = 'audit_logs_enabled';
 const AUDIT_ACTIONS = new Set([
   'create',
