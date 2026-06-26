@@ -104,6 +104,15 @@ const deleteByPattern = async (pattern) => {
 
 const clearUserCache = (userId) => deleteByPattern(`user:${userId}:*`);
 
+// Low-level command passthrough for libraries that need a raw Redis client
+// (e.g. rate-limit-redis). Returns null when Redis isn't available so callers
+// can degrade gracefully instead of throwing.
+const sendCommand = async (...args) => {
+  const c = await ensureClient();
+  if (!c) return null;
+  return c.sendCommand(args);
+};
+
 module.exports = {
   clearUserCache,
   connectRedis,
@@ -111,5 +120,6 @@ module.exports = {
   getJson,
   isEnabled,
   isReady,
+  sendCommand,
   setJson,
 };

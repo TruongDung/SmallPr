@@ -40,6 +40,7 @@ const { createRecurringTaskWorker } = require('./src/server/workers/recurringTas
 
 // ===== Middleware Layer =====
 const { createAuthMiddleware } = require('./src/server/middleware/auth');
+const { createRateLimiters } = require('./src/server/middleware/rateLimit');
 
 // ===== Bootstrap Layer =====
 // These modules handle application initialization and configuration
@@ -156,6 +157,20 @@ const auditLogs = createAuditLogService({ allAsync, runAsync });
 const featureFlags = createFeatureFlagsService({ allAsync, runAsync });
 
 // ===== API Routes Registration =====
+
+/**
+ * API rate limiting
+ * - authLimiter: strict throttle on the login endpoint (brute-force defense)
+ * - apiLimiter: general per-user/per-IP cap across the whole API surface
+ * - writeLimiter: tighter cap on mutating requests (POST/PUT/PATCH/DELETE)
+ * Applied after session middleware so limits can key on the authenticated user,
+ * and before route handlers so they gate every API request. Backed by Redis
+ * when available (shared across instances), with in-memory fallback.
+ */
+const { apiLimiter, authLimiter, writeLimiter } = createRateLimiters();
+app.use('/api/login', authLimiter);
+app.use('/api', apiLimiter);
+app.use('/api', writeLimiter);
 
 /**
  * Register all API routes
