@@ -17,12 +17,23 @@
     openRichTextLinksWithModifier,
     escapeHtml,
     showStatusToast,
+    ids = {},
   }) => {
-    const listEl = document.getElementById('preview-task-comments');
-    const inputEl = document.getElementById('new-task-comment-input');
-    const addBtn = document.getElementById('add-task-comment');
-    const cancelBtn = document.getElementById('cancel-edit-task-comment');
-    const errorEl = document.getElementById('new-task-comment-error');
+    const elementIds = {
+      list: 'preview-task-comments',
+      input: 'new-task-comment-input',
+      addBtn: 'add-task-comment',
+      cancelBtn: 'cancel-new-task-comment',
+      error: 'new-task-comment-error',
+      title: 'task-comments-title',
+      ...ids,
+    };
+
+    const listEl = document.getElementById(elementIds.list);
+    const inputEl = document.getElementById(elementIds.input);
+    const addBtn = document.getElementById(elementIds.addBtn);
+    const cancelBtn = document.getElementById(elementIds.cancelBtn);
+    const errorEl = document.getElementById(elementIds.error);
 
     let taskId = null;
     let comments = [];
@@ -360,7 +371,7 @@
     };
 
     const applyTranslations = () => {
-      const title = document.querySelector('[data-comments-title]');
+      const title = document.getElementById(elementIds.title);
       if (title) title.textContent = t('comments') || 'Comments';
       inputEl?.setAttribute('data-placeholder', t('commentPlaceholder') || '');
       if (!editingId) {

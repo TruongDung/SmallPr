@@ -478,6 +478,7 @@ const applyTranslations = () => {
   if (previewRelatedTasksHint) previewRelatedTasksHint.textContent = t('relatedTasksViewOnlyHint');
   taskActivityModule.applyTranslations();
   taskCommentsModule.applyTranslations();
+  editTaskCommentsModule.applyTranslations();
   setText('label[for="preview-task-comment-input"]', t('comment'));
   previewTaskCommentInput.setAttribute('data-placeholder', t('commentPlaceholder'));
   setActionIconButton(sendPreviewTaskEmail, t('sendEmail'), '✉');
@@ -3335,6 +3336,7 @@ const showEditTaskModal = (task) => {
   editTaskLastSavedSnapshot = buildEditTaskComparableSnapshot();
 
   editTaskModal.classList.remove('hidden');
+  editTaskCommentsModule.load(task);
   editTaskTitleInput.focus();
   editTaskTitleInput.select();
   setTimeout(() => {
@@ -3371,6 +3373,7 @@ const hideEditTaskModal = () => {
   hideRelatedTaskResults('edit');
   clearEditTaskErrors();
   editTaskModal.classList.add('hidden');
+  editTaskCommentsModule.reset();
 };
 
 const handleEditTaskSubmit = async (event) => {
@@ -3606,6 +3609,31 @@ const taskCommentsModule = window.TaskCommentsModule.create({
   showStatusToast,
 });
 taskCommentsModule.bind();
+
+// Second instance: the same threaded comments, mounted inside the edit-task
+// modal so comments can be managed while editing.
+const editTaskCommentsModule = window.TaskCommentsModule.create({
+  request,
+  t,
+  getCurrentUser: () => currentUser,
+  getLanguage: () => currentLanguage,
+  renderStoredRichText,
+  getRichEditorValue,
+  setRichEditorValue,
+  getRichTextPlainText,
+  openRichTextLinksWithModifier,
+  escapeHtml,
+  showStatusToast,
+  ids: {
+    list: 'edit-task-comments',
+    input: 'edit-new-task-comment-input',
+    addBtn: 'edit-add-task-comment',
+    cancelBtn: 'edit-cancel-new-task-comment',
+    error: 'edit-new-task-comment-error',
+    title: 'edit-task-comments-title',
+  },
+});
+editTaskCommentsModule.bind();
 
 const handleLogout = async () => {
   await request('/api/logout', { method: 'POST' });
