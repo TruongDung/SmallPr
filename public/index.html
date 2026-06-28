@@ -12,7 +12,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=cache-clear-20260628-related-tasks-polish-1" />
+  <link rel="stylesheet" href="styles.css?v=cache-clear-20260628-add-task-polish-1" />
 </head>
 <body>
   <div class="container">
@@ -263,6 +263,10 @@
               <option value="">No sprint</option>
             </select>
           </div>
+          <div class="field">
+            <label for="task-due-date">Due Date</label>
+            <input id="task-due-date" type="date" />
+          </div>
           <div class="field tag-suggest-field">
             <label for="task-tag">Tag</label>
             <input id="task-tag" type="text" maxlength="40" placeholder="Work, personal, urgent..." autocomplete="off" />
@@ -283,10 +287,6 @@
               <div id="task-description" class="rich-editor-surface" contenteditable="true" role="textbox" aria-multiline="true"></div>
             </div>
             <p id="description-error" class="field-error hidden"></p>
-          </div>
-          <div class="field">
-            <label for="task-due-date">Due Date</label>
-            <input id="task-due-date" type="date" />
           </div>
           <div class="field">
             <label class="checkbox-label recurring-toggle">
@@ -339,7 +339,7 @@
               <input id="task-recurrence-occurrences" type="number" min="1" max="1000" placeholder="No limit" />
             </div>
           </div>
-          <div class="field">
+          <div class="field task-upload-field">
             <label for="task-attachment">Upload File</label>
             <input id="task-attachment" type="file" />
             <p id="attachment-error" class="field-error hidden"></p>

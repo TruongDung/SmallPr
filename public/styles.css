@@ -5234,6 +5234,44 @@ body.theme-dark .user-status-badge.disabled {
   grid-column: 1 / -1;
 }
 
+/* Full-width rows so the 2-column grid has no lonely/empty cells. */
+.add-task-modal .task-upload-field {
+  grid-column: 1 / -1;
+}
+
+.add-task-modal #form-error:not(.hidden) {
+  grid-column: 1 / -1;
+}
+
+/* Polished native file input. */
+.add-task-modal input[type="file"] {
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.add-task-modal input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.add-task-modal input[type="file"]::file-selector-button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--surface-tint);
+}
+
 .add-task-modal .field-max {
   font-size: 0.7rem;
   color: var(--muted);
