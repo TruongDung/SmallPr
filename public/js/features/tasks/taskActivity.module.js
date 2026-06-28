@@ -24,7 +24,7 @@
     escapeHtml,
     renderRelatedTasks,
   }) => {
-    let activeFilter = 'comments';
+    let activeFilter = 'all';
 
     const getActor = () => {
       const currentUser = getCurrentUser();
@@ -127,18 +127,6 @@
         });
       }
 
-      if (task.comment && getRichTextPlainText(task.comment).trim()) {
-        items.push({
-          type: 'comments',
-          actor,
-          timestamp: updatedAt || createdAt,
-          when: formatWhen(updatedAt || createdAt),
-          message: t('activityCommented'),
-          badge: t('activityComment'),
-          html: renderStoredRichText(task.comment),
-        });
-      }
-
       if (Number(task.time_spent_minutes) > 0) {
         items.push({
           type: 'worklog',
@@ -173,9 +161,7 @@
         const filter = tab.dataset.activityFilter;
         let shouldShow = true;
 
-        if (filter === 'comments' && !hasComment(task)) {
-          shouldShow = false;
-        } else if (filter === 'related' && !hasRelatedTasks(task)) {
+        if (filter === 'related' && !hasRelatedTasks(task)) {
           shouldShow = false;
         }
 

@@ -1,6 +1,7 @@
 const express = require('express');
 
 const { TASK_PAGE_CACHE_TTL_SECONDS } = require('../config/env');
+const { MAX_TASK_TEXT_LENGTH } = require('../constants/tasks');
 const logger = require('../logger');
 const { createAuditContext } = require('../services/auditLog.service');
 const { createTasksService } = require('../services/tasks.service');
@@ -40,6 +41,21 @@ const sendCachedJson = ({ res, payload, cacheStatus }) => {
   res.set('X-Redis-Cache', cacheStatus);
   res.set('X-Task-Cache-TTL', String(TASK_PAGE_CACHE_TTL_SECONDS));
   res.json(payload);
+};
+
+// Comment bodies are rich-text HTML. A comment is "empty" when it has no
+// text once tags are stripped. The length cap mirrors the legacy single
+// `comment` field so behavior stays consistent across both.
+const stripHtmlTags = (value) => String(value ?? '').replace(/<[^>]*>/g, '');
+
+const validateCommentBody = (body) => {
+  if (typeof body !== 'string' || !stripHtmlTags(body).trim()) {
+    return { error: 'Comment cannot be empty' };
+  }
+  if (body.length > MAX_TASK_TEXT_LENGTH) {
+    return { error: `Task comment must be ${MAX_TASK_TEXT_LENGTH} characters or less` };
+  }
+  return { value: body };
 };
 
 const createTasksRouter = ({
@@ -139,6 +155,116 @@ const createTasksRouter = ({
     } catch (error) {
       logger.error({ err: error }, 'Failed to load task');
       res.status(500).json({ error: 'Failed to load task' });
+    }
+  });
+
+  // --- Threaded task comments -------------------------------------------------
+  // Any user who can access the task (owner, sprint owner, or sprint editor)
+  // may read and add comments. Editing and deleting are restricted to the
+  // comment's author.
+
+  const loadAccessibleTask = (req) =>
+    tasks.getTaskForUser(req.params.id, req.session.userId, { includeActivityHistory: false });
+
+  router.get('/tasks/:id/comments', async (req, res) => {
+    try {
+      const task = await loadAccessibleTask(req);
+      if (!task) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+      const comments = await tasks.listTaskComments(task.id);
+      res.set('Cache-Control', 'no-store');
+      res.json({ comments });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to load task comments');
+      res.status(500).json({ error: 'Failed to load comments' });
+    }
+  });
+
+  router.post('/tasks/:id/comments', async (req, res) => {
+    try {
+      const task = await loadAccessibleTask(req);
+      if (!task) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+
+      const validation = validateCommentBody(req.body?.body);
+      if (validation.error) {
+        return res.status(400).json({ error: validation.error });
+      }
+
+      const comment = await tasks.addTaskComment({
+        taskId: task.id,
+        userId: req.session.userId,
+        body: validation.value,
+      });
+
+      const accessUserIds = await tasks.listTaskAccessUserIds(task.id);
+      emitTaskEventToUsers(accessUserIds, 'task:comment-updated', { taskId: Number(task.id) });
+      res.json({ comment });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to add task comment');
+      res.status(500).json({ error: 'Failed to add comment' });
+    }
+  });
+
+  router.put('/tasks/:id/comments/:commentId', async (req, res) => {
+    try {
+      const task = await loadAccessibleTask(req);
+      if (!task) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+
+      const existing = await tasks.getTaskCommentById(req.params.commentId);
+      if (!existing || Number(existing.task_id) !== Number(task.id)) {
+        return res.status(404).json({ error: 'Comment not found' });
+      }
+      if (Number(existing.user_id) !== Number(req.session.userId)) {
+        return res.status(403).json({ error: 'You can only edit your own comments' });
+      }
+
+      const validation = validateCommentBody(req.body?.body);
+      if (validation.error) {
+        return res.status(400).json({ error: validation.error });
+      }
+
+      const comment = await tasks.updateTaskComment({
+        commentId: existing.id,
+        body: validation.value,
+      });
+
+      const accessUserIds = await tasks.listTaskAccessUserIds(task.id);
+      emitTaskEventToUsers(accessUserIds, 'task:comment-updated', { taskId: Number(task.id) });
+      res.json({ comment });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to update task comment');
+      res.status(500).json({ error: 'Failed to update comment' });
+    }
+  });
+
+  router.delete('/tasks/:id/comments/:commentId', async (req, res) => {
+    try {
+      const task = await loadAccessibleTask(req);
+      if (!task) {
+        return res.status(404).json({ error: 'Task not found' });
+      }
+
+      const existing = await tasks.getTaskCommentById(req.params.commentId);
+      if (!existing || Number(existing.task_id) !== Number(task.id)) {
+        return res.status(404).json({ error: 'Comment not found' });
+      }
+      if (Number(existing.user_id) !== Number(req.session.userId)) {
+        return res.status(403).json({ error: 'You can only delete your own comments' });
+      }
+
+      await tasks.deleteTaskComment(existing.id);
+
+      const accessUserIds = await tasks.listTaskAccessUserIds(task.id);
+      emitTaskEventToUsers(accessUserIds, 'task:comment-updated', { taskId: Number(task.id) });
+      res.json({ success: true });
+    } catch (error) {
+      logger.error({ err: error }, 'Failed to delete task comment');
+      res.status(500).json({ error: 'Failed to delete comment' });
     }
   });
 

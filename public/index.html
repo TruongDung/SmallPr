@@ -12,7 +12,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link rel="apple-touch-icon" href="icon-180.png" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=cache-clear-20260628-users-polish-1" />
+  <link rel="stylesheet" href="styles.css?v=cache-clear-20260628-multi-comments-1" />
 </head>
 <body>
   <div class="container">
@@ -1479,6 +1479,29 @@
           <div id="preview-task-comment-input" class="rich-editor-surface" contenteditable="true" role="textbox" aria-multiline="true"></div>
         </div>
       </div>
+      <section class="task-comments-section" aria-labelledby="task-comments-title">
+        <h4 id="task-comments-title" class="task-comments-title" data-comments-title>Comments</h4>
+        <div id="preview-task-comments" class="task-comments-list" aria-live="polite"></div>
+        <div class="task-comment-composer">
+          <div class="rich-editor">
+            <div class="rich-editor-toolbar" aria-label="Comment formatting">
+              <button type="button" data-editor="new-task-comment-input" data-command="bold"><strong>B</strong></button>
+              <button type="button" data-editor="new-task-comment-input" data-command="italic"><em>I</em></button>
+              <button type="button" data-editor="new-task-comment-input" data-command="underline"><u>U</u></button>
+              <button type="button" data-editor="new-task-comment-input" data-command="strikeThrough"><s>S</s></button>
+              <button type="button" data-editor="new-task-comment-input" data-command="insertChecklist">☐ Check</button>
+              <button type="button" data-editor="new-task-comment-input" data-command="insertUnorderedList">• List</button>
+              <button type="button" data-editor="new-task-comment-input" data-command="insertOrderedList">1. List</button>
+            </div>
+            <div id="new-task-comment-input" class="rich-editor-surface" contenteditable="true" role="textbox" aria-multiline="true"></div>
+          </div>
+          <div class="task-comment-composer-actions">
+            <button id="cancel-edit-task-comment" type="button" class="secondary task-action-icon hidden" aria-label="Cancel edit" title="Cancel edit">×</button>
+            <button id="add-task-comment" type="button" class="primary task-action-icon" aria-label="Add comment" title="Add comment">➤</button>
+          </div>
+          <p id="new-task-comment-error" class="field-error hidden"></p>
+        </div>
+      </section>
       <section class="task-activity-section" aria-labelledby="task-activity-title">
         <h4 id="task-activity-title" class="task-activity-title">
           <button id="task-activity-toggle" class="task-activity-toggle" type="button" aria-expanded="true" aria-controls="task-activity-content" title="Toggle activity">
@@ -1488,8 +1511,7 @@
         </h4>
         <div id="task-activity-content">
           <div class="task-activity-tabs" role="tablist" aria-label="Activity">
-            <button type="button" data-activity-filter="all" role="tab" aria-selected="false">All</button>
-            <button type="button" class="active" data-activity-filter="comments" role="tab" aria-selected="true">Comments</button>
+            <button type="button" class="active" data-activity-filter="all" role="tab" aria-selected="true">All</button>
             <button type="button" data-activity-filter="history" role="tab" aria-selected="false">History</button>
             <button type="button" data-activity-filter="related" role="tab" aria-selected="false">Related</button>
           </div>
@@ -1584,7 +1606,8 @@
   <script src="js/usHolidays.js?v=1"></script>
   <script src="js/features/tasks/calendar.module.js?v=cache-clear-20260611-lunar-alldays-1"></script>
   <script src="js/features/tasks/relatedTasks.module.js?v=cache-clear-20260608-related-tasks-open-1"></script>
-  <script src="js/features/tasks/taskActivity.module.js?v=cache-clear-20260608-activity-default-comments-1"></script>
+  <script src="js/features/tasks/taskActivity.module.js?v=cache-clear-20260628-multi-comments-1"></script>
+  <script src="js/features/tasks/taskComments.module.js?v=cache-clear-20260628-multi-comments-1"></script>
   <script src="js/features/sprints/sprints.module.js?v=cache-clear-20260611-archive-hide-add-1"></script>
   <script src="js/weather.js?v=cache-clear-20260604-1"></script>
   <script src="js/tags/tags.module.js?v=cache-clear-20260608-1"></script>
@@ -1596,6 +1619,6 @@
   <script src="js/i18n.js?v=cache-clear-20260624-expense-delete-1"></script>
   <script src="js/subtabDragSort.js?v=1"></script>
   <script src="js/demo.js?v=cache-clear-20260623-summary-1"></script>
-  <script src="app.js?v=cache-clear-20260624-folders-2"></script>
+  <script src="app.js?v=cache-clear-20260628-multi-comments-1"></script>
 </body>
 </html>

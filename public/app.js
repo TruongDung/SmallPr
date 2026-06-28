@@ -477,6 +477,7 @@ const applyTranslations = () => {
   if (editRelatedTasksHint) editRelatedTasksHint.textContent = t('relatedTasksHint');
   if (previewRelatedTasksHint) previewRelatedTasksHint.textContent = t('relatedTasksViewOnlyHint');
   taskActivityModule.applyTranslations();
+  taskCommentsModule.applyTranslations();
   setText('label[for="preview-task-comment-input"]', t('comment'));
   previewTaskCommentInput.setAttribute('data-placeholder', t('commentPlaceholder'));
   setActionIconButton(sendPreviewTaskEmail, t('sendEmail'), '✉');
@@ -3427,6 +3428,7 @@ const showPreviewTaskModal = async (task) => {
   openRichTextLinksWithModifier(previewTaskCommentDisplay);
   taskActivityModule.setExpanded(true);
   taskActivityModule.render();
+  taskCommentsModule.load(task);
   previewTaskModal.classList.remove('hidden');
 
   // Activity history and attachment data are not included in the task list to
@@ -3455,6 +3457,7 @@ const hidePreviewTaskModal = () => {
   previewTaskCommentInput.innerHTML = '';
   previewTaskCommentInput.contentEditable = 'true';
   taskActivityModule.reset();
+  taskCommentsModule.reset();
 };
 
 const showAttachmentPreview = (task) => {
@@ -3586,6 +3589,23 @@ const {
   showUploadProgress,
   hideUploadProgress,
 } = toast;
+
+// Threaded comments for the task detail (preview) modal. Created here so that
+// `request` and `showStatusToast` (both defined above) are available.
+const taskCommentsModule = window.TaskCommentsModule.create({
+  request,
+  t,
+  getCurrentUser: () => currentUser,
+  getLanguage: () => currentLanguage,
+  renderStoredRichText,
+  getRichEditorValue,
+  setRichEditorValue,
+  getRichTextPlainText,
+  openRichTextLinksWithModifier,
+  escapeHtml,
+  showStatusToast,
+});
+taskCommentsModule.bind();
 
 const handleLogout = async () => {
   await request('/api/logout', { method: 'POST' });

@@ -164,8 +164,77 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
       [userId, userId, userId, userId, id, userId, userId]
     );
     if (!task) return null;
-    return (await attachRelatedTasks(userId, [task], { includeActivityHistory }))[0];
+    const [withRelated] = await attachRelatedTasks(userId, [task], { includeActivityHistory });
+    // Threaded comments are detail-only (same as activity history) to keep the
+    // task list payload light.
+    if (includeActivityHistory) {
+      withRelated.comments = await listTaskComments(task.id);
+    }
+    return withRelated;
   };
+
+  // --- Threaded task comments (task_comments table) ---------------------------
+
+  const listTaskComments = (taskId) => allAsync(
+    `SELECT task_comments.id,
+            task_comments.task_id,
+            task_comments.user_id,
+            task_comments.body,
+            task_comments.created_at,
+            task_comments.updated_at,
+            author.username AS author_username,
+            author.name AS author_name
+     FROM task_comments
+     LEFT JOIN users author ON author.id = task_comments.user_id
+     WHERE task_comments.task_id = ?
+     ORDER BY task_comments.created_at ASC, task_comments.id ASC`,
+    [taskId]
+  );
+
+  const getTaskCommentById = (commentId) => getAsync(
+    'SELECT * FROM task_comments WHERE id = ?',
+    [commentId]
+  );
+
+  const getTaskCommentForResponse = async (commentId) => {
+    const rows = await allAsync(
+      `SELECT task_comments.id,
+              task_comments.task_id,
+              task_comments.user_id,
+              task_comments.body,
+              task_comments.created_at,
+              task_comments.updated_at,
+              author.username AS author_username,
+              author.name AS author_name
+       FROM task_comments
+       LEFT JOIN users author ON author.id = task_comments.user_id
+       WHERE task_comments.id = ?`,
+      [commentId]
+    );
+    return rows[0] || null;
+  };
+
+  const addTaskComment = async ({ taskId, userId, body }) => {
+    const result = await runAsync(
+      `INSERT INTO task_comments (task_id, user_id, body)
+       VALUES (?, ?, ?) RETURNING id`,
+      [taskId, userId, body]
+    );
+    return getTaskCommentForResponse(result.lastID);
+  };
+
+  const updateTaskComment = async ({ commentId, body }) => {
+    await runAsync(
+      'UPDATE task_comments SET body = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      [body, commentId]
+    );
+    return getTaskCommentForResponse(commentId);
+  };
+
+  const deleteTaskComment = (commentId) => runAsync(
+    'DELETE FROM task_comments WHERE id = ?',
+    [commentId]
+  );
 
   const getTaskById = (id) => getAsync('SELECT * FROM tasks WHERE id = ?', [id]);
 
@@ -497,16 +566,20 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
   );
 
   return {
+    addTaskComment,
     createTask,
     deleteTag,
     deleteTask,
+    deleteTaskComment,
     ensureTaskTag,
     findTagByNormalizedName,
     getAccessibleSprintForUser,
     getTagForUser,
+    getTaskCommentById,
     getTaskForUser,
     listDeletedTasks,
     listTaskAccessUserIds,
+    listTaskComments,
     listAllTasksForEmail,
     listTags,
     listTasks,
@@ -516,6 +589,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     restoreTask,
     updateTag,
     updateTask,
+    updateTaskComment,
   };
 };
 
