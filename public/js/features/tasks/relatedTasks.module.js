@@ -74,10 +74,6 @@
       }
 
       if (!ids.length) {
-        const empty = document.createElement('div');
-        empty.className = 'related-tasks-empty';
-        empty.textContent = t('relatedTasksEmpty');
-        picker.list.append(empty);
         return;
       }
 
