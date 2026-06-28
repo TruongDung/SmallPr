@@ -6240,14 +6240,15 @@ body.theme-dark .preview-meta-chip.priority-chip.priority-medium {
 .related-tasks-field {
   grid-column: 1 / -1;
   margin-top: 0;
-  padding: 18px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(47, 112, 255, 0.05) 0%, rgba(47, 112, 255, 0.02) 100%);
-  border: 1px solid rgba(47, 112, 255, 0.15);
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
 }
 
 .related-tasks-field label {
   font-weight: 700;
+  font-size: 0.9rem;
 }
 
 .related-tasks-header {
@@ -6255,7 +6256,7 @@ body.theme-dark .preview-meta-chip.priority-chip.priority-medium {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .preview-related-tasks-field .related-tasks-title {
@@ -6280,12 +6281,12 @@ body.theme-dark .preview-meta-chip.priority-chip.priority-medium {
 }
 
 .related-tasks-empty {
-  padding: 9px 11px;
+  padding: 7px 10px;
   border: 1px dashed var(--border);
   border-radius: 8px;
-  background: var(--surface-soft);
+  background: var(--surface);
   color: var(--muted);
-  font-size: 0.84rem;
+  font-size: 0.82rem;
 }
 
 .related-tasks-chip {
@@ -6385,14 +6386,14 @@ button.related-tasks-chip-name-link:focus-visible {
 
 .related-tasks-search {
   position: relative;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .related-tasks-search input {
-  min-height: 36px;
-  padding: 8px 10px 8px 36px;
+  min-height: 34px;
+  padding: 7px 10px 7px 34px;
   border-radius: 8px;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
 }
 
 .related-tasks-results {
@@ -6446,8 +6447,8 @@ button.related-tasks-chip-name-link:focus-visible {
 }
 
 .related-tasks-field .field-hint {
-  margin-top: 8px;
-  font-size: 0.8rem;
+  margin-top: 6px;
+  font-size: 0.76rem;
 }
 
 #preview-task-comment-input {
