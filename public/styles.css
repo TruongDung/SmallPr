@@ -4272,17 +4272,78 @@ body.theme-dark .audit-log-pagination button.secondary:focus-visible:not(:disabl
   border-radius: 8px;
 }
 
-/* Row-level action buttons inside the table */
+/* Row-level action buttons inside the Expense + Credit card tables */
 .credit-card-actions {
   display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 6px;
+  flex-wrap: nowrap;
+  align-items: center;
   justify-content: flex-end;
+}
+
+/* Polished icon buttons. These override the generic .task-action-icon so the
+   Edit button reads as a neutral/brand action (the shared default turns it red
+   on hover, which wrongly signals "destructive"), while Delete reads clearly
+   destructive. Equal sizing, soft depth, smooth lift, and an accessible ring. */
+.credit-card-actions .task-action-icon {
+  width: 36px;
+  height: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: 10px;
+  font-size: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  transition: transform 0.16s ease, box-shadow 0.16s ease,
+    background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.credit-card-actions .task-action-icon:hover {
+  transform: translateY(-1px);
+}
+
+.credit-card-actions .task-action-icon:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.credit-card-actions .task-action-icon:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+/* Edit → brand blue (not the danger-red default) */
+.credit-card-actions .task-action-icon.secondary {
+  background: var(--surface-soft);
+  border-color: var(--border);
+  color: var(--muted);
+}
+
+.credit-card-actions .task-action-icon.secondary:hover {
+  background: var(--surface-tint);
+  border-color: var(--primary);
+  color: var(--primary);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+/* Delete / confirm-delete → red */
+.credit-card-actions .task-action-icon.danger {
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--border));
+  color: var(--danger);
+}
+
+.credit-card-actions .task-action-icon.danger:hover {
+  background: color-mix(in srgb, var(--danger) 14%, var(--surface));
+  border-color: var(--danger);
+  color: var(--danger);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--danger) 22%, transparent);
 }
 
 .credit-card-actions button {
   white-space: normal;
-  transition: all 0.2s ease;
 }
 
 .icon-btn {
@@ -4758,14 +4819,24 @@ body.theme-dark .bill-status-pending { background: #422006; color: #fcd34d; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
   min-width: 80px;
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   transition: all 0.2s ease;
+}
+
+.user-status-badge::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: 0 0 auto;
 }
 
 .user-status-badge.enabled {
@@ -4828,51 +4899,75 @@ body.theme-dark .user-status-badge.disabled {
 
 .user-actions {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
 }
 
 .user-actions button {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   display: inline-grid;
   place-items: center;
   flex: 0 0 auto;
   background: var(--surface);
-  color: var(--text);
-  border: 2px solid var(--border);
-  border-radius: 8px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 10px;
   padding: 0;
   font-size: 1rem;
   line-height: 1;
   cursor: pointer;
-  transition: all 0.2s ease;
   font-weight: 600;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  transition: transform 0.16s ease, box-shadow 0.16s ease,
+    background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
 }
 
 .user-actions button:hover {
   border-color: var(--primary);
   color: var(--primary);
-  background: rgba(47, 112, 255, 0.08);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(47, 112, 255, 0.16);
+  background: var(--surface-tint);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--primary) 18%, transparent);
 }
 
 .user-actions button:active {
   transform: translateY(0);
-  box-shadow: 0 2px 4px rgba(47, 112, 255, 0.1);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
+.user-actions button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent);
+}
+
+/* Disable toggle (−) → amber warning, distinct from destructive delete */
+.user-actions button.secondary {
+  background: var(--surface-soft);
+}
+
+.user-actions button.secondary:hover {
+  border-color: var(--warning, #d97706);
+  color: var(--warning, #d97706);
+  background: color-mix(in srgb, #d97706 10%, var(--surface));
+  box-shadow: 0 4px 12px color-mix(in srgb, #d97706 20%, transparent);
+}
+
+/* Delete (×) → red */
 .user-actions button.danger {
-  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+  border-color: color-mix(in srgb, var(--danger) 30%, var(--border));
   color: var(--danger);
 }
 
 .user-actions button.danger:hover {
-  background: rgba(220, 38, 38, 0.08);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.16);
+  background: color-mix(in srgb, var(--danger) 14%, var(--surface));
+  border-color: var(--danger);
+  color: var(--danger);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--danger) 22%, transparent);
 }
 
 .quote-widget {

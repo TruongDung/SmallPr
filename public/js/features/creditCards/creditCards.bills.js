@@ -515,7 +515,7 @@
             const deleteButton = document.createElement('button');
             deleteButton.type = 'button';
             deleteButton.className = 'task-action-icon danger';
-            deleteButton.textContent = '🗑';
+            deleteButton.textContent = '×';
             deleteButton.setAttribute('aria-label', t('delete'));
             deleteButton.title = t('delete');
             deleteButton.addEventListener('click', () => {
