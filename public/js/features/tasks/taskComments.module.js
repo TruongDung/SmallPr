@@ -17,6 +17,7 @@
     openRichTextLinksWithModifier,
     escapeHtml,
     showStatusToast,
+    readOnly = false,
     ids = {},
   }) => {
     const elementIds = {
@@ -34,6 +35,11 @@
     const addBtn = document.getElementById(elementIds.addBtn);
     const cancelBtn = document.getElementById(elementIds.cancelBtn);
     const errorEl = document.getElementById(elementIds.error);
+    const composerEl = inputEl ? inputEl.closest('.task-comment-composer') : null;
+
+    // When read-only (e.g. the task preview/detail view) the composer is hidden
+    // and per-comment edit/delete controls are not rendered.
+    if (readOnly && composerEl) composerEl.classList.add('hidden');
 
     let taskId = null;
     let comments = [];
@@ -194,7 +200,7 @@
 
       main.append(head, body);
 
-      if (isOwnComment(comment)) {
+      if (!readOnly && isOwnComment(comment)) {
         main.append(buildActions(comment));
       }
 
@@ -364,9 +370,11 @@
     };
 
     const bind = () => {
-      addBtn?.addEventListener('click', submit);
-      cancelBtn?.addEventListener('click', () => { exitEditMode(); render(); });
-      inputEl?.addEventListener('input', clearError);
+      if (!readOnly) {
+        addBtn?.addEventListener('click', submit);
+        cancelBtn?.addEventListener('click', () => { exitEditMode(); render(); });
+        inputEl?.addEventListener('input', clearError);
+      }
       subscribeRealtime();
     };
 

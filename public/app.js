@@ -3594,7 +3594,8 @@ const {
 } = toast;
 
 // Threaded comments for the task detail (preview) modal. Created here so that
-// `request` and `showStatusToast` (both defined above) are available.
+// `request` and `showStatusToast` (both defined above) are available. The
+// preview is read-only: comments are added/edited only from the edit modal.
 const taskCommentsModule = window.TaskCommentsModule.create({
   request,
   t,
@@ -3607,6 +3608,7 @@ const taskCommentsModule = window.TaskCommentsModule.create({
   openRichTextLinksWithModifier,
   escapeHtml,
   showStatusToast,
+  readOnly: true,
 });
 taskCommentsModule.bind();
 
