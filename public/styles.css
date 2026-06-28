@@ -11285,3 +11285,8 @@ body.theme-dark .sprint-status-completed {
     font-size: 0.74rem;
   }
 }
+
+/* Legacy single-comment (from the edit modal) surfaced in the comments list */
+.task-comment-legacy .task-comment-avatar {
+  background: var(--muted);
+}

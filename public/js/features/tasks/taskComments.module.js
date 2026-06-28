@@ -26,6 +26,7 @@
 
     let taskId = null;
     let comments = [];
+    let legacyComment = '';
     let editingId = null;
     let pendingDeleteId = null;
     let realtimeBound = false;
@@ -190,11 +191,40 @@
       return item;
     };
 
+    const renderLegacyItem = () => {
+      const item = document.createElement('article');
+      item.className = 'task-comment task-comment-legacy';
+
+      const avatar = document.createElement('div');
+      avatar.className = 'task-comment-avatar';
+      avatar.textContent = '✎';
+
+      const main = document.createElement('div');
+      main.className = 'task-comment-main';
+
+      const head = document.createElement('div');
+      head.className = 'task-comment-head';
+      const author = document.createElement('strong');
+      author.className = 'task-comment-author';
+      author.textContent = t('comment') || 'Comment';
+      head.append(author);
+
+      const body = document.createElement('div');
+      body.className = 'task-comment-body';
+      body.innerHTML = renderStoredRichText(legacyComment || '');
+      openRichTextLinksWithModifier(body);
+
+      main.append(head, body);
+      item.append(avatar, main);
+      return item;
+    };
+
     const render = () => {
       if (!listEl) return;
       listEl.innerHTML = '';
 
-      if (!comments.length) {
+      const hasLegacy = Boolean(legacyComment);
+      if (!comments.length && !hasLegacy) {
         const empty = document.createElement('p');
         empty.className = 'task-comments-empty';
         empty.textContent = t('noCommentsYet') || 'No comments yet.';
@@ -202,12 +232,16 @@
         return;
       }
 
+      if (hasLegacy) listEl.append(renderLegacyItem());
       comments.forEach((comment) => listEl.append(renderItem(comment)));
     };
 
     const load = async (task) => {
       taskId = task?.id || null;
       comments = Array.isArray(task?.comments) ? task.comments : [];
+      legacyComment = task?.comment && getRichTextPlainText(task.comment).trim()
+        ? task.comment
+        : '';
       editingId = null;
       pendingDeleteId = null;
       clearError();
@@ -292,6 +326,7 @@
     const reset = () => {
       taskId = null;
       comments = [];
+      legacyComment = '';
       pendingDeleteId = null;
       exitEditMode();
       clearError();
