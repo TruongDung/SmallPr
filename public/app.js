@@ -470,7 +470,9 @@ const applyTranslations = () => {
     button.setAttribute('aria-label', t('addRelatedTask'));
     button.title = t('addRelatedTask');
   });
-  editTaskTitle.textContent = t('editTaskTitle');
+  editTaskTitle.textContent = pendingEditTask && pendingEditTask.title
+    ? t('editTaskName', { name: pendingEditTask.title })
+    : t('editTaskTitle');
   updatePreviewTaskModalTitle();
   setText('#edit-related-tasks-label', t('relatedTasks'));
   if (editRelatedTasksSearch) editRelatedTasksSearch.placeholder = t('relatedTasksSearchPlaceholder');
@@ -3299,6 +3301,9 @@ const showEditTaskModal = (task) => {
   preparedEditAttachment = null;
   removeEditAttachment = false;
   clearEditTaskErrors();
+  editTaskTitle.textContent = task.title
+    ? t('editTaskName', { name: task.title })
+    : t('editTaskTitle');
   editTaskTitleInput.value = task.title;
   editTaskPriorityInput.value = task.priority || 'medium';
   editTaskStatusInput.value = taskStatus(task);
