@@ -28,6 +28,7 @@
     let comments = [];
     let editingId = null;
     let pendingDeleteId = null;
+    let realtimeBound = false;
 
     const getInitials = (name) => {
       const words = String(name || '').trim().split(/\s+/).filter(Boolean);
@@ -210,6 +211,7 @@
       editingId = null;
       pendingDeleteId = null;
       clearError();
+      subscribeRealtime();
       render();
       if (!taskId) return;
 
@@ -307,13 +309,19 @@
       }).catch(() => {});
     };
 
+    // The socket connects after this module is constructed, so subscribe
+    // lazily the first time a task is opened (and the socket exists).
+    const subscribeRealtime = () => {
+      if (realtimeBound || !window.realtimeSocket) return;
+      window.realtimeSocket.on('task:comment-updated', handleRealtime);
+      realtimeBound = true;
+    };
+
     const bind = () => {
       addBtn?.addEventListener('click', submit);
       cancelBtn?.addEventListener('click', () => { exitEditMode(); render(); });
       inputEl?.addEventListener('input', clearError);
-      if (window.realtimeSocket) {
-        window.realtimeSocket.on('task:comment-updated', handleRealtime);
-      }
+      subscribeRealtime();
     };
 
     const applyTranslations = () => {
