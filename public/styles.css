@@ -11307,6 +11307,13 @@ body.theme-dark .sprint-status-completed {
   gap: 8px;
 }
 
+/* Specific override so the .hidden utility wins over the display:flex above
+   (equal specificity, and .hidden is defined earlier in the file). Used by the
+   read-only task preview to hide the composer entirely. */
+.task-comment-composer.hidden {
+  display: none;
+}
+
 .task-comment-composer .rich-editor {
   margin: 0;
 }
