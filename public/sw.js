@@ -1,4 +1,4 @@
-const CACHE_NAME = 'task-manager-ios-v104';
+const CACHE_NAME = 'task-manager-ios-v105';
 const APP_SHELL = [
   '/',
   '/index.html',
@@ -49,7 +49,17 @@ const networkFirst = (request, fallbackPath) => fetch(request)
     }
     return response;
   })
-  .catch(() => caches.match(fallbackPath || request).then((cached) => cached || caches.match('/index.html')));
+  .catch(async () => {
+    const cached = await caches.match(fallbackPath || request);
+    if (cached) return cached;
+    // Only navigations may fall back to the app shell. Never serve index.html
+    // in place of a missing JS/CSS asset — executing HTML as a script throws a
+    // SyntaxError and leaves a blank, "could not load" page.
+    if (request.mode === 'navigate') {
+      return caches.match('/index.html');
+    }
+    return Response.error();
+  });
 
 // Cache-first: good for static, rarely-changing assets (images, fonts).
 const cacheFirst = (request) => caches.match(request).then((cached) => cached || fetch(request)
