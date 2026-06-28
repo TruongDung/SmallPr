@@ -145,7 +145,7 @@
 
     const renderItem = (comment) => {
       const item = document.createElement('article');
-      item.className = 'task-comment';
+      item.className = 'task-comment-item';
       item.dataset.commentId = comment.id;
       if (editingId === comment.id) item.classList.add('task-comment-editing');
 
@@ -193,7 +193,7 @@
 
     const renderLegacyItem = () => {
       const item = document.createElement('article');
-      item.className = 'task-comment task-comment-legacy';
+      item.className = 'task-comment-item task-comment-legacy';
 
       const avatar = document.createElement('div');
       avatar.className = 'task-comment-avatar';
