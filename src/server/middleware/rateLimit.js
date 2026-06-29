@@ -1,4 +1,5 @@
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
 const { RedisStore } = require('rate-limit-redis');
 
 const redisCache = require('../cache/redis');
@@ -8,6 +9,11 @@ const parsePositiveInt = (value, fallback) => {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
+
+// Normalize the client IP into a rate-limit key. ipKeyGenerator collapses IPv6
+// addresses into a /64 subnet so a single client can't bypass limits by
+// rotating addresses within its block (required by express-rate-limit v8).
+const ipKey = (req) => ipKeyGenerator(req.ip);
 
 // Rate limiting is per-process in-memory by default. When Redis is configured
 // the limits become shared across all instances (important on serverless where
@@ -32,7 +38,7 @@ const buildStore = (prefix) => {
 // Behind Vercel/proxies, `trust proxy` is set so req.ip is the real client IP.
 const keyByUserOrIp = (req) => {
   if (req.session?.userId) return `user:${req.session.userId}`;
-  return req.ip;
+  return ipKey(req);
 };
 
 const jsonLimitHandler = (message) => (req, res) => {
@@ -87,7 +93,7 @@ const createRateLimiters = () => {
     limit: parsePositiveInt(process.env.RATE_LIMIT_AUTH_MAX, 10),
     standardHeaders: 'draft-7',
     legacyHeaders: false,
-    keyGenerator: (req) => req.ip,
+    keyGenerator: ipKey,
     // Don't penalize successful logins; only failed/!2xx responses count.
     skipSuccessfulRequests: true,
     handler: jsonLimitHandler('Too many attempts. Please wait a few minutes before trying again.'),
