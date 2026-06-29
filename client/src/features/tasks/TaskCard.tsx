@@ -44,14 +44,10 @@ export const TaskCard = ({
     .join(' ');
 
   const descriptionPlain = getRichTextPlainText(task.description || '');
-  const showPreviewButton =
-    (task.description && descriptionPlain.length > 180) || Boolean(task.comment);
+  const showPreviewButton = (task.description && descriptionPlain.length > 180) || Boolean(task.comment);
 
   const handleCardClick = (event: React.MouseEvent) => {
-    if (
-      window.matchMedia('(max-width: 640px)').matches &&
-      !(event.target as HTMLElement).closest('button, a')
-    ) {
+    if (window.matchMedia('(max-width: 640px)').matches && !(event.target as HTMLElement).closest('button, a')) {
       onPreview(task);
     }
   };
@@ -116,11 +112,7 @@ export const TaskCard = ({
       )}
 
       {task.attachment_data && task.attachment_name && (
-        <a
-          className="task-attachment"
-          href={task.attachment_data}
-          download={task.attachment_name}
-        >
+        <a className="task-attachment" href={task.attachment_data} download={task.attachment_name}>
           {t('attachment')}: {task.attachment_name}
         </a>
       )}
@@ -149,11 +141,7 @@ export const TaskCard = ({
         <button type="button" title={t('edit')} onClick={() => onEdit(task)}>
           ✎
         </button>
-        <button
-          type="button"
-          title={isArchived ? t('restore') : t('archive')}
-          onClick={() => onToggleArchive(task)}
-        >
+        <button type="button" title={isArchived ? t('restore') : t('archive')} onClick={() => onToggleArchive(task)}>
           {isArchived ? '↥' : '▣'}
         </button>
         <button type="button" className="danger" title={t('delete')} onClick={() => onDelete(task)}>

@@ -23,6 +23,7 @@ A modern, full-stack task management application with real-time collaboration, b
 ### Prerequisites
 
 Ensure you have the following installed:
+
 - **Node.js** v18 or higher ([Download](https://nodejs.org/))
 - **PostgreSQL** v16 or higher ([Download](https://www.postgresql.org/download/))
 - **Redis** v6 or higher ([Download](https://redis.io/download))
@@ -31,12 +32,14 @@ Ensure you have the following installed:
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd SmallPr
    ```
 
 2. **Install dependencies**
+
    ```bash
    # Install backend dependencies
    npm install
@@ -48,8 +51,9 @@ Ensure you have the following installed:
    ```
 
 3. **Set up environment variables**
-   
+
    Create a `.env` file in the root directory:
+
    ```bash
    # Database Configuration
    DATABASE_URL=postgresql://username:password@localhost:5432/taskmanager
@@ -72,6 +76,7 @@ Ensure you have the following installed:
    ```
 
 4. **Set up the database**
+
    ```bash
    # Create database
    createdb taskmanager
@@ -82,6 +87,7 @@ Ensure you have the following installed:
 5. **Start the application**
 
    **Option A: Development mode (recommended)**
+
    ```bash
    # Terminal 1: Start backend server with auto-reload
    npm run dev
@@ -92,6 +98,7 @@ Ensure you have the following installed:
    ```
 
    **Option B: Production mode**
+
    ```bash
    # Build frontend
    cd client
@@ -140,6 +147,7 @@ SmallPr/
 ## 🛠️ Tech Stack
 
 ### Backend
+
 - **Node.js** + **Express.js** - Server framework
 - **PostgreSQL** - Primary database
 - **Redis** - Caching layer
@@ -149,6 +157,7 @@ SmallPr/
 - **bcrypt** - Password hashing
 
 ### Frontend
+
 - **React 18** - UI framework
 - **TypeScript** - Type safety
 - **Vite** - Build tool
@@ -157,6 +166,7 @@ SmallPr/
 - **@dnd-kit** - Drag and drop
 
 ### Mobile
+
 - **Swift** + **SwiftUI** - iOS native wrapper
 
 ## 🧪 Testing
@@ -177,6 +187,7 @@ npm run test:watch
 ## 📦 Building for Production
 
 ### Backend
+
 ```bash
 # The backend doesn't require a build step
 # Just ensure NODE_ENV=production
@@ -185,6 +196,7 @@ npm start
 ```
 
 ### Frontend
+
 ```bash
 cd client
 npm run build
@@ -192,6 +204,7 @@ npm run build
 ```
 
 ### Docker (Optional)
+
 ```bash
 # Coming soon
 docker-compose up
@@ -200,12 +213,14 @@ docker-compose up
 ## 🚢 Deployment
 
 ### Deploy to Vercel (Recommended for quick start)
+
 1. Push code to GitHub
 2. Import project in Vercel
 3. Add environment variables
 4. Deploy
 
 ### Deploy to your own server
+
 1. Build the frontend: `cd client && npm run build`
 2. Set up PostgreSQL and Redis
 3. Configure environment variables
@@ -216,14 +231,14 @@ docker-compose up
 
 ### Environment Variables
 
-| Variable | Description | Required | Default |
-|----------|-------------|----------|---------|
-| `DATABASE_URL` | PostgreSQL connection string | Yes | - |
-| `REDIS_URL` | Redis connection string | Yes | - |
-| `SESSION_SECRET` | Secret key for session encryption | Yes | - |
-| `NODE_ENV` | Environment (development/production) | No | development |
-| `PORT` | Server port | No | 3000 |
-| `DEFAULT_ADMIN_PASSWORD` | Initial admin password | No | - |
+| Variable                 | Description                          | Required | Default     |
+| ------------------------ | ------------------------------------ | -------- | ----------- |
+| `DATABASE_URL`           | PostgreSQL connection string         | Yes      | -           |
+| `REDIS_URL`              | Redis connection string              | Yes      | -           |
+| `SESSION_SECRET`         | Secret key for session encryption    | Yes      | -           |
+| `NODE_ENV`               | Environment (development/production) | No       | development |
+| `PORT`                   | Server port                          | No       | 3000        |
+| `DEFAULT_ADMIN_PASSWORD` | Initial admin password               | No       | -           |
 
 ## 🤝 Contributing
 
@@ -236,6 +251,7 @@ Contributions are welcome! Please follow these steps:
 5. Open a Pull Request
 
 ### Development Guidelines
+
 - Follow existing code style and patterns
 - Write tests for new features
 - Update documentation
@@ -244,6 +260,7 @@ Contributions are welcome! Please follow these steps:
 ## 🐛 Troubleshooting
 
 ### Port 3000 already in use
+
 ```bash
 # Windows
 netstat -ano | findstr :3000
@@ -254,15 +271,18 @@ lsof -ti:3000 | xargs kill -9
 ```
 
 ### Database connection errors
+
 - Ensure PostgreSQL is running
 - Check DATABASE_URL format
 - Verify database exists: `psql -l`
 
 ### Redis connection errors
+
 - Ensure Redis is running: `redis-cli ping` (should return PONG)
 - Check REDIS_URL configuration
 
 ### Frontend build errors
+
 ```bash
 cd client
 rm -rf node_modules package-lock.json
@@ -273,12 +293,14 @@ npm run build
 ## 📝 Scripts Reference
 
 ### Backend
+
 - `npm start` - Start production server
 - `npm run dev` - Start development server with auto-reload
 - `npm test` - Run tests
 - `npm run seed:audit-logs` - Seed audit log data
 
 ### Frontend
+
 - `npm run dev` - Start Vite dev server
 - `npm run build` - Build for production
 - `npm run preview` - Preview production build

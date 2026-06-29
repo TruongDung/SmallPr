@@ -40,22 +40,18 @@ let originalAdminStatus = null;
 
 const createAgent = async (username = testUsername(`user-${Math.random()}`)) => {
   const agent = request.agent(app);
-  const response = await agent
-    .post('/api/register')
-    .send({
-      username,
-      email: `${username}@example.com`,
-      password: 'Password123!',
-      ...humanRegistrationPayload(),
-    });
+  const response = await agent.post('/api/register').send({
+    username,
+    email: `${username}@example.com`,
+    password: 'Password123!',
+    ...humanRegistrationPayload(),
+  });
 
   expect(response.statusCode).toBe(200);
   expect(response.body.user).toMatchObject({ username });
   await verifyRegistration(response.body.verification_token);
 
-  const loginResponse = await agent
-    .post('/api/login')
-    .send({ username, password: 'Password123!' });
+  const loginResponse = await agent.post('/api/login').send({ username, password: 'Password123!' });
   expect(loginResponse.statusCode).toBe(200);
 
   return agent;
@@ -63,9 +59,7 @@ const createAgent = async (username = testUsername(`user-${Math.random()}`)) => 
 
 const createAdminAgent = async () => {
   const agent = request.agent(app);
-  const response = await agent
-    .post('/api/login')
-    .send({ username: 'admin', password: TEST_ADMIN_PASSWORD });
+  const response = await agent.post('/api/login').send({ username: 'admin', password: TEST_ADMIN_PASSWORD });
 
   expect(response.statusCode).toBe(200);
   expect(response.body.user).toMatchObject({ username: 'admin' });
@@ -90,9 +84,7 @@ const dbDateYmd = (value) => {
   if (!value) return null;
   if (value instanceof Date) return value.toISOString().slice(0, 10);
   const text = String(value);
-  return /^\d{4}-\d{2}-\d{2}/.test(text)
-    ? text.slice(0, 10)
-    : new Date(text).toISOString().slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}/.test(text) ? text.slice(0, 10) : new Date(text).toISOString().slice(0, 10);
 };
 
 beforeAll(async () => {
@@ -102,10 +94,9 @@ beforeAll(async () => {
   originalAdminStatus = admin.rows[0]?.account_status || null;
   if (originalAdminPasswordHash) {
     const hashedPassword = await bcrypt.hash(TEST_ADMIN_PASSWORD, 10);
-    await db.query(
-      "UPDATE users SET password = $1, account_status = 'enabled' WHERE username = 'admin'",
-      [hashedPassword]
-    );
+    await db.query("UPDATE users SET password = $1, account_status = 'enabled' WHERE username = 'admin'", [
+      hashedPassword,
+    ]);
   }
 });
 
@@ -115,17 +106,21 @@ afterAll(async () => {
     if (originalAdminPasswordHash) {
       await db.query(
         'UPDATE users SET password = $1, account_status = COALESCE($2, account_status) WHERE username = $3',
-        [originalAdminPasswordHash, originalAdminStatus, 'admin']
+        [originalAdminPasswordHash, originalAdminStatus, 'admin'],
       );
     }
-    await db.query(
-      `DELETE FROM audit_logs
+    await db
+      .query(
+        `DELETE FROM audit_logs
        WHERE summary LIKE $1
           OR user_id IN (SELECT id FROM users WHERE username LIKE $1)
           OR (action = 'login' AND summary = 'admin' AND created_at >= $2)`,
-      [`${RUN_ID}%`, TEST_STARTED_AT]
-    ).catch(() => {});
-    await db.query('DELETE FROM tasks WHERE title LIKE $1 OR title LIKE $2', [`${RUN_ID}%`, `${RUN_ID.slice(0, 12)}%`]).catch(() => {});
+        [`${RUN_ID}%`, TEST_STARTED_AT],
+      )
+      .catch(() => {});
+    await db
+      .query('DELETE FROM tasks WHERE title LIKE $1 OR title LIKE $2', [`${RUN_ID}%`, `${RUN_ID.slice(0, 12)}%`])
+      .catch(() => {});
     await db.query('DELETE FROM sprints WHERE name LIKE $1', [`${RUN_ID}%`]).catch(() => {});
     await db.query('DELETE FROM users WHERE username LIKE $1', [`${RUN_ID}%`]);
   } catch (error) {
@@ -220,25 +215,21 @@ describe('Auth API', () => {
     const username = testUsername('settings-user');
     const agent = await createAgent(username);
 
-    const invalidTimezoneResponse = await agent
-      .put('/api/me')
-      .send({
-        name: 'Settings User',
-        email: `${username}@example.com`,
-        timezone: 'Nope/Nowhere',
-        language: 'en',
-      });
+    const invalidTimezoneResponse = await agent.put('/api/me').send({
+      name: 'Settings User',
+      email: `${username}@example.com`,
+      timezone: 'Nope/Nowhere',
+      language: 'en',
+    });
     expect(invalidTimezoneResponse.statusCode).toBe(400);
     expect(invalidTimezoneResponse.body).toHaveProperty('error', 'Timezone is invalid');
 
-    const updateResponse = await agent
-      .put('/api/me')
-      .send({
-        name: 'Settings User',
-        email: `${username}-updated@example.com`,
-        timezone: 'Asia/Ho_Chi_Minh',
-        language: 'vi',
-      });
+    const updateResponse = await agent.put('/api/me').send({
+      name: 'Settings User',
+      email: `${username}-updated@example.com`,
+      timezone: 'Asia/Ho_Chi_Minh',
+      language: 'vi',
+    });
     expect(updateResponse.statusCode).toBe(200);
     expect(updateResponse.body.user).toMatchObject({
       username,
@@ -272,14 +263,10 @@ describe('Auth API', () => {
 
     await agent.post('/api/logout');
 
-    const oldLoginResponse = await agent
-      .post('/api/login')
-      .send({ username, password: 'Password123!' });
+    const oldLoginResponse = await agent.post('/api/login').send({ username, password: 'Password123!' });
     expect(oldLoginResponse.statusCode).toBe(401);
 
-    const newLoginResponse = await agent
-      .post('/api/login')
-      .send({ username, password: 'NewPassword123!' });
+    const newLoginResponse = await agent.post('/api/login').send({ username, password: 'NewPassword123!' });
     expect(newLoginResponse.statusCode).toBe(200);
   });
 
@@ -297,17 +284,13 @@ describe('Auth API', () => {
     expect(signupResponse.statusCode).toBe(200);
     expect(signupResponse.body.user).toMatchObject({ username, account_status: 'pending_verification' });
 
-    const pendingLoginResponse = await request(app)
-      .post('/api/login')
-      .send({ username, password: 'Password123!' });
+    const pendingLoginResponse = await request(app).post('/api/login').send({ username, password: 'Password123!' });
     expect(pendingLoginResponse.statusCode).toBe(403);
     expect(pendingLoginResponse.body).toHaveProperty('error', 'Please verify your email before logging in');
 
     await verifyRegistration(signupResponse.body.verification_token);
 
-    const loginResponse = await request(app)
-      .post('/api/login')
-      .send({ username, password: 'Password123!' });
+    const loginResponse = await request(app).post('/api/login').send({ username, password: 'Password123!' });
 
     expect(loginResponse.statusCode).toBe(200);
     expect(loginResponse.body.user).toMatchObject({ username });
@@ -323,9 +306,7 @@ describe('Auth API', () => {
   });
 
   test('rejects signup without required fields', async () => {
-    const response = await request(app)
-      .post('/api/register')
-      .send({ username: '' });
+    const response = await request(app).post('/api/register').send({ username: '' });
 
     expect(response.statusCode).toBe(400);
     expect(response.body).toHaveProperty('error', 'Username and password are required');
@@ -376,9 +357,7 @@ describe('Auth API', () => {
   });
 
   test('rejects invalid login credentials for nonexistent user', async () => {
-    const response = await request(app)
-      .post('/api/login')
-      .send({ username: 'nonexistent', password: 'wrongpass' });
+    const response = await request(app).post('/api/login').send({ username: 'nonexistent', password: 'wrongpass' });
 
     expect(response.statusCode).toBe(401);
     expect(response.body).toHaveProperty('error', 'Invalid credentials');
@@ -388,9 +367,7 @@ describe('Auth API', () => {
     const username = testUsername('existinguser');
     await createAgent(username);
 
-    const loginResponse = await request(app)
-      .post('/api/login')
-      .send({ username, password: 'WrongPass1!' });
+    const loginResponse = await request(app).post('/api/login').send({ username, password: 'WrongPass1!' });
 
     expect(loginResponse.statusCode).toBe(401);
     expect(loginResponse.body).toHaveProperty('error', 'Invalid credentials');
@@ -409,17 +386,15 @@ describe('Task API', () => {
     const agent = await createAgent(testUsername('task-owner'));
     const file = attachment('plan.txt', 'project notes');
 
-    const createResponse = await agent
-      .post('/api/tasks')
-      .send({
-        title: 'Plan',
-        tag: 'Launch',
-        priority: 'high',
-        status: 'in_progress',
-        description: '<p><strong>Ship it</strong></p>',
-        reminder_at: '2026-05-13T09:30',
-        attachment: file,
-      });
+    const createResponse = await agent.post('/api/tasks').send({
+      title: 'Plan',
+      tag: 'Launch',
+      priority: 'high',
+      status: 'in_progress',
+      description: '<p><strong>Ship it</strong></p>',
+      reminder_at: '2026-05-13T09:30',
+      attachment: file,
+    });
 
     expect(createResponse.statusCode).toBe(200);
     expect(createResponse.body.task).toMatchObject({
@@ -453,9 +428,7 @@ describe('Task API', () => {
   test('defaults task priority to medium', async () => {
     const agent = await createAgent(testUsername('default-priority-owner'));
 
-    const response = await agent
-      .post('/api/tasks')
-      .send({ title: 'Default' });
+    const response = await agent.post('/api/tasks').send({ title: 'Default' });
 
     expect(response.statusCode).toBe(200);
     expect(response.body.task).toMatchObject({
@@ -467,9 +440,7 @@ describe('Task API', () => {
   test('defaults task status to todo', async () => {
     const agent = await createAgent(testUsername('default-status-owner'));
 
-    const response = await agent
-      .post('/api/tasks')
-      .send({ title: 'Default status' });
+    const response = await agent.post('/api/tasks').send({ title: 'Default status' });
 
     expect(response.statusCode).toBe(200);
     expect(response.body.task).toMatchObject({
@@ -482,52 +453,37 @@ describe('Task API', () => {
   test('stores multiple related tasks for a task', async () => {
     const agent = await createAgent(testUsername('related-task-owner'));
 
-    const mainResponse = await agent
-      .post('/api/tasks')
-      .send({ title: 'Main task' });
-    const relatedOneResponse = await agent
-      .post('/api/tasks')
-      .send({ title: 'Related one' });
-    const relatedTwoResponse = await agent
-      .post('/api/tasks')
-      .send({ title: 'Related two' });
+    const mainResponse = await agent.post('/api/tasks').send({ title: 'Main task' });
+    const relatedOneResponse = await agent.post('/api/tasks').send({ title: 'Related one' });
+    const relatedTwoResponse = await agent.post('/api/tasks').send({ title: 'Related two' });
 
-    const updateResponse = await agent
-      .put(`/api/tasks/${mainResponse.body.task.id}`)
-      .send({
-        related_task_ids: [
-          relatedOneResponse.body.task.id,
-          relatedTwoResponse.body.task.id,
-        ],
-      });
+    const updateResponse = await agent.put(`/api/tasks/${mainResponse.body.task.id}`).send({
+      related_task_ids: [relatedOneResponse.body.task.id, relatedTwoResponse.body.task.id],
+    });
     expect(updateResponse.statusCode).toBe(200);
-    expect(updateResponse.body.task.related_task_ids).toEqual(expect.arrayContaining([
-      relatedOneResponse.body.task.id,
-      relatedTwoResponse.body.task.id,
-    ]));
+    expect(updateResponse.body.task.related_task_ids).toEqual(
+      expect.arrayContaining([relatedOneResponse.body.task.id, relatedTwoResponse.body.task.id]),
+    );
 
     const listResponse = await agent.get('/api/tasks');
     expect(listResponse.statusCode).toBe(200);
     const mainTask = listResponse.body.tasks.find((task) => task.id === mainResponse.body.task.id);
-    expect(mainTask.related_tasks.map((task) => task.title)).toEqual(expect.arrayContaining([
-      'Related one',
-      'Related two',
-    ]));
+    expect(mainTask.related_tasks.map((task) => task.title)).toEqual(
+      expect.arrayContaining(['Related one', 'Related two']),
+    );
 
     const relatedOneTask = listResponse.body.tasks.find((task) => task.id === relatedOneResponse.body.task.id);
     expect(relatedOneTask.related_task_ids).toContain(mainResponse.body.task.id);
 
-    const unlinkResponse = await agent
-      .put(`/api/tasks/${mainResponse.body.task.id}`)
-      .send({
-        related_task_ids: [
-          relatedTwoResponse.body.task.id,
-        ],
-      });
+    const unlinkResponse = await agent.put(`/api/tasks/${mainResponse.body.task.id}`).send({
+      related_task_ids: [relatedTwoResponse.body.task.id],
+    });
     expect(unlinkResponse.statusCode).toBe(200);
 
     const updatedListResponse = await agent.get('/api/tasks');
-    const unlinkedRelatedOne = updatedListResponse.body.tasks.find((task) => task.id === relatedOneResponse.body.task.id);
+    const unlinkedRelatedOne = updatedListResponse.body.tasks.find(
+      (task) => task.id === relatedOneResponse.body.task.id,
+    );
     expect(unlinkedRelatedOne.related_task_ids).not.toContain(mainResponse.body.task.id);
   });
 
@@ -536,18 +492,16 @@ describe('Task API', () => {
     const startDate = ymdFromOffset(-1);
     const expectedNextDate = ymdFromOffset(0);
 
-    const createResponse = await agent
-      .post('/api/tasks')
-      .send({
-        title: 'Water plants',
-        priority: 'low',
-        due_date: startDate,
-        is_recurring: true,
-        recurrence_pattern: 'daily',
-        recurrence_interval: 1,
-        recurrence_timezone: 'UTC',
-        recurrence_occurrence_limit: 3,
-      });
+    const createResponse = await agent.post('/api/tasks').send({
+      title: 'Water plants',
+      priority: 'low',
+      due_date: startDate,
+      is_recurring: true,
+      recurrence_pattern: 'daily',
+      recurrence_interval: 1,
+      recurrence_timezone: 'UTC',
+      recurrence_occurrence_limit: 3,
+    });
 
     expect(createResponse.statusCode).toBe(200);
 
@@ -556,7 +510,7 @@ describe('Task API', () => {
        FROM recurring_task_rules rules
        JOIN tasks ON tasks.id = rules.template_task_id
        WHERE tasks.id = ?`,
-      [createResponse.body.task.id]
+      [createResponse.body.task.id],
     );
     expect(rule).toMatchObject({
       frequency: 'daily',
@@ -587,10 +541,10 @@ describe('Task API', () => {
     const secondRuleSnapshot = await dbClient.getAsync('SELECT * FROM recurring_task_rules WHERE id = ?', [rule.id]);
     await recurrence.generateNextTaskForRule({ ...secondRuleSnapshot, next_due_date: expectedNextDate });
 
-    const generatedRows = await dbClient.allAsync(
-      'SELECT id FROM tasks WHERE recurring_rule_id = ? AND due_date = ?',
-      [rule.id, expectedNextDate]
-    );
+    const generatedRows = await dbClient.allAsync('SELECT id FROM tasks WHERE recurring_rule_id = ? AND due_date = ?', [
+      rule.id,
+      expectedNextDate,
+    ]);
     expect(generatedRows).toHaveLength(1);
 
     const updatedRule = await dbClient.getAsync('SELECT * FROM recurring_task_rules WHERE id = ?', [rule.id]);
@@ -601,32 +555,20 @@ describe('Task API', () => {
   test('lists higher priority tasks first', async () => {
     const agent = await createAgent(testUsername('priority-order-owner'));
 
-    await agent
-      .post('/api/tasks')
-      .send({ title: 'Low item', priority: 'low' });
-    await agent
-      .post('/api/tasks')
-      .send({ title: 'High item', priority: 'high' });
-    await agent
-      .post('/api/tasks')
-      .send({ title: 'Medium item', priority: 'medium' });
+    await agent.post('/api/tasks').send({ title: 'Low item', priority: 'low' });
+    await agent.post('/api/tasks').send({ title: 'High item', priority: 'high' });
+    await agent.post('/api/tasks').send({ title: 'Medium item', priority: 'medium' });
 
     const response = await agent.get('/api/tasks');
 
     expect(response.statusCode).toBe(200);
-    expect(response.body.tasks.map((task) => task.title)).toEqual([
-      'High item',
-      'Medium item',
-      'Low item',
-    ]);
+    expect(response.body.tasks.map((task) => task.title)).toEqual(['High item', 'Medium item', 'Low item']);
   });
 
   test('rejects invalid task priorities', async () => {
     const agent = await createAgent(testUsername('bad-priority-owner'));
 
-    const response = await agent
-      .post('/api/tasks')
-      .send({ title: 'Bad priority', priority: 'urgent' });
+    const response = await agent.post('/api/tasks').send({ title: 'Bad priority', priority: 'urgent' });
 
     expect(response.statusCode).toBe(400);
     expect(response.body).toHaveProperty('error', 'Task priority must be low, medium, or high');
@@ -635,9 +577,7 @@ describe('Task API', () => {
   test('rejects invalid task statuses', async () => {
     const agent = await createAgent(testUsername('bad-status-owner'));
 
-    const response = await agent
-      .post('/api/tasks')
-      .send({ title: 'Bad status', status: 'blocked' });
+    const response = await agent.post('/api/tasks').send({ title: 'Bad status', status: 'blocked' });
 
     expect(response.statusCode).toBe(400);
     expect(response.body).toHaveProperty('error', 'Task status must be todo, in_progress, or done');
@@ -646,9 +586,7 @@ describe('Task API', () => {
   test('rejects task titles over 20 characters', async () => {
     const agent = await createAgent(testUsername('long-title-owner'));
 
-    const response = await agent
-      .post('/api/tasks')
-      .send({ title: 'This title is definitely too long' });
+    const response = await agent.post('/api/tasks').send({ title: 'This title is definitely too long' });
 
     expect(response.statusCode).toBe(400);
     expect(response.body).toHaveProperty('error', 'Task title must be 20 characters or less');
@@ -657,9 +595,7 @@ describe('Task API', () => {
   test('rejects task tags over 40 characters', async () => {
     const agent = await createAgent(testUsername('long-tag-owner'));
 
-    const response = await agent
-      .post('/api/tasks')
-      .send({ title: 'Tagged', tag: 'x'.repeat(41) });
+    const response = await agent.post('/api/tasks').send({ title: 'Tagged', tag: 'x'.repeat(41) });
 
     expect(response.statusCode).toBe(400);
     expect(response.body).toHaveProperty('error', 'Task tag must be 40 characters or less');
@@ -675,9 +611,7 @@ describe('Task API', () => {
     expect(createResponse.statusCode).toBe(400);
     expect(createResponse.body).toHaveProperty('error', 'Task description must be 10000 characters or less');
 
-    const validCreateResponse = await agent
-      .post('/api/tasks')
-      .send({ title: 'Valid desc' });
+    const validCreateResponse = await agent.post('/api/tasks').send({ title: 'Valid desc' });
 
     const updateResponse = await agent
       .put(`/api/tasks/${validCreateResponse.body.task.id}`)
@@ -690,16 +624,12 @@ describe('Task API', () => {
   test('rejects task comments over 10000 characters on create and update', async () => {
     const agent = await createAgent(testUsername('long-comment-owner'));
 
-    const createResponse = await agent
-      .post('/api/tasks')
-      .send({ title: 'Long comment', comment: 'x'.repeat(10001) });
+    const createResponse = await agent.post('/api/tasks').send({ title: 'Long comment', comment: 'x'.repeat(10001) });
 
     expect(createResponse.statusCode).toBe(400);
     expect(createResponse.body).toHaveProperty('error', 'Task comment must be 10000 characters or less');
 
-    const validCreateResponse = await agent
-      .post('/api/tasks')
-      .send({ title: 'Valid comment' });
+    const validCreateResponse = await agent.post('/api/tasks').send({ title: 'Valid comment' });
 
     const updateResponse = await agent
       .put(`/api/tasks/${validCreateResponse.body.task.id}`)
@@ -712,17 +642,15 @@ describe('Task API', () => {
   test('rejects invalid attachment payloads', async () => {
     const agent = await createAgent(testUsername('bad-attachment-owner'));
 
-    const response = await agent
-      .post('/api/tasks')
-      .send({
-        title: 'Bad file',
-        attachment: {
-          name: 'bad.txt',
-          type: 'text/plain',
-          data: 'not-a-data-url',
-          size: 12,
-        },
-      });
+    const response = await agent.post('/api/tasks').send({
+      title: 'Bad file',
+      attachment: {
+        name: 'bad.txt',
+        type: 'text/plain',
+        data: 'not-a-data-url',
+        size: 12,
+      },
+    });
 
     expect(response.statusCode).toBe(400);
     expect(response.body).toHaveProperty('error', 'Invalid attachment');
@@ -730,19 +658,17 @@ describe('Task API', () => {
 
   test('rejects attachments larger than 5 MB', async () => {
     const agent = await createAgent(testUsername('large-attachment-owner'));
-    const largePayload = Buffer.alloc((5 * 1024 * 1024) + 1).toString('base64');
+    const largePayload = Buffer.alloc(5 * 1024 * 1024 + 1).toString('base64');
 
-    const response = await agent
-      .post('/api/tasks')
-      .send({
-        title: 'Large file',
-        attachment: {
-          name: 'large.bin',
-          type: 'application/octet-stream',
-          data: `data:application/octet-stream;base64,${largePayload}`,
-          size: 1,
-        },
-      });
+    const response = await agent.post('/api/tasks').send({
+      title: 'Large file',
+      attachment: {
+        name: 'large.bin',
+        type: 'application/octet-stream',
+        data: `data:application/octet-stream;base64,${largePayload}`,
+        size: 1,
+      },
+    });
 
     expect(response.statusCode).toBe(400);
     expect(response.body).toHaveProperty('error', 'File must be 5 MB or less');
@@ -751,25 +677,21 @@ describe('Task API', () => {
   test('updates task fields while preserving the existing attachment', async () => {
     const agent = await createAgent(testUsername('preserve-attachment-owner'));
 
-    const createResponse = await agent
-      .post('/api/tasks')
-      .send({
-        title: 'Draft',
-        description: 'Old description',
-        attachment: attachment('original.txt', 'original file'),
-      });
+    const createResponse = await agent.post('/api/tasks').send({
+      title: 'Draft',
+      description: 'Old description',
+      attachment: attachment('original.txt', 'original file'),
+    });
 
     const taskId = createResponse.body.task.id;
-    const updateResponse = await agent
-      .put(`/api/tasks/${taskId}`)
-      .send({
-        title: 'Final',
-        tag: 'Review',
-        priority: 'low',
-        status: 'done',
-        description: '<p>New description</p>',
-        comment: 'Ready for review',
-      });
+    const updateResponse = await agent.put(`/api/tasks/${taskId}`).send({
+      title: 'Final',
+      tag: 'Review',
+      priority: 'low',
+      status: 'done',
+      description: '<p>New description</p>',
+      comment: 'Ready for review',
+    });
 
     expect(updateResponse.statusCode).toBe(200);
     expect(updateResponse.body.task).toMatchObject({
@@ -793,19 +715,13 @@ describe('Task API', () => {
   test('returns all task status changes in activity history', async () => {
     const agent = await createAgent(testUsername('status-history-owner'));
 
-    const createResponse = await agent
-      .post('/api/tasks')
-      .send({ title: 'Track status history' });
+    const createResponse = await agent.post('/api/tasks').send({ title: 'Track status history' });
 
     const taskId = createResponse.body.task.id;
-    const inProgressResponse = await agent
-      .put(`/api/tasks/${taskId}`)
-      .send({ status: 'in_progress' });
+    const inProgressResponse = await agent.put(`/api/tasks/${taskId}`).send({ status: 'in_progress' });
     expect(inProgressResponse.statusCode).toBe(200);
 
-    const doneResponse = await agent
-      .put(`/api/tasks/${taskId}`)
-      .send({ status: 'done' });
+    const doneResponse = await agent.put(`/api/tasks/${taskId}`).send({ status: 'done' });
 
     expect(doneResponse.statusCode).toBe(200);
 
@@ -816,7 +732,7 @@ describe('Task API', () => {
        FROM audit_logs
        WHERE entity_type = 'task' AND entity_id = ? AND action = 'edit'
        ORDER BY created_at ASC`,
-      [taskId]
+      [taskId],
     );
 
     const statusChanges = auditRows
@@ -845,19 +761,15 @@ describe('Task API', () => {
   test('saves a comment-only task update', async () => {
     const agent = await createAgent(testUsername('comment-only-owner'));
 
-    const createResponse = await agent
-      .post('/api/tasks')
-      .send({
-        title: 'Comment',
-        description: 'Task detail',
-      });
+    const createResponse = await agent.post('/api/tasks').send({
+      title: 'Comment',
+      description: 'Task detail',
+    });
 
     const taskId = createResponse.body.task.id;
-    const updateResponse = await agent
-      .put(`/api/tasks/${taskId}`)
-      .send({
-        comment: 'Saved from task detail',
-      });
+    const updateResponse = await agent.put(`/api/tasks/${taskId}`).send({
+      comment: 'Saved from task detail',
+    });
 
     expect(updateResponse.statusCode).toBe(200);
     expect(updateResponse.body.task).toMatchObject({
@@ -885,23 +797,23 @@ describe('Task API', () => {
     process.env.SMTP_PASS = 'secret';
     mockSendMail.mockClear();
 
-    const response = await agent
-      .post('/api/tasks')
-      .send({
-        title: 'Links',
-        description: 'link:\\nhttps://www.youtube.com/watch?v=g-ZtK5u-iiw\\nhttps://www.youtube.com/watch?v=rNzXtp11rg0',
-      });
+    const response = await agent.post('/api/tasks').send({
+      title: 'Links',
+      description: 'link:\\nhttps://www.youtube.com/watch?v=g-ZtK5u-iiw\\nhttps://www.youtube.com/watch?v=rNzXtp11rg0',
+    });
 
     expect(response.statusCode).toBe(200);
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     const mailOptions = mockSendMail.mock.calls[0][0];
     expect(mailOptions.to).toBe(`${testUsername('alert-email-owner')}@example.com`);
-    expect(mailOptions.text).toContain([
-      'Description:',
-      'link:',
-      'https://www.youtube.com/watch?v=g-ZtK5u-iiw',
-      'https://www.youtube.com/watch?v=rNzXtp11rg0',
-    ].join('\n'));
+    expect(mailOptions.text).toContain(
+      [
+        'Description:',
+        'link:',
+        'https://www.youtube.com/watch?v=g-ZtK5u-iiw',
+        'https://www.youtube.com/watch?v=rNzXtp11rg0',
+      ].join('\n'),
+    );
     expect(mailOptions.text).not.toContain('Tag:');
     expect(mailOptions.text).not.toContain('Comment:');
     expect(mailOptions.text).not.toContain('Attachment:');
@@ -930,12 +842,10 @@ describe('Task API', () => {
     process.env.SMTP_PASS = 'secret';
     mockSendMail.mockClear();
 
-    const response = await agent
-      .post('/api/tasks')
-      .send({
-        title: 'Quiet',
-        priority: 'low',
-      });
+    const response = await agent.post('/api/tasks').send({
+      title: 'Quiet',
+      priority: 'low',
+    });
 
     expect(response.statusCode).toBe(200);
     expect(response.body.task).toMatchObject({
@@ -958,22 +868,18 @@ describe('Task API', () => {
     };
     const agent = await createAgent(testUsername('preview-email-owner'));
 
-    const createResponse = await agent
-      .post('/api/tasks')
-      .send({
-        title: 'PreviewEmail',
-        description: 'Only this task',
-        comment: 'Preview comment',
-      });
+    const createResponse = await agent.post('/api/tasks').send({
+      title: 'PreviewEmail',
+      description: 'Only this task',
+      comment: 'Preview comment',
+    });
 
     process.env.SMTP_HOST = 'smtp.test.local';
     process.env.SMTP_USER = 'sender@test.local';
     process.env.SMTP_PASS = 'secret';
     mockSendMail.mockClear();
 
-    const response = await agent
-      .post(`/api/tasks/${createResponse.body.task.id}/send-email`)
-      .send({ language: 'en' });
+    const response = await agent.post(`/api/tasks/${createResponse.body.task.id}/send-email`).send({ language: 'en' });
 
     expect(response.statusCode).toBe(200);
     expect(mockSendMail).toHaveBeenCalledTimes(1);
@@ -998,12 +904,10 @@ describe('Task API', () => {
     };
     const agent = await createAgent(testUsername('strike-email-owner'));
 
-    const createResponse = await agent
-      .post('/api/tasks')
-      .send({
-        title: 'Strike',
-        description: '<p>Keep <s>crossed out</s> text</p>',
-      });
+    const createResponse = await agent.post('/api/tasks').send({
+      title: 'Strike',
+      description: '<p>Keep <s>crossed out</s> text</p>',
+    });
 
     process.env.SMTP_HOST = 'smtp.test.local';
     process.env.SMTP_USER = 'sender@test.local';
@@ -1017,19 +921,17 @@ describe('Task API', () => {
     expect(singleResponse.statusCode).toBe(200);
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     expect(mockSendMail.mock.calls[0][0].html).toContain(
-      'Keep <s style="text-decoration:line-through;">crossed out</s> text'
+      'Keep <s style="text-decoration:line-through;">crossed out</s> text',
     );
     expect(mockSendMail.mock.calls[0][0].text).toContain('Keep crossed out text');
 
     mockSendMail.mockClear();
-    const summaryResponse = await agent
-      .post('/api/tasks/send-email')
-      .send({ language: 'en' });
+    const summaryResponse = await agent.post('/api/tasks/send-email').send({ language: 'en' });
 
     expect(summaryResponse.statusCode).toBe(200);
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     expect(mockSendMail.mock.calls[0][0].html).toContain(
-      'Keep <s style="text-decoration:line-through;">crossed out</s> text'
+      'Keep <s style="text-decoration:line-through;">crossed out</s> text',
     );
 
     process.env.SMTP_HOST = originalEnv.SMTP_HOST;
@@ -1045,26 +947,22 @@ describe('Task API', () => {
     };
     const agent = await createAgent(testUsername('span-strike-email-owner'));
 
-    const createResponse = await agent
-      .post('/api/tasks')
-      .send({
-        title: 'SpanStrike',
-        description: '<p>Keep <span style="text-decoration-line: line-through;">crossed out</span> text</p>',
-      });
+    const createResponse = await agent.post('/api/tasks').send({
+      title: 'SpanStrike',
+      description: '<p>Keep <span style="text-decoration-line: line-through;">crossed out</span> text</p>',
+    });
 
     process.env.SMTP_HOST = 'smtp.test.local';
     process.env.SMTP_USER = 'sender@test.local';
     process.env.SMTP_PASS = 'secret';
     mockSendMail.mockClear();
 
-    const response = await agent
-      .post(`/api/tasks/${createResponse.body.task.id}/send-email`)
-      .send({ language: 'en' });
+    const response = await agent.post(`/api/tasks/${createResponse.body.task.id}/send-email`).send({ language: 'en' });
 
     expect(response.statusCode).toBe(200);
     expect(mockSendMail).toHaveBeenCalledTimes(1);
     expect(mockSendMail.mock.calls[0][0].html).toContain(
-      'Keep <s style="text-decoration:line-through;">crossed out</s> text'
+      'Keep <s style="text-decoration:line-through;">crossed out</s> text',
     );
 
     process.env.SMTP_HOST = originalEnv.SMTP_HOST;
@@ -1079,18 +977,14 @@ describe('Task API', () => {
       SMTP_PASS: process.env.SMTP_PASS,
     };
     const agent = await createAgent(testUsername('email-config-owner'));
-    const createResponse = await agent
-      .post('/api/tasks')
-      .send({ title: 'No email' });
+    const createResponse = await agent.post('/api/tasks').send({ title: 'No email' });
 
     process.env.SMTP_HOST = '';
     process.env.SMTP_USER = '';
     process.env.SMTP_PASS = '';
     mockSendMail.mockClear();
 
-    const summaryResponse = await agent
-      .post('/api/tasks/send-email')
-      .send({ language: 'en' });
+    const summaryResponse = await agent.post('/api/tasks/send-email').send({ language: 'en' });
     expect(summaryResponse.statusCode).toBe(500);
     expect(summaryResponse.body).toHaveProperty('error', 'Email settings are not configured');
 
@@ -1109,21 +1003,17 @@ describe('Task API', () => {
   test('replaces an attachment when editing a task', async () => {
     const agent = await createAgent(testUsername('replace-attachment-owner'));
 
-    const createResponse = await agent
-      .post('/api/tasks')
-      .send({
-        title: 'Upload',
-        attachment: attachment('before.txt', 'before'),
-      });
+    const createResponse = await agent.post('/api/tasks').send({
+      title: 'Upload',
+      attachment: attachment('before.txt', 'before'),
+    });
 
     const taskId = createResponse.body.task.id;
     const newAttachment = attachment('after.txt', 'after');
-    const updateResponse = await agent
-      .put(`/api/tasks/${taskId}`)
-      .send({
-        title: 'Upload',
-        attachment: newAttachment,
-      });
+    const updateResponse = await agent.put(`/api/tasks/${taskId}`).send({
+      title: 'Upload',
+      attachment: newAttachment,
+    });
 
     expect(updateResponse.statusCode).toBe(200);
     expect(updateResponse.body.task).toMatchObject({
@@ -1138,19 +1028,15 @@ describe('Task API', () => {
   test('clears an attachment and maps completed updates to status', async () => {
     const agent = await createAgent(testUsername('clear-attachment-owner'));
 
-    const createResponse = await agent
-      .post('/api/tasks')
-      .send({
-        title: 'Clear file',
-        attachment: attachment('keep.txt', 'temporary'),
-      });
+    const createResponse = await agent.post('/api/tasks').send({
+      title: 'Clear file',
+      attachment: attachment('keep.txt', 'temporary'),
+    });
 
-    const updateResponse = await agent
-      .put(`/api/tasks/${createResponse.body.task.id}`)
-      .send({
-        completed: true,
-        attachment: null,
-      });
+    const updateResponse = await agent.put(`/api/tasks/${createResponse.body.task.id}`).send({
+      completed: true,
+      attachment: null,
+    });
 
     expect(updateResponse.statusCode).toBe(200);
     expect(updateResponse.body.task).toMatchObject({
@@ -1167,21 +1053,15 @@ describe('Task API', () => {
     const owner = await createAgent(testUsername('private-owner'));
     const otherUser = await createAgent(testUsername('private-other'));
 
-    const createResponse = await owner
-      .post('/api/tasks')
-      .send({ title: 'Private' });
+    const createResponse = await owner.post('/api/tasks').send({ title: 'Private' });
 
     const taskId = createResponse.body.task.id;
 
-    const updateResponse = await otherUser
-      .put(`/api/tasks/${taskId}`)
-      .send({ title: 'Stolen' });
+    const updateResponse = await otherUser.put(`/api/tasks/${taskId}`).send({ title: 'Stolen' });
     expect(updateResponse.statusCode).toBe(404);
     expect(updateResponse.body).toHaveProperty('error', 'Task not found');
 
-    const emailResponse = await otherUser
-      .post(`/api/tasks/${taskId}/send-email`)
-      .send({ language: 'en' });
+    const emailResponse = await otherUser.post(`/api/tasks/${taskId}/send-email`).send({ language: 'en' });
     expect(emailResponse.statusCode).toBe(404);
     expect(emailResponse.body).toHaveProperty('error', 'Task not found');
   });
@@ -1189,14 +1069,10 @@ describe('Task API', () => {
   test('archives and restores a task', async () => {
     const agent = await createAgent(testUsername('archive-owner'));
 
-    const createResponse = await agent
-      .post('/api/tasks')
-      .send({ title: 'Archive me' });
+    const createResponse = await agent.post('/api/tasks').send({ title: 'Archive me' });
 
     const taskId = createResponse.body.task.id;
-    const archiveResponse = await agent
-      .put(`/api/tasks/${taskId}`)
-      .send({ archived: true });
+    const archiveResponse = await agent.put(`/api/tasks/${taskId}`).send({ archived: true });
 
     expect(archiveResponse.statusCode).toBe(200);
     expect(archiveResponse.body.task).toMatchObject({
@@ -1215,9 +1091,7 @@ describe('Task API', () => {
       archived: 1,
     });
 
-    const restoreResponse = await agent
-      .put(`/api/tasks/${taskId}`)
-      .send({ archived: false });
+    const restoreResponse = await agent.put(`/api/tasks/${taskId}`).send({ archived: false });
 
     expect(restoreResponse.statusCode).toBe(200);
     expect(restoreResponse.body.task).toMatchObject({
@@ -1230,9 +1104,7 @@ describe('Task API', () => {
     const owner = await createAgent(testUsername('delete-owner'));
     const otherUser = await createAgent(testUsername('delete-other'));
 
-    const createResponse = await owner
-      .post('/api/tasks')
-      .send({ title: 'Private task' });
+    const createResponse = await owner.post('/api/tasks').send({ title: 'Private task' });
 
     const taskId = createResponse.body.task.id;
     const forbiddenResponse = await otherUser.delete(`/api/tasks/${taskId}`);
@@ -1254,57 +1126,59 @@ describe('Task API', () => {
     const editorOneId = editorOneMe.body.user.id;
     const editorTwoId = editorTwoMe.body.user.id;
 
-    const sprintResponse = await admin
-      .post('/api/sprints')
-      .send({
-        name: `${RUN_ID}-delegated-sprint`,
-        goal: 'Admin owned sprint',
-        status: 'active',
-        editor_user_ids: [editorOneId, editorTwoId],
-      });
+    const sprintResponse = await admin.post('/api/sprints').send({
+      name: `${RUN_ID}-delegated-sprint`,
+      goal: 'Admin owned sprint',
+      status: 'active',
+      editor_user_ids: [editorOneId, editorTwoId],
+    });
     expect(sprintResponse.statusCode).toBe(200);
     expect(sprintResponse.body.sprint).toMatchObject({
       name: `${RUN_ID}-delegated-sprint`,
     });
     expect(sprintResponse.body.sprint.editor_user_ids).toEqual(expect.arrayContaining([editorOneId, editorTwoId]));
 
-    const taskResponse = await admin
-      .post('/api/tasks')
-      .send({
-        title: `${RUN_ID.slice(0, 12)} task`,
-        priority: 'low',
-        sprint_id: sprintResponse.body.sprint.id,
-      });
+    const taskResponse = await admin.post('/api/tasks').send({
+      title: `${RUN_ID.slice(0, 12)} task`,
+      priority: 'low',
+      sprint_id: sprintResponse.body.sprint.id,
+    });
     expect(taskResponse.statusCode).toBe(200);
 
     const editorOneSprints = await editorOne.get('/api/sprints');
     expect(editorOneSprints.statusCode).toBe(200);
-    expect(editorOneSprints.body.sprints).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        id: sprintResponse.body.sprint.id,
-        name: `${RUN_ID}-delegated-sprint`,
-        is_owner: 0,
-      }),
-    ]));
+    expect(editorOneSprints.body.sprints).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: sprintResponse.body.sprint.id,
+          name: `${RUN_ID}-delegated-sprint`,
+          is_owner: 0,
+        }),
+      ]),
+    );
 
     const editorTwoSprints = await editorTwo.get('/api/sprints');
     expect(editorTwoSprints.statusCode).toBe(200);
-    expect(editorTwoSprints.body.sprints).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        id: sprintResponse.body.sprint.id,
-        editor_user_ids: expect.arrayContaining([editorOneId, editorTwoId]),
-      }),
-    ]));
+    expect(editorTwoSprints.body.sprints).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: sprintResponse.body.sprint.id,
+          editor_user_ids: expect.arrayContaining([editorOneId, editorTwoId]),
+        }),
+      ]),
+    );
 
     const editorTwoTasks = await editorTwo.get('/api/tasks');
     expect(editorTwoTasks.statusCode).toBe(200);
-    expect(editorTwoTasks.body.tasks).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        id: taskResponse.body.task.id,
-        sprint_id: sprintResponse.body.sprint.id,
-        can_delete: 0,
-      }),
-    ]));
+    expect(editorTwoTasks.body.tasks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: taskResponse.body.task.id,
+          sprint_id: sprintResponse.body.sprint.id,
+          can_delete: 0,
+        }),
+      ]),
+    );
 
     const sprintEditResponse = await editorOne
       .put(`/api/sprints/${sprintResponse.body.sprint.id}`)
@@ -1312,9 +1186,7 @@ describe('Task API', () => {
     expect(sprintEditResponse.statusCode).toBe(200);
     expect(sprintEditResponse.body.sprint).toMatchObject({ goal: 'Edited by delegate' });
 
-    const taskEditResponse = await editorTwo
-      .put(`/api/tasks/${taskResponse.body.task.id}`)
-      .send({ status: 'done' });
+    const taskEditResponse = await editorTwo.put(`/api/tasks/${taskResponse.body.task.id}`).send({ status: 'done' });
     expect(taskEditResponse.statusCode).toBe(200);
     expect(taskEditResponse.body.task).toMatchObject({ status: 'done', completed: 1 });
 
@@ -1326,30 +1198,22 @@ describe('Task API', () => {
   test('manages tags and keeps task tag values in sync', async () => {
     const agent = await createAgent(testUsername('tag-manager-owner'));
 
-    const createTagResponse = await agent
-      .post('/api/tags')
-      .send({ name: 'Work' });
+    const createTagResponse = await agent.post('/api/tags').send({ name: 'Work' });
 
     expect(createTagResponse.statusCode).toBe(200);
     expect(createTagResponse.body.tag).toMatchObject({ name: 'Work' });
 
-    const duplicateTagResponse = await agent
-      .post('/api/tags')
-      .send({ name: 'work' });
+    const duplicateTagResponse = await agent.post('/api/tags').send({ name: 'work' });
 
     expect(duplicateTagResponse.statusCode).toBe(200);
     expect(duplicateTagResponse.body.tag.id).toBe(createTagResponse.body.tag.id);
 
-    const createTaskResponse = await agent
-      .post('/api/tasks')
-      .send({ title: 'Tagged', tag: 'Work' });
+    const createTaskResponse = await agent.post('/api/tasks').send({ title: 'Tagged', tag: 'Work' });
 
     expect(createTaskResponse.statusCode).toBe(200);
     expect(createTaskResponse.body.task).toMatchObject({ tag: 'Work' });
 
-    const renameResponse = await agent
-      .put(`/api/tags/${createTagResponse.body.tag.id}`)
-      .send({ name: 'Client' });
+    const renameResponse = await agent.put(`/api/tags/${createTagResponse.body.tag.id}`).send({ name: 'Client' });
 
     expect(renameResponse.statusCode).toBe(200);
     expect(renameResponse.body.tag).toMatchObject({ name: 'Client' });
@@ -1370,21 +1234,15 @@ describe('Task API', () => {
     const owner = await createAgent(testUsername('tag-owner'));
     const otherUser = await createAgent(testUsername('tag-other'));
 
-    const missingNameResponse = await owner
-      .post('/api/tags')
-      .send({ name: '   ' });
+    const missingNameResponse = await owner.post('/api/tags').send({ name: '   ' });
     expect(missingNameResponse.statusCode).toBe(400);
     expect(missingNameResponse.body).toHaveProperty('error', 'Tag name is required');
 
-    const longNameResponse = await owner
-      .post('/api/tags')
-      .send({ name: 'x'.repeat(41) });
+    const longNameResponse = await owner.post('/api/tags').send({ name: 'x'.repeat(41) });
     expect(longNameResponse.statusCode).toBe(400);
     expect(longNameResponse.body).toHaveProperty('error', 'Tag name must be 40 characters or less');
 
-    const createResponse = await owner
-      .post('/api/tags')
-      .send({ name: 'PrivateTag' });
+    const createResponse = await owner.post('/api/tags').send({ name: 'PrivateTag' });
 
     const renameOtherResponse = await otherUser
       .put(`/api/tags/${createResponse.body.tag.id}`)
@@ -1426,33 +1284,27 @@ describe('Task API', () => {
       '-- ngoc ngo + sophia:',
       'H24344',
     ].join('\n');
-    await agent
-      .post('/api/tasks')
-      .send({
-        title: 'Email table',
-        tag: 'Client',
-        priority: 'high',
-        status: 'in_progress',
-        description,
-        comment,
-        reminder_at: '2026-05-13T09:30',
-      });
-    await agent
-      .post('/api/tasks')
-      .send({
-        title: 'Todo email',
-        tag: 'Client',
-        priority: 'medium',
-      });
+    await agent.post('/api/tasks').send({
+      title: 'Email table',
+      tag: 'Client',
+      priority: 'high',
+      status: 'in_progress',
+      description,
+      comment,
+      reminder_at: '2026-05-13T09:30',
+    });
+    await agent.post('/api/tasks').send({
+      title: 'Todo email',
+      tag: 'Client',
+      priority: 'medium',
+    });
 
     process.env.SMTP_HOST = 'smtp.test.local';
     process.env.SMTP_USER = 'sender@test.local';
     process.env.SMTP_PASS = 'secret';
     mockSendMail.mockClear();
 
-    const response = await agent
-      .post('/api/tasks/send-email')
-      .send({ language: 'vi' });
+    const response = await agent.post('/api/tasks/send-email').send({ language: 'vi' });
 
     expect(response.statusCode).toBe(200);
     expect(mockSendMail).toHaveBeenCalledTimes(1);
@@ -1460,36 +1312,42 @@ describe('Task API', () => {
     expect(mailOptions.to).toBe(`${testUsername('summary-email-owner')}@example.com`);
     expect(mailOptions.html).toContain('<table');
     expect(mailOptions.subject).toBe('Tóm tắt công việc');
-    expect(mailOptions.html).toContain('<th style="border:1px solid #d1d5db;padding:8px;background:#f3f4f6;text-align:left;">Tiêu đề</th>');
+    expect(mailOptions.html).toContain(
+      '<th style="border:1px solid #d1d5db;padding:8px;background:#f3f4f6;text-align:left;">Tiêu đề</th>',
+    );
     expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Email table</td>');
     expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Client</td>');
     expect(mailOptions.html).toContain('<td style="border:1px solid #d1d5db;padding:8px;">Cần làm</td>');
-    expect(mailOptions.html).toContain([
-      '<td style="border:1px solid #d1d5db;padding:8px;white-space:pre-line;">',
-      '- TPA -&gt; RDU',
-      '<br>-- Dung Truong : HKZMZR',
-      '<br>',
-      '<br>- RDU -&gt; TPA',
-      '<br>-- ngoc ngo + sophia:',
-      '<br>H24344',
-      '</td>',
-    ].join(''));
-    expect(mailOptions.html).toContain([
-      '<td style="border:1px solid #d1d5db;padding:8px;white-space:pre-line;">',
-      '- TPA -&gt; RDU',
-      '<br>-- Dung Truong : HKZMZR',
-      '<br>-- ngoc ngo + jennie:',
-      '<br>H282KG',
-      '<br>',
-      '<br>- RDU -&gt; TPA',
-      '<br>-- Dung Truong + jennie:',
-      '<br>H2PXRG',
-      '<br>-- ngoc ngo + sophia:',
-      '<br>H24344',
-      '<br>',
-      '<br>- da cancel : H3H2MS',
-      '</td>',
-    ].join(''));
+    expect(mailOptions.html).toContain(
+      [
+        '<td style="border:1px solid #d1d5db;padding:8px;white-space:pre-line;">',
+        '- TPA -&gt; RDU',
+        '<br>-- Dung Truong : HKZMZR',
+        '<br>',
+        '<br>- RDU -&gt; TPA',
+        '<br>-- ngoc ngo + sophia:',
+        '<br>H24344',
+        '</td>',
+      ].join(''),
+    );
+    expect(mailOptions.html).toContain(
+      [
+        '<td style="border:1px solid #d1d5db;padding:8px;white-space:pre-line;">',
+        '- TPA -&gt; RDU',
+        '<br>-- Dung Truong : HKZMZR',
+        '<br>-- ngoc ngo + jennie:',
+        '<br>H282KG',
+        '<br>',
+        '<br>- RDU -&gt; TPA',
+        '<br>-- Dung Truong + jennie:',
+        '<br>H2PXRG',
+        '<br>-- ngoc ngo + sophia:',
+        '<br>H24344',
+        '<br>',
+        '<br>- da cancel : H3H2MS',
+        '</td>',
+      ].join(''),
+    );
     expect(mailOptions.html.indexOf('Email table')).toBeLessThan(mailOptions.html.indexOf('Todo email'));
     const headerLine = mailOptions.text.split('\n').find((line) => line.startsWith('#\t'));
     expect(headerLine.split('\t')).toHaveLength(9);
@@ -1517,9 +1375,7 @@ describe('Task API', () => {
     ].join('\r\n');
     const base64Eml = Buffer.from(eml, 'utf8').toString('base64');
 
-    const response = await agent
-      .post('/api/tasks/import-email')
-      .send({ eml: base64Eml });
+    const response = await agent.post('/api/tasks/import-email').send({ eml: base64Eml });
 
     expect(response.statusCode).toBe(200);
     expect(response.body.task).toBeDefined();
@@ -1552,9 +1408,7 @@ describe('Task API', () => {
     ].join('\r\n');
     const base64Eml = Buffer.from(eml, 'utf8').toString('base64');
 
-    const response = await agent
-      .post('/api/tasks/import-email')
-      .send({ eml: base64Eml });
+    const response = await agent.post('/api/tasks/import-email').send({ eml: base64Eml });
 
     expect(response.statusCode).toBe(200);
     // The travel date in the body becomes the due date (not the email's own
@@ -1576,9 +1430,7 @@ describe('Task API', () => {
     ].join('\r\n');
     const base64Eml = Buffer.from(eml, 'utf8').toString('base64');
 
-    const response = await agent
-      .post('/api/tasks/import-email')
-      .send({ eml: base64Eml });
+    const response = await agent.post('/api/tasks/import-email').send({ eml: base64Eml });
 
     expect(response.statusCode).toBe(200);
     expect(response.body.task.title).toContain('Café');
@@ -1609,9 +1461,7 @@ describe('Task API', () => {
     ].join('\r\n');
     const base64Eml = Buffer.from(eml, 'utf8').toString('base64');
 
-    const response = await agent
-      .post('/api/tasks/import-email')
-      .send({ eml: base64Eml });
+    const response = await agent.post('/api/tasks/import-email').send({ eml: base64Eml });
 
     expect(response.statusCode).toBe(200);
     expect(response.body.task.description).toContain('Plain text body wins.');
@@ -1622,9 +1472,7 @@ describe('Task API', () => {
     const agent = await createAgent(testUsername('eml-invalid-owner'));
 
     const base64Eml = Buffer.from('this is just some random text', 'utf8').toString('base64');
-    const response = await agent
-      .post('/api/tasks/import-email')
-      .send({ eml: base64Eml });
+    const response = await agent.post('/api/tasks/import-email').send({ eml: base64Eml });
 
     expect(response.statusCode).toBe(422);
     expect(response.body.error).toMatch(/valid email/i);
@@ -1633,9 +1481,7 @@ describe('Task API', () => {
   test('requires an email payload for import', async () => {
     const agent = await createAgent(testUsername('eml-empty-owner'));
 
-    const response = await agent
-      .post('/api/tasks/import-email')
-      .send({});
+    const response = await agent.post('/api/tasks/import-email').send({});
 
     expect(response.statusCode).toBe(400);
     expect(response.body.error).toMatch(/no email file/i);
@@ -1645,9 +1491,7 @@ describe('Task API', () => {
 describe('Credit Card API', () => {
   const loginAdmin = async () => {
     const agent = request.agent(app);
-    const response = await agent
-      .post('/api/login')
-      .send({ username: 'admin', password: TEST_ADMIN_PASSWORD });
+    const response = await agent.post('/api/login').send({ username: 'admin', password: TEST_ADMIN_PASSWORD });
 
     expect(response.statusCode).toBe(200);
     expect(response.body.user).toMatchObject({ username: 'admin' });
@@ -1673,15 +1517,13 @@ describe('Credit Card API', () => {
   test('creates, lists, and updates a credit card', async () => {
     const agent = await createAgent(testUsername('credit-card-owner'));
 
-    const createResponse = await agent
-      .post('/api/credit-cards')
-      .send({
-        name: 'Chase Sapphire',
-        card_user: 'Casey',
-        issuer: 'chase',
-        total_balance: '1240.55',
-        closing_date: '2026-06-15',
-      });
+    const createResponse = await agent.post('/api/credit-cards').send({
+      name: 'Chase Sapphire',
+      card_user: 'Casey',
+      issuer: 'chase',
+      total_balance: '1240.55',
+      closing_date: '2026-06-15',
+    });
 
     expect(createResponse.statusCode).toBe(200);
     expect(createResponse.body.card).toMatchObject({
@@ -1706,15 +1548,13 @@ describe('Credit Card API', () => {
     expect(userOptionsResponse.statusCode).toBe(200);
     expect(userOptionsResponse.body.users).toEqual(expect.arrayContaining(['Casey']));
 
-    const updateResponse = await agent
-      .put(`/api/credit-cards/${createResponse.body.card.id}`)
-      .send({
-        name: 'Chase Freedom',
-        card_user: 'Morgan',
-        issuer: 'citi',
-        total_balance: '840.10',
-        closing_date: '2026-07-20',
-      });
+    const updateResponse = await agent.put(`/api/credit-cards/${createResponse.body.card.id}`).send({
+      name: 'Chase Freedom',
+      card_user: 'Morgan',
+      issuer: 'citi',
+      total_balance: '840.10',
+      closing_date: '2026-07-20',
+    });
 
     expect(updateResponse.statusCode).toBe(200);
     expect(updateResponse.body.card).toMatchObject({
@@ -1723,7 +1563,7 @@ describe('Credit Card API', () => {
       issuer: 'citi',
       closing_date: '2026-07-20',
     });
-    expect(Number(updateResponse.body.card.total_balance)).toBeCloseTo(840.10);
+    expect(Number(updateResponse.body.card.total_balance)).toBeCloseTo(840.1);
   });
 
   test('lists credit cards owned by the admin account for admin login', async () => {
@@ -1734,14 +1574,12 @@ describe('Credit Card API', () => {
       `INSERT INTO credit_cards (user_id, name, total_balance, closing_date, card_user, issuer)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id`,
-      [adminId, cardName, '123.45', '2026-06-15', 'admin', 'chase']
+      [adminId, cardName, '123.45', '2026-06-15', 'admin', 'chase'],
     );
 
     try {
       const agent = request.agent(app);
-      const loginResponse = await agent
-        .post('/api/login')
-        .send({ username: 'admin', password: TEST_ADMIN_PASSWORD });
+      const loginResponse = await agent.post('/api/login').send({ username: 'admin', password: TEST_ADMIN_PASSWORD });
 
       expect(loginResponse.statusCode).toBe(200);
 
@@ -1755,7 +1593,7 @@ describe('Credit Card API', () => {
             issuer: 'chase',
             closing_date: '2026-06-15',
           }),
-        ])
+        ]),
       );
     } finally {
       await db.query('DELETE FROM credit_cards WHERE id = $1', [insertedCard.rows[0].id]);
@@ -1813,8 +1651,7 @@ describe('Credit Card API', () => {
     expect(otherUpdateResponse.statusCode).toBe(404);
     expect(otherUpdateResponse.body).toHaveProperty('error', 'Credit card not found');
 
-    const otherDeleteResponse = await otherAgent
-      .delete(`/api/credit-cards/${createResponse.body.card.id}`);
+    const otherDeleteResponse = await otherAgent.delete(`/api/credit-cards/${createResponse.body.card.id}`);
     expect(otherDeleteResponse.statusCode).toBe(404);
     expect(otherDeleteResponse.body).toHaveProperty('error', 'Credit card not found');
   });
@@ -1854,12 +1691,12 @@ describe('Credit Card API', () => {
        FROM fast_access_bill_defaults
        ORDER BY sort_order
        LIMIT 1`,
-      [userResponse.body.user.id]
+      [userResponse.body.user.id],
     );
     await db.query(
       `INSERT INTO fast_access_bills (user_id, item, amount, due_date, pay_before, status, sort_order)
        VALUES ($1, 'Custom user bill', 25.00, '2026-06-20', '', 'Unpaid', 99)`,
-      [userResponse.body.user.id]
+      [userResponse.body.user.id],
     );
 
     const userFilteredListResponse = await userAgent.get('/api/credit-cards/fast-access-bills');
@@ -1869,9 +1706,7 @@ describe('Credit Card API', () => {
     const adminListResponse = await adminAgent.get('/api/credit-cards/fast-access-bills');
     expect(adminListResponse.statusCode).toBe(200);
 
-    const defaultBills = await db.query(
-      'SELECT COUNT(*)::int AS count FROM fast_access_bill_defaults'
-    );
+    const defaultBills = await db.query('SELECT COUNT(*)::int AS count FROM fast_access_bill_defaults');
     expect(adminListResponse.body.bills.length).toBeGreaterThanOrEqual(defaultBills.rows[0].count);
   });
 
@@ -1912,34 +1747,34 @@ describe('Credit Card API', () => {
 
     const updatedResponse = await regularAgent.get('/api/credit-cards/fast-access-links');
     expect(updatedResponse.body.links).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ label, url: 'https://example.com/portal' }),
-      ])
+      expect.arrayContaining([expect.objectContaining({ label, url: 'https://example.com/portal' })]),
     );
 
     const otherListResponse = await otherAgent.get('/api/credit-cards/fast-access-links');
     expect(otherListResponse.statusCode).toBe(200);
     expect(otherListResponse.body.links).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ label, url: 'https://example.com/portal' }),
-      ])
+      expect.arrayContaining([expect.objectContaining({ label, url: 'https://example.com/portal' })]),
     );
 
-    const otherDeleteResponse = await otherAgent.delete(`/api/credit-cards/fast-access-links/${createResponse.body.link.id}`);
+    const otherDeleteResponse = await otherAgent.delete(
+      `/api/credit-cards/fast-access-links/${createResponse.body.link.id}`,
+    );
     expect(otherDeleteResponse.statusCode).toBe(404);
 
-    const deleteResponse = await regularAgent.delete(`/api/credit-cards/fast-access-links/${createResponse.body.link.id}`);
+    const deleteResponse = await regularAgent.delete(
+      `/api/credit-cards/fast-access-links/${createResponse.body.link.id}`,
+    );
     expect(deleteResponse.statusCode).toBe(200);
     expect(deleteResponse.body).toEqual({ success: true });
 
     const deletedListResponse = await regularAgent.get('/api/credit-cards/fast-access-links');
     expect(deletedListResponse.body.links).not.toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ id: createResponse.body.link.id }),
-      ])
+      expect.arrayContaining([expect.objectContaining({ id: createResponse.body.link.id })]),
     );
 
-    const repeatDeleteResponse = await regularAgent.delete(`/api/credit-cards/fast-access-links/${createResponse.body.link.id}`);
+    const repeatDeleteResponse = await regularAgent.delete(
+      `/api/credit-cards/fast-access-links/${createResponse.body.link.id}`,
+    );
     expect(repeatDeleteResponse.statusCode).toBe(404);
   });
 
@@ -1952,7 +1787,7 @@ describe('Credit Card API', () => {
       `INSERT INTO fast_access_bills (user_id, item, amount, due_date, pay_before, status, sort_order)
        VALUES ($1, 'Internet', 80.00, '2026-06-15', '', 'Unpaid', 1)
        RETURNING id, item`,
-      [ownerResponse.body.user.id]
+      [ownerResponse.body.user.id],
     );
     const internet = insertResponse.rows[0];
 
@@ -1970,15 +1805,13 @@ describe('Credit Card API', () => {
     expect(invalidAmountResponse.statusCode).toBe(400);
     expect(invalidAmountResponse.body).toHaveProperty('error', 'Amount must be a valid amount');
 
-    const updateResponse = await ownerAgent
-      .put(`/api/credit-cards/fast-access-bills/${internet.id}`)
-      .send({
-        item: 'Internet fiber',
-        amount: '75.25',
-        due_date: '2026-07-15',
-        pay_before: '2026-07-10',
-        status: 'Unpaid',
-      });
+    const updateResponse = await ownerAgent.put(`/api/credit-cards/fast-access-bills/${internet.id}`).send({
+      item: 'Internet fiber',
+      amount: '75.25',
+      due_date: '2026-07-15',
+      pay_before: '2026-07-10',
+      status: 'Unpaid',
+    });
 
     expect(updateResponse.statusCode).toBe(200);
     expect(updateResponse.body.bill).toMatchObject({
@@ -2001,9 +1834,7 @@ describe('Credit Card API', () => {
 describe('Transactions API', () => {
   const loginAdmin = async () => {
     const agent = request.agent(app);
-    const response = await agent
-      .post('/api/login')
-      .send({ username: 'admin', password: TEST_ADMIN_PASSWORD });
+    const response = await agent.post('/api/login').send({ username: 'admin', password: TEST_ADMIN_PASSWORD });
 
     expect(response.statusCode).toBe(200);
     expect(response.body.user).toMatchObject({ username: 'admin' });
@@ -2039,13 +1870,21 @@ describe('Transactions API', () => {
 
     const adminListResponse = await adminAgent.get('/api/transactions?year=2026&month=6');
     expect(adminListResponse.statusCode).toBe(200);
-    expect(adminListResponse.body.transactions.map((transaction) => transaction.category)).toContain(`${RUN_ID}-Admin only`);
-    expect(adminListResponse.body.transactions.map((transaction) => transaction.category)).not.toContain(`${RUN_ID}-User only`);
+    expect(adminListResponse.body.transactions.map((transaction) => transaction.category)).toContain(
+      `${RUN_ID}-Admin only`,
+    );
+    expect(adminListResponse.body.transactions.map((transaction) => transaction.category)).not.toContain(
+      `${RUN_ID}-User only`,
+    );
 
     const userListResponse = await userAgent.get('/api/transactions?year=2026&month=6');
     expect(userListResponse.statusCode).toBe(200);
-    expect(userListResponse.body.transactions.map((transaction) => transaction.category)).toContain(`${RUN_ID}-User only`);
-    expect(userListResponse.body.transactions.map((transaction) => transaction.category)).not.toContain(`${RUN_ID}-Admin only`);
+    expect(userListResponse.body.transactions.map((transaction) => transaction.category)).toContain(
+      `${RUN_ID}-User only`,
+    );
+    expect(userListResponse.body.transactions.map((transaction) => transaction.category)).not.toContain(
+      `${RUN_ID}-Admin only`,
+    );
   });
 });
 
@@ -2054,15 +1893,11 @@ describe('Notes API', () => {
     const agent = await createAgent(testUsername('notes-owner'));
     const otherAgent = await createAgent(testUsername('notes-other-owner'));
 
-    const taskResponse = await agent
-      .post('/api/tasks')
-      .send({ title: 'Pay utility bill' });
+    const taskResponse = await agent.post('/api/tasks').send({ title: 'Pay utility bill' });
     expect(taskResponse.statusCode).toBe(200);
     const taskId = taskResponse.body.task.id;
 
-    const otherTaskResponse = await otherAgent
-      .post('/api/tasks')
-      .send({ title: 'Other task' });
+    const otherTaskResponse = await otherAgent.post('/api/tasks').send({ title: 'Other task' });
     expect(otherTaskResponse.statusCode).toBe(200);
 
     const forbiddenLinkResponse = await agent
@@ -2124,26 +1959,26 @@ describe('Weather API', () => {
   test('caches saved weather cities per user', async () => {
     const agent = await createAgent(testUsername('weather-owner'));
 
-    const saveResponse = await agent
-      .post('/api/weather-cities')
-      .send({
-        name: 'New York',
-        latitude: 40.7128,
-        longitude: -74.006,
-        weather_key: `${RUN_ID}-new-york`,
-      });
+    const saveResponse = await agent.post('/api/weather-cities').send({
+      name: 'New York',
+      latitude: 40.7128,
+      longitude: -74.006,
+      weather_key: `${RUN_ID}-new-york`,
+    });
     expect(saveResponse.statusCode).toBe(200);
 
     const listResponse = await agent.get('/api/weather-cities');
     expect(listResponse.statusCode).toBe(200);
     expect(['BYPASS', 'HIT', 'MISS']).toContain(listResponse.headers['x-redis-cache']);
     expect(listResponse.headers['x-weather-cache-ttl']).toMatch(/^\d+$/);
-    expect(listResponse.body.cities).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        name: 'New York',
-        weather_key: `${RUN_ID}-new-york`,
-      }),
-    ]));
+    expect(listResponse.body.cities).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'New York',
+          weather_key: `${RUN_ID}-new-york`,
+        }),
+      ]),
+    );
   });
 });
 
@@ -2157,54 +1992,42 @@ describe('Audit Log API', () => {
     expect(meResponse.statusCode).toBe(200);
     const userId = meResponse.body.user.id;
 
-    const taskCreate = await agent
-      .post('/api/tasks')
-      .send({ title: 'Audit task', priority: 'low' });
+    const taskCreate = await agent.post('/api/tasks').send({ title: 'Audit task', priority: 'low' });
     expect(taskCreate.statusCode).toBe(200);
     const taskId = taskCreate.body.task.id;
 
-    const taskUpdate = await agent
-      .put(`/api/tasks/${taskId}`)
-      .send({ title: 'Audit task edited' });
+    const taskUpdate = await agent.put(`/api/tasks/${taskId}`).send({ title: 'Audit task edited' });
     expect(taskUpdate.statusCode).toBe(200);
 
-    const transactionCreate = await agent
-      .post('/api/transactions')
-      .send({
-        occurred_on: '2026-06-03',
-        kind: 'expense',
-        amount: '42.25',
-        category: `${RUN_ID} audit transaction`,
-        account: 'Checking',
-      });
+    const transactionCreate = await agent.post('/api/transactions').send({
+      occurred_on: '2026-06-03',
+      kind: 'expense',
+      amount: '42.25',
+      category: `${RUN_ID} audit transaction`,
+      account: 'Checking',
+    });
     expect(transactionCreate.statusCode).toBe(200);
     const transactionId = transactionCreate.body.transaction.id;
 
-    const transactionUpdate = await agent
-      .put(`/api/transactions/${transactionId}`)
-      .send({ note: 'audit edit' });
+    const transactionUpdate = await agent.put(`/api/transactions/${transactionId}`).send({ note: 'audit edit' });
     expect(transactionUpdate.statusCode).toBe(200);
 
-    const cardCreate = await agent
-      .post('/api/credit-cards')
-      .send({
-        name: `${RUN_ID} card`,
-        total_balance: '25.00',
-        closing_date: '2026-06-20',
-      });
+    const cardCreate = await agent.post('/api/credit-cards').send({
+      name: `${RUN_ID} card`,
+      total_balance: '25.00',
+      closing_date: '2026-06-20',
+    });
     expect(cardCreate.statusCode).toBe(200);
     const cardId = cardCreate.body.card.id;
 
-    const cardUpdate = await agent
-      .put(`/api/credit-cards/${cardId}`)
-      .send({ total_balance: '30.00' });
+    const cardUpdate = await agent.put(`/api/credit-cards/${cardId}`).send({ total_balance: '30.00' });
     expect(cardUpdate.statusCode).toBe(200);
 
     const expenseInsert = await db.query(
       `INSERT INTO fast_access_bills (user_id, item, amount, due_date, pay_before, status, sort_order)
        VALUES ($1, $2, 10.00, '2026-06-10', '', 'Unpaid', 500)
        RETURNING id`,
-      [userId, `${RUN_ID} expense`]
+      [userId, `${RUN_ID} expense`],
     );
     const expenseId = expenseInsert.rows[0].id;
 
@@ -2213,9 +2036,7 @@ describe('Audit Log API', () => {
       .send({ amount: '15.00', status: 'Paid' });
     expect(expenseUpdate.statusCode).toBe(200);
 
-    const noteCreate = await agent
-      .post('/api/notes')
-      .send({ title: `${RUN_ID} audit note`, body: 'draft' });
+    const noteCreate = await agent.post('/api/notes').send({ title: `${RUN_ID} audit note`, body: 'draft' });
     expect(noteCreate.statusCode).toBe(200);
     const noteId = noteCreate.body.note.id;
 
@@ -2240,45 +2061,43 @@ describe('Audit Log API', () => {
       actor_username: log.actor_username,
     }));
 
-    expect(compactLogs).toEqual(expect.arrayContaining([
-      { action: 'register', entity_type: 'user', entity_id: userId, username, actor_username: username },
-      { action: 'login', entity_type: 'user', entity_id: userId, username, actor_username: username },
-      { action: 'create', entity_type: 'task', entity_id: taskId, username, actor_username: username },
-      { action: 'edit', entity_type: 'task', entity_id: taskId, username, actor_username: username },
-      { action: 'delete', entity_type: 'task', entity_id: taskId, username, actor_username: username },
-      { action: 'create', entity_type: 'transaction', entity_id: transactionId, username, actor_username: username },
-      { action: 'edit', entity_type: 'transaction', entity_id: transactionId, username, actor_username: username },
-      { action: 'delete', entity_type: 'transaction', entity_id: transactionId, username, actor_username: username },
-      { action: 'create', entity_type: 'credit_card', entity_id: cardId, username, actor_username: username },
-      { action: 'edit', entity_type: 'credit_card', entity_id: cardId, username, actor_username: username },
-      { action: 'delete', entity_type: 'credit_card', entity_id: cardId, username, actor_username: username },
-      { action: 'edit', entity_type: 'expense', entity_id: expenseId, username, actor_username: username },
-      { action: 'create', entity_type: 'note', entity_id: noteId, username, actor_username: username },
-      { action: 'edit', entity_type: 'note', entity_id: noteId, username, actor_username: username },
-      { action: 'delete', entity_type: 'note', entity_id: noteId, username, actor_username: username },
-    ]));
+    expect(compactLogs).toEqual(
+      expect.arrayContaining([
+        { action: 'register', entity_type: 'user', entity_id: userId, username, actor_username: username },
+        { action: 'login', entity_type: 'user', entity_id: userId, username, actor_username: username },
+        { action: 'create', entity_type: 'task', entity_id: taskId, username, actor_username: username },
+        { action: 'edit', entity_type: 'task', entity_id: taskId, username, actor_username: username },
+        { action: 'delete', entity_type: 'task', entity_id: taskId, username, actor_username: username },
+        { action: 'create', entity_type: 'transaction', entity_id: transactionId, username, actor_username: username },
+        { action: 'edit', entity_type: 'transaction', entity_id: transactionId, username, actor_username: username },
+        { action: 'delete', entity_type: 'transaction', entity_id: transactionId, username, actor_username: username },
+        { action: 'create', entity_type: 'credit_card', entity_id: cardId, username, actor_username: username },
+        { action: 'edit', entity_type: 'credit_card', entity_id: cardId, username, actor_username: username },
+        { action: 'delete', entity_type: 'credit_card', entity_id: cardId, username, actor_username: username },
+        { action: 'edit', entity_type: 'expense', entity_id: expenseId, username, actor_username: username },
+        { action: 'create', entity_type: 'note', entity_id: noteId, username, actor_username: username },
+        { action: 'edit', entity_type: 'note', entity_id: noteId, username, actor_username: username },
+        { action: 'delete', entity_type: 'note', entity_id: noteId, username, actor_username: username },
+      ]),
+    );
 
     const managedUsername = testUsername('audit-managed-user');
-    const managedCreate = await adminAgent
-      .post('/api/admin/users')
-      .send({
-        username: managedUsername,
-        name: 'Managed User',
-        email: `${managedUsername}@example.com`,
-        password: 'Password123!',
-        account_status: 'enabled',
-      });
+    const managedCreate = await adminAgent.post('/api/admin/users').send({
+      username: managedUsername,
+      name: 'Managed User',
+      email: `${managedUsername}@example.com`,
+      password: 'Password123!',
+      account_status: 'enabled',
+    });
     expect(managedCreate.statusCode).toBe(200);
     const managedUserId = managedCreate.body.user.id;
 
-    const managedUpdate = await adminAgent
-      .put(`/api/admin/users/${managedUserId}`)
-      .send({
-        username: managedUsername,
-        name: 'Managed User Edited',
-        email: `${managedUsername}@example.com`,
-        account_status: 'disabled',
-      });
+    const managedUpdate = await adminAgent.put(`/api/admin/users/${managedUserId}`).send({
+      username: managedUsername,
+      name: 'Managed User Edited',
+      email: `${managedUsername}@example.com`,
+      account_status: 'disabled',
+    });
     expect(managedUpdate.statusCode).toBe(200);
 
     const managedDelete = await adminAgent.delete(`/api/admin/users/${managedUserId}`);
@@ -2294,11 +2113,13 @@ describe('Audit Log API', () => {
         entity_id: log.entity_id,
         actor_username: log.actor_username,
       }));
-    expect(managedLogs).toEqual(expect.arrayContaining([
-      { action: 'create', entity_type: 'user', entity_id: managedUserId, actor_username: 'admin' },
-      { action: 'edit', entity_type: 'user', entity_id: managedUserId, actor_username: 'admin' },
-      { action: 'delete', entity_type: 'user', entity_id: managedUserId, actor_username: 'admin' },
-    ]));
+    expect(managedLogs).toEqual(
+      expect.arrayContaining([
+        { action: 'create', entity_type: 'user', entity_id: managedUserId, actor_username: 'admin' },
+        { action: 'edit', entity_type: 'user', entity_id: managedUserId, actor_username: 'admin' },
+        { action: 'delete', entity_type: 'user', entity_id: managedUserId, actor_username: 'admin' },
+      ]),
+    );
 
     const taskOnlyResponse = await adminAgent.get('/api/admin/audit-logs?entity_type=task&action=delete&limit=10');
     expect(taskOnlyResponse.statusCode).toBe(200);
@@ -2330,11 +2151,11 @@ describe('Audit Log API', () => {
          jsonb_build_object('seed', true, 'row', n),
          CURRENT_TIMESTAMP - (n || ' minutes')::interval
        FROM seed`,
-      [ownerId, seedPrefix]
+      [ownerId, seedPrefix],
     );
 
     const pageTwoResponse = await adminAgent.get(
-      `/api/admin/audit-logs?user_id=${ownerId}&entity_type=note&action=edit&limit=10&page=2`
+      `/api/admin/audit-logs?user_id=${ownerId}&entity_type=note&action=edit&limit=10&page=2`,
     );
     expect(pageTwoResponse.statusCode).toBe(200);
     expect(pageTwoResponse.body.logs).toHaveLength(10);
@@ -2348,7 +2169,7 @@ describe('Audit Log API', () => {
     expect(pageTwoResponse.body.logs.some((log) => log.summary === `${seedPrefix}11`)).toBe(true);
 
     const searchResponse = await adminAgent.get(
-      `/api/admin/audit-logs?q=${encodeURIComponent(`${seedPrefix}35`)}&limit=10`
+      `/api/admin/audit-logs?q=${encodeURIComponent(`${seedPrefix}35`)}&limit=10`,
     );
     expect(searchResponse.statusCode).toBe(200);
     expect(searchResponse.body.pagination.total).toBe(1);
@@ -2363,9 +2184,7 @@ describe('Audit Log API', () => {
 describe('Admin API', () => {
   const loginAdmin = async () => {
     const agent = request.agent(app);
-    const response = await agent
-      .post('/api/login')
-      .send({ username: 'admin', password: TEST_ADMIN_PASSWORD });
+    const response = await agent.post('/api/login').send({ username: 'admin', password: TEST_ADMIN_PASSWORD });
 
     expect(response.statusCode).toBe(200);
     expect(response.body.user).toMatchObject({ username: 'admin' });
@@ -2412,13 +2231,9 @@ describe('Admin API', () => {
       .send({ username: managedUsername, password: 'Initial123!' });
     expect(managedLoginResponse.statusCode).toBe(200);
 
-    await managedAgent
-      .post('/api/tasks')
-      .send({ title: 'Owned task' });
+    await managedAgent.post('/api/tasks').send({ title: 'Owned task' });
 
-    await managedAgent
-      .post('/api/notes')
-      .send({ title: 'Owned note', body: 'hello' });
+    await managedAgent.post('/api/notes').send({ title: 'Owned note', body: 'hello' });
 
     const listResponse = await admin.get('/api/admin/users');
     expect(listResponse.statusCode).toBe(200);
@@ -2497,21 +2312,15 @@ describe('Admin API', () => {
   test('validates admin user management edge cases', async () => {
     const admin = await loginAdmin();
 
-    const missingCreateResponse = await admin
-      .post('/api/admin/users')
-      .send({ username: '' });
+    const missingCreateResponse = await admin.post('/api/admin/users').send({ username: '' });
     expect(missingCreateResponse.statusCode).toBe(400);
     expect(missingCreateResponse.body).toHaveProperty('error', 'Username and password are required');
 
-    const missingUpdateResponse = await admin
-      .put('/api/admin/users/999999')
-      .send({ username: '' });
+    const missingUpdateResponse = await admin.put('/api/admin/users/999999').send({ username: '' });
     expect(missingUpdateResponse.statusCode).toBe(400);
     expect(missingUpdateResponse.body).toHaveProperty('error', 'Username is required');
 
-    const missingPasswordResponse = await admin
-      .put('/api/admin/users/999999/password')
-      .send({ password: '' });
+    const missingPasswordResponse = await admin.put('/api/admin/users/999999/password').send({ password: '' });
     expect(missingPasswordResponse.statusCode).toBe(400);
     expect(missingPasswordResponse.body).toHaveProperty('error', 'Password is required');
 
@@ -2553,9 +2362,7 @@ describe('Admin API', () => {
     expect(createUserResponse.statusCode).toBe(200);
     const targetUserId = createUserResponse.body.user.id;
 
-    const impersonateResponse = await admin
-      .post('/api/admin/impersonate')
-      .send({ user_id: targetUserId });
+    const impersonateResponse = await admin.post('/api/admin/impersonate').send({ user_id: targetUserId });
     expect(impersonateResponse.statusCode).toBe(200);
     expect(impersonateResponse.body.user).toMatchObject({
       id: targetUserId,
@@ -2575,9 +2382,7 @@ describe('Admin API', () => {
     expect(adminWhileImpersonatingResponse.statusCode).toBe(403);
     expect(adminWhileImpersonatingResponse.body).toHaveProperty('error', 'Admin access required');
 
-    const taskResponse = await admin
-      .post('/api/tasks')
-      .send({ title: 'Impersonated task' });
+    const taskResponse = await admin.post('/api/tasks').send({ title: 'Impersonated task' });
     expect(taskResponse.statusCode).toBe(200);
 
     const stopResponse = await admin.post('/api/impersonation/stop');
@@ -2596,7 +2401,6 @@ describe('Admin API', () => {
     });
   });
 });
-
 
 describe('Dashboard API', () => {
   test('requires authentication for the dashboard endpoints', async () => {
@@ -2624,7 +2428,15 @@ describe('Dashboard API', () => {
     expect(response.body).toHaveProperty('preferences.defaultLanding', 'today');
 
     const cards = response.body.cards;
-    for (const id of ['todaysTasks', 'taskStatusSummary', 'recentNotes', 'bills', 'creditCards', 'weather', 'dailyQuote']) {
+    for (const id of [
+      'todaysTasks',
+      'taskStatusSummary',
+      'recentNotes',
+      'bills',
+      'creditCards',
+      'weather',
+      'dailyQuote',
+    ]) {
       expect(cards).toHaveProperty(id);
       expect(cards[id]).toHaveProperty('ok');
     }
@@ -2650,7 +2462,7 @@ describe('Dashboard API', () => {
     await db.query(
       `INSERT INTO tasks (user_id, title, priority, status, archived, reminder_at)
        VALUES ($1, $2, 'medium', 'in_progress', 0, NULL)`,
-      [userId, `${RUN_ID}-tz-task`]
+      [userId, `${RUN_ID}-tz-task`],
     );
 
     const nyResponse = await agent.get('/api/dashboard?tz=America/New_York');
@@ -2682,12 +2494,12 @@ describe('Dashboard API', () => {
     await db.query(
       `INSERT INTO fast_access_bills (user_id, item, amount, due_date, status, sort_order)
        VALUES ($1, $2, 25.00, $3, 'Unpaid', 1001)`,
-      [userId, `${RUN_ID}-bill-2d`, addDays(2)]
+      [userId, `${RUN_ID}-bill-2d`, addDays(2)],
     );
     await db.query(
       `INSERT INTO fast_access_bills (user_id, item, amount, due_date, status, sort_order)
        VALUES ($1, $2, 25.00, $3, 'Unpaid', 1002)`,
-      [userId, `${RUN_ID}-bill-10d`, addDays(10)]
+      [userId, `${RUN_ID}-bill-10d`, addDays(10)],
     );
 
     const tightResponse = await agent.get('/api/dashboard?dueSoonDays=3');
@@ -2711,10 +2523,11 @@ describe('Dashboard API', () => {
     const userId = meResponse.body.user.id;
 
     const longBody = 'x'.repeat(500);
-    await db.query(
-      'INSERT INTO notes (user_id, title, body) VALUES ($1, $2, $3)',
-      [userId, `${RUN_ID}-long`, longBody]
-    );
+    await db.query('INSERT INTO notes (user_id, title, body) VALUES ($1, $2, $3)', [
+      userId,
+      `${RUN_ID}-long`,
+      longBody,
+    ]);
 
     const response = await agent.get('/api/dashboard');
     expect(response.statusCode).toBe(200);
@@ -2733,7 +2546,7 @@ describe('Dashboard API', () => {
     await db.query(
       `INSERT INTO tasks (user_id, title, description, comment, priority, status, archived, reminder_at)
        VALUES ($1, $2, 'sensitive desc', 'private comment', 'medium', 'in_progress', 0, NULL)`,
-      [userId, `${RUN_ID}-proj`]
+      [userId, `${RUN_ID}-proj`],
     );
 
     const response = await agent.get('/api/dashboard');
@@ -2756,15 +2569,13 @@ describe('Dashboard API', () => {
       version: 1,
       defaultLanding: 'last_used',
       cards: [
-        { id: 'recentNotes',       visible: true,  order: 0 },
-        { id: 'todaysTasks',       visible: true,  order: 1 },
+        { id: 'recentNotes', visible: true, order: 0 },
+        { id: 'todaysTasks', visible: true, order: 1 },
         { id: 'taskStatusSummary', visible: false, order: 2 },
       ],
     };
 
-    const putResponse = await agent
-      .put('/api/dashboard/preferences')
-      .send(newPrefs);
+    const putResponse = await agent.put('/api/dashboard/preferences').send(newPrefs);
     expect(putResponse.statusCode).toBe(200);
     expect(putResponse.body.preferences.defaultLanding).toBe('last_used');
     const savedOrder = putResponse.body.preferences.cards.map((c) => c.id);

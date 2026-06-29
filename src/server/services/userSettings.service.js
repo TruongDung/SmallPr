@@ -13,9 +13,7 @@ const toBoolean = (value, fallback) => {
 
 const normalizeSettingsPayload = (payload = {}, existing = DEFAULT_LUNAR_SETTINGS) => {
   const reminderDaysBefore = payload.reminder_days_before ?? payload.reminderDaysBefore;
-  const parsedDays = reminderDaysBefore === undefined
-    ? existing.reminder_days_before
-    : Number(reminderDaysBefore);
+  const parsedDays = reminderDaysBefore === undefined ? existing.reminder_days_before : Number(reminderDaysBefore);
 
   if (!Number.isInteger(parsedDays) || parsedDays < 0 || parsedDays > 30) {
     return { error: 'Reminder days before must be between 0 and 30' };
@@ -24,20 +22,14 @@ const normalizeSettingsPayload = (payload = {}, existing = DEFAULT_LUNAR_SETTING
   const settings = {
     enable_lunar_reminder: toBoolean(
       payload.enable_lunar_reminder ?? payload.enableLunarReminder,
-      existing.enable_lunar_reminder
+      existing.enable_lunar_reminder,
     ),
     reminder_days_before: parsedDays,
-    remind_lunar_day1: toBoolean(
-      payload.remind_lunar_day1 ?? payload.remindLunarDay1,
-      existing.remind_lunar_day1
-    ),
-    remind_lunar_day15: toBoolean(
-      payload.remind_lunar_day15 ?? payload.remindLunarDay15,
-      existing.remind_lunar_day15
-    ),
+    remind_lunar_day1: toBoolean(payload.remind_lunar_day1 ?? payload.remindLunarDay1, existing.remind_lunar_day1),
+    remind_lunar_day15: toBoolean(payload.remind_lunar_day15 ?? payload.remindLunarDay15, existing.remind_lunar_day15),
     show_lunar_dates_in_calendar: toBoolean(
       payload.show_lunar_dates_in_calendar ?? payload.showLunarDatesInCalendar,
-      existing.show_lunar_dates_in_calendar
+      existing.show_lunar_dates_in_calendar,
     ),
   };
 
@@ -55,8 +47,7 @@ const mapSettingsRow = (row = {}) => ({
   reminder_days_before: row.reminder_days_before ?? DEFAULT_LUNAR_SETTINGS.reminder_days_before,
   remind_lunar_day1: row.remind_lunar_day1 ?? DEFAULT_LUNAR_SETTINGS.remind_lunar_day1,
   remind_lunar_day15: row.remind_lunar_day15 ?? DEFAULT_LUNAR_SETTINGS.remind_lunar_day15,
-  show_lunar_dates_in_calendar: row.show_lunar_dates_in_calendar
-    ?? DEFAULT_LUNAR_SETTINGS.show_lunar_dates_in_calendar,
+  show_lunar_dates_in_calendar: row.show_lunar_dates_in_calendar ?? DEFAULT_LUNAR_SETTINGS.show_lunar_dates_in_calendar,
 });
 
 const createUserSettingsService = ({ allAsync, getAsync, runAsync }) => {
@@ -66,7 +57,7 @@ const createUserSettingsService = ({ allAsync, getAsync, runAsync }) => {
        VALUES (?)
        ON CONFLICT (user_id) DO NOTHING
        RETURNING user_id`,
-      [userId]
+      [userId],
     );
   };
 
@@ -80,7 +71,7 @@ const createUserSettingsService = ({ allAsync, getAsync, runAsync }) => {
               show_lunar_dates_in_calendar
        FROM user_settings
        WHERE user_id = ?`,
-      [userId]
+      [userId],
     );
     return mapSettingsRow(row);
   };
@@ -117,14 +108,15 @@ const createUserSettingsService = ({ allAsync, getAsync, runAsync }) => {
         settings.remind_lunar_day1,
         settings.remind_lunar_day15,
         settings.show_lunar_dates_in_calendar,
-      ]
+      ],
     );
 
     return { value: settings };
   };
 
-  const listUsersWithLunarRemindersEnabled = () => allAsync(
-    `SELECT users.id AS user_id,
+  const listUsersWithLunarRemindersEnabled = () =>
+    allAsync(
+      `SELECT users.id AS user_id,
             COALESCE(users.timezone, ?) AS timezone,
             user_settings.enable_lunar_reminder,
             user_settings.reminder_days_before,
@@ -135,8 +127,8 @@ const createUserSettingsService = ({ allAsync, getAsync, runAsync }) => {
      JOIN users ON users.id = user_settings.user_id
      WHERE user_settings.enable_lunar_reminder = TRUE
        AND users.account_status = 'enabled'`,
-    ['Asia/Ho_Chi_Minh']
-  );
+      ['Asia/Ho_Chi_Minh'],
+    );
 
   return {
     getSettingsForUser,

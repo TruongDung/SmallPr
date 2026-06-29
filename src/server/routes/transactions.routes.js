@@ -36,7 +36,7 @@ const createTransactionsRouter = ({ authRequired, auditLogs, allAsync, getAsync,
       const summary = await transactions.getSummary(
         req.session.userId,
         month ? Number(month) : null,
-        year ? Number(year) : null
+        year ? Number(year) : null,
       );
       res.json({ summary });
     } catch (error) {
@@ -48,7 +48,7 @@ const createTransactionsRouter = ({ authRequired, auditLogs, allAsync, getAsync,
   router.get('/categories', async (req, res) => {
     try {
       const categories = await transactions.getCategoriesForUser(req.session.userId);
-      res.json({ categories: categories.map(c => c.category) });
+      res.json({ categories: categories.map((c) => c.category) });
     } catch (error) {
       logger.error({ err: error }, 'Failed to load categories');
       res.status(500).json({ error: 'Failed to load categories' });

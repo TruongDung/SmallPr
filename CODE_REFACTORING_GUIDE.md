@@ -8,14 +8,14 @@ This document explains the code refactoring improvements made to the Task Manage
 
 ### Before & After Metrics
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| Try-Catch Blocks | 40+ duplicated | 0 (middleware handles) | -150 lines |
-| Error Handling Code | Duplicated everywhere | Centralized | -120 lines |
-| Cache Key Building | 4 duplicate functions | 1 reusable utility | -60 lines |
-| Audit Logging | 40+ manual calls | Decorator pattern | -80 lines |
-| Validation Logic | Scattered | Centralized | +consistency |
-| Response Formatting | Inconsistent | Standardized | +maintainability |
+| Metric              | Before                | After                  | Improvement      |
+| ------------------- | --------------------- | ---------------------- | ---------------- |
+| Try-Catch Blocks    | 40+ duplicated        | 0 (middleware handles) | -150 lines       |
+| Error Handling Code | Duplicated everywhere | Centralized            | -120 lines       |
+| Cache Key Building  | 4 duplicate functions | 1 reusable utility     | -60 lines        |
+| Audit Logging       | 40+ manual calls      | Decorator pattern      | -80 lines        |
+| Validation Logic    | Scattered             | Centralized            | +consistency     |
+| Response Formatting | Inconsistent          | Standardized           | +maintainability |
 
 **Total Lines Reduced**: ~410 lines of boilerplate code eliminated
 
@@ -26,6 +26,7 @@ This document explains the code refactoring improvements made to the Task Manage
 **Problem**: Every route had identical try-catch blocks
 
 **Before**:
+
 ```javascript
 router.get('/tasks', async (req, res) => {
   try {
@@ -39,14 +40,19 @@ router.get('/tasks', async (req, res) => {
 ```
 
 **After**:
+
 ```javascript
-router.get('/tasks', asyncHandler(async (req, res) => {
-  const tasks = await tasksService.getTasks(req.session.userId);
-  sendSuccess(res, { tasks });
-}));
+router.get(
+  '/tasks',
+  asyncHandler(async (req, res) => {
+    const tasks = await tasksService.getTasks(req.session.userId);
+    sendSuccess(res, { tasks });
+  }),
+);
 ```
 
 **Benefits**:
+
 - ✅ No more try-catch boilerplate
 - ✅ Automatic error logging
 - ✅ Consistent error responses
@@ -57,10 +63,10 @@ router.get('/tasks', asyncHandler(async (req, res) => {
 **Problem**: Cache key building and cache-aside pattern duplicated
 
 **Before**:
+
 ```javascript
-const buildTaskListCacheKey = ({ userId, archived }) => [
-  'user', userId, 'tasks', 'v1', archived ? 'archived' : 'active'
-].join(':');
+const buildTaskListCacheKey = ({ userId, archived }) =>
+  ['user', userId, 'tasks', 'v1', archived ? 'archived' : 'active'].join(':');
 
 const cached = await cache?.getJson?.(cacheKey);
 if (cached) {
@@ -73,6 +79,7 @@ sendCachedJson({ res, payload: data, cacheStatus: wroteCache ? 'MISS' : 'BYPASS'
 ```
 
 **After**:
+
 ```javascript
 const { data, cacheStatus } = await getCachedOrFetch({
   cache,
@@ -85,6 +92,7 @@ sendCachedJson({ res, payload: data, cacheStatus, ttl: CACHE_TTL });
 ```
 
 **Benefits**:
+
 - ✅ DRY - Don't Repeat Yourself
 - ✅ Consistent cache key format
 - ✅ Built-in cache-aside pattern
@@ -95,6 +103,7 @@ sendCachedJson({ res, payload: data, cacheStatus, ttl: CACHE_TTL });
 **Problem**: Audit logging code duplicated 40+ times
 
 **Before**:
+
 ```javascript
 await auditLogs.record({
   userId: req.session.userId,
@@ -111,6 +120,7 @@ await auditLogs.record({
 ```
 
 **After**:
+
 ```javascript
 await logCreate({
   auditLogs,
@@ -123,6 +133,7 @@ await logCreate({
 ```
 
 **Benefits**:
+
 - ✅ Reduced from 10 lines to 7 lines per call
 - ✅ Consistent audit context extraction
 - ✅ Easier to update audit format globally
@@ -133,12 +144,14 @@ await logCreate({
 **Problem**: Validation logic scattered and inconsistent
 
 **Features**:
+
 - Common normalization functions (email, text, URL, amount)
 - Reusable Zod schemas
 - Validation middleware generator
 - HTML sanitization
 
 **Example**:
+
 ```javascript
 const { schemas, validate } = require('../utils/validationHelper');
 
@@ -148,17 +161,19 @@ const taskSchema = z.object({
   priority: z.enum(['low', 'medium', 'high']),
 });
 
-router.post('/tasks',
+router.post(
+  '/tasks',
   validate(taskSchema, 'body'),
   asyncHandler(async (req, res) => {
     // req.validated contains validated data
     const task = await tasksService.createTask(req.validated);
     sendSuccess(res, { task });
-  })
+  }),
 );
 ```
 
 **Benefits**:
+
 - ✅ Standardized validation approach
 - ✅ Type-safe validation
 - ✅ Reusable schemas
@@ -169,6 +184,7 @@ router.post('/tasks',
 **Problem**: Inconsistent response formatting
 
 **Before**:
+
 ```javascript
 res.status(404).json({ error: 'Task not found' });
 res.status(400).json({ error: validation.error });
@@ -177,6 +193,7 @@ res.json({ task });
 ```
 
 **After**:
+
 ```javascript
 sendNotFound(res, 'Task');
 sendValidationError(res, validation.errors);
@@ -185,6 +202,7 @@ sendSuccess(res, { task });
 ```
 
 **Benefits**:
+
 - ✅ Consistent response structure
 - ✅ Self-documenting code
 - ✅ Easier to change response format globally
@@ -195,6 +213,7 @@ sendSuccess(res, { task });
 ### Example 1: Simple GET Endpoint
 
 **Before** (15 lines):
+
 ```javascript
 router.get('/tasks', async (req, res) => {
   try {
@@ -217,25 +236,30 @@ router.get('/tasks', async (req, res) => {
 ```
 
 **After** (11 lines, -27% code):
+
 ```javascript
-router.get('/tasks', asyncHandler(async (req, res) => {
-  const archived = req.query.archived === 'true' ? 1 : 0;
-  const userId = req.session.userId;
+router.get(
+  '/tasks',
+  asyncHandler(async (req, res) => {
+    const archived = req.query.archived === 'true' ? 1 : 0;
+    const userId = req.session.userId;
 
-  const { data, cacheStatus } = await getCachedOrFetch({
-    cache,
-    key: buildUserResourceCacheKey({ userId, resource: 'tasks', filters: { archived } }),
-    fetchFn: () => tasks.listTasks({ userId, archived }).then(rows => ({ tasks: rows })),
-    ttl: TASK_PAGE_CACHE_TTL_SECONDS,
-  });
+    const { data, cacheStatus } = await getCachedOrFetch({
+      cache,
+      key: buildUserResourceCacheKey({ userId, resource: 'tasks', filters: { archived } }),
+      fetchFn: () => tasks.listTasks({ userId, archived }).then((rows) => ({ tasks: rows })),
+      ttl: TASK_PAGE_CACHE_TTL_SECONDS,
+    });
 
-  sendCachedJson({ res, payload: data, cacheStatus, ttl: TASK_PAGE_CACHE_TTL_SECONDS });
-}));
+    sendCachedJson({ res, payload: data, cacheStatus, ttl: TASK_PAGE_CACHE_TTL_SECONDS });
+  }),
+);
 ```
 
 ### Example 2: POST with Validation and Audit
 
 **Before** (25 lines):
+
 ```javascript
 router.post('/tasks', async (req, res) => {
   const validation = validateCreateTask(req.body);
@@ -273,34 +297,40 @@ router.post('/tasks', async (req, res) => {
 ```
 
 **After** (19 lines, -24% code):
+
 ```javascript
-router.post('/tasks', asyncHandler(async (req, res) => {
-  const validation = validateCreateTask(req.body);
-  if (validation.error) {
-    return sendValidationError(res, validation.error);
-  }
+router.post(
+  '/tasks',
+  asyncHandler(async (req, res) => {
+    const validation = validateCreateTask(req.body);
+    if (validation.error) {
+      return sendValidationError(res, validation.error);
+    }
 
-  const taskInput = validation.value;
-  const userId = req.session.userId;
+    const taskInput = validation.value;
+    const userId = req.session.userId;
 
-  const task = await tasks.createTask({ userId, ...taskInput });
+    const task = await tasks.createTask({ userId, ...taskInput });
 
-  await logCreate({
-    auditLogs, req,
-    entityType: 'task',
-    entityId: task.id,
-    summary: task.title,
-    after: task,
-  });
+    await logCreate({
+      auditLogs,
+      req,
+      entityType: 'task',
+      entityId: task.id,
+      summary: task.title,
+      after: task,
+    });
 
-  emitToUser(userId, 'task:created', { task });
-  sendSuccess(res, { task }, 201);
-}));
+    emitToUser(userId, 'task:created', { task });
+    sendSuccess(res, { task }, 201);
+  }),
+);
 ```
 
 ### Example 3: Complex UPDATE Endpoint
 
 **Before** (45 lines):
+
 ```javascript
 router.put('/tasks/:id', async (req, res) => {
   const { id } = req.params;
@@ -352,51 +382,57 @@ router.put('/tasks/:id', async (req, res) => {
 ```
 
 **After** (34 lines, -24% code):
+
 ```javascript
-router.put('/tasks/:id', asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const userId = req.session.userId;
+router.put(
+  '/tasks/:id',
+  asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const userId = req.session.userId;
 
-  const task = await tasks.getTaskForUser(id, userId);
-  if (!task) {
-    return sendNotFound(res, 'Task');
-  }
+    const task = await tasks.getTaskForUser(id, userId);
+    if (!task) {
+      return sendNotFound(res, 'Task');
+    }
 
-  const validation = validateUpdateTask(req.body, task);
-  if (validation.error) {
-    return sendValidationError(res, validation.error);
-  }
+    const validation = validateUpdateTask(req.body, task);
+    if (validation.error) {
+      return sendValidationError(res, validation.error);
+    }
 
-  const taskInput = validation.value;
+    const taskInput = validation.value;
 
-  const updatedTask = await tasks.updateTask({
-    id,
-    userId,
-    existingTask: task,
-    ...taskInput,
-  });
+    const updatedTask = await tasks.updateTask({
+      id,
+      userId,
+      existingTask: task,
+      ...taskInput,
+    });
 
-  if (taskInput.hasTagUpdate) {
-    await tasks.ensureTaskTag(userId, taskInput.tag);
-  }
+    if (taskInput.hasTagUpdate) {
+      await tasks.ensureTaskTag(userId, taskInput.tag);
+    }
 
-  await logUpdate({
-    auditLogs, req,
-    entityType: 'task',
-    entityId: updatedTask.id,
-    summary: updatedTask.title,
-    before: task,
-    after: updatedTask,
-  });
+    await logUpdate({
+      auditLogs,
+      req,
+      entityType: 'task',
+      entityId: updatedTask.id,
+      summary: updatedTask.title,
+      before: task,
+      after: updatedTask,
+    });
 
-  emitToUser(userId, 'task:updated', { task: updatedTask });
-  sendSuccess(res, { task: updatedTask });
-}));
+    emitToUser(userId, 'task:updated', { task: updatedTask });
+    sendSuccess(res, { task: updatedTask });
+  }),
+);
 ```
 
 ## 🎯 Migration Strategy
 
 ### Phase 1: Add New Utilities (✅ Complete)
+
 - Created error handling middleware
 - Created cache helper utilities
 - Created audit decorator
@@ -404,17 +440,20 @@ router.put('/tasks/:id', asyncHandler(async (req, res) => {
 - Created response helper
 
 ### Phase 2: Refactor One Route File (Demo)
+
 - Created `tasks.routes.refactored.js` as example
 - Shows side-by-side comparison
 - Demonstrates all new patterns
 
 ### Phase 3: Gradual Migration (Recommended Approach)
+
 1. **Keep existing routes working** - Don't break production
 2. **Refactor incrementally** - One route file at a time
 3. **Test thoroughly** - Ensure behavior is identical
 4. **Update tests** - Simplify test setup with new utilities
 
 ### Phase 4: Full Migration (Future)
+
 When ready to commit to refactored approach:
 
 ```bash
@@ -439,19 +478,25 @@ rm src/server/routes/tasks.routes.old.js
 const { asyncHandler, HttpError } = require('../middleware/errorHandler');
 
 // Wrap route handlers
-router.get('/resource', asyncHandler(async (req, res) => {
-  // No try-catch needed!
-  const data = await service.getData();
-  res.json(data);
-}));
+router.get(
+  '/resource',
+  asyncHandler(async (req, res) => {
+    // No try-catch needed!
+    const data = await service.getData();
+    res.json(data);
+  }),
+);
 
 // Throw custom HTTP errors
-router.post('/resource', asyncHandler(async (req, res) => {
-  if (!req.body.name) {
-    throw new HttpError(400, 'Name is required');
-  }
-  // ...
-}));
+router.post(
+  '/resource',
+  asyncHandler(async (req, res) => {
+    if (!req.body.name) {
+      throw new HttpError(400, 'Name is required');
+    }
+    // ...
+  }),
+);
 ```
 
 ### Caching
@@ -459,16 +504,19 @@ router.post('/resource', asyncHandler(async (req, res) => {
 ```javascript
 const { getCachedOrFetch, buildUserResourceCacheKey } = require('../utils/cacheHelper');
 
-router.get('/data', asyncHandler(async (req, res) => {
-  const { data, cacheStatus } = await getCachedOrFetch({
-    cache,
-    key: buildUserResourceCacheKey({ userId, resource: 'data' }),
-    fetchFn: () => service.getData(userId),
-    ttl: 300,
-  });
-  
-  sendCachedJson({ res, payload: data, cacheStatus, ttl: 300 });
-}));
+router.get(
+  '/data',
+  asyncHandler(async (req, res) => {
+    const { data, cacheStatus } = await getCachedOrFetch({
+      cache,
+      key: buildUserResourceCacheKey({ userId, resource: 'data' }),
+      fetchFn: () => service.getData(userId),
+      ttl: 300,
+    });
+
+    sendCachedJson({ res, payload: data, cacheStatus, ttl: 300 });
+  }),
+);
 ```
 
 ### Audit Logging
@@ -480,7 +528,15 @@ const { logCreate, logUpdate, logDelete } = require('../utils/auditDecorator');
 await logCreate({ auditLogs, req, entityType: 'task', entityId: task.id, summary: task.title, after: task });
 
 // Update
-await logUpdate({ auditLogs, req, entityType: 'task', entityId: task.id, summary: task.title, before: oldTask, after: newTask });
+await logUpdate({
+  auditLogs,
+  req,
+  entityType: 'task',
+  entityId: task.id,
+  summary: task.title,
+  before: oldTask,
+  after: newTask,
+});
 
 // Delete
 await logDelete({ auditLogs, req, entityType: 'task', entityId: task.id, summary: task.title, before: task });
@@ -497,10 +553,14 @@ const taskSchema = z.object({
   priority: z.enum(['low', 'medium', 'high']),
 });
 
-router.post('/tasks', validate(taskSchema), asyncHandler(async (req, res) => {
-  const task = await service.createTask(req.validated); // validated data
-  sendSuccess(res, { task });
-}));
+router.post(
+  '/tasks',
+  validate(taskSchema),
+  asyncHandler(async (req, res) => {
+    const task = await service.createTask(req.validated); // validated data
+    sendSuccess(res, { task });
+  }),
+);
 ```
 
 ### Responses
@@ -524,34 +584,37 @@ sendValidationError(res, errors);
 ## ✅ Benefits Summary
 
 ### Code Quality
+
 - ✅ **DRY**: Eliminated 400+ lines of duplicate code
 - ✅ **Readability**: Routes are 20-30% shorter and clearer
 - ✅ **Maintainability**: Changes in one place affect everywhere
 - ✅ **Consistency**: Standardized patterns across all routes
 
 ### Developer Experience
+
 - ✅ **Faster Development**: Less boilerplate to write
 - ✅ **Fewer Bugs**: Centralized logic reduces errors
 - ✅ **Easier Testing**: Utilities are testable in isolation
 - ✅ **Better Onboarding**: Patterns are documented and consistent
 
 ### Performance
+
 - ✅ **Same Performance**: No performance degradation
 - ✅ **Better Caching**: Consistent cache patterns
 - ✅ **Improved Monitoring**: Centralized error logging
 
 ## 🔍 Comparison Chart
 
-| Aspect | Original Code | Refactored Code |
-|--------|---------------|-----------------|
-| Lines per route | 15-45 lines | 10-35 lines |
-| Try-catch blocks | Every route | Zero |
-| Cache code | 8-10 lines | 4-6 lines |
-| Audit logging | 10 lines | 7 lines |
-| Error handling | Repeated | Automatic |
-| Validation | Mixed | Standardized |
-| Response format | Inconsistent | Consistent |
-| Testing complexity | High | Low |
+| Aspect             | Original Code | Refactored Code |
+| ------------------ | ------------- | --------------- |
+| Lines per route    | 15-45 lines   | 10-35 lines     |
+| Try-catch blocks   | Every route   | Zero            |
+| Cache code         | 8-10 lines    | 4-6 lines       |
+| Audit logging      | 10 lines      | 7 lines         |
+| Error handling     | Repeated      | Automatic       |
+| Validation         | Mixed         | Standardized    |
+| Response format    | Inconsistent  | Consistent      |
+| Testing complexity | High          | Low             |
 
 ## 📖 Next Steps
 
@@ -565,6 +628,7 @@ sendValidationError(res, errors);
 ## 🤝 Contributing
 
 When adding new routes:
+
 - ✅ Use `asyncHandler` for all async routes
 - ✅ Use cache helpers for caching
 - ✅ Use audit decorators for logging

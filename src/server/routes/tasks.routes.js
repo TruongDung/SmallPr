@@ -9,19 +9,10 @@ const { createEmailImportService } = require('../services/emailImport.service');
 const { createRecurrenceService } = require('../services/recurrence.service');
 const googleDrive = require('../services/googleDrive.service');
 const { emitToUser } = require('../realtime');
-const {
-  validateCreateTask,
-  validateTagName,
-  validateUpdateTask,
-} = require('../schemas/task.schema');
+const { validateCreateTask, validateTagName, validateUpdateTask } = require('../schemas/task.schema');
 
-const buildTaskListCacheKey = ({ userId, archived }) => [
-  'user',
-  userId,
-  'tasks',
-  'v1',
-  archived ? 'archived' : 'active',
-].join(':');
+const buildTaskListCacheKey = ({ userId, archived }) =>
+  ['user', userId, 'tasks', 'v1', archived ? 'archived' : 'active'].join(':');
 
 const buildTaskTagsCacheKey = (userId) => `user:${userId}:task-tags:v1`;
 
@@ -98,8 +89,9 @@ const createTasksRouter = ({
   };
 
   const emitTaskEventToUsers = (userIds, eventName, payload) => {
-    [...new Set(userIds.map(Number).filter(Number.isInteger))]
-      .forEach((userId) => emitToUser(userId, eventName, payload));
+    [...new Set(userIds.map(Number).filter(Number.isInteger))].forEach((userId) =>
+      emitToUser(userId, eventName, payload),
+    );
   };
 
   router.use(['/tasks', '/tags'], authRequired);
@@ -563,12 +555,14 @@ const createTasksRouter = ({
       const taskInput = validation.value;
 
       if (
-        taskInput.hasSprintUpdate
-        && taskInput.sprintId === null
-        && Number(task.user_id) !== Number(req.session.userId)
-        && Number(task.sprint_owner_user_id) !== Number(req.session.userId)
+        taskInput.hasSprintUpdate &&
+        taskInput.sprintId === null &&
+        Number(task.user_id) !== Number(req.session.userId) &&
+        Number(task.sprint_owner_user_id) !== Number(req.session.userId)
       ) {
-        return res.status(403).json({ error: 'Only the task or sprint owner can remove this task from a shared sprint' });
+        return res
+          .status(403)
+          .json({ error: 'Only the task or sprint owner can remove this task from a shared sprint' });
       }
 
       if (taskInput.hasSprintUpdate && taskInput.sprintId) {
@@ -654,8 +648,11 @@ const createTasksRouter = ({
         before: task,
         after: updatedTask,
       });
-      const taskWithHistory = await tasks.getTaskForUser(id, req.session.userId, { includeActivityHistory: false }) || updatedTask;
-      emitTaskEventToUsers([...previousAccessUserIds, ...currentAccessUserIds], 'task:updated', { task: taskWithHistory });
+      const taskWithHistory =
+        (await tasks.getTaskForUser(id, req.session.userId, { includeActivityHistory: false })) || updatedTask;
+      emitTaskEventToUsers([...previousAccessUserIds, ...currentAccessUserIds], 'task:updated', {
+        task: taskWithHistory,
+      });
       res.json({ task: taskWithHistory });
     } catch (error) {
       logger.error({ err: error }, 'Failed to update task');

@@ -9,17 +9,19 @@
 //   router.post('/', validateRequest(createTransactionSchema), handler);
 //   router.get('/', validateRequest(querySchema, 'query'), handler);
 
-const validateRequest = (schema, source = 'body') => (req, res, next) => {
-  const result = schema.safeParse(req[source]);
+const validateRequest =
+  (schema, source = 'body') =>
+  (req, res, next) => {
+    const result = schema.safeParse(req[source]);
 
-  if (!result.success) {
-    const [firstIssue] = result.error.issues;
-    const message = firstIssue ? firstIssue.message : 'Invalid request';
-    return res.status(400).json({ error: message });
-  }
+    if (!result.success) {
+      const [firstIssue] = result.error.issues;
+      const message = firstIssue ? firstIssue.message : 'Invalid request';
+      return res.status(400).json({ error: message });
+    }
 
-  req.validated = result.data;
-  next();
-};
+    req.validated = result.data;
+    next();
+  };
 
 module.exports = { validateRequest };

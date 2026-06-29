@@ -79,9 +79,7 @@
     }
 
     function getBillEntriesForDay(day) {
-      return bills
-        .map((bill) => ({ bill, day: dayFromText(bill.due_date) }))
-        .filter((entry) => entry.day === day);
+      return bills.map((bill) => ({ bill, day: dayFromText(bill.due_date) })).filter((entry) => entry.day === day);
     }
 
     function getTransactionsForDay(date) {
@@ -192,7 +190,10 @@
     function openDayDetail(date) {
       const modal = ensureDayModal();
       modal.title.textContent = new Intl.DateTimeFormat(getLocale(), {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
       }).format(date);
       modal.body.innerHTML = '';
 
@@ -204,43 +205,51 @@
 
       if (cardEntries.length) {
         hasAny = true;
-        modal.body.append(buildDetailSection(
-          t('financialCalendarCardLegend'),
-          'card',
-          cardEntries.map((entry) => ({
-            name: entry.card.name || t('notAvailable'),
-            meta: entry.card.total_balance != null && entry.card.total_balance !== ''
-              ? formatters.formatCurrency(entry.card.total_balance)
-              : '',
-          }))
-        ));
+        modal.body.append(
+          buildDetailSection(
+            t('financialCalendarCardLegend'),
+            'card',
+            cardEntries.map((entry) => ({
+              name: entry.card.name || t('notAvailable'),
+              meta:
+                entry.card.total_balance != null && entry.card.total_balance !== ''
+                  ? formatters.formatCurrency(entry.card.total_balance)
+                  : '',
+            })),
+          ),
+        );
       }
 
       if (billEntries.length) {
         hasAny = true;
-        modal.body.append(buildDetailSection(
-          t('financialCalendarBillLegend'),
-          'bill',
-          billEntries.map((entry) => ({
-            name: entry.bill.item || t('notAvailable'),
-            meta: entry.bill.amount != null && entry.bill.amount !== ''
-              ? formatters.formatCurrency(entry.bill.amount)
-              : '',
-          }))
-        ));
+        modal.body.append(
+          buildDetailSection(
+            t('financialCalendarBillLegend'),
+            'bill',
+            billEntries.map((entry) => ({
+              name: entry.bill.item || t('notAvailable'),
+              meta:
+                entry.bill.amount != null && entry.bill.amount !== ''
+                  ? formatters.formatCurrency(entry.bill.amount)
+                  : '',
+            })),
+          ),
+        );
       }
 
       if (txEntries.length) {
         hasAny = true;
-        modal.body.append(buildDetailSection(
-          t('transactionsSubTab'),
-          'transaction',
-          txEntries.map((tx) => ({
-            name: tx.category || tx.note || t('notAvailable'),
-            meta: `${tx.kind === 'income' ? '+' : '-'}${formatters.formatCurrency(tx.amount)}`,
-            metaClass: tx.kind === 'income' ? 'amount-income' : 'amount-expense',
-          }))
-        ));
+        modal.body.append(
+          buildDetailSection(
+            t('transactionsSubTab'),
+            'transaction',
+            txEntries.map((tx) => ({
+              name: tx.category || tx.note || t('notAvailable'),
+              meta: `${tx.kind === 'income' ? '+' : '-'}${formatters.formatCurrency(tx.amount)}`,
+              metaClass: tx.kind === 'income' ? 'amount-income' : 'amount-expense',
+            })),
+          ),
+        );
       }
 
       if (!hasAny) {
@@ -311,9 +320,10 @@
       if (!grid) return;
       grid.innerHTML = '';
 
-      const weekdays = getLocale() === 'vi-VN'
-        ? ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
-        : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const weekdays =
+        getLocale() === 'vi-VN'
+          ? ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7']
+          : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       weekdays.forEach((name) => {
         const dayName = document.createElement('div');
         dayName.className = 'financial-calendar-weekday';
@@ -322,8 +332,9 @@
       });
 
       const first = startOfWeek(cursor);
-      Array.from({ length: 42 }, (_, index) => addDays(first, index))
-        .forEach((date) => grid.append(renderDayCell(date)));
+      Array.from({ length: 42 }, (_, index) => addDays(first, index)).forEach((date) =>
+        grid.append(renderDayCell(date)),
+      );
     }
 
     function renderUpcoming() {
@@ -442,4 +453,4 @@
     ...(window.CreditCardFeature || {}),
     createFinancialCalendar,
   };
-}());
+})();

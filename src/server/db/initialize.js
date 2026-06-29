@@ -13,27 +13,26 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const isTransientDatabaseError = (error) => {
   const message = `${error?.message || ''} ${error?.cause?.message || ''} ${error?.rollbackError?.message || ''}`;
-  return [
-    'Connection terminated',
-    'Connection terminated unexpectedly',
-    'connection timeout',
-    'timeout',
-    'ECONNRESET',
-    'ECONNREFUSED',
-    'ETIMEDOUT',
-    'ENOTFOUND',
-    'server closed the connection',
-    'remaining connection slots',
-    'too many clients',
-  ].some((fragment) => message.toLowerCase().includes(fragment.toLowerCase()))
-    || ['08000', '08001', '08003', '08006', '53300', '57P01', '57P02', '57P03'].includes(error?.code);
+  return (
+    [
+      'Connection terminated',
+      'Connection terminated unexpectedly',
+      'connection timeout',
+      'timeout',
+      'ECONNRESET',
+      'ECONNREFUSED',
+      'ETIMEDOUT',
+      'ENOTFOUND',
+      'server closed the connection',
+      'remaining connection slots',
+      'too many clients',
+    ].some((fragment) => message.toLowerCase().includes(fragment.toLowerCase())) ||
+    ['08000', '08001', '08003', '08006', '53300', '57P01', '57P02', '57P03'].includes(error?.code)
+  );
 };
 
 const withDatabaseInitRetry = async (operation) => {
-  const maxAttempts = parsePositiveInt(
-    process.env.DB_INIT_MAX_ATTEMPTS,
-    process.env.NODE_ENV === 'production' ? 4 : 1
-  );
+  const maxAttempts = parsePositiveInt(process.env.DB_INIT_MAX_ATTEMPTS, process.env.NODE_ENV === 'production' ? 4 : 1);
   const baseDelayMs = parsePositiveInt(process.env.DB_INIT_RETRY_DELAY_MS, 750);
 
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
@@ -48,7 +47,7 @@ const withDatabaseInitRetry = async (operation) => {
       const retryDelayMs = baseDelayMs * attempt;
       logger.warn(
         { err: error, attempt, maxAttempts, retryDelayMs },
-        'Database initialization failed transiently; retrying'
+        'Database initialization failed transiently; retrying',
       );
       await delay(retryDelayMs);
     }
@@ -75,23 +74,18 @@ const runDatabaseInitialization = async () => {
     }
 
     const hashedPassword = await bcrypt.hash(defaultAdminPassword, 10);
-    await runAsync(
-      'INSERT INTO users (username, password) VALUES (?, ?) RETURNING id',
-      ['admin', hashedPassword]
-    );
+    await runAsync('INSERT INTO users (username, password) VALUES (?, ?) RETURNING id', ['admin', hashedPassword]);
     logger.info('Default admin user created');
   }
 
   // Assign admin user to unassigned fast access links
   const adminUser = await getAsync('SELECT id FROM users WHERE username = ?', ['admin']);
   if (adminUser) {
-    await pool.query(
-      'UPDATE fast_access_links SET user_id = $1 WHERE user_id IS NULL',
-      [adminUser.id]
-    );
+    await pool.query('UPDATE fast_access_links SET user_id = $1 WHERE user_id IS NULL', [adminUser.id]);
 
     // Create default fast access links for admin if none exist
-    await pool.query(`
+    await pool.query(
+      `
       INSERT INTO fast_access_links (user_id, label, url, sort_order)
       SELECT $1, defaults.label, defaults.url, base.max_sort_order + defaults.sort_order
       FROM (VALUES
@@ -108,7 +102,9 @@ const runDatabaseInitialization = async () => {
       WHERE NOT EXISTS (
         SELECT 1 FROM fast_access_links WHERE user_id = $1
       )
-    `, [adminUser.id]);
+    `,
+      [adminUser.id],
+    );
   }
 };
 

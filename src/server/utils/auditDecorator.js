@@ -1,10 +1,10 @@
 /**
  * Audit Logging Decorator
- * 
+ *
  * Provides reusable functions to automatically log CRUD operations
  * to the audit log with detailed change tracking, reducing boilerplate
  * code in route handlers.
- * 
+ *
  * @module utils/auditDecorator
  */
 
@@ -12,7 +12,7 @@ const { enhanceAuditEntry } = require('./auditChanges');
 
 /**
  * Create audit context from Express request
- * 
+ *
  * @param {Request} req - Express request object
  * @returns {Object} Audit context with session info
  */
@@ -28,7 +28,7 @@ const createAuditContext = (req) => {
 
 /**
  * Log create operation
- * 
+ *
  * @param {Object} params
  * @param {Object} params.auditLogs - Audit log service
  * @param {Request} params.req - Express request
@@ -51,7 +51,7 @@ const logCreate = async ({ auditLogs, req, entityType, entityId, summary, after 
 
 /**
  * Log update operation with automatic change detection
- * 
+ *
  * @param {Object} params
  * @param {Object} params.auditLogs - Audit log service
  * @param {Request} params.req - Express request
@@ -73,13 +73,13 @@ const logUpdate = async ({ auditLogs, req, entityType, entityId, summary, before
     before,
     after,
   });
-  
+
   await auditLogs.record(enhancedEntry);
 };
 
 /**
  * Log delete operation
- * 
+ *
  * @param {Object} params
  * @param {Object} params.auditLogs - Audit log service
  * @param {Request} params.req - Express request
@@ -102,7 +102,7 @@ const logDelete = async ({ auditLogs, req, entityType, entityId, summary, before
 
 /**
  * Log custom action
- * 
+ *
  * @param {Object} params
  * @param {Object} params.auditLogs - Audit log service
  * @param {Request} params.req - Express request
@@ -126,7 +126,7 @@ const logAction = async ({ auditLogs, req, action, entityType, entityId, summary
 
 /**
  * Higher-order function to wrap route handlers with automatic audit logging
- * 
+ *
  * @param {Object} config
  * @param {Object} config.auditLogs - Audit log service
  * @param {string} config.action - Action type ('create', 'edit', 'delete')
@@ -135,7 +135,7 @@ const logAction = async ({ auditLogs, req, action, entityType, entityId, summary
  * @param {Function} config.getSummary - Function to generate summary from result
  * @param {Function} config.getBefore - Function to get 'before' state (for updates/deletes)
  * @returns {Function} Middleware wrapper
- * 
+ *
  * @example
  * const createTaskHandler = withAudit({
  *   auditLogs,
@@ -155,16 +155,16 @@ const withAudit = ({ auditLogs, action, entityType, getEntityId, getSummary, get
       try {
         // Execute the original handler
         const result = await handler(req, res, next);
-        
+
         // Skip audit if response already sent or no result
         if (res.headersSent || !result) {
           return;
         }
-        
+
         // Build audit log entry
         const entityId = getEntityId(result);
         const summary = getSummary(result);
-        
+
         const auditEntry = {
           ...createAuditContext(req),
           action,
@@ -172,7 +172,7 @@ const withAudit = ({ auditLogs, action, entityType, getEntityId, getSummary, get
           entityId,
           summary,
         };
-        
+
         // Add before/after data based on action type
         if (action === 'create') {
           auditEntry.after = result;
@@ -182,12 +182,11 @@ const withAudit = ({ auditLogs, action, entityType, getEntityId, getSummary, get
         } else if (action === 'delete') {
           auditEntry.before = getBefore ? getBefore(result) : result;
         }
-        
+
         // Record audit log (non-blocking)
-        auditLogs.record(auditEntry).catch(err => {
+        auditLogs.record(auditEntry).catch((err) => {
           console.error('Failed to record audit log:', err);
         });
-        
       } catch (error) {
         next(error);
       }

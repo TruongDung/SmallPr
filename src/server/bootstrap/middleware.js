@@ -10,20 +10,22 @@ const setupExpressMiddleware = (app) => {
 };
 
 const setupLogging = (app) => {
-  app.use(pinoHttp({
-    logger,
-    customProps: (req) => ({
-      userId: req.session?.userId || null,
+  app.use(
+    pinoHttp({
+      logger,
+      customProps: (req) => ({
+        userId: req.session?.userId || null,
+      }),
+      customLogLevel: (req, res, error) => {
+        if (error || res.statusCode >= 500) return 'error';
+        if (res.statusCode >= 400) return 'warn';
+        return 'info';
+      },
+      autoLogging: {
+        ignore: (req) => req.path === '/favicon.ico',
+      },
     }),
-    customLogLevel: (req, res, error) => {
-      if (error || res.statusCode >= 500) return 'error';
-      if (res.statusCode >= 400) return 'warn';
-      return 'info';
-    },
-    autoLogging: {
-      ignore: (req) => req.path === '/favicon.ico',
-    },
-  }));
+  );
 };
 
 const setupProxyTrust = (app) => {
@@ -35,8 +37,7 @@ const setupProxyTrust = (app) => {
 
 const setupCacheInvalidation = (app) => {
   app.use((req, res, next) => {
-    const shouldInvalidate = req.path.startsWith('/api/')
-      && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
+    const shouldInvalidate = req.path.startsWith('/api/') && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method);
 
     if (shouldInvalidate) {
       res.on('finish', () => {

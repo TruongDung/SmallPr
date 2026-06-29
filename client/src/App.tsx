@@ -63,7 +63,11 @@ const TaskBoard = () => {
   };
 
   if (isLoading) {
-    return <p className="loading-state" aria-busy="true">{t('savingTask')}</p>;
+    return (
+      <p className="loading-state" aria-busy="true">
+        {t('savingTask')}
+      </p>
+    );
   }
 
   if (error) {
@@ -79,9 +83,7 @@ const TaskBoard = () => {
           key={status}
           title={t(labelKey)}
           status={status}
-          tasks={sortTasksByPriority(
-            activeTasks.filter((task) => taskStatus(task) === status),
-          )}
+          tasks={sortTasksByPriority(activeTasks.filter((task) => taskStatus(task) === status))}
           draggable
           onDropTask={handleDropTask}
           onDragStartTask={setDraggedTask}
@@ -97,12 +99,7 @@ const SprintView = () => {
   const [selectedSprint, setSelectedSprint] = useState<Sprint | null>(null);
 
   if (selectedSprint) {
-    return (
-      <SprintBoard
-        sprint={selectedSprint}
-        onBack={() => setSelectedSprint(null)}
-      />
-    );
+    return <SprintBoard sprint={selectedSprint} onBack={() => setSelectedSprint(null)} />;
   }
 
   return <SprintList onSelectSprint={setSelectedSprint} />;

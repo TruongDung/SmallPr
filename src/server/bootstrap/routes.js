@@ -13,22 +13,25 @@ const createUserSettingsRouter = require('../routes/userSettings.routes');
 const createWeatherRouter = require('../routes/weather.routes');
 const realtime = require('../realtime');
 
-const registerRoutes = (app, {
-  adminRequired,
-  authRequired,
-  auditLogs,
-  featureFlags,
-  allAsync,
-  getAsync,
-  queryAsync,
-  runAsync,
-  getUserById,
-  sendTaskAlertEmail,
-  sendTaskSummaryEmail,
-  sendVerificationEmail,
-  bcrypt,
-  redisCache,
-}) => {
+const registerRoutes = (
+  app,
+  {
+    adminRequired,
+    authRequired,
+    auditLogs,
+    featureFlags,
+    allAsync,
+    getAsync,
+    queryAsync,
+    runAsync,
+    getUserById,
+    sendTaskAlertEmail,
+    sendTaskSummaryEmail,
+    sendVerificationEmail,
+    bcrypt,
+    redisCache,
+  },
+) => {
   const routeDependencies = {
     allAsync,
     getAsync,
@@ -37,119 +40,155 @@ const registerRoutes = (app, {
   };
 
   // Auth routes
-  app.use('/api', createAuthRouter({
-    auditLogs,
-    featureFlags,
-    bcrypt,
-    getAsync,
-    getUserById,
-    runAsync,
-    sendVerificationEmail,
-  }));
+  app.use(
+    '/api',
+    createAuthRouter({
+      auditLogs,
+      featureFlags,
+      bcrypt,
+      getAsync,
+      getUserById,
+      runAsync,
+      sendVerificationEmail,
+    }),
+  );
 
   // Credit Cards routes
-  app.use('/api/credit-cards', createCreditCardsRouter({
-    adminRequired,
-    authRequired,
-    auditLogs,
-    allAsync,
-    getAsync,
-    runAsync,
-  }));
+  app.use(
+    '/api/credit-cards',
+    createCreditCardsRouter({
+      adminRequired,
+      authRequired,
+      auditLogs,
+      allAsync,
+      getAsync,
+      runAsync,
+    }),
+  );
 
   // Transactions routes
-  app.use('/api/transactions', createTransactionsRouter({
-    authRequired,
-    auditLogs,
-    allAsync,
-    getAsync,
-    runAsync,
-  }));
+  app.use(
+    '/api/transactions',
+    createTransactionsRouter({
+      authRequired,
+      auditLogs,
+      allAsync,
+      getAsync,
+      runAsync,
+    }),
+  );
 
   // Sprint routes
-  app.use('/api', createSprintsRouter({
-    authRequired,
-    allAsync,
-    cache: redisCache,
-    getAsync,
-    runAsync,
-  }));
+  app.use(
+    '/api',
+    createSprintsRouter({
+      authRequired,
+      allAsync,
+      cache: redisCache,
+      getAsync,
+      runAsync,
+    }),
+  );
 
   // User settings routes
-  app.use('/api', createUserSettingsRouter({
-    authRequired,
-    allAsync,
-    cache: redisCache,
-    getAsync,
-    runAsync,
-  }));
+  app.use(
+    '/api',
+    createUserSettingsRouter({
+      authRequired,
+      allAsync,
+      cache: redisCache,
+      getAsync,
+      runAsync,
+    }),
+  );
 
   // Lunar calendar routes
-  app.use('/api', createLunarCalendarRouter({
-    authRequired,
-    getUserById,
-  }));
+  app.use(
+    '/api',
+    createLunarCalendarRouter({
+      authRequired,
+      getUserById,
+    }),
+  );
 
   // Tasks routes
-  app.use('/api', createTasksRouter({
-    authRequired,
-    auditLogs,
-    allAsync,
-    cache: redisCache,
-    getAsync,
-    queryAsync,
-    runAsync,
-    getUserById,
-    sendTaskAlertEmail,
-    sendTaskSummaryEmail,
-  }));
+  app.use(
+    '/api',
+    createTasksRouter({
+      authRequired,
+      auditLogs,
+      allAsync,
+      cache: redisCache,
+      getAsync,
+      queryAsync,
+      runAsync,
+      getUserById,
+      sendTaskAlertEmail,
+      sendTaskSummaryEmail,
+    }),
+  );
 
   // Dashboard routes
-  app.use('/api', createDashboardRouter({
-    authRequired,
-    allAsync,
-    cache: redisCache,
-    getAsync,
-    runAsync,
-  }));
+  app.use(
+    '/api',
+    createDashboardRouter({
+      authRequired,
+      allAsync,
+      cache: redisCache,
+      getAsync,
+      runAsync,
+    }),
+  );
 
   // Quote routes
   app.use('/api', createDailyQuoteRouter());
 
   // Weather routes
-  app.use('/api', createWeatherRouter({
-    authRequired,
-    cache: redisCache,
-    ...routeDependencies,
-  }));
+  app.use(
+    '/api',
+    createWeatherRouter({
+      authRequired,
+      cache: redisCache,
+      ...routeDependencies,
+    }),
+  );
 
   // Notes routes
-  app.use('/api', createNotesRouter({
-    authRequired,
-    auditLogs,
-    cache: redisCache,
-    emitToUser: realtime.emitToUser,
-    ...routeDependencies,
-  }));
+  app.use(
+    '/api',
+    createNotesRouter({
+      authRequired,
+      auditLogs,
+      cache: redisCache,
+      emitToUser: realtime.emitToUser,
+      ...routeDependencies,
+    }),
+  );
 
   // Admin routes
-  app.use('/api', createAdminRouter({
-    adminRequired,
-    auditLogs,
-    featureFlags,
-    bcrypt,
-    allAsync,
-    getAsync,
-    runAsync,
-  }));
+  app.use(
+    '/api',
+    createAdminRouter({
+      adminRequired,
+      auditLogs,
+      featureFlags,
+      bcrypt,
+      allAsync,
+      getAsync,
+      runAsync,
+    }),
+  );
 
   // AI evaluation harness routes
-  app.use('/api/admin', createEvaluationsRouter({
-    adminRequired,
-    allAsync,
-    getAsync,
-    runAsync,
-  }));
+  app.use(
+    '/api/admin',
+    createEvaluationsRouter({
+      adminRequired,
+      allAsync,
+      getAsync,
+      runAsync,
+    }),
+  );
 };
 
 module.exports = { registerRoutes };

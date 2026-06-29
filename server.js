@@ -4,14 +4,7 @@ const { PORT } = require('./src/server/config/env');
 const logger = require('./src/server/logger');
 const { startKeepAlive } = require('./src/server/db/client');
 const { startSessionKeepAlive } = require('./src/server/config/session');
-const {
-  app,
-  cacheReady,
-  db,
-  dbReady,
-  httpServer,
-  io,
-} = require('./app');
+const { app, cacheReady, db, dbReady, httpServer, io } = require('./app');
 
 if (require.main === module) {
   dbReady

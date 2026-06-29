@@ -1,5 +1,5 @@
 // Simple syntax highlighter for code blocks in notes
-(function() {
+(function () {
   // Language detection patterns
   const languagePatterns = {
     python: /\b(def|class|import|from|return|if|elif|else|for|while|try|except|with|as|self|range|len)\b/,
@@ -39,10 +39,7 @@
   };
 
   // Simple syntax highlighting rules
-  const escapeHtml = (value) => String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
+  const escapeHtml = (value) => String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
   const highlightCode = (code, language) => {
     let highlighted = escapeHtml(code);
@@ -78,7 +75,11 @@
 
     const restoreTokens = () => {
       highlighted = highlighted.replace(/\uE000([A-Z]+)\uE001/g, (match) => {
-        const index = match.slice(1, -1).split('').reduce((total, char) => total * 26 + char.charCodeAt(0) - 64, 0) - 1;
+        const index =
+          match
+            .slice(1, -1)
+            .split('')
+            .reduce((total, char) => total * 26 + char.charCodeAt(0) - 64, 0) - 1;
         return tokens[index] || match;
       });
     };
@@ -86,17 +87,26 @@
     if (language === 'javascript' || language === 'java' || language === 'cpp' || language === 'python') {
       wrap(/(\/\/.*$|#.*$|\/\*[\s\S]*?\*\/)/gm, 'comment');
       wrap(/(["'])(?:(?=(\\?))\2.)*?\1/g, 'string');
-      wrap(/\b(function|const|let|var|if|else|for|while|switch|case|break|continue|return|async|await|class|extends|constructor|new|this|import|export|from|default|try|catch|finally|throw|public|private|protected|static|void|int|float|double|String|bool|boolean|def|class|self|None|True|False)\b/g, 'keyword');
+      wrap(
+        /\b(function|const|let|var|if|else|for|while|switch|case|break|continue|return|async|await|class|extends|constructor|new|this|import|export|from|default|try|catch|finally|throw|public|private|protected|static|void|int|float|double|String|bool|boolean|def|class|self|None|True|False)\b/g,
+        'keyword',
+      );
       wrap(/\b(\d+(?:\.\d+)?)\b/g, 'number');
       wrap(/\b([a-zA-Z_][\w]*)\s*(?=\()/g, 'function');
     } else if (language === 'html') {
       wrap(/(&lt;!--[\s\S]*?--&gt;)/g, 'comment');
-      highlighted = highlighted.replace(/(&lt;\/?)([a-zA-Z][\w-]*)([^&]*?)(\/?&gt;)/g, (match, open, tagName, attributes, close) => {
-        const token = placeholderName(tokens.length);
-        const highlightedAttributes = attributes.replace(/([a-zA-Z-:]+)(=)("[^"]*"|'[^']*')/g, '<span class="attribute">$1</span>$2<span class="string">$3</span>');
-        tokens.push(`${open}<span class="keyword">${tagName}</span>${highlightedAttributes}${close}`);
-        return token;
-      });
+      highlighted = highlighted.replace(
+        /(&lt;\/?)([a-zA-Z][\w-]*)([^&]*?)(\/?&gt;)/g,
+        (match, open, tagName, attributes, close) => {
+          const token = placeholderName(tokens.length);
+          const highlightedAttributes = attributes.replace(
+            /([a-zA-Z-:]+)(=)("[^"]*"|'[^']*')/g,
+            '<span class="attribute">$1</span>$2<span class="string">$3</span>',
+          );
+          tokens.push(`${open}<span class="keyword">${tagName}</span>${highlightedAttributes}${close}`);
+          return token;
+        },
+      );
     } else if (language === 'css') {
       wrap(/(\/\*[\s\S]*?\*\/)/g, 'comment');
       wrap(/([a-zA-Z0-9_.:#-]+)\s*(?=\{)/g, 'function');
@@ -114,7 +124,10 @@
     } else if (language === 'bash') {
       wrap(/(#.*$)/gm, 'comment');
       wrap(/(["'])(?:(?=(\\?))\2.)*?\1/g, 'string');
-      wrap(/\b(echo|cd|ls|mkdir|rm|grep|awk|sed|curl|wget|cat|sudo|ssh|scp|exit|if|then|else|fi|for|while|do|done)\b/g, 'keyword');
+      wrap(
+        /\b(echo|cd|ls|mkdir|rm|grep|awk|sed|curl|wget|cat|sudo|ssh|scp|exit|if|then|else|fi|for|while|do|done)\b/g,
+        'keyword',
+      );
       wrap(/\$\w+/g, 'function');
     }
 
@@ -130,7 +143,9 @@
     // Detect markdown-style code blocks (```language\ncode\n```)
     const markdownCodeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g;
     result = result.replace(markdownCodeBlockRegex, (match, lang, code) => {
-      const normalizedLang = String(lang || '').trim().toLowerCase();
+      const normalizedLang = String(lang || '')
+        .trim()
+        .toLowerCase();
       const detectedLang = languageAliases[normalizedLang] || normalizedLang || detectLanguage(code);
       const highlighted = highlightCode(code.trim(), detectedLang);
       return `<pre class="code-block" data-language="${detectedLang}"><code>${highlighted}</code></pre>`;
@@ -193,12 +208,20 @@
         i += 1;
         while (i < lines.length) {
           const l = lines[i];
-          if (isIndentedLine(l)) { blockLines.push(l); i += 1; continue; }
+          if (isIndentedLine(l)) {
+            blockLines.push(l);
+            i += 1;
+            continue;
+          }
           if (isBlankLine(l)) {
             // Keep an internal blank line only if more indented code follows.
             let k = i + 1;
             while (k < lines.length && isBlankLine(lines[k])) k += 1;
-            if (k < lines.length && isIndentedLine(lines[k])) { blockLines.push(''); i += 1; continue; }
+            if (k < lines.length && isIndentedLine(lines[k])) {
+              blockLines.push('');
+              i += 1;
+              continue;
+            }
             break;
           }
           break;
@@ -228,9 +251,10 @@
         return token;
       });
 
-      rendered = rendered.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/g, (match, label, url) => (
-        `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`
-      ));
+      rendered = rendered.replace(
+        /\[([^\]]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/g,
+        (match, label, url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`,
+      );
 
       // Task-list items (- [ ] / - [x]) become clickable checkboxes. Each gets a
       // sequential data-check-index so a click can flip the matching source line.
@@ -241,9 +265,9 @@
         const index = checkboxIndex;
         checkboxIndex += 1;
         return (
-          `<label class="note-check-item${checked ? ' checked' : ''}" data-check-index="${index}">`
-          + `<input type="checkbox" class="note-check-input"${checked ? ' checked' : ''}> `
-          + `<span class="note-check-text">${text}</span></label>`
+          `<label class="note-check-item${checked ? ' checked' : ''}" data-check-index="${index}">` +
+          `<input type="checkbox" class="note-check-input"${checked ? ' checked' : ''}> ` +
+          `<span class="note-check-text">${text}</span></label>`
         );
       });
 
@@ -258,9 +282,7 @@
         .replace(/^&gt;\s+(.+)$/gm, '<blockquote>$1</blockquote>')
         .replace(/^\s*[-*]\s+(.+)$/gm, '<li>$1</li>');
 
-      rendered = rendered.replace(/(?:<li>.*?<\/li>\n?)+/g, (items) => (
-        `<ul>${items.replace(/\n/g, '')}</ul>`
-      ));
+      rendered = rendered.replace(/(?:<li>.*?<\/li>\n?)+/g, (items) => `<ul>${items.replace(/\n/g, '')}</ul>`);
 
       rendered = rendered
         .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
@@ -272,7 +294,8 @@
     };
 
     // Render markdown in non-code text, preserving highlighted code blocks.
-    result = result.split(/(<pre class="code-block"[\s\S]*?<\/pre>)/g)
+    result = result
+      .split(/(<pre class="code-block"[\s\S]*?<\/pre>)/g)
       .map((section) => {
         if (section.startsWith('<pre class="code-block"')) {
           return section;

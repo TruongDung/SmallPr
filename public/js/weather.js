@@ -1,13 +1,6 @@
 // Weather tab and daily quote widget.
 (function () {
-  const create = ({
-    request,
-    t,
-    showStatusToast,
-    getCurrentUser,
-    getLanguage,
-    escapeHtml,
-  }) => {
+  const create = ({ request, t, showStatusToast, getCurrentUser, getLanguage, escapeHtml }) => {
     const quoteWidget = document.getElementById('quote-widget');
     const weatherForm = document.getElementById('weather-form');
     const weatherCityInput = document.getElementById('weather-city-input');
@@ -50,10 +43,13 @@
     };
 
     const saveCachedDailyQuote = (quote) => {
-      localStorage.setItem(DAILY_QUOTE_CACHE_KEY, JSON.stringify({
-        date: getDailyQuoteDateKey(),
-        quote,
-      }));
+      localStorage.setItem(
+        DAILY_QUOTE_CACHE_KEY,
+        JSON.stringify({
+          date: getDailyQuoteDateKey(),
+          quote,
+        }),
+      );
     };
 
     const fetchDailyQuote = async () => {
@@ -103,8 +99,7 @@
       quoteWidget?.classList.add('hidden');
     };
 
-    const getLegacySavedWeatherCitiesKey = () =>
-      `${WEATHER_CACHE_PREFIX}-${getCurrentUser()?.id || 'guest'}`;
+    const getLegacySavedWeatherCitiesKey = () => `${WEATHER_CACHE_PREFIX}-${getCurrentUser()?.id || 'guest'}`;
 
     const loadLegacySavedWeatherCities = () => {
       try {
@@ -121,23 +116,28 @@
       const migrationKey = `task-manager-weather-db-migrated-${currentUser.id}`;
       if (sessionStorage.getItem(migrationKey)) return;
 
-      const legacyCities = loadLegacySavedWeatherCities()
-        .filter((city) => city && city.latitude !== undefined && city.longitude !== undefined);
+      const legacyCities = loadLegacySavedWeatherCities().filter(
+        (city) => city && city.latitude !== undefined && city.longitude !== undefined,
+      );
 
       if (!legacyCities.length) {
         sessionStorage.setItem(migrationKey, 'true');
         return;
       }
 
-      await Promise.all(legacyCities.map((city) => request('/api/weather-cities', {
-        method: 'POST',
-        body: JSON.stringify({
-          weather_key: city.weather_key || city.id,
-          name: city.name,
-          latitude: city.latitude,
-          longitude: city.longitude,
-        }),
-      })));
+      await Promise.all(
+        legacyCities.map((city) =>
+          request('/api/weather-cities', {
+            method: 'POST',
+            body: JSON.stringify({
+              weather_key: city.weather_key || city.id,
+              name: city.name,
+              latitude: city.latitude,
+              longitude: city.longitude,
+            }),
+          }),
+        ),
+      );
 
       localStorage.removeItem(getLegacySavedWeatherCitiesKey());
       sessionStorage.setItem(migrationKey, 'true');
@@ -173,13 +173,11 @@
       return result;
     };
 
-    const normalizeWeatherCityName = (match) => (
-      [match.name, match.country].filter(Boolean).join(', ')
-    );
+    const normalizeWeatherCityName = (match) => [match.name, match.country].filter(Boolean).join(', ');
 
     const fetchWeatherCityMatch = async (city) => {
       const response = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city)}&count=1&language=en&format=json`,
       );
       if (!response.ok) {
         throw new Error('City request failed');
@@ -191,7 +189,7 @@
 
     const fetchWeatherData = async (latitude, longitude) => {
       const response = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}&current=temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m,is_day&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`
+        `https://api.open-meteo.com/v1/forecast?latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}&current=temperature_2m,weather_code,relative_humidity_2m,wind_speed_10m,is_day&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`,
       );
       if (!response.ok) {
         throw new Error('Weather request failed');
@@ -214,7 +212,7 @@
     const getWeatherCard = (city, weatherData) => {
       const current = weatherData.current || {};
       const tempF = Math.round(Number(current.temperature_2m));
-      const tempC = Math.round((tempF - 32) * 5 / 9);
+      const tempC = Math.round(((tempF - 32) * 5) / 9);
       const timezone = weatherData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
       const localTime = new Date().toLocaleString(getLanguage() === 'vi' ? 'vi-VN' : 'en-US', {
         timeZone: timezone,
@@ -251,8 +249,9 @@
 
       let cities = [];
       try {
-        cities = (await loadSavedWeatherCities())
-          .filter((city) => city && city.latitude !== undefined && city.longitude !== undefined);
+        cities = (await loadSavedWeatherCities()).filter(
+          (city) => city && city.latitude !== undefined && city.longitude !== undefined,
+        );
       } catch (error) {
         console.error('Failed to load saved weather cities:', error);
         weatherMessage.textContent = t('weatherUnable');
@@ -265,20 +264,22 @@
         return;
       }
 
-      const cards = await Promise.all(cities.map(async (city) => {
-        try {
-          const weatherData = await fetchWeatherData(city.latitude, city.longitude);
-          return getWeatherCard(city, weatherData);
-        } catch (error) {
-          console.error('Failed to load city weather:', error);
-          return `
+      const cards = await Promise.all(
+        cities.map(async (city) => {
+          try {
+            const weatherData = await fetchWeatherData(city.latitude, city.longitude);
+            return getWeatherCard(city, weatherData);
+          } catch (error) {
+            console.error('Failed to load city weather:', error);
+            return `
             <article class="weather-card weather-card-error">
               <h4>${escapeHtml(city.name || t('weather'))}</h4>
               <p>${escapeHtml(t('weatherUnable'))}</p>
             </article>
           `;
-        }
-      }));
+          }
+        }),
+      );
 
       weatherMessage.textContent = '';
       weatherList.innerHTML = cards.join('');

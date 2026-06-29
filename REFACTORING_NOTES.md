@@ -1,6 +1,7 @@
 # Server Architecture Refactoring
 
 ## Overview
+
 The monolithic `app.js` has been refactored into smaller, focused modules following the Single Responsibility Principle. This improves maintainability, testability, and code organization.
 
 ## New Structure
@@ -21,18 +22,21 @@ src/server/
 ## Module Responsibilities
 
 ### `src/server/config/session.js`
+
 - **Responsibility**: Session middleware configuration
 - **Exports**: `createSessionMiddleware(isProduction)`
 - **Purpose**: Centralizes session configuration for consistency
 
 ### `src/server/bootstrap/health.js`
+
 - **Responsibility**: Health check endpoints and status payload generation
-- **Exports**: 
+- **Exports**:
   - `buildHealthPayload(dbReady, cacheReady, options)`
   - `registerHealthRoutes(app, dbReady, cacheReady)`
 - **Purpose**: Separates health check logic from app initialization
 
 ### `src/server/bootstrap/sockets.js`
+
 - **Responsibility**: HTTP server creation and Socket.IO initialization
 - **Exports**:
   - `createHttpServer(app)`
@@ -40,6 +44,7 @@ src/server/
 - **Purpose**: Encapsulates real-time communication setup
 
 ### `src/server/bootstrap/middleware.js`
+
 - **Responsibility**: Express middleware and request pipeline setup
 - **Exports**: Multiple setup functions
   - `setupExpressMiddleware(app)`
@@ -53,11 +58,13 @@ src/server/
 - **Purpose**: Modular middleware configuration for easy testing and reordering
 
 ### `src/server/bootstrap/routes.js`
+
 - **Responsibility**: Route registration and dependency injection
 - **Exports**: `registerRoutes(app, dependencies)`
 - **Purpose**: Centralizes route setup, making it easy to add/remove routes
 
 ### `src/server/app.js`
+
 - **Before**: 300+ lines handling initialization, middleware, sockets, health checks, routes
 - **After**: ~80 lines orchestrating bootstrap modules
 - **Purpose**: Clean app composition and module coordination
@@ -69,7 +76,7 @@ src/server/
 ✅ **Easier Maintenance**: Changes to one concern are isolated to one module  
 ✅ **Reusability**: Bootstrap modules can be reused or reconfigured  
 ✅ **Scalability**: Adding new middleware/routes requires minimal changes  
-✅ **Separation of Concerns**: Configuration, initialization, and routing are separate  
+✅ **Separation of Concerns**: Configuration, initialization, and routing are separate
 
 ## Migration Notes
 

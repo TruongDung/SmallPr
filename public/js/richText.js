@@ -1,10 +1,41 @@
 // Rich text rendering and editor behavior shared by task modals.
 (function () {
   const create = ({ escapeHtml }) => {
-    const allowedTags = new Set(['A', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL', 'UL', 'OL', 'LI', 'P', 'DIV', 'BR', 'LABEL', 'INPUT', 'SPAN', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'BLOCKQUOTE', 'PRE', 'CODE']);
+    const allowedTags = new Set([
+      'A',
+      'B',
+      'STRONG',
+      'I',
+      'EM',
+      'U',
+      'S',
+      'STRIKE',
+      'DEL',
+      'UL',
+      'OL',
+      'LI',
+      'P',
+      'DIV',
+      'BR',
+      'LABEL',
+      'INPUT',
+      'SPAN',
+      'H1',
+      'H2',
+      'H3',
+      'H4',
+      'H5',
+      'H6',
+      'BLOCKQUOTE',
+      'PRE',
+      'CODE',
+    ]);
     const editorSelections = new WeakMap();
 
-    const hasRichTextMarkup = (value = '') => /<\/?(a|b|strong|i|em|u|s|strike|del|ul|ol|li|p|div|br|label|input|span|h[1-6]|blockquote|pre|code)\b/i.test(value);
+    const hasRichTextMarkup = (value = '') =>
+      /<\/?(a|b|strong|i|em|u|s|strike|del|ul|ol|li|p|div|br|label|input|span|h[1-6]|blockquote|pre|code)\b/i.test(
+        value,
+      );
     const isSafeLinkHref = (href = '') => /^(https?:|mailto:)/i.test(href);
 
     // Map an element's inline CSS (common when pasting from Word / Google Docs)
@@ -35,10 +66,11 @@
       element.append(node);
     };
 
-    const autolinkPlainUrls = (html = '') => html.replace(
-      /(^|[\s>])((https?:\/\/)[^\s<]+)/gi,
-      (match, prefix, url) => `${prefix}<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
-    );
+    const autolinkPlainUrls = (html = '') =>
+      html.replace(
+        /(^|[\s>])((https?:\/\/)[^\s<]+)/gi,
+        (match, prefix, url) => `${prefix}<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`,
+      );
 
     const linkifyPlainText = (value = '') => autolinkPlainUrls(escapeHtml(value)).replace(/\n/g, '<br>');
 
@@ -126,9 +158,8 @@
       return template.innerHTML.trim();
     };
 
-    const renderStoredRichText = (value = '') => (
-      hasRichTextMarkup(value) ? sanitizeRichText(value) : linkifyPlainText(value)
-    );
+    const renderStoredRichText = (value = '') =>
+      hasRichTextMarkup(value) ? sanitizeRichText(value) : linkifyPlainText(value);
 
     const getRichTextPlainText = (html = '') => {
       if (!hasRichTextMarkup(html)) return String(html || '').trim();
@@ -144,7 +175,7 @@
       });
       // Normalize multiple newlines and trim
       return container.textContent
-        .replace(/\n{3,}/g, '\n\n')  // Max 2 consecutive newlines
+        .replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
         .trim();
     };
 
@@ -207,7 +238,8 @@
       const selection = window.getSelection();
       const selectedNode = selection?.rangeCount ? selection.getRangeAt(0).commonAncestorContainer : null;
       const baseNode = selectedNode?.nodeType === Node.TEXT_NODE ? selectedNode.parentElement : selectedNode;
-      const checkItem = baseNode?.closest?.('.rich-check-item') || document.activeElement?.closest?.('.rich-check-item');
+      const checkItem =
+        baseNode?.closest?.('.rich-check-item') || document.activeElement?.closest?.('.rich-check-item');
       if (!checkItem || !editor.contains(checkItem)) return null;
       return checkItem.closest('div') || checkItem;
     };
@@ -232,7 +264,7 @@
       document.execCommand(
         'insertHTML',
         false,
-        `<div><span class="rich-check-item"><input id="${id}" class="rich-check-input" data-rich-checklist="true" type="checkbox"> <span class="rich-check-text">Checklist item</span></span></div>`
+        `<div><span class="rich-check-item"><input id="${id}" class="rich-check-input" data-rich-checklist="true" type="checkbox"> <span class="rich-check-text">Checklist item</span></span></div>`,
       );
       editor.innerHTML = sanitizeRichText(editor.innerHTML);
       saveRichEditorSelection(editor);

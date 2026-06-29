@@ -42,12 +42,15 @@ const keyByUserOrIp = (req) => {
 };
 
 const jsonLimitHandler = (message) => (req, res) => {
-  logger.warn({
-    ip: req.ip,
-    userId: req.session?.userId || null,
-    path: req.originalUrl,
-    method: req.method,
-  }, 'Rate limit exceeded');
+  logger.warn(
+    {
+      ip: req.ip,
+      userId: req.session?.userId || null,
+      path: req.originalUrl,
+      method: req.method,
+    },
+    'Rate limit exceeded',
+  );
   res.status(429).json({ error: message });
 };
 

@@ -202,7 +202,19 @@ const SAVED_VIEW_KEY = 'task-manager-current-view';
 const REMEMBER_ME_KEY = 'task-manager-remember-me';
 const rememberMeCheckbox = document.getElementById('remember-me');
 const rememberMeText = document.getElementById('remember-me-text');
-const VIEW_NAMES = new Set(['dashboard', 'notes', 'tasks', 'calendar', 'sprints', 'archived', 'trash', 'tags', 'weather', 'credit-cards', 'admin']);
+const VIEW_NAMES = new Set([
+  'dashboard',
+  'notes',
+  'tasks',
+  'calendar',
+  'sprints',
+  'archived',
+  'trash',
+  'tags',
+  'weather',
+  'credit-cards',
+  'admin',
+]);
 const isAdminUser = () => currentUser?.username === 'admin';
 const isImpersonating = () => Boolean(currentUser?.impersonator);
 // Demo users are a client-only construct (id === 0).
@@ -338,12 +350,13 @@ const toggleTheme = () => {
   applyTheme();
 };
 
-const escapeHtml = (value = '') => String(value)
-  .replaceAll('&', '&amp;')
-  .replaceAll('<', '&lt;')
-  .replaceAll('>', '&gt;')
-  .replaceAll('"', '&quot;')
-  .replaceAll("'", '&#39;');
+const escapeHtml = (value = '') =>
+  String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 
 const applyTranslations = () => {
   document.documentElement.lang = currentLanguage;
@@ -359,7 +372,7 @@ const applyTranslations = () => {
   setText('label[for="password"]', t('password'));
   togglePasswordButton.setAttribute(
     'aria-label',
-    passwordInput.type === 'password' ? t('showPassword') : t('hidePassword')
+    passwordInput.type === 'password' ? t('showPassword') : t('hidePassword'),
   );
   setText('#auth-form button[type="submit"]', t('submit'));
   setIconButtonLabel(exportExcelButton, t('exportExcel'));
@@ -470,9 +483,8 @@ const applyTranslations = () => {
     button.setAttribute('aria-label', t('addRelatedTask'));
     button.title = t('addRelatedTask');
   });
-  editTaskTitle.textContent = pendingEditTask && pendingEditTask.title
-    ? t('editTaskName', { name: pendingEditTask.title })
-    : t('editTaskTitle');
+  editTaskTitle.textContent =
+    pendingEditTask && pendingEditTask.title ? t('editTaskName', { name: pendingEditTask.title }) : t('editTaskTitle');
   updatePreviewTaskModalTitle();
   setText('#edit-related-tasks-label', t('relatedTasks'));
   if (editRelatedTasksSearch) editRelatedTasksSearch.placeholder = t('relatedTasksSearchPlaceholder');
@@ -666,12 +678,14 @@ const renderPreviewTaskMeta = (task) => {
   }
 
   previewTaskMeta.innerHTML = chips
-    .map((chip) => `
+    .map(
+      (chip) => `
       <span class="${escapeHtml(chip.cls)}">
         <span class="preview-meta-chip-icon" aria-hidden="true">${escapeHtml(chip.icon)}</span>
         <span class="preview-meta-chip-text">${escapeHtml(chip.text)}</span>
       </span>
-    `)
+    `,
+    )
     .join('');
 
   previewTaskMeta.classList.toggle('hidden', !chips.length);
@@ -699,9 +713,15 @@ const relatedTasksModule = window.RelatedTasksModule.create({
   getAddTask: () => pendingAddTask,
   getEditTask: () => pendingEditTask,
   getPreviewTask: () => pendingPreviewTask,
-  setAddTask: (task) => { pendingAddTask = task; },
-  setEditTask: (task) => { pendingEditTask = task; },
-  setPreviewTask: (task) => { pendingPreviewTask = task; },
+  setAddTask: (task) => {
+    pendingAddTask = task;
+  },
+  setEditTask: (task) => {
+    pendingEditTask = task;
+  },
+  setPreviewTask: (task) => {
+    pendingPreviewTask = task;
+  },
   statusLabel,
   t,
   updateTask: (...args) => updateTask(...args),
@@ -826,29 +846,30 @@ const taskActivityModule = window.TaskActivityModule.create({
   renderRelatedTasks: () => renderRelatedTaskPicker('preview'),
 });
 
-const readAttachmentFile = (file, onProgress = () => {}) => new Promise((resolve, reject) => {
-  if (!file) {
-    resolve(null);
-    return;
-  }
+const readAttachmentFile = (file, onProgress = () => {}) =>
+  new Promise((resolve, reject) => {
+    if (!file) {
+      resolve(null);
+      return;
+    }
 
-  const reader = new FileReader();
-  reader.onprogress = (event) => {
-    if (!event.lengthComputable) return;
-    onProgress(Math.min(90, (event.loaded / event.total) * 90));
-  };
-  reader.onload = () => {
-    onProgress(90);
-    resolve({
-      name: file.name,
-      type: file.type || 'application/octet-stream',
-      data: reader.result,
-      size: file.size,
-    });
-  };
-  reader.onerror = () => reject(new Error('Unable to read attachment'));
-  reader.readAsDataURL(file);
-});
+    const reader = new FileReader();
+    reader.onprogress = (event) => {
+      if (!event.lengthComputable) return;
+      onProgress(Math.min(90, (event.loaded / event.total) * 90));
+    };
+    reader.onload = () => {
+      onProgress(90);
+      resolve({
+        name: file.name,
+        type: file.type || 'application/octet-stream',
+        data: reader.result,
+        size: file.size,
+      });
+    };
+    reader.onerror = () => reject(new Error('Unable to read attachment'));
+    reader.readAsDataURL(file);
+  });
 
 const fileFromClipboard = (clipboardData) => {
   if (!clipboardData?.items) return null;
@@ -981,7 +1002,7 @@ const scheduleTaskReminders = (loadedTasks) => {
 const loadTrashTasks = async () => {
   if (!trashList) return;
   trashList.innerHTML = '';
-  
+
   const result = await request('/api/tasks/trash');
   if (result.error) {
     showStatusToast(result.error, 'error');
@@ -1003,16 +1024,16 @@ const loadTrashTasks = async () => {
 
     const meta = document.createElement('div');
     meta.className = 'trash-task-meta';
-    
+
     const title = document.createElement('strong');
     title.textContent = task.title;
-    
+
     const deletedAt = document.createElement('span');
     deletedAt.className = 'trash-task-date';
     const deletedDate = new Date(task.deleted_at);
     const daysLeft = Math.max(0, 30 - Math.floor((Date.now() - deletedDate.getTime()) / (24 * 60 * 60 * 1000)));
     deletedAt.textContent = `${t('deletedOn')}: ${formatDateEST(task.deleted_at)} • ${daysLeft} ${t('daysLeft')}`;
-    
+
     meta.append(title, deletedAt);
 
     const actions = document.createElement('div');
@@ -1142,7 +1163,17 @@ const showSection = () => {
   creditCardSection.classList.toggle('hidden', !showCreditCards);
   notesSection.classList.toggle('hidden', !showNotes);
   if (dashboardSection) dashboardSection.classList.toggle('hidden', !showDashboard);
-  floatingAddTask.classList.toggle('hidden', showDashboard || showAdmin || showCreditCards || showNotes || currentView === 'weather' || currentView === 'tags' || currentView === 'sprints' || currentView === 'trash');
+  floatingAddTask.classList.toggle(
+    'hidden',
+    showDashboard ||
+      showAdmin ||
+      showCreditCards ||
+      showNotes ||
+      currentView === 'weather' ||
+      currentView === 'tags' ||
+      currentView === 'sprints' ||
+      currentView === 'trash',
+  );
 
   if (showDashboard) {
     if (window.dashboardModule) {
@@ -1413,9 +1444,8 @@ const populateTimezoneSuggestions = () => {
     'Asia/Tokyo',
     'Australia/Sydney',
   ];
-  const timezones = typeof Intl.supportedValuesOf === 'function'
-    ? Intl.supportedValuesOf('timeZone')
-    : fallbackTimezones;
+  const timezones =
+    typeof Intl.supportedValuesOf === 'function' ? Intl.supportedValuesOf('timeZone') : fallbackTimezones;
   timezoneSuggestions.innerHTML = '';
   timezones.forEach((timezone) => {
     const option = document.createElement('option');
@@ -1810,18 +1840,19 @@ const handleAuthSubmit = async (event) => {
   }
 
   const endpoint = currentMode === 'login' ? '/api/login' : '/api/register';
-  const payload = currentMode === 'login'
-    ? { username, password }
-    : {
-      username,
-      email,
-      password,
-      human_check: {
-        started_at: registrationStartedAt,
-        interaction_count: registrationInteractionCount,
-        website: authForm.website?.value || '',
-      },
-    };
+  const payload =
+    currentMode === 'login'
+      ? { username, password }
+      : {
+          username,
+          email,
+          password,
+          human_check: {
+            started_at: registrationStartedAt,
+            interaction_count: registrationInteractionCount,
+            website: authForm.website?.value || '',
+          },
+        };
   const result = await request(endpoint, {
     method: 'POST',
     body: JSON.stringify(payload),
@@ -1877,23 +1908,20 @@ const tagsModule = window.TagsModule.create({
   showStatusToast: (...args) => showStatusToast(...args),
   getTasks: () => tasks,
   getTags: () => tags,
-  setTags: (value) => { tags = value; },
+  setTags: (value) => {
+    tags = value;
+  },
   getTagFilter: () => currentTagFilter,
-  setTagFilter: (value) => { currentTagFilter = value; },
+  setTagFilter: (value) => {
+    currentTagFilter = value;
+  },
   setCurrentView: (...args) => setCurrentView(...args),
   showSection: (...args) => showSection(...args),
   loadTasks: (...args) => loadTasks(...args),
   confirmDeleteTag: (...args) => showTagDeleteConfirm(...args),
 });
-const {
-  loadTags,
-  renderTags,
-  setupTagSuggestions,
-  handleTagSubmit,
-  hideEditTagModal,
-  handleEditTagSubmit,
-  deleteTag,
-} = tagsModule;
+const { loadTags, renderTags, setupTagSuggestions, handleTagSubmit, hideEditTagModal, handleEditTagSubmit, deleteTag } =
+  tagsModule;
 
 const handleTaskSubmit = async (event) => {
   event.preventDefault();
@@ -1912,15 +1940,11 @@ const handleTaskSubmit = async (event) => {
   const is_recurring = taskRecurringCheckbox.checked;
   const recurrence_pattern = is_recurring ? taskRecurrencePattern.value : null;
   const recurrence_interval = is_recurring ? parseInt(taskRecurrenceInterval.value, 10) : null;
-  const recurrence_days = is_recurring && recurrence_pattern === 'weekly' ?
-    getSelectedWeekdays() : null;
-  const recurrence_timezone = is_recurring
-    ? (taskRecurrenceTimezone.value.trim() || getActiveTimezone())
-    : null;
+  const recurrence_days = is_recurring && recurrence_pattern === 'weekly' ? getSelectedWeekdays() : null;
+  const recurrence_timezone = is_recurring ? taskRecurrenceTimezone.value.trim() || getActiveTimezone() : null;
   const recurrence_end_date = is_recurring ? taskRecurrenceEndDate.value || null : null;
-  const recurrence_occurrence_limit = is_recurring && taskRecurrenceOccurrences.value
-    ? parseInt(taskRecurrenceOccurrences.value, 10)
-    : null;
+  const recurrence_occurrence_limit =
+    is_recurring && taskRecurrenceOccurrences.value ? parseInt(taskRecurrenceOccurrences.value, 10) : null;
 
   const titleError = document.getElementById('title-error');
   const descriptionError = document.getElementById('description-error');
@@ -1975,7 +1999,16 @@ const handleTaskSubmit = async (event) => {
     const result = await request('/api/tasks', {
       method: 'POST',
       body: JSON.stringify({
-        title, tag, description, priority, status, sprint_id, due_date, reminder_at, attachment: preparedAttachment, language: currentLanguage,
+        title,
+        tag,
+        description,
+        priority,
+        status,
+        sprint_id,
+        due_date,
+        reminder_at,
+        attachment: preparedAttachment,
+        language: currentLanguage,
         related_task_ids: getRelatedTaskIds(pendingAddTask),
         is_recurring,
         recurrence_pattern,
@@ -2084,10 +2117,10 @@ const renderTasks = (tasks) => {
     empty.textContent = searchQuery
       ? t('noSearchTasks')
       : activeTagFilter
-      ? t('noTaggedTasks')
-      : showingArchived
-        ? t('noArchivedTasks')
-        : t('noTasks');
+        ? t('noTaggedTasks')
+        : showingArchived
+          ? t('noArchivedTasks')
+          : t('noTasks');
     taskList.append(empty);
     return;
   }
@@ -2165,198 +2198,205 @@ const renderTasks = (tasks) => {
   taskList.append(
     createColumn(t('todo'), 'todo', todoTasks),
     createColumn(t('in_progress'), 'in_progress', inProgressTasks),
-    createColumn(t('done'), 'done', doneTasks)
+    createColumn(t('done'), 'done', doneTasks),
   );
 };
 
 const createTaskCard = (task) => {
-    const currentStatus = taskStatus(task);
-    const isArchived = Boolean(task.archived);
-    const isHighPriority = task.priority === 'high';
-    const canDeleteTask = task.can_delete === undefined || task.can_delete === true || Number(task.can_delete) === 1;
-    const card = document.createElement('div');
-    card.className = [
-      'task-item',
-      isHighPriority ? 'priority-high-task' : '',
-      isTaskOverdue(task) ? 'overdue-task' : '',
-      currentStatus === 'done' ? 'completed' : '',
-      isArchived ? 'archived' : '',
-    ].filter(Boolean).join(' ');
-    card.draggable = !isArchived;
-    card.dataset.taskId = task.id;
-    card.dataset.status = currentStatus;
-    card.tabIndex = 0;
-    card.addEventListener('click', (event) => {
-      if (window.matchMedia('(max-width: 640px)').matches && !event.target.closest('button, a')) {
-        showPreviewTaskModal(task);
-      }
-    });
-    if (!isArchived) {
-      card.addEventListener('dragstart', handleTaskDragStart);
-      card.addEventListener('dragend', handleTaskDragEnd);
+  const currentStatus = taskStatus(task);
+  const isArchived = Boolean(task.archived);
+  const isHighPriority = task.priority === 'high';
+  const canDeleteTask = task.can_delete === undefined || task.can_delete === true || Number(task.can_delete) === 1;
+  const card = document.createElement('div');
+  card.className = [
+    'task-item',
+    isHighPriority ? 'priority-high-task' : '',
+    isTaskOverdue(task) ? 'overdue-task' : '',
+    currentStatus === 'done' ? 'completed' : '',
+    isArchived ? 'archived' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+  card.draggable = !isArchived;
+  card.dataset.taskId = task.id;
+  card.dataset.status = currentStatus;
+  card.tabIndex = 0;
+  card.addEventListener('click', (event) => {
+    if (window.matchMedia('(max-width: 640px)').matches && !event.target.closest('button, a')) {
+      showPreviewTaskModal(task);
     }
+  });
+  if (!isArchived) {
+    card.addEventListener('dragstart', handleTaskDragStart);
+    card.addEventListener('dragend', handleTaskDragEnd);
+  }
 
-    const meta = document.createElement('div');
-    meta.className = 'task-meta';
-    const title = document.createElement('strong');
-    title.textContent = task.title;
-    if (task.is_recurring) {
-      const recurringBadge = document.createElement('span');
-      recurringBadge.className = 'recurring-badge';
-      recurringBadge.textContent = task.recurrence_rule_status === 'paused' ? '⏸' : '🔄';
-      recurringBadge.title = task.recurrence_rule_status === 'paused' ? 'Recurring task paused' : 'Recurring task';
-      title.append(' ', recurringBadge);
-    }
-    if (isTaskNew(task)) {
-      const newBadge = document.createElement('span');
-      newBadge.className = 'new-badge';
-      newBadge.textContent = t('newBadge');
-      newBadge.title = t('newBadgeHint');
-      title.append(' ', newBadge);
-    }
-    const badges = document.createElement('div');
-    badges.className = 'task-badges';
-    const priority = document.createElement('span');
-    priority.className = `priority-badge priority-${task.priority || 'medium'}`;
-    priority.textContent = priorityLabel(task.priority);
-    badges.append(priority);
-    if (task.tag) {
-      const tag = document.createElement('span');
-      tag.className = 'tag-badge';
-      tag.textContent = task.tag;
-      badges.append(tag);
-    }
-    meta.append(title, badges);
+  const meta = document.createElement('div');
+  meta.className = 'task-meta';
+  const title = document.createElement('strong');
+  title.textContent = task.title;
+  if (task.is_recurring) {
+    const recurringBadge = document.createElement('span');
+    recurringBadge.className = 'recurring-badge';
+    recurringBadge.textContent = task.recurrence_rule_status === 'paused' ? '⏸' : '🔄';
+    recurringBadge.title = task.recurrence_rule_status === 'paused' ? 'Recurring task paused' : 'Recurring task';
+    title.append(' ', recurringBadge);
+  }
+  if (isTaskNew(task)) {
+    const newBadge = document.createElement('span');
+    newBadge.className = 'new-badge';
+    newBadge.textContent = t('newBadge');
+    newBadge.title = t('newBadgeHint');
+    title.append(' ', newBadge);
+  }
+  const badges = document.createElement('div');
+  badges.className = 'task-badges';
+  const priority = document.createElement('span');
+  priority.className = `priority-badge priority-${task.priority || 'medium'}`;
+  priority.textContent = priorityLabel(task.priority);
+  badges.append(priority);
+  if (task.tag) {
+    const tag = document.createElement('span');
+    tag.className = 'tag-badge';
+    tag.textContent = task.tag;
+    badges.append(tag);
+  }
+  meta.append(title, badges);
 
-    const description = document.createElement('div');
-    description.className = 'task-description';
-    if (task.description) {
-      description.innerHTML = renderStoredRichText(task.description);
-      openRichTextLinksWithModifier(description);
+  const description = document.createElement('div');
+  description.className = 'task-description';
+  if (task.description) {
+    description.innerHTML = renderStoredRichText(task.description);
+    openRichTextLinksWithModifier(description);
+  } else {
+    description.textContent = t('noDescription');
+  }
+
+  const comment = document.createElement('div');
+  comment.className = 'task-comment';
+  comment.innerHTML = `<strong>${escapeHtml(t('comment'))}:</strong> ${renderStoredRichText(task.comment)}`;
+  openRichTextLinksWithModifier(comment);
+
+  const reminder = document.createElement('p');
+  reminder.className = 'task-reminder';
+  reminder.textContent = `${t('alert')}: ${formatLocalDateTime(task.reminder_at)}`;
+
+  const dueDate = document.createElement('p');
+  dueDate.className = 'task-due-date';
+  dueDate.textContent = `${t('dueDate')}: ${getTaskDueDateKey(task)}`;
+
+  const attachment = document.createElement('a');
+  if ((task.attachment_data || task.has_attachment || task.attachment_url) && task.attachment_name) {
+    attachment.className = 'task-attachment';
+    if (task.attachment_url) {
+      // File is stored in Google Drive — open the Drive link
+      attachment.href = task.attachment_url;
+      attachment.target = '_blank';
+      attachment.rel = 'noopener noreferrer';
+      attachment.textContent = `${t('attachment')}: ${task.attachment_name}`;
     } else {
-      description.textContent = t('noDescription');
+      attachment.href = task.attachment_data || '#';
+      attachment.download = task.attachment_name;
+      attachment.textContent = `${t('attachment')}: ${task.attachment_name}`;
     }
-
-    const comment = document.createElement('div');
-    comment.className = 'task-comment';
-    comment.innerHTML = `<strong>${escapeHtml(t('comment'))}:</strong> ${renderStoredRichText(task.comment)}`;
-    openRichTextLinksWithModifier(comment);
-
-    const reminder = document.createElement('p');
-    reminder.className = 'task-reminder';
-    reminder.textContent = `${t('alert')}: ${formatLocalDateTime(task.reminder_at)}`;
-
-    const dueDate = document.createElement('p');
-    dueDate.className = 'task-due-date';
-    dueDate.textContent = `${t('dueDate')}: ${getTaskDueDateKey(task)}`;
-
-    const attachment = document.createElement('a');
-    if ((task.attachment_data || task.has_attachment || task.attachment_url) && task.attachment_name) {
-      attachment.className = 'task-attachment';
-      if (task.attachment_url) {
-        // File is stored in Google Drive — open the Drive link
-        attachment.href = task.attachment_url;
-        attachment.target = '_blank';
-        attachment.rel = 'noopener noreferrer';
-        attachment.textContent = `${t('attachment')}: ${task.attachment_name}`;
-      } else {
-        attachment.href = task.attachment_data || '#';
-        attachment.download = task.attachment_name;
-        attachment.textContent = `${t('attachment')}: ${task.attachment_name}`;
-      }
-      if (!task.attachment_url && (isPdfAttachment(task) || isImageAttachment(task))) {
-        attachAttachmentPreviewHandler(attachment, task);
-      } else if (!task.attachment_url && !task.attachment_data) {
-        // Non-previewable file without loaded data: fetch on click, then download.
-        attachment.addEventListener('click', async (event) => {
-          event.preventDefault();
-          const data = await ensureAttachmentData(task);
-          if (!data) return;
-          const link = document.createElement('a');
-          link.href = data;
-          link.download = task.attachment_name;
-          document.body.appendChild(link);
-          link.click();
-          link.remove();
-        });
-      }
+    if (!task.attachment_url && (isPdfAttachment(task) || isImageAttachment(task))) {
+      attachAttachmentPreviewHandler(attachment, task);
+    } else if (!task.attachment_url && !task.attachment_data) {
+      // Non-previewable file without loaded data: fetch on click, then download.
+      attachment.addEventListener('click', async (event) => {
+        event.preventDefault();
+        const data = await ensureAttachmentData(task);
+        if (!data) return;
+        const link = document.createElement('a');
+        link.href = data;
+        link.download = task.attachment_name;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      });
     }
+  }
 
-    const actions = document.createElement('div');
-    actions.className = 'task-actions';
-    actions.addEventListener('mouseenter', () => card.classList.add('suppress-task-hover'));
-    actions.addEventListener('mouseleave', () => card.classList.remove('suppress-task-hover'));
-    actions.addEventListener('focusin', () => card.classList.add('suppress-task-hover'));
-    actions.addEventListener('focusout', () => card.classList.remove('suppress-task-hover'));
+  const actions = document.createElement('div');
+  actions.className = 'task-actions';
+  actions.addEventListener('mouseenter', () => card.classList.add('suppress-task-hover'));
+  actions.addEventListener('mouseleave', () => card.classList.remove('suppress-task-hover'));
+  actions.addEventListener('focusin', () => card.classList.add('suppress-task-hover'));
+  actions.addEventListener('focusout', () => card.classList.remove('suppress-task-hover'));
 
-    const hoverMessage = document.createElement('div');
-    hoverMessage.className = 'task-hover-popover';
-    hoverMessage.setAttribute('role', 'status');
+  const hoverMessage = document.createElement('div');
+  hoverMessage.className = 'task-hover-popover';
+  hoverMessage.setAttribute('role', 'status');
 
-    hoverMessage.textContent = getRichTextPlainText(task.description) || t('noDescription');
+  hoverMessage.textContent = getRichTextPlainText(task.description) || t('noDescription');
 
-    const toggleButton = document.createElement('button');
-    setActionIconButton(toggleButton, currentStatus === 'done' ? t('markOpen') : t('markDone'), currentStatus === 'done' ? '↻' : '✓');
-    toggleButton.addEventListener('click', () => updateTask(task.id, { status: currentStatus === 'done' ? 'todo' : 'done' }));
+  const toggleButton = document.createElement('button');
+  setActionIconButton(
+    toggleButton,
+    currentStatus === 'done' ? t('markOpen') : t('markDone'),
+    currentStatus === 'done' ? '↻' : '✓',
+  );
+  toggleButton.addEventListener('click', () =>
+    updateTask(task.id, { status: currentStatus === 'done' ? 'todo' : 'done' }),
+  );
 
-    const archiveButton = document.createElement('button');
-    setActionIconButton(archiveButton, isArchived ? t('restore') : t('archive'), isArchived ? '↥' : '▣');
-    archiveButton.addEventListener('click', () => updateTask(task.id, { archived: !isArchived }));
+  const archiveButton = document.createElement('button');
+  setActionIconButton(archiveButton, isArchived ? t('restore') : t('archive'), isArchived ? '↥' : '▣');
+  archiveButton.addEventListener('click', () => updateTask(task.id, { archived: !isArchived }));
 
-    const recurrenceButton = document.createElement('button');
-    const recurrencePaused = task.recurrence_rule_status === 'paused';
-    setActionIconButton(
-      recurrenceButton,
-      recurrencePaused ? 'Resume recurrence' : 'Pause recurrence',
-      recurrencePaused ? '▶' : 'Ⅱ'
-    );
-    recurrenceButton.addEventListener('click', () => updateTaskRecurrenceStatus(
-      task.id,
-      recurrencePaused ? 'resume' : 'pause'
-    ));
+  const recurrenceButton = document.createElement('button');
+  const recurrencePaused = task.recurrence_rule_status === 'paused';
+  setActionIconButton(
+    recurrenceButton,
+    recurrencePaused ? 'Resume recurrence' : 'Pause recurrence',
+    recurrencePaused ? '▶' : 'Ⅱ',
+  );
+  recurrenceButton.addEventListener('click', () =>
+    updateTaskRecurrenceStatus(task.id, recurrencePaused ? 'resume' : 'pause'),
+  );
 
-    const previewButton = document.createElement('button');
-    setActionIconButton(previewButton, t('preview'), '👁');
-    previewButton.addEventListener('click', () => showPreviewTaskModal(task));
+  const previewButton = document.createElement('button');
+  setActionIconButton(previewButton, t('preview'), '👁');
+  previewButton.addEventListener('click', () => showPreviewTaskModal(task));
 
-    const editButton = document.createElement('button');
-    setActionIconButton(editButton, t('edit'), '✎');
-    editButton.addEventListener('click', () => showEditTaskModal(task));
+  const editButton = document.createElement('button');
+  setActionIconButton(editButton, t('edit'), '✎');
+  editButton.addEventListener('click', () => showEditTaskModal(task));
 
-    const deleteButton = document.createElement('button');
-    setActionIconButton(deleteButton, t('delete'), '×');
-    deleteButton.classList.add('danger');
-    deleteButton.addEventListener('click', () => showDeleteConfirm(task.id));
+  const deleteButton = document.createElement('button');
+  setActionIconButton(deleteButton, t('delete'), '×');
+  deleteButton.classList.add('danger');
+  deleteButton.addEventListener('click', () => showDeleteConfirm(task.id));
 
-    if (!isArchived && currentStatus === 'done') {
-      // Only show the toggle on completed cards so it can be reopened.
-      // Todo / In Progress cards no longer show a "Mark done" button.
-      actions.append(toggleButton);
-    }
-    // Always show the View button on every task card.
-    actions.append(previewButton);
-    if (task.is_recurring && task.recurring_rule_id) {
-      actions.append(recurrenceButton);
-    }
-    actions.append(editButton, archiveButton);
-    if (canDeleteTask) {
-      actions.append(deleteButton);
-    }
-    card.append(hoverMessage, meta, description);
-    if (task.comment) {
-      card.append(comment);
-    }
-    if (task.due_date) {
-      card.append(dueDate);
-    }
-    if (task.reminder_at) {
-      card.append(reminder);
-    }
-    if (attachment.href) {
-      card.append(attachment);
-    }
-    card.append(actions);
-    return card;
+  if (!isArchived && currentStatus === 'done') {
+    // Only show the toggle on completed cards so it can be reopened.
+    // Todo / In Progress cards no longer show a "Mark done" button.
+    actions.append(toggleButton);
+  }
+  // Always show the View button on every task card.
+  actions.append(previewButton);
+  if (task.is_recurring && task.recurring_rule_id) {
+    actions.append(recurrenceButton);
+  }
+  actions.append(editButton, archiveButton);
+  if (canDeleteTask) {
+    actions.append(deleteButton);
+  }
+  card.append(hoverMessage, meta, description);
+  if (task.comment) {
+    card.append(comment);
+  }
+  if (task.due_date) {
+    card.append(dueDate);
+  }
+  if (task.reminder_at) {
+    card.append(reminder);
+  }
+  if (attachment.href) {
+    card.append(attachment);
+  }
+  card.append(actions);
+  return card;
 };
 
 const handleTaskDragStart = (event) => {
@@ -2659,7 +2699,20 @@ const hideDeleteConfirm = () => {
 confirmDeleteNo.addEventListener('click', hideDeleteConfirm);
 
 confirmDeleteYes.addEventListener('click', async () => {
-  if (!pendingDeleteTaskId && !pendingPermanentDeleteTaskId && !pendingDeleteUser && !pendingDeleteTag && !pendingDeleteCard && !pendingDeleteFastAccessLink && !pendingDeleteNote && !pendingDeleteTransaction && !pendingDeleteSprint && !pendingDeleteTestUsers && !pendingClearAuditLogs) return;
+  if (
+    !pendingDeleteTaskId &&
+    !pendingPermanentDeleteTaskId &&
+    !pendingDeleteUser &&
+    !pendingDeleteTag &&
+    !pendingDeleteCard &&
+    !pendingDeleteFastAccessLink &&
+    !pendingDeleteNote &&
+    !pendingDeleteTransaction &&
+    !pendingDeleteSprint &&
+    !pendingDeleteTestUsers &&
+    !pendingClearAuditLogs
+  )
+    return;
   const taskId = pendingDeleteTaskId;
   const permanentTaskId = pendingPermanentDeleteTaskId;
   const user = pendingDeleteUser;
@@ -2896,16 +2949,11 @@ const buildEditTaskUpdates = ({ includeDescription = false, includeComment = fal
   const isRecurring = editTaskRecurringCheckbox.checked;
   const recurrencePattern = isRecurring ? editTaskRecurrencePattern.value : null;
   const recurrenceInterval = isRecurring ? parseInt(editTaskRecurrenceInterval.value, 10) : null;
-  const recurrenceDays = isRecurring && recurrencePattern === 'weekly'
-    ? getSelectedWeekdays(editWeeklyOptions)
-    : null;
-  const recurrenceTimezone = isRecurring
-    ? (editTaskRecurrenceTimezone.value.trim() || getActiveTimezone())
-    : null;
+  const recurrenceDays = isRecurring && recurrencePattern === 'weekly' ? getSelectedWeekdays(editWeeklyOptions) : null;
+  const recurrenceTimezone = isRecurring ? editTaskRecurrenceTimezone.value.trim() || getActiveTimezone() : null;
   const recurrenceEndDate = isRecurring ? editTaskRecurrenceEndDate.value || null : null;
-  const recurrenceOccurrenceLimit = isRecurring && editTaskRecurrenceOccurrences.value
-    ? parseInt(editTaskRecurrenceOccurrences.value, 10)
-    : null;
+  const recurrenceOccurrenceLimit =
+    isRecurring && editTaskRecurrenceOccurrences.value ? parseInt(editTaskRecurrenceOccurrences.value, 10) : null;
 
   if (!title) {
     editFormError.textContent = t('titleEmpty');
@@ -2944,7 +2992,8 @@ const buildEditTaskUpdates = ({ includeDescription = false, includeComment = fal
   }
 
   if (isRecurring && recurrencePattern === 'weekly' && !recurrenceDays) {
-    editFormError.textContent = t('weeklyRecurrenceNeedsDays') || 'Please select at least one day for weekly recurrence';
+    editFormError.textContent =
+      t('weeklyRecurrenceNeedsDays') || 'Please select at least one day for weekly recurrence';
     editFormError.classList.remove('hidden');
     return null;
   }
@@ -2989,26 +3038,32 @@ const normalizeEditTaskComparableSnapshot = (snapshot = {}) => ({
   tag: String(snapshot.tag || ''),
   priority: snapshot.priority || 'medium',
   status: snapshot.status || 'todo',
-  sprint_id: snapshot.sprint_id === null || snapshot.sprint_id === undefined || snapshot.sprint_id === ''
-    ? null
-    : Number(snapshot.sprint_id),
+  sprint_id:
+    snapshot.sprint_id === null || snapshot.sprint_id === undefined || snapshot.sprint_id === ''
+      ? null
+      : Number(snapshot.sprint_id),
   due_date: getDateInputValue(snapshot.due_date) || null,
   reminder_at: snapshot.reminder_at || null,
   is_recurring: Boolean(snapshot.is_recurring),
   recurrence_pattern: snapshot.recurrence_pattern || null,
-  recurrence_interval: snapshot.recurrence_interval === null || snapshot.recurrence_interval === undefined || snapshot.recurrence_interval === ''
-    ? null
-    : Number(snapshot.recurrence_interval),
+  recurrence_interval:
+    snapshot.recurrence_interval === null ||
+    snapshot.recurrence_interval === undefined ||
+    snapshot.recurrence_interval === ''
+      ? null
+      : Number(snapshot.recurrence_interval),
   recurrence_days: snapshot.recurrence_days || null,
   recurrence_timezone: snapshot.recurrence_timezone || null,
   recurrence_end_date: getDateInputValue(snapshot.recurrence_end_date) || null,
-  recurrence_occurrence_limit: snapshot.recurrence_occurrence_limit === null || snapshot.recurrence_occurrence_limit === undefined || snapshot.recurrence_occurrence_limit === ''
-    ? null
-    : Number(snapshot.recurrence_occurrence_limit),
-  related_task_ids: [...new Set((snapshot.related_task_ids || [])
-    .map((id) => Number(id))
-    .filter((id) => Number.isInteger(id)))]
-    .sort((left, right) => left - right),
+  recurrence_occurrence_limit:
+    snapshot.recurrence_occurrence_limit === null ||
+    snapshot.recurrence_occurrence_limit === undefined ||
+    snapshot.recurrence_occurrence_limit === ''
+      ? null
+      : Number(snapshot.recurrence_occurrence_limit),
+  related_task_ids: [
+    ...new Set((snapshot.related_task_ids || []).map((id) => Number(id)).filter((id) => Number.isInteger(id))),
+  ].sort((left, right) => left - right),
   description: snapshot.description || '',
   comment: snapshot.comment || '',
 });
@@ -3026,16 +3081,12 @@ const buildEditTaskComparableSnapshot = () => {
     is_recurring: isRecurring,
     recurrence_pattern: isRecurring ? editTaskRecurrencePattern.value : null,
     recurrence_interval: isRecurring ? parseInt(editTaskRecurrenceInterval.value, 10) : null,
-    recurrence_days: isRecurring && editTaskRecurrencePattern.value === 'weekly'
-      ? getSelectedWeekdays(editWeeklyOptions)
-      : null,
-    recurrence_timezone: isRecurring
-      ? (editTaskRecurrenceTimezone.value.trim() || getActiveTimezone())
-      : null,
+    recurrence_days:
+      isRecurring && editTaskRecurrencePattern.value === 'weekly' ? getSelectedWeekdays(editWeeklyOptions) : null,
+    recurrence_timezone: isRecurring ? editTaskRecurrenceTimezone.value.trim() || getActiveTimezone() : null,
     recurrence_end_date: isRecurring ? editTaskRecurrenceEndDate.value || null : null,
-    recurrence_occurrence_limit: isRecurring && editTaskRecurrenceOccurrences.value
-      ? parseInt(editTaskRecurrenceOccurrences.value, 10)
-      : null,
+    recurrence_occurrence_limit:
+      isRecurring && editTaskRecurrenceOccurrences.value ? parseInt(editTaskRecurrenceOccurrences.value, 10) : null,
     related_task_ids: getRelatedTaskIds(pendingEditTask),
     description: getRichEditorValue(editTaskDescriptionInput),
     comment: getRichEditorValue(editTaskCommentInput),
@@ -3050,16 +3101,16 @@ const buildEditTaskComparableUpdates = (updates = {}) => {
   return Object.fromEntries(
     Object.keys(updates)
       .filter((key) => key !== 'attachment')
-      .map((key) => [key, normalized[key]])
+      .map((key) => [key, normalized[key]]),
   );
 };
 
 const hasEditTaskComparableChanges = (updates) => {
   if (!editTaskLastSavedSnapshot || preparedEditAttachment || removeEditAttachment) return true;
   const comparableUpdates = buildEditTaskComparableUpdates(updates);
-  return Object.entries(comparableUpdates).some(([key, value]) => (
-    JSON.stringify(value) !== JSON.stringify(editTaskLastSavedSnapshot[key])
-  ));
+  return Object.entries(comparableUpdates).some(
+    ([key, value]) => JSON.stringify(value) !== JSON.stringify(editTaskLastSavedSnapshot[key]),
+  );
 };
 
 const saveEditTaskNow = async (options = {}) => {
@@ -3111,18 +3162,12 @@ const scheduleEditTaskAutosave = ({ immediate = false } = {}) => {
   const delayMs = immediate ? 0 : 550;
   editTaskAutosaveTimer = setTimeout(() => {
     editTaskAutosaveTimer = null;
-    editTaskAutosaveQueue = editTaskAutosaveQueue
-      .catch(() => {})
-      .then(() => saveEditTaskNow());
+    editTaskAutosaveQueue = editTaskAutosaveQueue.catch(() => {}).then(() => saveEditTaskNow());
   }, delayMs);
 };
 
 const bindEditTaskAutosave = () => {
-  [
-    editTaskTitleInput,
-    editTaskTagInput,
-    editTaskRecurrenceTimezone,
-  ].forEach((input) => {
+  [editTaskTitleInput, editTaskTagInput, editTaskRecurrenceTimezone].forEach((input) => {
     input?.addEventListener('input', () => scheduleEditTaskAutosave());
     input?.addEventListener('blur', () => scheduleEditTaskAutosave({ immediate: true }));
   });
@@ -3301,9 +3346,7 @@ const showEditTaskModal = (task) => {
   preparedEditAttachment = null;
   removeEditAttachment = false;
   clearEditTaskErrors();
-  editTaskTitle.textContent = task.title
-    ? t('editTaskName', { name: task.title })
-    : t('editTaskTitle');
+  editTaskTitle.textContent = task.title ? t('editTaskName', { name: task.title }) : t('editTaskTitle');
   editTaskTitleInput.value = task.title;
   editTaskPriorityInput.value = task.priority || 'medium';
   editTaskStatusInput.value = taskStatus(task);
@@ -3422,15 +3465,11 @@ const showPreviewTaskModal = async (task) => {
   updatePreviewTaskModalTitle();
   renderPreviewTaskMeta(task);
   renderRelatedTaskPicker('preview');
-  previewTaskDescription.innerHTML = task.description
-    ? renderStoredRichText(task.description)
-    : t('noDescription');
+  previewTaskDescription.innerHTML = task.description ? renderStoredRichText(task.description) : t('noDescription');
   openRichTextLinksWithModifier(previewTaskDescription);
   setRichEditorValue(previewTaskCommentInput, task.comment || '');
   previewTaskCommentInput.contentEditable = 'false';
-  previewTaskCommentDisplay.innerHTML = task.comment
-    ? renderStoredRichText(task.comment)
-    : t('noComment');
+  previewTaskCommentDisplay.innerHTML = task.comment ? renderStoredRichText(task.comment) : t('noComment');
   previewTaskCommentDisplay.classList.remove('hidden');
   previewTaskCommentInput.closest('.rich-editor')?.classList.add('hidden');
   openRichTextLinksWithModifier(previewTaskCommentDisplay);
@@ -3655,18 +3694,18 @@ const handleLogout = async () => {
   prefillRememberedCredentials();
 };
 
-
 // Read a File into raw base64 (without the data-URL prefix) so it can be sent
 // as JSON to the import-email endpoint.
-const readEmailFileAsBase64 = (file) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onload = () => {
-    const result = String(reader.result || '');
-    resolve(result.slice(result.indexOf(',') + 1));
-  };
-  reader.onerror = () => reject(reader.error || new Error('Unable to read file'));
-  reader.readAsDataURL(file);
-});
+const readEmailFileAsBase64 = (file) =>
+  new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result || '');
+      resolve(result.slice(result.indexOf(',') + 1));
+    };
+    reader.onerror = () => reject(reader.error || new Error('Unable to read file'));
+    reader.readAsDataURL(file);
+  });
 
 // Import a saved .eml file and let the server auto-create a task from it.
 const importTaskFromEmail = async (event) => {
@@ -3812,7 +3851,9 @@ const adminModule = window.AdminModule.create({
   showStatusToast,
   setText,
   getCurrentUser: () => currentUser,
-  setCurrentUser: (user) => { currentUser = user; },
+  setCurrentUser: (user) => {
+    currentUser = user;
+  },
   isAdminUser,
   resetFinancialModules,
   applyUserPreferences,

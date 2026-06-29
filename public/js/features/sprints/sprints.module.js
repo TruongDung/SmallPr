@@ -71,9 +71,7 @@
       return { sprints, sprintTasks };
     };
 
-    const normalizeSprintId = (value) => (value === null || value === undefined || value === ''
-      ? null
-      : Number(value));
+    const normalizeSprintId = (value) => (value === null || value === undefined || value === '' ? null : Number(value));
 
     const isAdminUser = () => getCurrentUser()?.username === 'admin';
     const canDeleteSprint = (sprint) => Number(sprint.is_owner) === 1 || isAdminUser();
@@ -82,15 +80,12 @@
       return Number(task.user_id) === currentUserId || Number(task.sprint_owner_user_id) === currentUserId;
     };
 
-    const getTasksForSprint = (sprintId) => sprintTasks.filter((task) => (
-      normalizeSprintId(task.sprint_id) === normalizeSprintId(sprintId)
-    ));
+    const getTasksForSprint = (sprintId) =>
+      sprintTasks.filter((task) => normalizeSprintId(task.sprint_id) === normalizeSprintId(sprintId));
 
     const normalizeEditorIds = (value) => {
       if (Array.isArray(value)) {
-        return value
-          .map((id) => Number(id))
-          .filter((id) => Number.isInteger(id) && id > 0);
+        return value.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0);
       }
       const id = Number(value);
       return Number.isInteger(id) && id > 0 ? [id] : [];
@@ -106,21 +101,20 @@
         return sprint.editors;
       }
       if (sprint.editor_user_id && (sprint.editor_name || sprint.editor_username)) {
-        return [{
-          id: sprint.editor_user_id,
-          name: sprint.editor_name,
-          username: sprint.editor_username,
-        }];
+        return [
+          {
+            id: sprint.editor_user_id,
+            name: sprint.editor_name,
+            username: sprint.editor_username,
+          },
+        ];
       }
       return [];
     };
 
     const formatUserName = (user) => user.name || user.username || '';
 
-    const formatEditorNames = (editors) => editors
-      .map(formatUserName)
-      .filter(Boolean)
-      .join(', ');
+    const formatEditorNames = (editors) => editors.map(formatUserName).filter(Boolean).join(', ');
 
     const getSelectedEditorIds = () => {
       if (!editorInput) return [];
@@ -167,7 +161,8 @@
 
       const count = document.createElement('span');
       count.className = 'sprint-editor-count';
-      count.textContent = t('sprintEditorsSelected', { count: selectedEditorIds.length }) || `${selectedEditorIds.length} selected`;
+      count.textContent =
+        t('sprintEditorsSelected', { count: selectedEditorIds.length }) || `${selectedEditorIds.length} selected`;
       editorSummary.append(count);
     };
 
@@ -188,8 +183,8 @@
         const empty = document.createElement('p');
         empty.className = 'sprint-editor-options-empty';
         empty.textContent = isLoadingEditors
-          ? (t('sprintEditorsLoading') || 'Loading editors...')
-          : (t('sprintNoEditorsAvailable') || 'No eligible users');
+          ? t('sprintEditorsLoading') || 'Loading editors...'
+          : t('sprintNoEditorsAvailable') || 'No eligible users';
         editorOptions.append(empty);
         return;
       }
@@ -202,7 +197,10 @@
         option.className = `sprint-editor-option${isSelected ? ' is-selected' : ''}`;
         option.setAttribute('role', 'option');
         option.setAttribute('aria-selected', String(isSelected));
-        option.setAttribute('aria-label', t('sprintEditorToggle', { username: displayName }) || `Toggle ${displayName}`);
+        option.setAttribute(
+          'aria-label',
+          t('sprintEditorToggle', { username: displayName }) || `Toggle ${displayName}`,
+        );
         option.addEventListener('click', () => toggleEditorSelection(user.id));
 
         const text = document.createElement('span');
@@ -249,9 +247,9 @@
         showStatusToast(result.error, 'error');
         return;
       }
-      assignableEditors = (result.users || []).filter((user) => (
-        user.username !== 'admin' && user.account_status === 'enabled'
-      ));
+      assignableEditors = (result.users || []).filter(
+        (user) => user.username !== 'admin' && user.account_status === 'enabled',
+      );
       setEditorOptions(selectedValues);
     };
 
@@ -293,8 +291,8 @@
 
       showStatusToast(
         normalizedSprintId === null
-          ? (t('taskRemovedFromSprint') || 'Task moved to backlog.')
-          : (t('taskAssignedToSprint') || 'Task added to sprint.')
+          ? t('taskRemovedFromSprint') || 'Task moved to backlog.'
+          : t('taskAssignedToSprint') || 'Task added to sprint.',
       );
       await loadSprints();
     };
@@ -401,11 +399,7 @@
       hint.className = 'sprint-backlog-hint';
       hint.textContent = t('dragTasksToSprint') || 'Drag tasks into a sprint.';
 
-      backlog.append(
-        heading,
-        hint,
-        createTaskList(backlogTasks, t('noBacklogTasks') || 'No unassigned tasks.')
-      );
+      backlog.append(heading, hint, createTaskList(backlogTasks, t('noBacklogTasks') || 'No unassigned tasks.'));
 
       return backlog;
     };
@@ -419,9 +413,7 @@
         showStatusToast(result.error, 'error');
         return;
       }
-      showStatusToast(archived
-        ? (t('sprintArchived') || 'Sprint archived.')
-        : (t('sprintRestored') || 'Sprint restored.'));
+      showStatusToast(archived ? t('sprintArchived') || 'Sprint archived.' : t('sprintRestored') || 'Sprint restored.');
       onSprintsChanged();
       await loadSprints({ archived: !archived });
     };
@@ -484,8 +476,8 @@
       archiveBtn.className = 'task-action-icon secondary';
       archiveBtn.textContent = archivedView ? '↥' : '▣';
       archiveBtn.title = archivedView
-        ? (t('restoreSprint') || t('restore') || 'Restore')
-        : (t('archiveSprint') || t('archive') || 'Archive');
+        ? t('restoreSprint') || t('restore') || 'Restore'
+        : t('archiveSprint') || t('archive') || 'Archive';
       archiveBtn.setAttribute('aria-label', archiveBtn.title);
       archiveBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -503,7 +495,9 @@
       people.className = 'sprint-card-people';
       if (!canDeleteSprint(sprint) && (sprint.owner_name || sprint.owner_username)) {
         const owner = document.createElement('span');
-        owner.textContent = t('sprintOwnedBy', { username: sprint.owner_name || sprint.owner_username }) || `Owner: ${sprint.owner_name || sprint.owner_username}`;
+        owner.textContent =
+          t('sprintOwnedBy', { username: sprint.owner_name || sprint.owner_username }) ||
+          `Owner: ${sprint.owner_name || sprint.owner_username}`;
         people.append(owner);
       }
       const editors = getSprintEditors(sprint);
@@ -558,7 +552,9 @@
       card.append(
         meta,
         progressWrap,
-        createTaskList(sprintCardTasks, t('noSprintTasks') || 'Drop tasks here.', { removable: archivedView ? false : canRemoveTaskFromSprint })
+        createTaskList(sprintCardTasks, t('noSprintTasks') || 'Drop tasks here.', {
+          removable: archivedView ? false : canRemoveTaskFromSprint,
+        }),
       );
 
       return card;
@@ -605,7 +601,9 @@
       sprintGrid.className = 'sprint-cards';
 
       const totalTasks = sprintTasks.filter((task) => !task.archived).length;
-      const assignedTasks = sprintTasks.filter((task) => normalizeSprintId(task.sprint_id) !== null && !task.archived).length;
+      const assignedTasks = sprintTasks.filter(
+        (task) => normalizeSprintId(task.sprint_id) !== null && !task.archived,
+      ).length;
       const summary = document.createElement('div');
       summary.className = 'sprint-summary';
       [
@@ -691,7 +689,7 @@
         openAddButton.title = t('newSprint') || 'New Sprint';
       }
       if (modalTitle) {
-        modalTitle.textContent = editingId ? (t('editSprint') || 'Edit Sprint') : (t('newSprint') || 'New Sprint');
+        modalTitle.textContent = editingId ? t('editSprint') || 'Edit Sprint' : t('newSprint') || 'New Sprint';
       }
 
       const nameLabel = document.querySelector('label[for="sprint-name-input"]');
@@ -708,7 +706,8 @@
       if (statusLabel) statusLabel.textContent = t('sprintStatus') || 'Status';
       const editorLabel = document.querySelector('label[for="sprint-editor-input"]');
       if (editorLabel) editorLabel.textContent = t('sprintEditors') || 'Editors';
-      if (editorHint) editorHint.textContent = t('sprintEditorHint') || 'Selected users can update this sprint and its tasks.';
+      if (editorHint)
+        editorHint.textContent = t('sprintEditorHint') || 'Selected users can update this sprint and its tasks.';
       setEditorOptions(getSelectedEditorIds());
       if (editorField) editorField.classList.toggle('hidden', !isAdminUser());
 

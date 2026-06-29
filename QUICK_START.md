@@ -63,6 +63,7 @@ CREATE DATABASE taskmanager;
 Open **two terminals**:
 
 **Terminal 1 - Backend:**
+
 ```bash
 npm run dev
 ```
@@ -70,6 +71,7 @@ npm run dev
 Wait for: `✅ Server running on http://localhost:3000`
 
 **Terminal 2 - Frontend:**
+
 ```bash
 cd client
 npm run dev
@@ -90,6 +92,7 @@ Wait for: `Local: http://localhost:5173`
 ### Install PostgreSQL
 
 **Windows:**
+
 ```bash
 # Using Chocolatey
 choco install postgresql
@@ -99,6 +102,7 @@ choco install postgresql
 ```
 
 **macOS:**
+
 ```bash
 # Using Homebrew
 brew install postgresql@16
@@ -106,6 +110,7 @@ brew services start postgresql@16
 ```
 
 **Linux (Ubuntu/Debian):**
+
 ```bash
 sudo apt update
 sudo apt install postgresql postgresql-contrib
@@ -115,6 +120,7 @@ sudo systemctl start postgresql
 ### Install Redis
 
 **Windows:**
+
 ```bash
 # Using Chocolatey
 choco install redis-64
@@ -123,6 +129,7 @@ choco install redis-64
 ```
 
 **macOS:**
+
 ```bash
 # Using Homebrew
 brew install redis
@@ -130,6 +137,7 @@ brew services start redis
 ```
 
 **Linux (Ubuntu/Debian):**
+
 ```bash
 sudo apt update
 sudo apt install redis-server
@@ -163,12 +171,14 @@ docker run -d \
 ### "Port 3000 already in use"
 
 **Windows:**
+
 ```bash
 netstat -ano | findstr :3000
 taskkill /PID <PID> /F
 ```
 
 **Mac/Linux:**
+
 ```bash
 lsof -ti:3000 | xargs kill -9
 ```

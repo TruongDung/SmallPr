@@ -2,9 +2,7 @@ import { request } from './http';
 import type { Task, TaskPayload } from './types';
 
 export const listTasks = (archived = false) =>
-  request<{ tasks: Task[] }>(`/api/tasks${archived ? '?archived=true' : ''}`).then(
-    (r) => r.tasks,
-  );
+  request<{ tasks: Task[] }>(`/api/tasks${archived ? '?archived=true' : ''}`).then((r) => r.tasks);
 
 export const createTask = (payload: TaskPayload) =>
   request<{ task: Task; emailSent?: boolean }>('/api/tasks', {
@@ -19,8 +17,7 @@ export const updateTask = (id: number, payload: TaskPayload) =>
     body: JSON.stringify(payload),
   }).then((r) => r.task);
 
-export const deleteTask = (id: number) =>
-  request<{ success: boolean }>(`/api/tasks/${id}`, { method: 'DELETE' });
+export const deleteTask = (id: number) => request<{ success: boolean }>(`/api/tasks/${id}`, { method: 'DELETE' });
 
 export const sendTaskEmail = (id: number, language?: string) =>
   request<{ success?: boolean }>(`/api/tasks/${id}/send-email`, {

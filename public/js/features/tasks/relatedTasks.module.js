@@ -86,9 +86,10 @@
         meta.className = 'related-tasks-chip-meta';
 
         const isPreview = pickerName === 'preview';
-        const canOpen = (isPreview || pickerName === 'edit')
-          && typeof onOpenRelatedTask === 'function'
-          && Number.isInteger(Number(id));
+        const canOpen =
+          (isPreview || pickerName === 'edit') &&
+          typeof onOpenRelatedTask === 'function' &&
+          Number.isInteger(Number(id));
         const name = document.createElement(canOpen ? 'button' : 'span');
         name.className = 'related-tasks-chip-name';
         if (canOpen) {
@@ -99,16 +100,13 @@
           const openLabel = t('relatedTaskOpen');
           // Fall back to the task title when the translation key is missing so
           // the tooltip stays readable rather than showing "relatedTaskOpen".
-          name.title = openLabel === 'relatedTaskOpen' ? (related.title || '') : openLabel;
-          name.setAttribute('aria-label',
-            openLabel === 'relatedTaskOpen' ? `Open ${related.title || ''}` : openLabel);
+          name.title = openLabel === 'relatedTaskOpen' ? related.title || '' : openLabel;
+          name.setAttribute('aria-label', openLabel === 'relatedTaskOpen' ? `Open ${related.title || ''}` : openLabel);
         }
         // Truncate title to keep chip compact
         const maxTitleLength = 25;
         const fullTitle = related.title || t('previewTaskTitle');
-        name.textContent = fullTitle.length > maxTitleLength 
-          ? fullTitle.slice(0, maxTitleLength) + '…' 
-          : fullTitle;
+        name.textContent = fullTitle.length > maxTitleLength ? fullTitle.slice(0, maxTitleLength) + '…' : fullTitle;
         if (fullTitle.length > maxTitleLength) {
           name.title = fullTitle; // Show full title on hover
         }
@@ -180,9 +178,7 @@
         // Truncate title to keep dropdown compact
         const maxTitleLength = 30;
         const fullTitle = candidate.title || t('previewTaskTitle');
-        name.textContent = fullTitle.length > maxTitleLength 
-          ? fullTitle.slice(0, maxTitleLength) + '…' 
-          : fullTitle;
+        name.textContent = fullTitle.length > maxTitleLength ? fullTitle.slice(0, maxTitleLength) + '…' : fullTitle;
         if (fullTitle.length > maxTitleLength) {
           option.title = fullTitle; // Show full title on hover
         }
@@ -206,7 +202,7 @@
     const savePreviewIds = async (ids) => {
       const task = getPreviewTask();
       if (!task) return;
-      
+
       // Optimistic update: update state and render immediately
       setPreviewTask({
         ...task,
@@ -219,7 +215,7 @@
       } else {
         hideResults('preview');
       }
-      
+
       // Send to server in background
       const result = await updateTask(task.id, { related_task_ids: ids });
       if (result?.task) {

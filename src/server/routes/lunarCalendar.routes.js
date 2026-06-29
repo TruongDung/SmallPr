@@ -18,10 +18,7 @@ const parseMonthRequest = (query = {}) => {
   return { value: { year, month } };
 };
 
-const createLunarCalendarRouter = ({
-  authRequired,
-  getUserById,
-}) => {
+const createLunarCalendarRouter = ({ authRequired, getUserById }) => {
   const router = express.Router();
   const lunarCalendar = createLunarCalendarService();
 
@@ -34,9 +31,7 @@ const createLunarCalendarRouter = ({
     }
 
     try {
-      const user = typeof getUserById === 'function'
-        ? await getUserById(req.session.userId)
-        : null;
+      const user = typeof getUserById === 'function' ? await getUserById(req.session.userId) : null;
       const timezone = lunarCalendar.normalizeTimezone(user?.timezone);
       const days = lunarCalendar.getMonthLunarLabels({
         ...parsed.value,

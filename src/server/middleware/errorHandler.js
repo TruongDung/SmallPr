@@ -1,9 +1,9 @@
 /**
  * Error Handling Middleware
- * 
+ *
  * Provides centralized error handling for async route handlers
  * and standardized error responses across the application.
- * 
+ *
  * @module middleware/errorHandler
  */
 
@@ -24,10 +24,10 @@ class HttpError extends Error {
 /**
  * Async handler wrapper to catch errors in async route handlers
  * Eliminates the need for try-catch blocks in every route
- * 
+ *
  * @param {Function} fn - Async route handler function
  * @returns {Function} Express middleware function
- * 
+ *
  * @example
  * router.get('/tasks', asyncHandler(async (req, res) => {
  *   const tasks = await tasksService.getTasks(req.session.userId);
@@ -43,7 +43,7 @@ const asyncHandler = (fn) => {
 /**
  * Global error handling middleware
  * Logs errors and sends appropriate HTTP responses
- * 
+ *
  * @param {Error} err - Error object
  * @param {Request} req - Express request
  * @param {Response} res - Express response
@@ -61,21 +61,27 @@ const errorHandler = (err, req, res, next) => {
 
   // Log error with appropriate level
   if (isServerError) {
-    logger.error({
-      err,
-      url: req.url,
-      method: req.method,
-      userId: req.session?.userId,
-      statusCode,
-    }, 'Server error occurred');
+    logger.error(
+      {
+        err,
+        url: req.url,
+        method: req.method,
+        userId: req.session?.userId,
+        statusCode,
+      },
+      'Server error occurred',
+    );
   } else {
-    logger.warn({
-      message: err.message,
-      url: req.url,
-      method: req.method,
-      userId: req.session?.userId,
-      statusCode,
-    }, 'Client error occurred');
+    logger.warn(
+      {
+        message: err.message,
+        url: req.url,
+        method: req.method,
+        userId: req.session?.userId,
+        statusCode,
+      },
+      'Client error occurred',
+    );
   }
 
   // Build error response

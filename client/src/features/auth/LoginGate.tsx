@@ -7,7 +7,11 @@ export const LoginGate = ({ children }: { children: ReactNode }) => {
   const { isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
-    return <p className="loading-state" aria-busy="true">…</p>;
+    return (
+      <p className="loading-state" aria-busy="true">
+        …
+      </p>
+    );
   }
 
   if (!isAuthenticated) {

@@ -61,9 +61,7 @@ const sanitizePreferencesPayload = (payload) => {
     return { error: 'Preferences payload is required' };
   }
 
-  const defaultLanding = DEFAULT_LANDING_VALUES.has(payload.defaultLanding)
-    ? payload.defaultLanding
-    : 'today';
+  const defaultLanding = DEFAULT_LANDING_VALUES.has(payload.defaultLanding) ? payload.defaultLanding : 'today';
 
   if (!Array.isArray(payload.cards)) {
     return { error: 'cards must be an array' };
@@ -104,29 +102,24 @@ const sanitizePreferencesPayload = (payload) => {
 };
 
 const loadPreferences = async ({ getAsync, userId }) => {
-  const row = await getAsync(
-    'SELECT dashboard_preferences AS prefs FROM users WHERE id = ?',
-    [userId]
-  );
+  const row = await getAsync('SELECT dashboard_preferences AS prefs FROM users WHERE id = ?', [userId]);
   return mergeWithDefaults(row?.prefs);
 };
 
 const loadUserTimezone = async ({ getAsync, userId }) => {
-  const row = await getAsync(
-    'SELECT timezone FROM users WHERE id = ?',
-    [userId]
-  );
+  const row = await getAsync('SELECT timezone FROM users WHERE id = ?', [userId]);
   return row?.timezone || '';
 };
 
-const buildDashboardCacheKey = ({ userId, timezone, dueSoonDays }) => [
-  'user',
-  userId,
-  'dashboard',
-  'v2',
-  encodeURIComponent(timezone || ''),
-  encodeURIComponent(String(dueSoonDays || '')),
-].join(':');
+const buildDashboardCacheKey = ({ userId, timezone, dueSoonDays }) =>
+  [
+    'user',
+    userId,
+    'dashboard',
+    'v2',
+    encodeURIComponent(timezone || ''),
+    encodeURIComponent(String(dueSoonDays || '')),
+  ].join(':');
 
 const createDashboardRouter = ({ authRequired, allAsync, getAsync, runAsync, cache = null }) => {
   const router = express.Router();
@@ -173,10 +166,10 @@ const createDashboardRouter = ({ authRequired, allAsync, getAsync, runAsync, cac
     }
 
     try {
-      await runAsync(
-        'UPDATE users SET dashboard_preferences = ? WHERE id = ?',
-        [JSON.stringify(sanitized.value), req.session.userId]
-      );
+      await runAsync('UPDATE users SET dashboard_preferences = ? WHERE id = ?', [
+        JSON.stringify(sanitized.value),
+        req.session.userId,
+      ]);
       await cache?.clearUserCache?.(req.session.userId);
       res.json({
         preferences: sanitized.value,
@@ -190,10 +183,7 @@ const createDashboardRouter = ({ authRequired, allAsync, getAsync, runAsync, cac
 
   router.post('/dashboard/preferences/reset', async (req, res) => {
     try {
-      await runAsync(
-        'UPDATE users SET dashboard_preferences = NULL WHERE id = ?',
-        [req.session.userId]
-      );
+      await runAsync('UPDATE users SET dashboard_preferences = NULL WHERE id = ?', [req.session.userId]);
       await cache?.clearUserCache?.(req.session.userId);
       res.json({ preferences: buildDefaultPreferences() });
     } catch (error) {

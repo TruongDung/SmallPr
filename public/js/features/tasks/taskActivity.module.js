@@ -32,10 +32,12 @@
     };
 
     const getInitials = (name) => {
-      const words = String(name || '').trim().split(/\s+/).filter(Boolean);
-      const initials = words.length > 1
-        ? `${words[0][0]}${words[words.length - 1][0]}`
-        : String(words[0] || 'U').slice(0, 2);
+      const words = String(name || '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+      const initials =
+        words.length > 1 ? `${words[0][0]}${words[words.length - 1][0]}` : String(words[0] || 'U').slice(0, 2);
       return initials.toUpperCase();
     };
 
@@ -204,7 +206,7 @@
       updateTabVisibility();
 
       // If the current active tab is hidden, switch to the first visible tab
-      if (elements.tabs.find(t => t.dataset.activityFilter === activeFilter)?.classList.contains('hidden')) {
+      if (elements.tabs.find((t) => t.dataset.activityFilter === activeFilter)?.classList.contains('hidden')) {
         activeFilter = getVisibleTab();
       }
 
@@ -229,8 +231,7 @@
         return;
       }
 
-      const items = getItems(getTask())
-        .filter((item) => activeFilter === 'all' || item.type === activeFilter);
+      const items = getItems(getTask()).filter((item) => activeFilter === 'all' || item.type === activeFilter);
 
       elements.list.innerHTML = '';
 

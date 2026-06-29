@@ -16,60 +16,68 @@
 
     const compareCardsByField = (first, second, field = cardSort.field) => {
       if (field === 'user') {
-        return formatters.compareText(userGroupKey(first), userGroupKey(second))
-          || formatters.compareText(first.name, second.name);
+        return (
+          formatters.compareText(userGroupKey(first), userGroupKey(second)) ||
+          formatters.compareText(first.name, second.name)
+        );
       }
 
       if (field === 'issuer') {
-        return formatters.compareText(formatters.formatIssuer(first.issuer), formatters.formatIssuer(second.issuer))
-          || formatters.compareText(first.name, second.name);
+        return (
+          formatters.compareText(formatters.formatIssuer(first.issuer), formatters.formatIssuer(second.issuer)) ||
+          formatters.compareText(first.name, second.name)
+        );
       }
 
       if (field === 'closingDate') {
-        return getCardClosingDateTime(first) - getCardClosingDateTime(second)
-          || formatters.compareText(first.name, second.name);
+        return (
+          getCardClosingDateTime(first) - getCardClosingDateTime(second) ||
+          formatters.compareText(first.name, second.name)
+        );
       }
 
       if (field === 'interestCharge') {
-        return getCardInterestCharge(first) - getCardInterestCharge(second)
-          || formatters.compareText(first.name, second.name);
+        return (
+          getCardInterestCharge(first) - getCardInterestCharge(second) ||
+          formatters.compareText(first.name, second.name)
+        );
       }
 
-      return getCardBalance(first) - getCardBalance(second)
-        || formatters.compareText(first.name, second.name);
+      return getCardBalance(first) - getCardBalance(second) || formatters.compareText(first.name, second.name);
     };
 
-    const sortCards = (cardsToSort, field = cardSort.field, direction = cardSort.direction) => (
+    const sortCards = (cardsToSort, field = cardSort.field, direction = cardSort.direction) =>
       [...cardsToSort].sort((first, second) => {
         const result = compareCardsByField(first, second, field);
         return direction === 'asc' ? result : -result;
-      })
-    );
-
-    const groupCardsByUser = (cardsToGroup) => cardsToGroup.reduce((groups, card) => {
-      const user = userGroupKey(card);
-      const existing = groups.get(user) || { user, total: 0, cards: [] };
-      existing.total += getCardBalance(card);
-      existing.cards.push(card);
-      groups.set(user, existing);
-      return groups;
-    }, new Map());
-
-    const getSortedCardGroups = (cardsToGroup) => [...groupCardsByUser(cardsToGroup).values()]
-      .map((group) => ({
-        ...group,
-        cards: sortCards(group.cards),
-      }))
-      .sort((first, second) => {
-        if (cardSort.field === 'user') {
-          const result = first.user.localeCompare(second.user, getLanguage(), { sensitivity: 'base' });
-          return cardSort.direction === 'asc' ? result : -result;
-        }
-
-        const totalDifference = second.total - first.total;
-        if (totalDifference !== 0) return totalDifference;
-        return first.user.localeCompare(second.user, getLanguage(), { sensitivity: 'base' });
       });
+
+    const groupCardsByUser = (cardsToGroup) =>
+      cardsToGroup.reduce((groups, card) => {
+        const user = userGroupKey(card);
+        const existing = groups.get(user) || { user, total: 0, cards: [] };
+        existing.total += getCardBalance(card);
+        existing.cards.push(card);
+        groups.set(user, existing);
+        return groups;
+      }, new Map());
+
+    const getSortedCardGroups = (cardsToGroup) =>
+      [...groupCardsByUser(cardsToGroup).values()]
+        .map((group) => ({
+          ...group,
+          cards: sortCards(group.cards),
+        }))
+        .sort((first, second) => {
+          if (cardSort.field === 'user') {
+            const result = first.user.localeCompare(second.user, getLanguage(), { sensitivity: 'base' });
+            return cardSort.direction === 'asc' ? result : -result;
+          }
+
+          const totalDifference = second.total - first.total;
+          if (totalDifference !== 0) return totalDifference;
+          return first.user.localeCompare(second.user, getLanguage(), { sensitivity: 'base' });
+        });
 
     const createSummaryRow = ({ label, total, className }) => {
       const row = document.createElement('tr');
@@ -93,23 +101,28 @@
       return row;
     };
 
-    const createGrandTotalRow = (cardsToTotal) => createSummaryRow({
-      label: 'Total',
-      total: cardsToTotal.reduce((sum, card) => sum + getCardBalance(card), 0),
-      className: 'credit-card-grand-total',
-    });
+    const createGrandTotalRow = (cardsToTotal) =>
+      createSummaryRow({
+        label: 'Total',
+        total: cardsToTotal.reduce((sum, card) => sum + getCardBalance(card), 0),
+        className: 'credit-card-grand-total',
+      });
 
-    const createUserSummaryRow = (group) => createSummaryRow({
-      label: group.user,
-      total: group.total,
-      className: 'credit-card-user-summary',
-    });
+    const createUserSummaryRow = (group) =>
+      createSummaryRow({
+        label: group.user,
+        total: group.total,
+        className: 'credit-card-user-summary',
+      });
 
     const updateSortHeaders = () => {
       document.querySelectorAll('[data-credit-card-sort]').forEach((button) => {
         const isActive = button.dataset.creditCardSort === cardSort.field;
         button.classList.toggle('active', isActive);
-        button.setAttribute('aria-sort', isActive ? (cardSort.direction === 'asc' ? 'ascending' : 'descending') : 'none');
+        button.setAttribute(
+          'aria-sort',
+          isActive ? (cardSort.direction === 'asc' ? 'ascending' : 'descending') : 'none',
+        );
 
         const arrow = button.querySelector('.sort-arrow');
         if (arrow) arrow.textContent = isActive ? (cardSort.direction === 'asc' ? '^' : 'v') : '<>';
@@ -219,13 +232,7 @@
 
     const renderHeaders = (getCards) => {
       const headerCells = document.querySelectorAll('.credit-card-table th');
-      const labels = [
-        t('cardName'),
-        t('totalBalance'),
-        t('interestCharge'),
-        t('closingDate'),
-        t('actions'),
-      ];
+      const labels = [t('cardName'), t('totalBalance'), t('interestCharge'), t('closingDate'), t('actions')];
       const sortableHeaders = {
         1: 'balance',
         2: 'interestCharge',
@@ -254,4 +261,4 @@
     ...(window.CreditCardFeature || {}),
     createCardTable,
   };
-}());
+})();

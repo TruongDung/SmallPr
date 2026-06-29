@@ -4,19 +4,19 @@ A quick reference guide to navigate the codebase.
 
 ## 📍 Quick Navigation
 
-| I want to... | Look here |
-|--------------|-----------|
-| Add a new API endpoint | `src/server/routes/` |
-| Add business logic | `src/server/services/` |
-| Add validation | `src/server/schemas/` |
-| Add middleware | `src/server/middleware/` |
-| Add database migration | `src/server/db/migrations/` |
-| Add frontend component | `client/src/components/` or `client/src/features/` |
-| Add API call | `client/src/api/` |
-| Add custom hook | `client/src/hooks/` |
-| Configure the app | `.env` file |
-| Check app initialization | `app.js` |
-| Check server startup | `server.js` |
+| I want to...             | Look here                                          |
+| ------------------------ | -------------------------------------------------- |
+| Add a new API endpoint   | `src/server/routes/`                               |
+| Add business logic       | `src/server/services/`                             |
+| Add validation           | `src/server/schemas/`                              |
+| Add middleware           | `src/server/middleware/`                           |
+| Add database migration   | `src/server/db/migrations/`                        |
+| Add frontend component   | `client/src/components/` or `client/src/features/` |
+| Add API call             | `client/src/api/`                                  |
+| Add custom hook          | `client/src/hooks/`                                |
+| Configure the app        | `.env` file                                        |
+| Check app initialization | `app.js`                                           |
+| Check server startup     | `server.js`                                        |
 
 ---
 
@@ -295,27 +295,33 @@ ios/TaskManager/TaskManager/
 ## 🔍 Finding Specific Code
 
 ### Authentication Code
+
 - Backend: `src/server/services/auth/`, `src/server/middleware/auth.js`
 - Frontend: `client/src/features/auth/`, `client/src/hooks/useAuth.ts`
 
 ### Task Management
+
 - Backend: `src/server/routes/tasks.routes.js`, `src/server/services/tasks.service.js`
 - Frontend: `client/src/features/tasks/`, `client/src/hooks/useTasks.ts`
 
 ### Database Queries
+
 - Connection: `src/server/db/client.js`
 - Migrations: `src/server/db/migrations/`
 - Initialization: `src/server/db/initialize.js`
 
 ### Real-time Features
+
 - Backend: `src/server/bootstrap/sockets.js`, `src/server/realtime.js`
 - Frontend: `client/src/hooks/useRealtime.ts`
 
 ### Validation
+
 - Schemas: `src/server/schemas/`
 - Middleware: `src/server/middleware/validateRequest.js`
 
 ### Email
+
 - Service: `src/server/services/email/email.service.js`
 - Configuration: Check `.env` for SMTP settings
 

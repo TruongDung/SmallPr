@@ -1,4 +1,13 @@
-const AUDIT_ENTITY_TYPES = new Set(['task', 'transaction', 'note', 'note_folder', 'credit_card', 'expense', 'user', 'recurrence']);
+const AUDIT_ENTITY_TYPES = new Set([
+  'task',
+  'transaction',
+  'note',
+  'note_folder',
+  'credit_card',
+  'expense',
+  'user',
+  'recurrence',
+]);
 const AUDIT_LOGS_ENABLED_KEY = 'audit_logs_enabled';
 const AUDIT_ACTIONS = new Set([
   'create',
@@ -29,15 +38,16 @@ const createAuditLogService = ({ allAsync, runAsync }) => {
   const stripHeavySnapshot = (data) => {
     if (!data || typeof data !== 'object') return data;
     const clone = { ...data };
-    HEAVY_SNAPSHOT_KEYS.forEach((key) => { delete clone[key]; });
+    HEAVY_SNAPSHOT_KEYS.forEach((key) => {
+      delete clone[key];
+    });
     return clone;
   };
 
   const isEnabled = async () => {
-    const rows = await allAsync(
-      'SELECT setting_value FROM app_settings WHERE setting_key = ?',
-      [AUDIT_LOGS_ENABLED_KEY]
-    );
+    const rows = await allAsync('SELECT setting_value FROM app_settings WHERE setting_key = ?', [
+      AUDIT_LOGS_ENABLED_KEY,
+    ]);
     return normalizeAuditLogsEnabled(rows[0]?.setting_value ?? true);
   };
 
@@ -53,7 +63,7 @@ const createAuditLogService = ({ allAsync, runAsync }) => {
        ON CONFLICT (setting_key)
        DO UPDATE SET setting_value = EXCLUDED.setting_value,
                      updated_at = CURRENT_TIMESTAMP`,
-      [AUDIT_LOGS_ENABLED_KEY, JSON.stringify(normalized)]
+      [AUDIT_LOGS_ENABLED_KEY, JSON.stringify(normalized)],
     );
     return { enabled: normalized };
   };
@@ -96,14 +106,16 @@ const createAuditLogService = ({ allAsync, runAsync }) => {
         beforeSnapshot ? JSON.stringify(beforeSnapshot) : null,
         afterSnapshot ? JSON.stringify(afterSnapshot) : null,
         ipAddress || null,
-      ]
+      ],
     );
   };
 
   const list = async ({ limit = 100, page = 1, entityType = '', action = '', userId = null, search = '' } = {}) => {
     const normalizedLimit = Math.min(Math.max(Number(limit) || 100, 1), 500);
     const requestedPage = Math.max(Number(page) || 1, 1);
-    const normalizedSearch = String(search || '').trim().slice(0, 200);
+    const normalizedSearch = String(search || '')
+      .trim()
+      .slice(0, 200);
     const clauses = [];
     const params = [];
     const fromClause = `FROM audit_logs
@@ -148,7 +160,7 @@ const createAuditLogService = ({ allAsync, runAsync }) => {
       `SELECT COUNT(*)::int AS total
        ${fromClause}
        ${whereClause}`,
-      params
+      params,
     );
     const total = Number(totalRows[0]?.total || 0);
     const totalPages = Math.max(1, Math.ceil(total / normalizedLimit));
@@ -180,7 +192,7 @@ const createAuditLogService = ({ allAsync, runAsync }) => {
        ${whereClause}
        ORDER BY audit_logs.created_at DESC, audit_logs.id DESC
        LIMIT ? OFFSET ?`,
-      params
+      params,
     );
 
     return {

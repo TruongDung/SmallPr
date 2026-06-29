@@ -9,8 +9,7 @@ const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 const pad2 = (value: number) => String(value).padStart(2, '0');
 
-const toYmd = (date: Date) =>
-  `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+const toYmd = (date: Date) => `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
 
 const addDays = (date: Date, days: number) => {
   const next = new Date(date);
@@ -25,8 +24,7 @@ const startOfMonthGrid = (date: Date) => {
 
 const taskDateKey = (task: Task) => String(task.due_date || '').slice(0, 10);
 
-const formatMonth = (date: Date) =>
-  new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(date);
+const formatMonth = (date: Date) => new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(date);
 
 export const LunarMonthCalendar = () => {
   const t = useT();
@@ -38,11 +36,7 @@ export const LunarMonthCalendar = () => {
   const { tasks, isLoading: tasksLoading, error: tasksError } = useTasks(false);
   const { settings, isLoading: settingsLoading } = useUserSettings();
   const showLunar = settings?.show_lunar_dates_in_calendar !== false;
-  const lunarQuery = useLunarCalendarMonth(
-    cursor.getFullYear(),
-    cursor.getMonth() + 1,
-    showLunar,
-  );
+  const lunarQuery = useLunarCalendarMonth(cursor.getFullYear(), cursor.getMonth() + 1, showLunar);
 
   const lunarByDate = useMemo(() => {
     const map = new Map<string, LunarCalendarDay>();
@@ -50,14 +44,18 @@ export const LunarMonthCalendar = () => {
     return map;
   }, [lunarQuery.data]);
 
-  const tasksByDate = useMemo(() => tasks.reduce((map, task) => {
-    if (task.archived) return map;
-    const key = taskDateKey(task);
-    if (!key) return map;
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)?.push(task);
-    return map;
-  }, new Map<string, Task[]>()), [tasks]);
+  const tasksByDate = useMemo(
+    () =>
+      tasks.reduce((map, task) => {
+        if (task.archived) return map;
+        const key = taskDateKey(task);
+        if (!key) return map;
+        if (!map.has(key)) map.set(key, []);
+        map.get(key)?.push(task);
+        return map;
+      }, new Map<string, Task[]>()),
+    [tasks],
+  );
 
   const days = useMemo(() => {
     const start = startOfMonthGrid(cursor);
@@ -69,7 +67,11 @@ export const LunarMonthCalendar = () => {
   };
 
   if (tasksLoading || settingsLoading) {
-    return <p className="loading-state" aria-busy="true">{t('loading')}</p>;
+    return (
+      <p className="loading-state" aria-busy="true">
+        {t('loading')}
+      </p>
+    );
   }
 
   if (tasksError) {
@@ -109,9 +111,7 @@ export const LunarMonthCalendar = () => {
             >
               <div className="react-calendar-day-header">
                 <strong>{date.getDate()}</strong>
-                {lunar?.label && (
-                  <span className="react-lunar-label">{lunar.label}</span>
-                )}
+                {lunar?.label && <span className="react-lunar-label">{lunar.label}</span>}
               </div>
 
               {dayTasks.length > 0 && (
@@ -125,11 +125,7 @@ export const LunarMonthCalendar = () => {
                       {task.title}
                     </span>
                   ))}
-                  {dayTasks.length > 3 && (
-                    <span className="react-calendar-more">
-                      +{dayTasks.length - 3}
-                    </span>
-                  )}
+                  {dayTasks.length > 3 && <span className="react-calendar-more">+{dayTasks.length - 3}</span>}
                 </div>
               )}
             </section>

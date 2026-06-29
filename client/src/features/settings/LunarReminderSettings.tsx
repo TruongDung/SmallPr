@@ -39,11 +39,7 @@ export const LunarReminderSettings = () => {
   const handleSave = async () => {
     setFormError(null);
 
-    if (
-      draft.enable_lunar_reminder
-      && !draft.remind_lunar_day1
-      && !draft.remind_lunar_day15
-    ) {
+    if (draft.enable_lunar_reminder && !draft.remind_lunar_day1 && !draft.remind_lunar_day15) {
       setFormError(t('lunarReminderDateRequired'));
       return;
     }
@@ -75,7 +71,11 @@ export const LunarReminderSettings = () => {
   const isSavingChanges = isSaving || isUpdatingProfile;
 
   if (isLoading) {
-    return <p className="loading-state" aria-busy="true">{t('loading')}</p>;
+    return (
+      <p className="loading-state" aria-busy="true">
+        {t('loading')}
+      </p>
+    );
   }
 
   if (error) {
@@ -105,9 +105,11 @@ export const LunarReminderSettings = () => {
             min={0}
             max={30}
             value={draft.reminder_days_before}
-            onChange={(event) => updateDraft({
-              reminder_days_before: Number(event.target.value),
-            })}
+            onChange={(event) =>
+              updateDraft({
+                reminder_days_before: Number(event.target.value),
+              })
+            }
           />
         </label>
 
@@ -152,9 +154,11 @@ export const LunarReminderSettings = () => {
           <input
             type="checkbox"
             checked={draft.show_lunar_dates_in_calendar}
-            onChange={(event) => updateDraft({
-              show_lunar_dates_in_calendar: event.target.checked,
-            })}
+            onChange={(event) =>
+              updateDraft({
+                show_lunar_dates_in_calendar: event.target.checked,
+              })
+            }
           />
           <span>{t('showLunarDatesInCalendar')}</span>
         </label>

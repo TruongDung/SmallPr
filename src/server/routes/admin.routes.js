@@ -7,7 +7,9 @@ const { sendNoteSummaryEmail } = require('../services/email/email.service');
 const ACCOUNT_STATUSES = new Set(['enabled', 'disabled', 'pending_verification']);
 
 const normalizeAccountStatus = (status, fallback = 'enabled') => {
-  const normalized = String(status || fallback).trim().toLowerCase();
+  const normalized = String(status || fallback)
+    .trim()
+    .toLowerCase();
   return ACCOUNT_STATUSES.has(normalized) ? normalized : null;
 };
 
@@ -150,11 +152,19 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
       return 'A visibility object is required';
     }
     const isBoolIfPresent = (value) => value === undefined || typeof value === 'boolean';
-    if (!isBoolIfPresent(updates.weather) || !isBoolIfPresent(updates.financial) || !isBoolIfPresent(updates.userSettings)) {
+    if (
+      !isBoolIfPresent(updates.weather) ||
+      !isBoolIfPresent(updates.financial) ||
+      !isBoolIfPresent(updates.userSettings)
+    ) {
       return 'Visibility flags must be boolean';
     }
     if (updates.financialTabs !== undefined) {
-      if (typeof updates.financialTabs !== 'object' || updates.financialTabs === null || Array.isArray(updates.financialTabs)) {
+      if (
+        typeof updates.financialTabs !== 'object' ||
+        updates.financialTabs === null ||
+        Array.isArray(updates.financialTabs)
+      ) {
         return 'financialTabs must be an object';
       }
       const validTabIds = new Set(featureFlags.FINANCIAL_TAB_IDS || []);
@@ -214,7 +224,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
       if (!user) return res.status(404).json({ error: 'User not found' });
 
       const override = await featureFlags.getUserOverride(user.id);
-      const visibility = override || await featureFlags.getUserVisibility();
+      const visibility = override || (await featureFlags.getUserVisibility());
       res.json({ visibility, hasOverride: Boolean(override) });
     } catch (error) {
       logger.error({ err: error }, 'Failed to load user visibility');
@@ -280,9 +290,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
   // --- Financial tab labels (admin-editable) ---
   router.get('/admin/tab-labels', async (req, res) => {
     try {
-      const row = await getAsync(
-        "SELECT setting_value FROM app_settings WHERE setting_key = 'financial_tab_labels'"
-      );
+      const row = await getAsync("SELECT setting_value FROM app_settings WHERE setting_key = 'financial_tab_labels'");
       res.json({ labels: row?.setting_value || {} });
     } catch (error) {
       logger.error({ err: error }, 'Failed to load tab labels');
@@ -307,7 +315,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
         `INSERT INTO app_settings (setting_key, setting_value, updated_at)
          VALUES ('financial_tab_labels', $1::jsonb, CURRENT_TIMESTAMP)
          ON CONFLICT (setting_key) DO UPDATE SET setting_value = $1::jsonb, updated_at = CURRENT_TIMESTAMP`,
-        [JSON.stringify(sanitized)]
+        [JSON.stringify(sanitized)],
       );
       res.json({ labels: sanitized });
     } catch (error) {
@@ -321,7 +329,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
       const users = await allAsync(
         `${USER_LIST_SELECT}
          ${USER_LIST_GROUP}
-         ORDER BY users.id ASC`
+         ORDER BY users.id ASC`,
       );
       res.json({ users });
     } catch (error) {
@@ -334,7 +342,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
     try {
       const summary = await getAsync(
         `SELECT current_database() AS database_name,
-                pg_database_size(current_database())::bigint AS database_bytes`
+                pg_database_size(current_database())::bigint AS database_bytes`,
       );
       const tables = await allAsync(
         `SELECT
@@ -352,7 +360,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
            AND ns.nspname NOT LIKE 'pg_toast%'
          ORDER BY pg_total_relation_size(cls.oid) DESC,
                   ns.nspname ASC,
-                  cls.relname ASC`
+                  cls.relname ASC`,
       );
 
       res.json({
@@ -394,7 +402,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
         `SELECT 1 FROM pg_class cls
          JOIN pg_namespace ns ON ns.oid = cls.relnamespace
          WHERE ns.nspname = ? AND cls.relname = ? AND cls.relkind IN ('r', 'p')`,
-        [schemaName, tableName]
+        [schemaName, tableName],
       );
       if (!exists) {
         return res.status(404).json({ error: 'Table not found' });
@@ -421,7 +429,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
            AND LOWER(username) <> 'admin'
            AND id <> ?
          ORDER BY id ASC`,
-        [req.session.userId]
+        [req.session.userId],
       );
 
       if (!testUsers.length) {
@@ -444,7 +452,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
            AND (${TEST_USER_MATCH_SQL})
            AND LOWER(username) <> 'admin'
            AND id <> ?`,
-        [testUsers.map((user) => Number(user.id)), req.session.userId]
+        [testUsers.map((user) => Number(user.id)), req.session.userId],
       );
       const deletedCount = deleteResult.changes ?? testUsers.length;
 
@@ -468,7 +476,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
     try {
       const targetUser = await getAsync(
         'SELECT id, username, name, email, timezone, language, account_status FROM users WHERE id = ?',
-        [targetUserId]
+        [targetUserId],
       );
       if (!targetUser) {
         return res.status(404).json({ error: 'User not found' });
@@ -511,13 +519,13 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
       const result = await runAsync(
         `INSERT INTO users (username, name, email, password, account_status, account_status_changed_at)
          VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP) RETURNING id`,
-        [username, name, email, hashedPassword, accountStatus]
+        [username, name, email, hashedPassword, accountStatus],
       );
       const user = await getAsync(
         `${USER_LIST_SELECT}
          WHERE users.id = ?
          ${USER_LIST_GROUP}`,
-        [result.lastID]
+        [result.lastID],
       );
       await auditLogs.record({
         userId: user.id,
@@ -547,7 +555,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
     try {
       const user = await getAsync(
         'SELECT id, username, name, email, account_status, account_status_changed_at FROM users WHERE id = ?',
-        [id]
+        [id],
       );
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
@@ -573,13 +581,13 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
          SET username = ?, name = ?, email = ?, account_status = ?,
              account_status_changed_at = CASE WHEN account_status <> ? THEN CURRENT_TIMESTAMP ELSE account_status_changed_at END
          WHERE id = ?`,
-        [username, name, email, accountStatus, accountStatus, id]
+        [username, name, email, accountStatus, accountStatus, id],
       );
       const updatedUser = await getAsync(
         `${USER_LIST_SELECT}
          WHERE users.id = ?
          ${USER_LIST_GROUP}`,
-        [id]
+        [id],
       );
       await auditLogs.record({
         userId: updatedUser.id,
@@ -612,7 +620,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
     try {
       const user = await getAsync(
         'SELECT id, username, name, email, account_status, account_status_changed_at FROM users WHERE id = ?',
-        [id]
+        [id],
       );
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
@@ -626,13 +634,13 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
          SET account_status = ?,
              account_status_changed_at = CASE WHEN account_status <> ? THEN CURRENT_TIMESTAMP ELSE account_status_changed_at END
          WHERE id = ?`,
-        [accountStatus, accountStatus, id]
+        [accountStatus, accountStatus, id],
       );
       const updatedUser = await getAsync(
         `${USER_LIST_SELECT}
          WHERE users.id = ?
          ${USER_LIST_GROUP}`,
-        [id]
+        [id],
       );
       await auditLogs.record({
         userId: updatedUser.id,
@@ -692,7 +700,7 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
     try {
       const user = await getAsync(
         'SELECT id, username, name, email, account_status, account_status_changed_at FROM users WHERE id = ?',
-        [id]
+        [id],
       );
       if (!user) {
         return res.status(404).json({ error: 'User not found' });
@@ -721,14 +729,13 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
 
   router.post('/admin/notes/send-email', adminRequired, async (req, res) => {
     const language = String(req.body?.language || 'en');
-    
+
     try {
       // Get the current user (admin) to send the email to
-      const adminUser = await getAsync(
-        'SELECT id, username, name, email, language FROM users WHERE id = ?',
-        [req.currentUser.id]
-      );
-      
+      const adminUser = await getAsync('SELECT id, username, name, email, language FROM users WHERE id = ?', [
+        req.currentUser.id,
+      ]);
+
       if (!adminUser || !adminUser.email) {
         return res.status(400).json({ error: 'Admin user email not configured' });
       }
@@ -740,12 +747,12 @@ const createAdminRouter = ({ adminRequired, allAsync, auditLogs, featureFlags, b
          FROM notes
          JOIN users ON users.id = notes.user_id
          WHERE users.account_status = 'enabled'
-         ORDER BY notes.updated_at DESC, notes.id DESC`
+         ORDER BY notes.updated_at DESC, notes.id DESC`,
       );
 
       // Send the email
       const sent = await sendNoteSummaryEmail(notes, adminUser, language);
-      
+
       if (!sent) {
         return res.status(500).json({ error: 'Failed to send email. Check SMTP configuration.' });
       }

@@ -5,6 +5,7 @@ Visual examples of how the enhanced audit logging system tracks changes.
 ## Example 1: Task Update
 
 ### Original Audit Log (Before Enhancement)
+
 ```json
 {
   "id": 1234,
@@ -19,6 +20,7 @@ Visual examples of how the enhanced audit logging system tracks changes.
 ```
 
 ### Enhanced Audit Log (After)
+
 ```json
 {
   "id": 1234,
@@ -78,6 +80,7 @@ Visual examples of how the enhanced audit logging system tracks changes.
 ```
 
 ### UI Display
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ 🔧 John Doe edited task #123                                 │
@@ -98,7 +101,9 @@ Visual examples of how the enhanced audit logging system tracks changes.
 ## Example 2: User Profile Update
 
 ### Data
+
 **Before:**
+
 ```json
 {
   "id": 5,
@@ -111,6 +116,7 @@ Visual examples of how the enhanced audit logging system tracks changes.
 ```
 
 **After:**
+
 ```json
 {
   "id": 5,
@@ -123,11 +129,13 @@ Visual examples of how the enhanced audit logging system tracks changes.
 ```
 
 ### Enhanced Summary
+
 ```
 "john.doe - Email: \"john@example.com\" → \"john.newemail@example.com\"; Full Name: \"John Doe\" → \"John D. Doe\"; Timezone: \"America/New_York\" → \"America/Los_Angeles\""
 ```
 
 ### UI Display
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ 👤 John Doe edited user #5                                   │
@@ -147,7 +155,9 @@ Visual examples of how the enhanced audit logging system tracks changes.
 ## Example 3: Transaction Update
 
 ### Data
+
 **Before:**
+
 ```json
 {
   "id": 456,
@@ -160,6 +170,7 @@ Visual examples of how the enhanced audit logging system tracks changes.
 ```
 
 **After:**
+
 ```json
 {
   "id": 456,
@@ -172,11 +183,13 @@ Visual examples of how the enhanced audit logging system tracks changes.
 ```
 
 ### Enhanced Summary
+
 ```
 "Amazon - Amount: \"$49.99\" → \"$52.49\"; Category: \"Shopping\" → \"Education\"; Description: \"Books\" → \"Technical books for learning\""
 ```
 
 ### UI Display
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ 💳 Jane Smith edited transaction #456                        │
@@ -196,16 +209,19 @@ Visual examples of how the enhanced audit logging system tracks changes.
 ## Example 4: Field Value Changes
 
 ### Setting a Value (Empty → Value)
+
 ```
 Reminder: set to "Jan 20, 2024, 09:00 AM"
 ```
 
 ### Clearing a Value (Value → Empty)
+
 ```
 Comment: cleared (was "This is outdated")
 ```
 
 ### Boolean Changes
+
 ```
 Archived: "No" → "Yes"
 Completed: "No" → "Yes"
@@ -213,18 +229,21 @@ Is Admin: "No" → "Yes"
 ```
 
 ### Date Changes
+
 ```
 Due Date: "Jan 15, 2024" → "Jan 20, 2024"
 Reminder: "Jan 15, 2024, 09:00 AM" → "Jan 15, 2024, 02:00 PM"
 ```
 
 ### Amount Changes
+
 ```
 Balance: "$1,234.56" → "$1,500.00"
 Amount: "$49.99" → "$52.49"
 ```
 
 ### Time Duration Changes
+
 ```
 Time Spent: "1h 30min" → "2h 45min"
 Time Spent: "45 min" → "1h 15min"
@@ -236,7 +255,9 @@ Time Spent: "30 min" → "1h"
 ## Example 5: Complex Update with Many Fields
 
 ### Data
+
 **Before:**
+
 ```json
 {
   "title": "Review Q4 Report",
@@ -253,6 +274,7 @@ Time Spent: "30 min" → "1h"
 ```
 
 **After:**
+
 ```json
 {
   "title": "Review Q4 Financial Report",
@@ -269,11 +291,13 @@ Time Spent: "30 min" → "1h"
 ```
 
 ### Enhanced Summary (First 3 fields)
+
 ```
 "Review Q4 Financial Report - Title: \"Review Q4 Report\" → \"Review Q4 Financial Report\"; Description: \"Review and provide...\" → \"Review and provide...\"; Status: \"todo\" → \"in-progress\"; and 5 more fields"
 ```
 
 ### Full Change Details
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ 📋 Sarah Johnson edited task #789                            │
@@ -299,6 +323,7 @@ Time Spent: "30 min" → "1h"
 ## Example 6: Admin Actions
 
 ### User Status Change
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ 🛡️ Admin edited user #42                                     │
@@ -313,6 +338,7 @@ Time Spent: "30 min" → "1h"
 ```
 
 ### Admin Privilege Grant
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ 🛡️ Admin edited user #15                                     │
@@ -351,6 +377,7 @@ When an admin impersonates a user:
 ## Example 8: Bulk Changes (Multiple Fields)
 
 ### Large Update Summary
+
 When more than 5 fields change, show first 3 + count:
 
 ```
@@ -358,6 +385,7 @@ When more than 5 fields change, show first 3 + count:
 ```
 
 ### Expandable UI
+
 ```
 ┌──────────────────────────────────────────────────────────────┐
 │ ⚙️ Admin edited project #50                                  │
@@ -380,6 +408,7 @@ When more than 5 fields change, show first 3 + count:
 ## Example 9: Timeline View
 
 ### Entity History Timeline
+
 ```
 Task #123 - "Complete documentation"
 
@@ -420,6 +449,7 @@ Task #123 - "Complete documentation"
 ## Example 10: Search & Filter
 
 ### Search Results
+
 ```
 Search: "status done"
 
@@ -433,6 +463,7 @@ Found 5 results:
 ```
 
 ### Filter by Entity Type
+
 ```
 Filter: entity_type = "task", action = "edit"
 
@@ -449,41 +480,46 @@ Showing 25 results:
 ## Implementation Code
 
 ### Backend Usage
+
 ```javascript
 // In your route handler
-router.put('/tasks/:id', asyncHandler(async (req, res) => {
-  const oldTask = await tasksService.getTask(id);
-  const newTask = await tasksService.updateTask(id, req.body);
-  
-  // Log with automatic change detection
-  await logUpdate({
-    auditLogs,
-    req,
-    entityType: 'task',
-    entityId: newTask.id,
-    summary: newTask.title,
-    before: oldTask,
-    after: newTask,
-  });
-  
-  sendSuccess(res, { task: newTask });
-}));
+router.put(
+  '/tasks/:id',
+  asyncHandler(async (req, res) => {
+    const oldTask = await tasksService.getTask(id);
+    const newTask = await tasksService.updateTask(id, req.body);
+
+    // Log with automatic change detection
+    await logUpdate({
+      auditLogs,
+      req,
+      entityType: 'task',
+      entityId: newTask.id,
+      summary: newTask.title,
+      before: oldTask,
+      after: newTask,
+    });
+
+    sendSuccess(res, { task: newTask });
+  }),
+);
 ```
 
 ### Frontend Usage
+
 ```javascript
 // Fetch audit logs
 const response = await fetch('/api/audit-logs?entityType=task&limit=20');
 const data = await response.json();
 
 // Display changes
-data.logs.forEach(log => {
+data.logs.forEach((log) => {
   console.log(`${log.actor_username} ${log.action} ${log.entity_type} #${log.entity_id}`);
   console.log(`Summary: ${log.summary}`);
-  
+
   if (log.changeDetails) {
     console.log(`Changes (${log.changeDetails.changeCount}):`);
-    log.changeDetails.changes.forEach(change => {
+    log.changeDetails.changes.forEach((change) => {
       console.log(`  • ${change.label}: "${change.before}" → "${change.after}"`);
     });
   }

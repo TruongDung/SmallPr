@@ -49,10 +49,12 @@
     let realtimeBound = false;
 
     const getInitials = (name) => {
-      const words = String(name || '').trim().split(/\s+/).filter(Boolean);
-      const initials = words.length > 1
-        ? `${words[0][0]}${words[words.length - 1][0]}`
-        : String(words[0] || 'U').slice(0, 2);
+      const words = String(name || '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+      const initials =
+        words.length > 1 ? `${words[0][0]}${words[words.length - 1][0]}` : String(words[0] || 'U').slice(0, 2);
       return initials.toUpperCase();
     };
 
@@ -69,7 +71,9 @@
       if (days < 7) return t('commentDaysAgo', { n: days }) || `${days}d ago`;
       try {
         return date.toLocaleDateString(getLanguage?.() || undefined, {
-          year: 'numeric', month: 'short', day: 'numeric',
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
         });
       } catch {
         return date.toLocaleDateString();
@@ -134,7 +138,10 @@
         cancel.textContent = '✕';
         cancel.setAttribute('aria-label', t('cancel') || 'Cancel');
         cancel.title = t('cancel') || 'Cancel';
-        cancel.addEventListener('click', () => { pendingDeleteId = null; render(); });
+        cancel.addEventListener('click', () => {
+          pendingDeleteId = null;
+          render();
+        });
 
         actions.append(confirmBtn, cancel);
         return actions;
@@ -154,7 +161,10 @@
       deleteBtn.textContent = '×';
       deleteBtn.setAttribute('aria-label', t('delete') || 'Delete');
       deleteBtn.title = t('delete') || 'Delete';
-      deleteBtn.addEventListener('click', () => { pendingDeleteId = comment.id; render(); });
+      deleteBtn.addEventListener('click', () => {
+        pendingDeleteId = comment.id;
+        render();
+      });
 
       actions.append(editBtn, deleteBtn);
       return actions;
@@ -256,9 +266,7 @@
     const load = async (task) => {
       taskId = task?.id || null;
       comments = Array.isArray(task?.comments) ? task.comments : [];
-      legacyComment = task?.comment && getRichTextPlainText(task.comment).trim()
-        ? task.comment
-        : '';
+      legacyComment = task?.comment && getRichTextPlainText(task.comment).trim() ? task.comment : '';
       editingId = null;
       pendingDeleteId = null;
       clearError();
@@ -268,7 +276,7 @@
 
       const result = await request(`/api/tasks/${taskId}/comments`);
       // Guard against the modal switching tasks while the request was in flight.
-      if (taskId !== (task?.id)) return;
+      if (taskId !== task?.id) return;
       if (!result?.error && Array.isArray(result.comments)) {
         comments = result.comments;
         render();
@@ -295,13 +303,13 @@
       const editingTarget = editingId;
       const result = editingTarget
         ? await request(`/api/tasks/${taskId}/comments/${editingTarget}`, {
-          method: 'PUT',
-          body: JSON.stringify({ body }),
-        })
+            method: 'PUT',
+            body: JSON.stringify({ body }),
+          })
         : await request(`/api/tasks/${taskId}/comments`, {
-          method: 'POST',
-          body: JSON.stringify({ body }),
-        });
+            method: 'POST',
+            body: JSON.stringify({ body }),
+          });
 
       if (addBtn) addBtn.disabled = false;
 
@@ -311,9 +319,7 @@
       }
 
       if (editingTarget) {
-        comments = comments.map((comment) => (
-          comment.id === result.comment.id ? result.comment : comment
-        ));
+        comments = comments.map((comment) => (comment.id === result.comment.id ? result.comment : comment));
         exitEditMode();
         if (typeof showStatusToast === 'function') showStatusToast(t('commentUpdated') || 'Comment updated', 'success');
       } else {
@@ -353,12 +359,14 @@
     // Re-fetch comments when a realtime event arrives for the open task.
     const handleRealtime = (payload) => {
       if (!taskId || !payload || Number(payload.taskId) !== Number(taskId)) return;
-      request(`/api/tasks/${taskId}/comments`).then((result) => {
-        if (!result?.error && Array.isArray(result.comments)) {
-          comments = result.comments;
-          render();
-        }
-      }).catch(() => {});
+      request(`/api/tasks/${taskId}/comments`)
+        .then((result) => {
+          if (!result?.error && Array.isArray(result.comments)) {
+            comments = result.comments;
+            render();
+          }
+        })
+        .catch(() => {});
     };
 
     // The socket connects after this module is constructed, so subscribe
@@ -372,7 +380,10 @@
     const bind = () => {
       if (!readOnly) {
         addBtn?.addEventListener('click', submit);
-        cancelBtn?.addEventListener('click', () => { exitEditMode(); render(); });
+        cancelBtn?.addEventListener('click', () => {
+          exitEditMode();
+          render();
+        });
         inputEl?.addEventListener('input', clearError);
       }
       subscribeRealtime();
@@ -395,4 +406,4 @@
   };
 
   window.TaskCommentsModule = { create };
-}());
+})();

@@ -70,12 +70,7 @@
     };
     const budgetStorageKey = 'finance-category-budgets';
     const quickSuggestionsKey = 'transaction-quick-suggestions';
-    const defaultQuickSuggestions = [
-      'breakfast 5$',
-      'gas 40$',
-      'milk tea 65k yesterday',
-      'electricity 850k',
-    ];
+    const defaultQuickSuggestions = ['breakfast 5$', 'gas 40$', 'milk tea 65k yesterday', 'electricity 850k'];
 
     const formatCurrency = (value) => {
       const amount = Number(value || 0);
@@ -112,12 +107,13 @@
       return date.toISOString().slice(0, 10);
     };
 
-    const escapeHtml = (value) => String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+    const escapeHtml = (value) =>
+      String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 
     const normalizeAmount = (value) => {
       const amount = Number(value || 0);
@@ -155,15 +151,15 @@
 
     const summarizeTransactions = () => {
       const income = transactions
-        .filter(transaction => transaction.kind === 'income')
+        .filter((transaction) => transaction.kind === 'income')
         .reduce((sum, transaction) => sum + normalizeAmount(transaction.amount), 0);
       const expense = transactions
-        .filter(transaction => transaction.kind === 'expense')
+        .filter((transaction) => transaction.kind === 'expense')
         .reduce((sum, transaction) => sum + normalizeAmount(transaction.amount), 0);
       const categoryTotals = new Map();
 
       transactions
-        .filter(transaction => transaction.kind === 'expense')
+        .filter((transaction) => transaction.kind === 'expense')
         .forEach((transaction) => {
           const category = transaction.category || 'Uncategorized';
           categoryTotals.set(category, (categoryTotals.get(category) || 0) + normalizeAmount(transaction.amount));
@@ -297,15 +293,13 @@
     };
 
     const renderCategorySuggestions = () => {
-      categorySuggestions.innerHTML = categories
-        .map(cat => `<option value="${cat}">`)
-        .join('');
+      categorySuggestions.innerHTML = categories.map((cat) => `<option value="${cat}">`).join('');
     };
 
     const renderCategoryFilter = () => {
       const currentValue = categoryFilter.value;
       categoryFilter.innerHTML = '<option value="">All Categories</option>';
-      categories.forEach(cat => {
+      categories.forEach((cat) => {
         const option = document.createElement('option');
         option.value = cat;
         option.textContent = cat;
@@ -317,7 +311,7 @@
     const renderCreditCardOptions = () => {
       const currentValue = creditCardInput.value;
       creditCardInput.innerHTML = '<option value="">None</option>';
-      creditCards.forEach(card => {
+      creditCards.forEach((card) => {
         const option = document.createElement('option');
         option.value = card.id;
         option.textContent = card.name;
@@ -374,7 +368,9 @@
       if (diffDays === 0) return capitalize(t('today') || 'Today');
       if (diffDays === 1) return capitalize(t('yesterday') || 'Yesterday');
       return d.toLocaleDateString(getLanguage() === 'vi' ? 'vi-VN' : 'en-US', {
-        weekday: 'short', month: 'short', day: 'numeric',
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
         year: d.getFullYear() === today.getFullYear() ? undefined : 'numeric',
       });
     };
@@ -385,7 +381,7 @@
       const item = document.createElement('div');
       item.className = `txn-item txn-item-${isIncome ? 'income' : 'expense'}`;
 
-      const label = transaction.category || (isIncome ? (t('income') || 'Income') : (t('expense') || 'Expense'));
+      const label = transaction.category || (isIncome ? t('income') || 'Income' : t('expense') || 'Expense');
 
       const icon = document.createElement('span');
       icon.className = 'txn-item-icon';
@@ -500,9 +496,10 @@
         dateLabel.className = 'txn-group-date';
         dateLabel.textContent = groupDateLabel(group.date);
 
-        const dayNet = group.items.reduce((sum, tx) => (
-          sum + (tx.kind === 'income' ? normalizeAmount(tx.amount) : -normalizeAmount(tx.amount))
-        ), 0);
+        const dayNet = group.items.reduce(
+          (sum, tx) => sum + (tx.kind === 'income' ? normalizeAmount(tx.amount) : -normalizeAmount(tx.amount)),
+          0,
+        );
         const total = document.createElement('span');
         total.className = `txn-group-total ${dayNet >= 0 ? 'amount-income' : 'amount-expense'}`;
         total.textContent = `${dayNet >= 0 ? '+' : '−'}${formatCurrency(Math.abs(dayNet))}`;
@@ -558,8 +555,8 @@
       // Build daily spending data for current month
       const daysInMonth = new Date(
         Number(currentFilters.year) || new Date().getFullYear(),
-        Number(currentFilters.month) || (new Date().getMonth() + 1),
-        0
+        Number(currentFilters.month) || new Date().getMonth() + 1,
+        0,
       ).getDate();
 
       const dailySpending = new Array(daysInMonth).fill(0);
@@ -582,9 +579,10 @@
       html += '<div class="finance-daily-chart">';
       dailySpending.forEach((amount, index) => {
         const height = Math.max(2, Math.round((amount / maxDaily) * 100));
-        const isToday = (index + 1) === new Date().getDate()
-          && Number(currentFilters.month) === (new Date().getMonth() + 1)
-          && Number(currentFilters.year) === new Date().getFullYear();
+        const isToday =
+          index + 1 === new Date().getDate() &&
+          Number(currentFilters.month) === new Date().getMonth() + 1 &&
+          Number(currentFilters.year) === new Date().getFullYear();
         html += `<div class="finance-daily-bar${isToday ? ' is-today' : ''}" title="Day ${index + 1}: ${formatCurrency(amount)}">
           <div class="finance-daily-bar-fill" style="height: ${height}%"></div>
           ${(index + 1) % 5 === 0 || index === 0 ? `<span class="finance-daily-bar-label">${index + 1}</span>` : ''}
@@ -614,26 +612,26 @@
     const renderBudgets = ({ sortedCategories }) => {
       if (!budgetCategoryList) return;
       const budgets = getBudgetMap();
-      const categoryNames = [...new Set([
-        ...sortedCategories.map(([category]) => category),
-        ...categories,
-        ...Object.keys(budgets),
-      ])].filter(Boolean).sort((first, second) => first.localeCompare(second));
+      const categoryNames = [
+        ...new Set([...sortedCategories.map(([category]) => category), ...categories, ...Object.keys(budgets)]),
+      ]
+        .filter(Boolean)
+        .sort((first, second) => first.localeCompare(second));
 
       if (categoryNames.length === 0) {
         budgetCategoryList.innerHTML = '<p class="finance-empty">Add expense categories to start budgeting.</p>';
         return;
       }
 
-      budgetCategoryList.innerHTML = categoryNames.map((category) => {
-        const spent = sortedCategories.find(([name]) => name === category)?.[1] || 0;
-        const budget = budgets[category] || 0;
-        const percent = budget > 0 ? Math.min(100, Math.round((spent / budget) * 100)) : 0;
-        const status = budget > 0
-          ? `${formatCurrency(spent)} of ${formatCurrency(budget)}`
-          : `${formatCurrency(spent)} spent`;
+      budgetCategoryList.innerHTML = categoryNames
+        .map((category) => {
+          const spent = sortedCategories.find(([name]) => name === category)?.[1] || 0;
+          const budget = budgets[category] || 0;
+          const percent = budget > 0 ? Math.min(100, Math.round((spent / budget) * 100)) : 0;
+          const status =
+            budget > 0 ? `${formatCurrency(spent)} of ${formatCurrency(budget)}` : `${formatCurrency(spent)} spent`;
 
-        return `
+          return `
           <div class="budget-category-row" data-category="${escapeHtml(category)}">
             <div>
               <strong>${escapeHtml(category)}</strong>
@@ -643,7 +641,8 @@
             <input type="number" min="0" step="1" inputmode="decimal" value="${budget || ''}" aria-label="Budget for ${escapeHtml(category)}" />
           </div>
         `;
-      }).join('');
+        })
+        .join('');
 
       budgetCategoryList.querySelectorAll('.budget-category-row input').forEach((input) => {
         input.addEventListener('change', () => {
@@ -665,24 +664,28 @@
         return;
       }
 
-      creditCardPaymentList.innerHTML = creditCards.map((card) => {
-        const linkedTransactions = transactions.filter(transaction => Number(transaction.credit_card_id) === Number(card.id));
-        const charges = linkedTransactions
-          .filter(transaction => transaction.kind === 'expense' && !isCardPayment(transaction))
-          .reduce((sum, transaction) => sum + normalizeAmount(transaction.amount), 0);
-        const payments = linkedTransactions
-          .filter(transaction => isCardPayment(transaction))
-          .reduce((sum, transaction) => sum + normalizeAmount(transaction.amount), 0);
-        const balance = normalizeAmount(card.total_balance);
+      creditCardPaymentList.innerHTML = creditCards
+        .map((card) => {
+          const linkedTransactions = transactions.filter(
+            (transaction) => Number(transaction.credit_card_id) === Number(card.id),
+          );
+          const charges = linkedTransactions
+            .filter((transaction) => transaction.kind === 'expense' && !isCardPayment(transaction))
+            .reduce((sum, transaction) => sum + normalizeAmount(transaction.amount), 0);
+          const payments = linkedTransactions
+            .filter((transaction) => isCardPayment(transaction))
+            .reduce((sum, transaction) => sum + normalizeAmount(transaction.amount), 0);
+          const balance = normalizeAmount(card.total_balance);
 
-        return `
+          return `
           <div>
             <span>${escapeHtml(card.name || 'Card')}</span>
             <strong>${formatCurrency(balance)} balance</strong>
             <small>${formatCurrency(charges)} charges - ${formatCurrency(payments)} payments this period</small>
           </div>
         `;
-      }).join('');
+        })
+        .join('');
     };
 
     const renderFinanceInsights = () => {
@@ -761,7 +764,9 @@
       try {
         const stored = JSON.parse(localStorage.getItem(quickSuggestionsKey) || 'null');
         if (Array.isArray(stored) && stored.length) return stored;
-      } catch { /* fall through to defaults */ }
+      } catch {
+        /* fall through to defaults */
+      }
       return [...defaultQuickSuggestions];
     };
 
@@ -900,19 +905,19 @@
         await load();
       } catch (error) {
         console.error('Failed to save transaction:', error);
-        showFormError(error.message || (t('failedToSaveTransaction') || 'Failed to save transaction'));
+        showFormError(error.message || t('failedToSaveTransaction') || 'Failed to save transaction');
       }
     };
 
     const editTransaction = (id) => {
-      const transaction = transactions.find(t => t.id === id);
+      const transaction = transactions.find((t) => t.id === id);
       if (transaction) {
         openModal(transaction);
       }
     };
 
     const confirmDelete = (id) => {
-      const transaction = transactions.find(t => t.id === id);
+      const transaction = transactions.find((t) => t.id === id);
       if (!transaction) return;
 
       if (showDeleteConfirm) {
@@ -920,7 +925,12 @@
         return;
       }
 
-      if (confirm(t('confirmDeleteTransaction') || `Delete this ${transaction.kind} transaction of ${formatCurrency(transaction.amount)}?`)) {
+      if (
+        confirm(
+          t('confirmDeleteTransaction') ||
+            `Delete this ${transaction.kind} transaction of ${formatCurrency(transaction.amount)}?`,
+        )
+      ) {
         deleteTransaction(transaction);
       }
     };
@@ -953,7 +963,8 @@
     };
 
     const shiftMonthFilter = (monthDelta) => {
-      const baseValue = monthFilter.value || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+      const baseValue =
+        monthFilter.value || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
       const [year, month] = baseValue.split('-').map(Number);
       const nextDate = new Date(year, month - 1 + monthDelta, 1);
       monthFilter.value = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
@@ -972,21 +983,23 @@
     // ---- Statement import (PDF → expenses) ----------------------------------
 
     const exportFileName = (extension) => {
-      const period = currentFilters.year && currentFilters.month
-        ? `${currentFilters.year}-${String(currentFilters.month).padStart(2, '0')}`
-        : 'all';
+      const period =
+        currentFilters.year && currentFilters.month
+          ? `${currentFilters.year}-${String(currentFilters.month).padStart(2, '0')}`
+          : 'all';
       return `finance-transactions-${period}.${extension}`;
     };
 
-    const transactionExportRows = () => transactions.map(transaction => ({
-      Date: formatDate(transaction.occurred_on),
-      Type: transaction.kind,
-      Category: transaction.category || '',
-      Amount: normalizeAmount(transaction.amount).toFixed(2),
-      Account: transaction.account || '',
-      Note: transaction.note || '',
-      'Credit Card': creditCards.find(card => Number(card.id) === Number(transaction.credit_card_id))?.name || '',
-    }));
+    const transactionExportRows = () =>
+      transactions.map((transaction) => ({
+        Date: formatDate(transaction.occurred_on),
+        Type: transaction.kind,
+        Category: transaction.category || '',
+        Amount: normalizeAmount(transaction.amount).toFixed(2),
+        Account: transaction.account || '',
+        Note: transaction.note || '',
+        'Credit Card': creditCards.find((card) => Number(card.id) === Number(transaction.credit_card_id))?.name || '',
+      }));
 
     const downloadBlob = (content, type, fileName) => {
       const blob = new Blob([content], { type });
@@ -1010,7 +1023,7 @@
       const headers = Object.keys(rows[0]);
       const csv = [
         headers.join(','),
-        ...rows.map(row => headers.map(header => `"${String(row[header]).replace(/"/g, '""')}"`).join(',')),
+        ...rows.map((row) => headers.map((header) => `"${String(row[header]).replace(/"/g, '""')}"`).join(',')),
       ].join('\n');
       downloadBlob(csv, 'text/csv;charset=utf-8', exportFileName('csv'));
     };
@@ -1025,9 +1038,9 @@
       const headers = Object.keys(rows[0]);
       const table = `
         <table>
-          <thead><tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead>
+          <thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead>
           <tbody>
-            ${rows.map(row => `<tr>${headers.map(header => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('')}
+            ${rows.map((row) => `<tr>${headers.map((header) => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('')}
           </tbody>
         </table>
       `;
@@ -1065,8 +1078,8 @@
             <h1>Finance Report</h1>
             <p>${escapeHtml(getMonthLabel())}</p>
             <table>
-              <thead><tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead>
-              <tbody>${rows.map(row => `<tr>${headers.map(header => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('')}</tbody>
+              <thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead>
+              <tbody>${rows.map((row) => `<tr>${headers.map((header) => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('')}</tbody>
             </table>
           </body>
         </html>
@@ -1079,7 +1092,7 @@
     const renderImportCardOptions = () => {
       const currentValue = importCardInput.value;
       importCardInput.innerHTML = '<option value="">None</option>';
-      creditCards.forEach(card => {
+      creditCards.forEach((card) => {
         const option = document.createElement('option');
         option.value = card.id;
         option.textContent = card.name;
@@ -1169,16 +1182,17 @@
       importFileInput.click();
     };
 
-    const readFileAsBase64 = (file) => new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        // readAsDataURL yields "data:application/pdf;base64,XXXX" — strip the prefix.
-        const result = String(reader.result || '');
-        resolve(result.slice(result.indexOf(',') + 1));
-      };
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
-    });
+    const readFileAsBase64 = (file) =>
+      new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          // readAsDataURL yields "data:application/pdf;base64,XXXX" — strip the prefix.
+          const result = String(reader.result || '');
+          resolve(result.slice(result.indexOf(',') + 1));
+        };
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+      });
 
     const handleImportFile = async (event) => {
       const file = event.target.files && event.target.files[0];
@@ -1227,7 +1241,7 @@
 
     const confirmImport = async () => {
       const rows = Array.from(importRows.querySelectorAll('tr'));
-      const selected = rows.filter(row => row.querySelector('input.import-row-select')?.checked);
+      const selected = rows.filter((row) => row.querySelector('input.import-row-select')?.checked);
       if (selected.length === 0) return;
 
       const creditCardId = importCardInput.value || null;
@@ -1357,11 +1371,7 @@
     };
 
     const load = async () => {
-      await Promise.all([
-        loadTransactions(),
-        loadCategories(),
-        loadCreditCards(),
-      ]);
+      await Promise.all([loadTransactions(), loadCategories(), loadCreditCards()]);
       renderFinanceInsights();
     };
 
@@ -1407,4 +1417,4 @@
   };
 
   window.TransactionsModule = { create };
-}());
+})();

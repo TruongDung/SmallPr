@@ -9,7 +9,8 @@ const isServerless = Boolean(process.env.VERCEL);
 
 const loggerLevel = process.env.LOG_LEVEL || (isProduction ? 'info' : 'debug');
 const betterStackSourceToken = process.env.BETTER_STACK_SOURCE_TOKEN || process.env.LOGTAIL_SOURCE_TOKEN;
-const betterStackEndpoint = process.env.BETTER_STACK_ENDPOINT || process.env.LOGTAIL_ENDPOINT || 'https://in.logs.betterstack.com';
+const betterStackEndpoint =
+  process.env.BETTER_STACK_ENDPOINT || process.env.LOGTAIL_ENDPOINT || 'https://in.logs.betterstack.com';
 
 // Directory for rotating log files. Override with LOG_DIR. Disable file logging
 // entirely with LOG_TO_FILE=false.
@@ -82,7 +83,7 @@ const createLogger = () => {
       logtailPino({
         sourceToken: betterStackSourceToken,
         options: { endpoint: betterStackEndpoint },
-      })
+      }),
     );
   } catch (error) {
     const fallbackLogger = pino(baseOptions);

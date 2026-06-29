@@ -11,21 +11,22 @@
     return Math.min(1, Math.max(0, sampleRate));
   };
 
-  const loadScript = (src, id, crossOrigin = null) => new Promise((resolve, reject) => {
-    if (id && document.getElementById(id)) {
-      resolve();
-      return;
-    }
+  const loadScript = (src, id, crossOrigin = null) =>
+    new Promise((resolve, reject) => {
+      if (id && document.getElementById(id)) {
+        resolve();
+        return;
+      }
 
-    const script = document.createElement('script');
-    script.src = src;
-    script.async = true;
-    if (id) script.id = id;
-    if (crossOrigin) script.crossOrigin = crossOrigin;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Failed to load ${src}`));
-    document.head.append(script);
-  });
+      const script = document.createElement('script');
+      script.src = src;
+      script.async = true;
+      if (id) script.id = id;
+      if (crossOrigin) script.crossOrigin = crossOrigin;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error(`Failed to load ${src}`));
+      document.head.append(script);
+    });
 
   const loadPublicConfig = async () => {
     const response = await fetch('/api/config/public', {
@@ -44,7 +45,7 @@
     await loadScript(
       'https://browser.sentry-cdn.com/8.55.0/bundle.tracing.replay.min.js',
       'sentry-browser-sdk',
-      'anonymous'
+      'anonymous',
     );
     if (!window.Sentry?.init) return;
 
@@ -68,7 +69,10 @@
       posthog.init = function init(apiKey, options, name) {
         const target = posthog;
         const instanceName = name || 'posthog';
-        const methods = 'init capture register register_once unregister identify reset setPersonProperties opt_in_capturing opt_out_capturing has_opted_out_capturing'.split(' ');
+        const methods =
+          'init capture register register_once unregister identify reset setPersonProperties opt_in_capturing opt_out_capturing has_opted_out_capturing'.split(
+            ' ',
+          );
         const createStub = (method) => {
           target[method] = function stub() {
             target.push([method].concat(Array.prototype.slice.call(arguments, 0)));
@@ -102,11 +106,15 @@
     state.userId = userId;
 
     if (window.Sentry?.setUser) {
-      window.Sentry.setUser(userId ? {
-        id: userId,
-        username: user.username,
-        email: user.email || undefined,
-      } : null);
+      window.Sentry.setUser(
+        userId
+          ? {
+              id: userId,
+              username: user.username,
+              email: user.email || undefined,
+            }
+          : null,
+      );
     }
 
     if (window.posthog) {
@@ -154,4 +162,4 @@
   };
 
   init();
-}());
+})();

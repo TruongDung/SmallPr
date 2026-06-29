@@ -11,10 +11,7 @@ export class ApiRequestError extends Error {
   }
 }
 
-export const request = async <T = unknown>(
-  url: string,
-  options: RequestInit = {},
-): Promise<T> => {
+export const request = async <T = unknown>(url: string, options: RequestInit = {}): Promise<T> => {
   const response = await fetch(url, {
     credentials: 'include',
     headers: {
@@ -33,11 +30,8 @@ export const request = async <T = unknown>(
 
   if (!response.ok || (body && typeof body === 'object' && 'error' in body)) {
     const errorMessage =
-      body && typeof body === 'object' && 'error' in body
-        ? String((body as { error: unknown }).error)
-        : '';
-    const message =
-      errorMessage || `Request failed (${response.status} ${response.statusText || ''})`.trim();
+      body && typeof body === 'object' && 'error' in body ? String((body as { error: unknown }).error) : '';
+    const message = errorMessage || `Request failed (${response.status} ${response.statusText || ''})`.trim();
     throw new ApiRequestError(message, response.status);
   }
 

@@ -18,26 +18,26 @@ New to the project? Follow this path:
 
 ### For Getting Started
 
-| Document | Purpose | Time to Read |
-|----------|---------|--------------|
-| [README.md](./README.md) | High-level overview, features list, tech stack | 5 min |
-| [QUICK_START.md](./QUICK_START.md) | Step-by-step setup instructions | 10 min |
-| [CODE_MAP.md](./CODE_MAP.md) | Visual code organization guide | 10 min |
+| Document                           | Purpose                                        | Time to Read |
+| ---------------------------------- | ---------------------------------------------- | ------------ |
+| [README.md](./README.md)           | High-level overview, features list, tech stack | 5 min        |
+| [QUICK_START.md](./QUICK_START.md) | Step-by-step setup instructions                | 10 min       |
+| [CODE_MAP.md](./CODE_MAP.md)       | Visual code organization guide                 | 10 min       |
 
 ### For Development
 
-| Document | Purpose | Time to Read |
-|----------|---------|--------------|
-| [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) | Code patterns, examples, best practices | 30 min |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | System architecture and design decisions | 20 min |
-| [iOS README](./ios/TaskManager/README.md) | iOS app build instructions | 5 min |
+| Document                                   | Purpose                                  | Time to Read |
+| ------------------------------------------ | ---------------------------------------- | ------------ |
+| [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) | Code patterns, examples, best practices  | 30 min       |
+| [ARCHITECTURE.md](./ARCHITECTURE.md)       | System architecture and design decisions | 20 min       |
+| [iOS README](./ios/TaskManager/README.md)  | iOS app build instructions               | 5 min        |
 
 ### For Operations
 
-| Document | Purpose | Time to Read |
-|----------|---------|--------------|
-| [README.md](./README.md#deployment) | Deployment instructions | 5 min |
-| [README.md](./README.md#troubleshooting) | Common issues and solutions | 10 min |
+| Document                                 | Purpose                     | Time to Read |
+| ---------------------------------------- | --------------------------- | ------------ |
+| [README.md](./README.md#deployment)      | Deployment instructions     | 5 min        |
+| [README.md](./README.md#troubleshooting) | Common issues and solutions | 10 min       |
 
 ---
 
@@ -46,12 +46,14 @@ New to the project? Follow this path:
 ### I'm a New Developer
 
 **Start here:**
+
 1. [README.md](./README.md) - Understand what this app does
 2. [QUICK_START.md](./QUICK_START.md) - Get it running locally
 3. [CODE_MAP.md](./CODE_MAP.md) - Learn where everything lives
 4. [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) - Write your first feature
 
 **Key sections:**
+
 - [Project Structure](./CODE_MAP.md#-detailed-file-structure)
 - [Common Patterns](./DEVELOPER_GUIDE.md#common-patterns)
 - [Adding New Features](./DEVELOPER_GUIDE.md#-backend-development)
@@ -59,11 +61,13 @@ New to the project? Follow this path:
 ### I'm a Senior Engineer
 
 **Start here:**
+
 1. [ARCHITECTURE.md](./ARCHITECTURE.md) - Understand the design
 2. [CODE_MAP.md](./CODE_MAP.md#-architecture-visualization) - See data flow
 3. [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) - Review patterns
 
 **Key sections:**
+
 - [Architecture Patterns](./ARCHITECTURE.md#-architecture-patterns)
 - [Performance Optimizations](./ARCHITECTURE.md#-performance-optimizations)
 - [Security Considerations](./ARCHITECTURE.md#-security-considerations)
@@ -71,11 +75,13 @@ New to the project? Follow this path:
 ### I'm a DevOps Engineer
 
 **Start here:**
+
 1. [README.md](./README.md#-deployment) - Deployment options
 2. [QUICK_START.md](./QUICK_START.md#-installation-help) - Infrastructure setup
 3. [GitHub Actions](./.github/workflows/) - CI/CD pipelines
 
 **Key sections:**
+
 - [Environment Variables](./README.md#environment-variables)
 - [Docker Setup](./QUICK_START.md#docker-alternative-easiest)
 - [Health Checks](./ARCHITECTURE.md#health-checks)
@@ -83,10 +89,12 @@ New to the project? Follow this path:
 ### I'm a Product Manager
 
 **Start here:**
+
 1. [README.md](./README.md#-features) - Feature overview
 2. [ARCHITECTURE.md](./ARCHITECTURE.md#overview) - Technical capabilities
 
 **Key sections:**
+
 - [Features](./README.md#-features)
 - [Tech Stack](./README.md#-tech-stack)
 - [iOS App](./ios/TaskManager/README.md)
@@ -94,11 +102,13 @@ New to the project? Follow this path:
 ### I'm Reviewing Code
 
 **Start here:**
+
 1. [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md#-best-practices) - Coding standards
 2. [CODE_MAP.md](./CODE_MAP.md) - Code organization
 3. [ARCHITECTURE.md](./ARCHITECTURE.md#architecture-patterns) - Expected patterns
 
 **Key sections:**
+
 - [Best Practices](./DEVELOPER_GUIDE.md#-best-practices)
 - [Testing Guidelines](./DEVELOPER_GUIDE.md#-testing-guidelines)
 - [Security](./ARCHITECTURE.md#-security-considerations)
@@ -108,6 +118,7 @@ New to the project? Follow this path:
 ## 🔍 Documentation by Topic
 
 ### Setup & Installation
+
 - [Quick Start Guide](./QUICK_START.md)
 - [Prerequisites](./README.md#prerequisites)
 - [Environment Setup](./QUICK_START.md#3-quick-configuration)
@@ -115,6 +126,7 @@ New to the project? Follow this path:
 - [Troubleshooting](./QUICK_START.md#-troubleshooting)
 
 ### Architecture & Design
+
 - [Architecture Overview](./ARCHITECTURE.md#overview)
 - [Architecture Patterns](./ARCHITECTURE.md#-architecture-patterns)
 - [Data Flow](./ARCHITECTURE.md#-data-flow)
@@ -122,6 +134,7 @@ New to the project? Follow this path:
 - [Visual Architecture](./CODE_MAP.md#-architecture-visualization)
 
 ### Code Organization
+
 - [Project Structure](./ARCHITECTURE.md#-project-structure)
 - [Detailed File Structure](./CODE_MAP.md#-detailed-file-structure)
 - [Backend Structure](./CODE_MAP.md#backend-srcserver)
@@ -129,6 +142,7 @@ New to the project? Follow this path:
 - [Quick Navigation](./CODE_MAP.md#-quick-navigation)
 
 ### Development
+
 - [Adding API Endpoints](./DEVELOPER_GUIDE.md#adding-a-new-api-endpoint)
 - [Creating Services](./DEVELOPER_GUIDE.md#creating-a-service)
 - [Database Queries](./DEVELOPER_GUIDE.md#database-queries)
@@ -137,6 +151,7 @@ New to the project? Follow this path:
 - [Request Flow](./CODE_MAP.md#-request-flow-examples)
 
 ### Features & Capabilities
+
 - [Authentication](./ARCHITECTURE.md#authentication-flow)
 - [Recurring Tasks](./RECURRING_TASKS.md)
 - [Lunar Calendar Reminders](./LUNAR_REMINDER_FEATURE.md)
@@ -146,6 +161,7 @@ New to the project? Follow this path:
 - [iOS App](./ios/TaskManager/README.md)
 
 ### Operations
+
 - [Deployment](./README.md#-deployment)
 - [Configuration](./README.md#-configuration)
 - [Environment Variables](./README.md#environment-variables)
@@ -155,6 +171,7 @@ New to the project? Follow this path:
 - [Security](./ARCHITECTURE.md#-security-considerations)
 
 ### Mobile Development
+
 - [iOS App Overview](./ios/TaskManager/README.md)
 - [iOS Build Instructions](./ios/TaskManager/README.md#build-on-mac)
 - [GitHub Actions iOS Build](./.github/workflows/ios-build.yml)
@@ -215,25 +232,27 @@ npm run seed:audit-logs        # Seed data
 
 ### Port Reference
 
-| Service | Port | URL |
-|---------|------|-----|
-| Frontend Dev | 5173 | http://localhost:5173 |
-| Backend | 3000 | http://localhost:3000 |
-| Backend API | 3000 | http://localhost:3000/api |
-| PostgreSQL | 5432 | postgresql://localhost:5432 |
-| Redis | 6379 | redis://localhost:6379 |
+| Service      | Port | URL                         |
+| ------------ | ---- | --------------------------- |
+| Frontend Dev | 5173 | http://localhost:5173       |
+| Backend      | 3000 | http://localhost:3000       |
+| Backend API  | 3000 | http://localhost:3000/api   |
+| PostgreSQL   | 5432 | postgresql://localhost:5432 |
+| Redis        | 6379 | redis://localhost:6379      |
 
 ---
 
 ## 🎓 Learning Paths
 
 ### Path 1: Quick Start (1 hour)
+
 1. Read [README.md](./README.md) (5 min)
 2. Follow [QUICK_START.md](./QUICK_START.md) (30 min)
 3. Browse [CODE_MAP.md](./CODE_MAP.md) (15 min)
 4. Explore the running app (10 min)
 
 ### Path 2: Full Onboarding (1 day)
+
 1. Complete Path 1 (1 hour)
 2. Read [ARCHITECTURE.md](./ARCHITECTURE.md) (30 min)
 3. Read [DEVELOPER_GUIDE.md](./DEVELOPER_GUIDE.md) (1 hour)
@@ -241,6 +260,7 @@ npm run seed:audit-logs        # Seed data
 5. Review existing code (2 hours)
 
 ### Path 3: Deep Dive (1 week)
+
 1. Complete Path 2 (1 day)
 2. Study database schema and migrations (2 hours)
 3. Understand real-time architecture (2 hours)
@@ -275,14 +295,14 @@ npm run seed:audit-logs        # Seed data
 
 ## 📊 Documentation Status
 
-| Document | Status | Last Updated | Coverage |
-|----------|--------|--------------|----------|
-| README.md | ✅ Complete | 2024-01 | 100% |
-| QUICK_START.md | ✅ Complete | 2024-01 | 100% |
-| CODE_MAP.md | ✅ Complete | 2024-01 | 100% |
-| DEVELOPER_GUIDE.md | ✅ Complete | 2024-01 | 100% |
-| ARCHITECTURE.md | ✅ Complete | 2024-01 | 100% |
-| API Documentation | 🔄 Planned | - | 0% |
+| Document           | Status      | Last Updated | Coverage |
+| ------------------ | ----------- | ------------ | -------- |
+| README.md          | ✅ Complete | 2024-01      | 100%     |
+| QUICK_START.md     | ✅ Complete | 2024-01      | 100%     |
+| CODE_MAP.md        | ✅ Complete | 2024-01      | 100%     |
+| DEVELOPER_GUIDE.md | ✅ Complete | 2024-01      | 100%     |
+| ARCHITECTURE.md    | ✅ Complete | 2024-01      | 100%     |
+| API Documentation  | 🔄 Planned  | -            | 0%       |
 
 ---
 

@@ -1,0 +1,9 @@
+node_modules/
+mcp-servers/
+.understand-anything/
+ios/
+public/app/
+dist/
+*.min.js
+*.min.css
+package-lock.json

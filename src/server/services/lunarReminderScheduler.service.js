@@ -12,10 +12,8 @@ const millisecondsUntilNextRun = (now = new Date()) => {
   return next.getTime() - now.getTime();
 };
 
-const shouldRemindForLunarDay = (settings, lunarDay) => (
-  (Number(lunarDay) === 1 && settings.remind_lunar_day1)
-  || (Number(lunarDay) === 15 && settings.remind_lunar_day15)
-);
+const shouldRemindForLunarDay = (settings, lunarDay) =>
+  (Number(lunarDay) === 1 && settings.remind_lunar_day1) || (Number(lunarDay) === 15 && settings.remind_lunar_day15);
 
 const createLunarReminderScheduler = ({
   cache = null,

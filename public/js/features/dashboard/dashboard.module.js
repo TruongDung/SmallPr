@@ -8,14 +8,14 @@
 // refetches at 150ms.
 (function () {
   const CARD_DEFINITIONS = [
-    { id: 'todaysTasks',       titleKey: 'cardTodaysTasks',       canHide: true },
-    { id: 'activeSprints',     titleKey: 'cardActiveSprints',     canHide: true },
+    { id: 'todaysTasks', titleKey: 'cardTodaysTasks', canHide: true },
+    { id: 'activeSprints', titleKey: 'cardActiveSprints', canHide: true },
     { id: 'taskStatusSummary', titleKey: 'cardTaskStatusSummary', canHide: true },
-    { id: 'bills',             titleKey: 'cardBills',             canHide: true },
-    { id: 'creditCards',       titleKey: 'cardCreditCards',       canHide: true },
-    { id: 'recentNotes',       titleKey: 'cardRecentNotes',       canHide: true },
-    { id: 'weather',           titleKey: 'cardWeather',           canHide: true },
-    { id: 'dailyQuote',        titleKey: 'cardDailyQuote',        canHide: true },
+    { id: 'bills', titleKey: 'cardBills', canHide: true },
+    { id: 'creditCards', titleKey: 'cardCreditCards', canHide: true },
+    { id: 'recentNotes', titleKey: 'cardRecentNotes', canHide: true },
+    { id: 'weather', titleKey: 'cardWeather', canHide: true },
+    { id: 'dailyQuote', titleKey: 'cardDailyQuote', canHide: true },
   ];
   const CARD_BY_ID = Object.fromEntries(CARD_DEFINITIONS.map((c) => [c.id, c]));
   const REFRESH_DEBOUNCE_MS = 150;
@@ -172,12 +172,13 @@
       }
     };
 
-    const escapeHtml = (s) => String(s == null ? '' : s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+    const escapeHtml = (s) =>
+      String(s == null ? '' : s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 
     // --- Card renderers ---------------------------------------------------
 
@@ -314,8 +315,8 @@
       };
 
       const overdue = buildSubsection('subOverdue', data.overdue);
-      const today   = buildSubsection('subToday',   data.today);
-      const inProg  = buildSubsection('subInProgress', data.in_progress);
+      const today = buildSubsection('subToday', data.today);
+      const inProg = buildSubsection('subInProgress', data.in_progress);
       [overdue, today, inProg].filter(Boolean).forEach((node) => body.append(node));
       section.append(body);
       return section;
@@ -334,9 +335,9 @@
       const body = document.createElement('div');
       body.className = 'dashboard-card-body dashboard-status-grid';
       const cells = [
-        { status: 'todo',        label: t('todo'),       count: data.todo },
+        { status: 'todo', label: t('todo'), count: data.todo },
         { status: 'in_progress', label: t('in_progress'), count: data.in_progress },
-        { status: 'done',        label: t('done'),       count: data.done },
+        { status: 'done', label: t('done'), count: data.done },
       ];
       for (const cell of cells) {
         const button = document.createElement('button');
@@ -471,9 +472,9 @@
         return wrap;
       };
 
-      const overdue = buildBillSubsection('subOverdue',  data.overdue);
-      const dueSoon = buildBillSubsection('subDueSoon',  data.dueSoon);
-      const undated = buildBillSubsection('subUndated',  data.undated);
+      const overdue = buildBillSubsection('subOverdue', data.overdue);
+      const dueSoon = buildBillSubsection('subDueSoon', data.dueSoon);
+      const undated = buildBillSubsection('subUndated', data.undated);
       [overdue, dueSoon, undated].filter(Boolean).forEach((node) => body.append(node));
       section.append(body);
       return section;
@@ -643,22 +644,23 @@
     };
 
     const RENDERERS = {
-      todaysTasks:       renderTodaysTasksCard,
-      activeSprints:     renderActiveSprintsCard,
+      todaysTasks: renderTodaysTasksCard,
+      activeSprints: renderActiveSprintsCard,
       taskStatusSummary: renderTaskStatusCard,
-      recentNotes:       renderRecentNotesCard,
-      bills:             renderBillsCard,
-      creditCards:       renderCreditCardsCard,
-      weather:           renderWeatherCard,
-      dailyQuote:        renderDailyQuoteCard,
+      recentNotes: renderRecentNotesCard,
+      bills: renderBillsCard,
+      creditCards: renderCreditCardsCard,
+      weather: renderWeatherCard,
+      dailyQuote: renderDailyQuoteCard,
     };
 
     // --- Skeleton + main renderer ----------------------------------------
 
     const renderSkeletons = () => {
       grid.innerHTML = '';
-      const order = lastPayload?.preferences?.cards?.filter((c) => c.visible)?.sort((a, b) => a.order - b.order)
-        || CARD_DEFINITIONS.map((c, i) => ({ id: c.id, visible: true, order: i }));
+      const order =
+        lastPayload?.preferences?.cards?.filter((c) => c.visible)?.sort((a, b) => a.order - b.order) ||
+        CARD_DEFINITIONS.map((c, i) => ({ id: c.id, visible: true, order: i }));
       for (const entry of order) {
         const def = CARD_BY_ID[entry.id];
         if (!def) continue;
@@ -689,9 +691,7 @@
           merged.push({ id: def.id, visible: true, order: merged.length + index });
         }
       });
-      const order = merged
-        .filter((c) => c.visible)
-        .sort((a, b) => a.order - b.order);
+      const order = merged.filter((c) => c.visible).sort((a, b) => a.order - b.order);
       for (const entry of order) {
         const card = payload.cards?.[entry.id];
         const renderer = RENDERERS[entry.id];
@@ -724,7 +724,9 @@
         lastTimezone = payload.timezone || tz();
         renderAll(payload);
         scheduleDailyQuoteRollover();
-        try { onLoaded(payload); } catch (_e) {}
+        try {
+          onLoaded(payload);
+        } catch (_e) {}
       } catch (_error) {
         showBannerError(t('dashboardErrorTitle'));
       }
@@ -749,7 +751,9 @@
         try {
           const today = new Intl.DateTimeFormat('en-CA', {
             timeZone: lastTimezone || tz(),
-            year: 'numeric', month: '2-digit', day: '2-digit',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
           }).format(new Date());
           if (today !== lastDay) {
             lastDay = today;
@@ -767,9 +771,18 @@
       if (listenersBound) return;
       const sock = window.realtimeSocket;
       if (!sock || typeof sock.on !== 'function') return;
-      ['task:created', 'task:updated', 'task:deleted',
-       'note:created', 'note:updated', 'note:deleted',
-       'bill:created', 'bill:updated', 'bill:deleted', 'card:updated'].forEach((event) => sock.on(event, scheduleRefresh));
+      [
+        'task:created',
+        'task:updated',
+        'task:deleted',
+        'note:created',
+        'note:updated',
+        'note:deleted',
+        'bill:created',
+        'bill:updated',
+        'bill:deleted',
+        'card:updated',
+      ].forEach((event) => sock.on(event, scheduleRefresh));
       sock.on('connect', handleConnect);
       sock.on('disconnect', handleDisconnect);
       listenersBound = true;
@@ -778,9 +791,18 @@
     const detachRealtime = () => {
       const sock = window.realtimeSocket;
       if (!sock || typeof sock.off !== 'function') return;
-      ['task:created', 'task:updated', 'task:deleted',
-       'note:created', 'note:updated', 'note:deleted',
-       'bill:created', 'bill:updated', 'bill:deleted', 'card:updated'].forEach((event) => sock.off(event, scheduleRefresh));
+      [
+        'task:created',
+        'task:updated',
+        'task:deleted',
+        'note:created',
+        'note:updated',
+        'note:deleted',
+        'bill:created',
+        'bill:updated',
+        'bill:deleted',
+        'card:updated',
+      ].forEach((event) => sock.off(event, scheduleRefresh));
       sock.off('connect', handleConnect);
       sock.off('disconnect', handleDisconnect);
       listenersBound = false;
@@ -840,13 +862,17 @@
         upBtn.addEventListener('click', () => {
           if (index === 0) return;
           [cards[index - 1], cards[index]] = [cards[index], cards[index - 1]];
-          cards.forEach((c, i) => { c.order = i; });
+          cards.forEach((c, i) => {
+            c.order = i;
+          });
           renderCustomizeList({ ...prefs, cards });
         });
         downBtn.addEventListener('click', () => {
           if (index === cards.length - 1) return;
           [cards[index + 1], cards[index]] = [cards[index], cards[index + 1]];
-          cards.forEach((c, i) => { c.order = i; });
+          cards.forEach((c, i) => {
+            c.order = i;
+          });
           renderCustomizeList({ ...prefs, cards });
         });
         visible.addEventListener('change', () => {
@@ -865,8 +891,13 @@
     };
 
     const openCustomize = () => {
-      const prefs = lastPayload?.preferences ? JSON.parse(JSON.stringify(lastPayload.preferences))
-                                             : { version: 1, defaultLanding: 'today', cards: CARD_DEFINITIONS.map((c, i) => ({ id: c.id, visible: true, order: i })) };
+      const prefs = lastPayload?.preferences
+        ? JSON.parse(JSON.stringify(lastPayload.preferences))
+        : {
+            version: 1,
+            defaultLanding: 'today',
+            cards: CARD_DEFINITIONS.map((c, i) => ({ id: c.id, visible: true, order: i })),
+          };
       customizeDefaultLanding.value = prefs.defaultLanding === 'last_used' ? 'last_used' : 'today';
       renderCustomizeList(prefs);
       customizeModal.classList.remove('hidden');
@@ -995,4 +1026,4 @@
   };
 
   window.DashboardModule = { create };
-}());
+})();

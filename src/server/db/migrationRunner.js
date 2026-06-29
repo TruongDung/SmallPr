@@ -4,9 +4,11 @@ const logger = require('../logger');
 
 const MIGRATIONS_DIR = path.join(__dirname, 'migrations');
 
-const listMigrationFiles = () => fs.readdirSync(MIGRATIONS_DIR)
-  .filter((file) => file.endsWith('.sql'))
-  .sort();
+const listMigrationFiles = () =>
+  fs
+    .readdirSync(MIGRATIONS_DIR)
+    .filter((file) => file.endsWith('.sql'))
+    .sort();
 
 const runMigrations = async (pool) => {
   logger.info({ migrationsDir: MIGRATIONS_DIR }, 'Starting database migration runner');
@@ -37,10 +39,7 @@ const runMigrations = async (pool) => {
     try {
       await client.query('BEGIN');
       await client.query(sql);
-      await client.query(
-        'INSERT INTO schema_migrations (filename) VALUES ($1)',
-        [filename]
-      );
+      await client.query('INSERT INTO schema_migrations (filename) VALUES ($1)', [filename]);
       await client.query('COMMIT');
       appliedCount += 1;
     } catch (error) {

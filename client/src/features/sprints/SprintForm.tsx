@@ -60,12 +60,7 @@ export const SprintForm = ({ open, sprint, onSave, onClose }: SprintFormProps) =
   };
 
   return (
-    <Modal
-      open={open}
-      onClose={onClose}
-      title={isEdit ? t('editSprint') : t('newSprint')}
-      titleId="sprint-form-title"
-    >
+    <Modal open={open} onClose={onClose} title={isEdit ? t('editSprint') : t('newSprint')} titleId="sprint-form-title">
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label htmlFor="sprint-name">{t('sprintName')}</label>
@@ -82,42 +77,22 @@ export const SprintForm = ({ open, sprint, onSave, onClose }: SprintFormProps) =
 
         <div className="form-group">
           <label htmlFor="sprint-goal">{t('sprintGoal')}</label>
-          <textarea
-            id="sprint-goal"
-            value={goal}
-            onChange={(e) => setGoal(e.target.value)}
-            rows={3}
-            maxLength={2000}
-          />
+          <textarea id="sprint-goal" value={goal} onChange={(e) => setGoal(e.target.value)} rows={3} maxLength={2000} />
         </div>
 
         <div className="form-group">
           <label htmlFor="sprint-start">{t('sprintStart')}</label>
-          <input
-            id="sprint-start"
-            type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
-          />
+          <input id="sprint-start" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         </div>
 
         <div className="form-group">
           <label htmlFor="sprint-end">{t('sprintEnd')}</label>
-          <input
-            id="sprint-end"
-            type="date"
-            value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
-          />
+          <input id="sprint-end" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
         </div>
 
         <div className="form-group">
           <label htmlFor="sprint-status">{t('sprintStatus')}</label>
-          <select
-            id="sprint-status"
-            value={status}
-            onChange={(e) => setStatus(e.target.value as SprintStatus)}
-          >
+          <select id="sprint-status" value={status} onChange={(e) => setStatus(e.target.value as SprintStatus)}>
             {STATUSES.map((s) => (
               <option key={s} value={s}>
                 {t(`sprint_${s}`)}

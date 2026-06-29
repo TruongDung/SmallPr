@@ -2,19 +2,28 @@ const { getDocumentProxy, extractText } = require('unpdf');
 
 const logger = require('../logger');
 
-const {
-  MAX_TRANSACTION_CATEGORY_LENGTH,
-  MAX_TRANSACTION_NOTE_LENGTH,
-} = require('../constants/transactions');
+const { MAX_TRANSACTION_CATEGORY_LENGTH, MAX_TRANSACTION_NOTE_LENGTH } = require('../constants/transactions');
 
 // --- Date normalisation ---------------------------------------------------
 
-const isValidDate = (value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
-  && !Number.isNaN(new Date(`${value}T00:00:00`).getTime());
+const isValidDate = (value) =>
+  typeof value === 'string' &&
+  /^\d{4}-\d{2}-\d{2}$/.test(value) &&
+  !Number.isNaN(new Date(`${value}T00:00:00`).getTime());
 
 const MONTH_NAMES = {
-  jan: '01', feb: '02', mar: '03', apr: '04', may: '05', jun: '06',
-  jul: '07', aug: '08', sep: '09', oct: '10', nov: '11', dec: '12',
+  jan: '01',
+  feb: '02',
+  mar: '03',
+  apr: '04',
+  may: '05',
+  jun: '06',
+  jul: '07',
+  aug: '08',
+  sep: '09',
+  oct: '10',
+  nov: '11',
+  dec: '12',
 };
 
 /**
@@ -102,24 +111,25 @@ const AMOUNT_RE = /(?:^|\s)(-?\$?\s*-?[\d][\d,]{0,10}\.\d{2}\s*$|\(\s*\$?[\d][\d
  * Group 3: amount token
  */
 const LINE_RE = new RegExp(
-  '(?:^|\\n)\\s*' +                                        // start of line
-  '(' +                                                     // date (group 1)
+  '(?:^|\\n)\\s*' + // start of line
+    '(' + // date (group 1)
     '(?:\\d{4}-\\d{2}-\\d{2})|' +
     '(?:\\d{1,2}/\\d{1,2}(?:/\\d{2,4})?)|' +
-    '(?:[A-Z][a-z]{2,}\\s+\\d{1,2}(?:\\s*[,\\\']?\\s*\\d{2,4})?)' +
-  ')' +
-  '(?=\\s+|\\b)' +                                         // date must be followed by whitespace or word boundary
-  '(.+?)' +                                                 // description (group 2) — lazy
-  '(' +                                                      // amount (group 3)
+    "(?:[A-Z][a-z]{2,}\\s+\\d{1,2}(?:\\s*[,\\']?\\s*\\d{2,4})?)" +
+    ')' +
+    '(?=\\s+|\\b)' + // date must be followed by whitespace or word boundary
+    '(.+?)' + // description (group 2) — lazy
+    '(' + // amount (group 3)
     '(?:-?\\$?\\s*-?[\\d][\\d,]{0,10}\\.\\d{2})|' +
     '(?:\\(\\s*\\$?[\\d][\\d,]{0,10}\\.\\d{2}\\s*\\))' +
-  ')' +
-  '\\s*$',
-  'gm'
+    ')' +
+    '\\s*$',
+  'gm',
 );
 
 // Exclude words that signal non-purchase lines
-const SKIP_DESCRIPTIONS = /^(payments?|credits?|refunds?|returns?|balance transfers?|fees?|charges?|interest|rewards?|total|subtotal|amount due|minimum payment|payment due|new balance|previous balance|apr|annual fee|late fee|finance charge)/i;
+const SKIP_DESCRIPTIONS =
+  /^(payments?|credits?|refunds?|returns?|balance transfers?|fees?|charges?|interest|rewards?|total|subtotal|amount due|minimum payment|payment due|new balance|previous balance|apr|annual fee|late fee|finance charge)/i;
 
 const extractTransactions = (text, fallbackYear) => {
   const items = [];
@@ -161,28 +171,30 @@ const extractTransactions = (text, fallbackYear) => {
 
 // --- Post-processing (reused from the original AI-based version) ----------
 
-const normalizeItems = (rawItems) => (Array.isArray(rawItems) ? rawItems : [])
-  .map((item) => {
-    const amount = Number(item?.amount);
-    if (!isValidDate(item?.date) || !Number.isFinite(amount) || amount <= 0) {
-      return null;
-    }
-    const description = String(item?.description || '').trim();
-    return {
-      date: item.date,
-      // The merchant is the natural category; full text goes to the note.
-      category: description.slice(0, MAX_TRANSACTION_CATEGORY_LENGTH),
-      note: description.slice(0, MAX_TRANSACTION_NOTE_LENGTH),
-      amount: Math.round(amount * 100) / 100,
-    };
-  })
-  .filter(Boolean);
+const normalizeItems = (rawItems) =>
+  (Array.isArray(rawItems) ? rawItems : [])
+    .map((item) => {
+      const amount = Number(item?.amount);
+      if (!isValidDate(item?.date) || !Number.isFinite(amount) || amount <= 0) {
+        return null;
+      }
+      const description = String(item?.description || '').trim();
+      return {
+        date: item.date,
+        // The merchant is the natural category; full text goes to the note.
+        category: description.slice(0, MAX_TRANSACTION_CATEGORY_LENGTH),
+        note: description.slice(0, MAX_TRANSACTION_NOTE_LENGTH),
+        amount: Math.round(amount * 100) / 100,
+      };
+    })
+    .filter(Boolean);
 
 // --- Public API -----------------------------------------------------------
 
 const inferStatementYear = (text) => {
-  const yearMatch = String(text).match(/(?:statement\s+period|statement\s+date|for\s+period|billing\s+cycle).*?(\d{4})/i)
-    || String(text).match(/\b(20\d{2})\b/);
+  const yearMatch =
+    String(text).match(/(?:statement\s+period|statement\s+date|for\s+period|billing\s+cycle).*?(\d{4})/i) ||
+    String(text).match(/\b(20\d{2})\b/);
   return yearMatch ? Number(yearMatch[1]) : new Date().getFullYear();
 };
 
@@ -228,7 +240,11 @@ const extractPdfText = async (base64Pdf) => {
     return { error: 'Failed to read the statement. Please try again or enter the items manually.' };
   } finally {
     if (pdf) {
-      try { pdf.destroy(); } catch (_error) { /* ignore */ }
+      try {
+        pdf.destroy();
+      } catch (_error) {
+        /* ignore */
+      }
     }
   }
 

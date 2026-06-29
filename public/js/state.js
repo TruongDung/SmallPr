@@ -82,11 +82,12 @@
   const getBrowserTimezone = () => {
     try {
       return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/New_York';
-    } catch (error) { return 'America/New_York'; }
+    } catch (error) {
+      return 'America/New_York';
+    }
   };
 
-  const getActiveTimezone = () =>
-    state.currentTimezone || state.currentUser?.timezone || getBrowserTimezone();
+  const getActiveTimezone = () => state.currentTimezone || state.currentUser?.timezone || getBrowserTimezone();
 
   const getSavedView = () => state.currentView;
 
@@ -96,13 +97,11 @@
     if (persist) localStorage.setItem(SAVED_VIEW_KEY, view);
   };
 
-  const getReminderStorageKey = (task) =>
-    `task-reminder-alerted-${task.id}-${task.reminder_at}`;
+  const getReminderStorageKey = (task) => `task-reminder-alerted-${task.id}-${task.reminder_at}`;
 
   const getDailyQuoteDateKey = () => new Date().toISOString().slice(0, 10);
 
-  const getLegacySavedWeatherCitiesKey = () =>
-    `${state.WEATHER_CACHE_PREFIX}-${state.currentUser?.id || 'guest'}`;
+  const getLegacySavedWeatherCitiesKey = () => `${state.WEATHER_CACHE_PREFIX}-${state.currentUser?.id || 'guest'}`;
 
   window.AppState = {
     state,

@@ -15,9 +15,7 @@ const dbDateYmd = (value) => {
   if (!value) return null;
   if (value instanceof Date) return value.toISOString().slice(0, 10);
   const text = String(value);
-  return /^\d{4}-\d{2}-\d{2}/.test(text)
-    ? text.slice(0, 10)
-    : new Date(text).toISOString().slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}/.test(text) ? text.slice(0, 10) : new Date(text).toISOString().slice(0, 10);
 };
 
 describe('lunar reminder integration', () => {
@@ -36,7 +34,7 @@ describe('lunar reminder integration', () => {
       `INSERT INTO users (username, email, password, account_status, timezone)
        VALUES ($1, $2, $3, 'enabled', 'Asia/Ho_Chi_Minh')
        RETURNING id`,
-      [`${RUN_ID}-user`, `${RUN_ID}@example.com`, password]
+      [`${RUN_ID}-user`, `${RUN_ID}@example.com`, password],
     );
     const userId = userResult.rows[0].id;
 
@@ -70,7 +68,7 @@ describe('lunar reminder integration', () => {
       `SELECT title, description, type, is_system_generated, lunar_day, lunar_month, reminder_date
        FROM tasks
        WHERE user_id = $1 AND type = 'LUNAR_REMINDER'`,
-      [userId]
+      [userId],
     );
 
     expect(tasks.rows).toHaveLength(1);

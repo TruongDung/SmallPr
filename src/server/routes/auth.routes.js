@@ -23,10 +23,7 @@ const isSupportedTimezone = (timezone) => {
   }
 };
 
-const hashVerificationToken = (token) => crypto
-  .createHash('sha256')
-  .update(token)
-  .digest('hex');
+const hashVerificationToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
 const createVerificationToken = () => crypto.randomBytes(32).toString('hex');
 
@@ -37,7 +34,9 @@ const createVerificationUrl = (req, token) => {
 };
 
 const getRequestIp = (req) => {
-  const forwardedFor = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  const forwardedFor = String(req.headers['x-forwarded-for'] || '')
+    .split(',')[0]
+    .trim();
   return forwardedFor || req.ip || req.socket?.remoteAddress || 'unknown';
 };
 
@@ -87,10 +86,10 @@ const validateHumanRegistration = (req, res, next) => {
   }
 
   if (
-    !Number.isFinite(startedAt)
-    || formAge < REGISTRATION_MIN_FORM_AGE_MS
-    || formAge > REGISTRATION_MAX_FORM_AGE_MS
-    || interactionCount < 1
+    !Number.isFinite(startedAt) ||
+    formAge < REGISTRATION_MIN_FORM_AGE_MS ||
+    formAge > REGISTRATION_MAX_FORM_AGE_MS ||
+    interactionCount < 1
   ) {
     return res.status(400).json({ error: 'Please complete registration from the sign-up form.' });
   }
@@ -98,7 +97,15 @@ const validateHumanRegistration = (req, res, next) => {
   return next();
 };
 
-const createAuthRouter = ({ auditLogs, featureFlags, bcrypt, getAsync, getUserById, runAsync, sendVerificationEmail }) => {
+const createAuthRouter = ({
+  auditLogs,
+  featureFlags,
+  bcrypt,
+  getAsync,
+  getUserById,
+  runAsync,
+  sendVerificationEmail,
+}) => {
   const router = express.Router();
 
   // Attach the effective per-user feature visibility to a session-user payload.
@@ -145,7 +152,7 @@ const createAuthRouter = ({ auditLogs, featureFlags, bcrypt, getAsync, getUserBy
          )
          VALUES (?, ?, ?, 'pending_verification', CURRENT_TIMESTAMP, ?, ?)
          RETURNING id`,
-        [username, email, hashedPassword, verificationTokenHash, verificationExpiresAt]
+        [username, email, hashedPassword, verificationTokenHash, verificationExpiresAt],
       );
       const verificationUrl = createVerificationUrl(req, verificationToken);
       const emailSent = await sendVerificationEmail({ email, username, verificationUrl });
@@ -190,7 +197,7 @@ const createAuthRouter = ({ auditLogs, featureFlags, bcrypt, getAsync, getUserBy
         `SELECT id, username, email, account_status, email_verification_expires_at
          FROM users
          WHERE email_verification_token = ?`,
-        [tokenHash]
+        [tokenHash],
       );
       if (!user) {
         return res.status(400).json({ error: 'Verification link is invalid or has already been used' });
@@ -206,7 +213,7 @@ const createAuthRouter = ({ auditLogs, featureFlags, bcrypt, getAsync, getUserBy
              email_verification_token = NULL,
              email_verification_expires_at = NULL
          WHERE id = ?`,
-        [user.id]
+        [user.id],
       );
 
       if (String(req.headers.accept || '').includes('text/html')) {
@@ -228,7 +235,7 @@ const createAuthRouter = ({ auditLogs, featureFlags, bcrypt, getAsync, getUserBy
     try {
       const user = await getAsync(
         'SELECT id, username, name, email, timezone, language, password, account_status FROM users WHERE username = ?',
-        [username]
+        [username],
       );
       if (!user) {
         return res.status(401).json({ error: 'Invalid credentials' });
@@ -297,10 +304,13 @@ const createAuthRouter = ({ auditLogs, featureFlags, bcrypt, getAsync, getUserBy
     }
 
     try {
-      await runAsync(
-        'UPDATE users SET name = ?, email = ?, timezone = ?, language = ? WHERE id = ?',
-        [name, email, timezone, language, req.session.userId]
-      );
+      await runAsync('UPDATE users SET name = ?, email = ?, timezone = ?, language = ? WHERE id = ?', [
+        name,
+        email,
+        timezone,
+        language,
+        req.session.userId,
+      ]);
       const user = await getUserById(req.session.userId);
       res.json({ user: createSessionUser(user) });
     } catch (error) {

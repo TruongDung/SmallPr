@@ -14,11 +14,12 @@
     showStatusToast,
   }) => {
     const exportToExcel = () => {
-      const currentDateTime = new Date().toLocaleString('en-US', {
-        timeZone: 'America/New_York'
-      }) + ' EST (NYC)';
+      const currentDateTime =
+        new Date().toLocaleString('en-US', {
+          timeZone: 'America/New_York',
+        }) + ' EST (NYC)';
 
-      const data = getTasks().map(task => ({
+      const data = getTasks().map((task) => ({
         [t('exportDate')]: currentDateTime,
         [t('title')]: task.title,
         [t('tag')]: task.tag || '',
@@ -30,7 +31,7 @@
         [t('completed')]: task.completed ? t('yes') : t('no'),
         [t('dateTimeAlert')]: task.reminder_at ? formatLocalDateTime(task.reminder_at) : '',
         [t('created')]: formatDateEST(task.created_at),
-        [t('updated')]: formatDateEST(task.updated_at)
+        [t('updated')]: formatDateEST(task.updated_at),
       }));
       const ws = XLSX.utils.json_to_sheet(data);
       const wb = XLSX.utils.book_new();
@@ -50,9 +51,10 @@
     };
 
     const exportToCsv = () => {
-      const currentDateTime = new Date().toLocaleString('en-US', {
-        timeZone: 'America/New_York'
-      }) + ' EST (NYC)';
+      const currentDateTime =
+        new Date().toLocaleString('en-US', {
+          timeZone: 'America/New_York',
+        }) + ' EST (NYC)';
 
       const headers = [
         t('exportDate'),
@@ -133,9 +135,10 @@
         console.warn('PDF Unicode font could not be loaded:', error);
       }
 
-      const currentDateTime = new Date().toLocaleString('en-US', {
-        timeZone: 'America/New_York'
-      }) + ' EST (NYC)';
+      const currentDateTime =
+        new Date().toLocaleString('en-US', {
+          timeZone: 'America/New_York',
+        }) + ' EST (NYC)';
 
       // Layout constants
       const pageWidth = doc.internal.pageSize.getWidth();
@@ -148,18 +151,18 @@
 
       // Color palette (RGB)
       const colors = {
-        primary: [37, 99, 235],      // blue-600
-        primaryDark: [30, 64, 175],  // blue-800
-        text: [17, 24, 39],          // gray-900
-        textMuted: [75, 85, 99],     // gray-600
-        textLight: [156, 163, 175],  // gray-400
-        border: [229, 231, 235],     // gray-200
-        bgLight: [249, 250, 251],    // gray-50
-        bgAccent: [239, 246, 255],   // blue-50
+        primary: [37, 99, 235], // blue-600
+        primaryDark: [30, 64, 175], // blue-800
+        text: [17, 24, 39], // gray-900
+        textMuted: [75, 85, 99], // gray-600
+        textLight: [156, 163, 175], // gray-400
+        border: [229, 231, 235], // gray-200
+        bgLight: [249, 250, 251], // gray-50
+        bgAccent: [239, 246, 255], // blue-50
         priorityHigh: [220, 38, 38], // red-600
-        priorityMed: [217, 119, 6],  // amber-600
-        priorityLow: [22, 163, 74],  // green-600
-        statusDone: [22, 163, 74],   // green-600
+        priorityMed: [217, 119, 6], // amber-600
+        priorityLow: [22, 163, 74], // green-600
+        statusDone: [22, 163, 74], // green-600
         statusProgress: [217, 119, 6], // amber-600
         statusTodo: [107, 114, 128], // gray-500
       };
@@ -260,7 +263,7 @@
         const content = (value && value.trim()) || t('notAvailable');
         const lineHeight = 5;
         const blockPadding = 3;
-        
+
         // Split by explicit newlines first, then wrap each paragraph
         const paragraphs = content.split(/\n/);
         const allLines = [];
@@ -307,7 +310,7 @@
           // Draw each line individually to handle blank lines properly
           chunk.forEach((line, lineIdx) => {
             if (line !== '') {
-              doc.text(line, marginX + blockPadding, y + (lineIdx * lineHeight));
+              doc.text(line, marginX + blockPadding, y + lineIdx * lineHeight);
             }
           });
 
@@ -360,7 +363,7 @@
           priorityLabel(task.priority),
           marginX + statusBadge.width + 2,
           y,
-          priorityColor(task.priority || 'medium')
+          priorityColor(task.priority || 'medium'),
         );
         if (task.tag) {
           drawBadge(task.tag, marginX + statusBadge.width + priorityBadge.width + 4, y, colors.textMuted);
@@ -421,95 +424,86 @@
 
     const exportToWord = async () => {
       const { Document, Packer, Paragraph, TextRun } = window.docx;
-      const currentDateTime = new Date().toLocaleString('en-US', {
-        timeZone: 'America/New_York'
-      }) + ' EST (NYC)';
+      const currentDateTime =
+        new Date().toLocaleString('en-US', {
+          timeZone: 'America/New_York',
+        }) + ' EST (NYC)';
 
       const doc = new Document({
-        sections: [{
-          properties: {},
-          children: [
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: t('myTasks'),
-                  bold: true,
-                  size: 32
-                })
-              ]
-            }),
-            new Paragraph({
-              children: [
-                new TextRun(`${t('exportDate')}: ${currentDateTime}`)
-              ]
-            }),
-            new Paragraph({
-              children: [
-                new TextRun('') // empty line
-              ]
-            }),
-            ...getTasks().flatMap(task => [
+        sections: [
+          {
+            properties: {},
+            children: [
               new Paragraph({
                 children: [
                   new TextRun({
-                    text: `${t('title')}: ${task.title}`,
-                    bold: true
-                  })
-                ]
+                    text: t('myTasks'),
+                    bold: true,
+                    size: 32,
+                  }),
+                ],
+              }),
+              new Paragraph({
+                children: [new TextRun(`${t('exportDate')}: ${currentDateTime}`)],
               }),
               new Paragraph({
                 children: [
-                  new TextRun(`${t('description')}: ${getRichTextPlainText(task.description) || t('notAvailable')}`)
-                ]
+                  new TextRun(''), // empty line
+                ],
               }),
-              new Paragraph({
-                children: [
-                  new TextRun(`${t('comment')}: ${getRichTextPlainText(task.comment) || t('notAvailable')}`)
-                ]
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun(`${t('tag')}: ${task.tag || t('notAvailable')}`)
-                ]
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun(`${t('priority')}: ${priorityLabel(task.priority)}`)
-                ]
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun(`${t('status')}: ${statusLabel(taskStatus(task))}`)
-                ]
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun(`${t('attachment')}: ${task.attachment_name || t('notAvailable')}`)
-                ]
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun(`${t('completed')}: ${task.completed ? t('yes') : t('no')}`)
-                ]
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun(`${t('dateTimeAlert')}: ${task.reminder_at ? formatLocalDateTime(task.reminder_at) : t('notAvailable')}`)
-                ]
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun(`${t('created')}: ${formatDateEST(task.created_at)}`)
-                ]
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun('') // empty line
-                ]
-              })
-            ])
-          ]
-        }]
+              ...getTasks().flatMap((task) => [
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: `${t('title')}: ${task.title}`,
+                      bold: true,
+                    }),
+                  ],
+                }),
+                new Paragraph({
+                  children: [
+                    new TextRun(`${t('description')}: ${getRichTextPlainText(task.description) || t('notAvailable')}`),
+                  ],
+                }),
+                new Paragraph({
+                  children: [
+                    new TextRun(`${t('comment')}: ${getRichTextPlainText(task.comment) || t('notAvailable')}`),
+                  ],
+                }),
+                new Paragraph({
+                  children: [new TextRun(`${t('tag')}: ${task.tag || t('notAvailable')}`)],
+                }),
+                new Paragraph({
+                  children: [new TextRun(`${t('priority')}: ${priorityLabel(task.priority)}`)],
+                }),
+                new Paragraph({
+                  children: [new TextRun(`${t('status')}: ${statusLabel(taskStatus(task))}`)],
+                }),
+                new Paragraph({
+                  children: [new TextRun(`${t('attachment')}: ${task.attachment_name || t('notAvailable')}`)],
+                }),
+                new Paragraph({
+                  children: [new TextRun(`${t('completed')}: ${task.completed ? t('yes') : t('no')}`)],
+                }),
+                new Paragraph({
+                  children: [
+                    new TextRun(
+                      `${t('dateTimeAlert')}: ${task.reminder_at ? formatLocalDateTime(task.reminder_at) : t('notAvailable')}`,
+                    ),
+                  ],
+                }),
+                new Paragraph({
+                  children: [new TextRun(`${t('created')}: ${formatDateEST(task.created_at)}`)],
+                }),
+                new Paragraph({
+                  children: [
+                    new TextRun(''), // empty line
+                  ],
+                }),
+              ]),
+            ],
+          },
+        ],
       });
       const buffer = await Packer.toBlob(doc);
       const url = URL.createObjectURL(buffer);

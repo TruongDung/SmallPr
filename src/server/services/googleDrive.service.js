@@ -4,8 +4,8 @@ const { Readable } = require('stream');
 
 const logger = require('../logger');
 
-const SERVICE_ACCOUNT_PATH = process.env.GOOGLE_SERVICE_ACCOUNT_PATH
-  || path.join(__dirname, '../../..', 'google-service-account.json');
+const SERVICE_ACCOUNT_PATH =
+  process.env.GOOGLE_SERVICE_ACCOUNT_PATH || path.join(__dirname, '../../..', 'google-service-account.json');
 const FOLDER_ID = process.env.GOOGLE_DRIVE_FOLDER_ID || '';
 
 let driveClient = null;

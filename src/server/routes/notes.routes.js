@@ -31,23 +31,11 @@ const normalizePositiveInteger = (value, fallback, max = Number.MAX_SAFE_INTEGER
   return Math.min(normalized, max);
 };
 
-const buildNoteListCacheKey = ({ userId, search }) => [
-  'user',
-  userId,
-  'notes',
-  'v1',
-  encodeURIComponent(search || 'all'),
-].join(':');
+const buildNoteListCacheKey = ({ userId, search }) =>
+  ['user', userId, 'notes', 'v1', encodeURIComponent(search || 'all')].join(':');
 
-const buildNoteVersionsCacheKey = ({ userId, noteId, page, limit }) => [
-  'user',
-  userId,
-  'note-versions',
-  'v1',
-  encodeURIComponent(String(noteId)),
-  page,
-  limit,
-].join(':');
+const buildNoteVersionsCacheKey = ({ userId, noteId, page, limit }) =>
+  ['user', userId, 'note-versions', 'v1', encodeURIComponent(String(noteId)), page, limit].join(':');
 
 const sendCachedJson = ({ res, payload, cacheStatus }) => {
   res.set('X-Redis-Cache', cacheStatus);
@@ -59,7 +47,9 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
   const router = express.Router();
 
   router.get('/notes', authRequired, async (req, res) => {
-    const search = String(req.query?.q || '').trim().slice(0, 200);
+    const search = String(req.query?.q || '')
+      .trim()
+      .slice(0, 200);
     const cacheKey = buildNoteListCacheKey({ userId: req.session.userId, search });
     const params = [req.session.userId];
     const searchClause = search
@@ -81,7 +71,7 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
          WHERE notes.user_id = ?
          ${searchClause}
          ORDER BY notes.pinned DESC, notes.updated_at DESC, notes.id DESC`,
-        params
+        params,
       );
       const payload = { notes };
       const wroteCache = await cache?.setJson?.(cacheKey, payload, NOTE_PAGE_CACHE_TTL_SECONDS);
@@ -100,20 +90,20 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
 
     try {
       if (taskId) {
-        const task = await allAsync(
-          'SELECT id FROM tasks WHERE id = ? AND user_id = ? LIMIT 1',
-          [taskId, req.session.userId]
-        );
+        const task = await allAsync('SELECT id FROM tasks WHERE id = ? AND user_id = ? LIMIT 1', [
+          taskId,
+          req.session.userId,
+        ]);
         if (!task.length) {
           return res.status(400).json({ error: 'Linked task not found' });
         }
       }
 
       if (folderId) {
-        const folder = await allAsync(
-          'SELECT id FROM note_folders WHERE id = ? AND user_id = ? LIMIT 1',
-          [folderId, req.session.userId]
-        );
+        const folder = await allAsync('SELECT id FROM note_folders WHERE id = ? AND user_id = ? LIMIT 1', [
+          folderId,
+          req.session.userId,
+        ]);
         if (!folder.length) {
           return res.status(400).json({ error: 'Folder not found' });
         }
@@ -123,15 +113,17 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
         `INSERT INTO notes (user_id, title, body, task_id, folder_id)
          VALUES (?, ?, ?, ?, ?)
          RETURNING id`,
-        [req.session.userId, title, body, taskId, folderId]
+        [req.session.userId, title, body, taskId, folderId],
       );
-      const note = (await allAsync(
-        `SELECT ${NOTE_SELECT}
+      const note = (
+        await allAsync(
+          `SELECT ${NOTE_SELECT}
          FROM notes
          LEFT JOIN tasks ON tasks.id = notes.task_id AND tasks.user_id = notes.user_id
          WHERE notes.id = ? AND notes.user_id = ?`,
-        [result.rows[0].id, req.session.userId]
-      ))[0];
+          [result.rows[0].id, req.session.userId],
+        )
+      )[0];
       await auditLogs.record({
         ...createAuditContext(req),
         action: 'create',
@@ -155,19 +147,21 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
     const taskId = normalizeTaskId(req.body?.task_id);
 
     try {
-      const existing = (await allAsync(
-        'SELECT id, title, body, task_id FROM notes WHERE id = ? AND user_id = ? LIMIT 1',
-        [id, req.session.userId]
-      ))[0];
+      const existing = (
+        await allAsync('SELECT id, title, body, task_id FROM notes WHERE id = ? AND user_id = ? LIMIT 1', [
+          id,
+          req.session.userId,
+        ])
+      )[0];
       if (!existing) {
         return res.status(404).json({ error: 'Note not found' });
       }
 
       if (taskId) {
-        const task = await allAsync(
-          'SELECT id FROM tasks WHERE id = ? AND user_id = ? LIMIT 1',
-          [taskId, req.session.userId]
-        );
+        const task = await allAsync('SELECT id FROM tasks WHERE id = ? AND user_id = ? LIMIT 1', [
+          taskId,
+          req.session.userId,
+        ]);
         if (!task.length) {
           return res.status(400).json({ error: 'Linked task not found' });
         }
@@ -176,7 +170,7 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
       await queryAsync(
         `INSERT INTO note_versions (note_id, user_id, title, body, task_id)
          VALUES (?, ?, ?, ?, ?)`,
-        [existing.id, req.session.userId, existing.title, existing.body, existing.task_id]
+        [existing.id, req.session.userId, existing.title, existing.body, existing.task_id],
       );
 
       const result = await queryAsync(
@@ -184,20 +178,22 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
          SET title = ?, body = ?, task_id = ?, updated_at = CURRENT_TIMESTAMP
          WHERE id = ? AND user_id = ?
          RETURNING id`,
-        [title, body, taskId, id, req.session.userId]
+        [title, body, taskId, id, req.session.userId],
       );
 
       if (!result.rows.length) {
         return res.status(404).json({ error: 'Note not found' });
       }
 
-      const note = (await allAsync(
-        `SELECT ${NOTE_SELECT}
+      const note = (
+        await allAsync(
+          `SELECT ${NOTE_SELECT}
          FROM notes
          LEFT JOIN tasks ON tasks.id = notes.task_id AND tasks.user_id = notes.user_id
          WHERE notes.id = ? AND notes.user_id = ?`,
-        [id, req.session.userId]
-      ))[0];
+          [id, req.session.userId],
+        )
+      )[0];
       await auditLogs.record({
         ...createAuditContext(req),
         action: 'edit',
@@ -220,14 +216,16 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
     const pinned = Boolean(req.body?.pinned);
 
     try {
-      const existing = (await allAsync(
-        `SELECT ${NOTE_SELECT}
+      const existing = (
+        await allAsync(
+          `SELECT ${NOTE_SELECT}
          FROM notes
          LEFT JOIN tasks ON tasks.id = notes.task_id AND tasks.user_id = notes.user_id
          WHERE notes.id = ? AND notes.user_id = ?
          LIMIT 1`,
-        [id, req.session.userId]
-      ))[0];
+          [id, req.session.userId],
+        )
+      )[0];
       if (!existing) {
         return res.status(404).json({ error: 'Note not found' });
       }
@@ -237,20 +235,22 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
          SET pinned = ?
          WHERE id = ? AND user_id = ?
          RETURNING id`,
-        [pinned, id, req.session.userId]
+        [pinned, id, req.session.userId],
       );
 
       if (!result.rows.length) {
         return res.status(404).json({ error: 'Note not found' });
       }
 
-      const note = (await allAsync(
-        `SELECT ${NOTE_SELECT}
+      const note = (
+        await allAsync(
+          `SELECT ${NOTE_SELECT}
          FROM notes
          LEFT JOIN tasks ON tasks.id = notes.task_id AND tasks.user_id = notes.user_id
          WHERE notes.id = ? AND notes.user_id = ?`,
-        [id, req.session.userId]
-      ))[0];
+          [id, req.session.userId],
+        )
+      )[0];
       await auditLogs.record({
         ...createAuditContext(req),
         action: 'edit',
@@ -272,22 +272,24 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
     const { id } = req.params;
 
     try {
-      const existing = (await allAsync(
-        `SELECT ${NOTE_SELECT}
+      const existing = (
+        await allAsync(
+          `SELECT ${NOTE_SELECT}
          FROM notes
          LEFT JOIN tasks ON tasks.id = notes.task_id AND tasks.user_id = notes.user_id
          WHERE notes.id = ? AND notes.user_id = ?
          LIMIT 1`,
-        [id, req.session.userId]
-      ))[0];
+          [id, req.session.userId],
+        )
+      )[0];
       if (!existing) {
         return res.status(404).json({ error: 'Note not found' });
       }
 
-      const result = await runAsync(
-        'DELETE FROM notes WHERE id = ? AND user_id = ? RETURNING id',
-        [id, req.session.userId]
-      );
+      const result = await runAsync('DELETE FROM notes WHERE id = ? AND user_id = ? RETURNING id', [
+        id,
+        req.session.userId,
+      ]);
 
       if (!result.lastID) {
         return res.status(404).json({ error: 'Note not found' });
@@ -316,7 +318,7 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
          FROM notes
          WHERE user_id = ?
          ORDER BY updated_at DESC, id DESC`,
-        [req.session.userId]
+        [req.session.userId],
       );
       res.json({ success: true, count: rows.length });
     } catch (error) {
@@ -331,10 +333,10 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
     const limit = normalizePositiveInteger(req.query?.limit, HISTORY_PAGE_SIZE, HISTORY_MAX_PAGE_SIZE);
 
     try {
-      const note = await allAsync(
-        'SELECT id FROM notes WHERE id = ? AND user_id = ? LIMIT 1',
-        [id, req.session.userId]
-      );
+      const note = await allAsync('SELECT id FROM notes WHERE id = ? AND user_id = ? LIMIT 1', [
+        id,
+        req.session.userId,
+      ]);
       if (!note.length) {
         return res.status(404).json({ error: 'Note not found' });
       }
@@ -354,7 +356,7 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
         `SELECT COUNT(*)::int AS total
          FROM note_versions
          WHERE note_id = ? AND user_id = ?`,
-        [id, req.session.userId]
+        [id, req.session.userId],
       );
       const total = Number(totalRows[0]?.total || 0);
       const totalPages = Math.max(1, Math.ceil(total / limit));
@@ -369,7 +371,7 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
          WHERE note_versions.note_id = ? AND note_versions.user_id = ?
          ORDER BY note_versions.created_at DESC, note_versions.id DESC
          LIMIT ? OFFSET ?`,
-        [id, req.session.userId, limit, offset]
+        [id, req.session.userId, limit, offset],
       );
       const payload = {
         versions,
@@ -397,7 +399,7 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
          FROM note_folders
          WHERE user_id = ?
          ORDER BY sort_order ASC, name ASC`,
-        [req.session.userId]
+        [req.session.userId],
       );
       res.json({ folders });
     } catch (error) {
@@ -407,7 +409,9 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
   });
 
   router.post('/note-folders', authRequired, async (req, res) => {
-    const name = String(req.body?.name || '').slice(0, 100).trim();
+    const name = String(req.body?.name || '')
+      .slice(0, 100)
+      .trim();
     const description = String(req.body?.description || '').slice(0, 500);
 
     if (!name) {
@@ -419,13 +423,15 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
         `INSERT INTO note_folders (user_id, name, description, sort_order)
          VALUES (?, ?, ?, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM note_folders WHERE user_id = ?))
          RETURNING id`,
-        [req.session.userId, name, description, req.session.userId]
+        [req.session.userId, name, description, req.session.userId],
       );
 
-      const folder = (await allAsync(
-        'SELECT id, name, description, sort_order, created_at, updated_at FROM note_folders WHERE id = ?',
-        [result.rows[0].id]
-      ))[0];
+      const folder = (
+        await allAsync(
+          'SELECT id, name, description, sort_order, created_at, updated_at FROM note_folders WHERE id = ?',
+          [result.rows[0].id],
+        )
+      )[0];
 
       await auditLogs.record({
         ...createAuditContext(req),
@@ -449,7 +455,9 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
 
   router.put('/note-folders/:id', authRequired, async (req, res) => {
     const { id } = req.params;
-    const name = String(req.body?.name || '').slice(0, 100).trim();
+    const name = String(req.body?.name || '')
+      .slice(0, 100)
+      .trim();
     const description = String(req.body?.description || '').slice(0, 500);
 
     if (!name) {
@@ -457,10 +465,12 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
     }
 
     try {
-      const existing = (await allAsync(
-        'SELECT id, name, description FROM note_folders WHERE id = ? AND user_id = ? LIMIT 1',
-        [id, req.session.userId]
-      ))[0];
+      const existing = (
+        await allAsync('SELECT id, name, description FROM note_folders WHERE id = ? AND user_id = ? LIMIT 1', [
+          id,
+          req.session.userId,
+        ])
+      )[0];
 
       if (!existing) {
         return res.status(404).json({ error: 'Folder not found' });
@@ -471,17 +481,19 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
          SET name = ?, description = ?, updated_at = CURRENT_TIMESTAMP
          WHERE id = ? AND user_id = ?
          RETURNING id`,
-        [name, description, id, req.session.userId]
+        [name, description, id, req.session.userId],
       );
 
       if (!result.rows.length) {
         return res.status(404).json({ error: 'Folder not found' });
       }
 
-      const folder = (await allAsync(
-        'SELECT id, name, description, sort_order, created_at, updated_at FROM note_folders WHERE id = ?',
-        [id]
-      ))[0];
+      const folder = (
+        await allAsync(
+          'SELECT id, name, description, sort_order, created_at, updated_at FROM note_folders WHERE id = ?',
+          [id],
+        )
+      )[0];
 
       await auditLogs.record({
         ...createAuditContext(req),
@@ -508,25 +520,27 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
     const { id } = req.params;
 
     try {
-      const existing = (await allAsync(
-        'SELECT id, name FROM note_folders WHERE id = ? AND user_id = ? LIMIT 1',
-        [id, req.session.userId]
-      ))[0];
+      const existing = (
+        await allAsync('SELECT id, name FROM note_folders WHERE id = ? AND user_id = ? LIMIT 1', [
+          id,
+          req.session.userId,
+        ])
+      )[0];
 
       if (!existing) {
         return res.status(404).json({ error: 'Folder not found' });
       }
 
       // Move notes in this folder to root (null folder_id)
-      await queryAsync(
-        'UPDATE notes SET folder_id = NULL WHERE folder_id = ? AND user_id = ?',
-        [id, req.session.userId]
-      );
+      await queryAsync('UPDATE notes SET folder_id = NULL WHERE folder_id = ? AND user_id = ?', [
+        id,
+        req.session.userId,
+      ]);
 
-      const result = await runAsync(
-        'DELETE FROM note_folders WHERE id = ? AND user_id = ? RETURNING id',
-        [id, req.session.userId]
-      );
+      const result = await runAsync('DELETE FROM note_folders WHERE id = ? AND user_id = ? RETURNING id', [
+        id,
+        req.session.userId,
+      ]);
 
       if (!result.lastID) {
         return res.status(404).json({ error: 'Folder not found' });
@@ -555,10 +569,9 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
     const folderId = normalizePositiveInteger(req.body?.folder_id, null);
 
     try {
-      const note = (await allAsync(
-        'SELECT id, folder_id FROM notes WHERE id = ? AND user_id = ? LIMIT 1',
-        [id, req.session.userId]
-      ))[0];
+      const note = (
+        await allAsync('SELECT id, folder_id FROM notes WHERE id = ? AND user_id = ? LIMIT 1', [id, req.session.userId])
+      )[0];
 
       if (!note) {
         return res.status(404).json({ error: 'Note not found' });
@@ -566,10 +579,10 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
 
       // Verify folder exists if provided
       if (folderId) {
-        const folder = await allAsync(
-          'SELECT id FROM note_folders WHERE id = ? AND user_id = ? LIMIT 1',
-          [folderId, req.session.userId]
-        );
+        const folder = await allAsync('SELECT id FROM note_folders WHERE id = ? AND user_id = ? LIMIT 1', [
+          folderId,
+          req.session.userId,
+        ]);
         if (!folder.length) {
           return res.status(400).json({ error: 'Folder not found' });
         }
@@ -580,20 +593,22 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
          SET folder_id = ?, updated_at = CURRENT_TIMESTAMP
          WHERE id = ? AND user_id = ?
          RETURNING id`,
-        [folderId, id, req.session.userId]
+        [folderId, id, req.session.userId],
       );
 
       if (!result.rows.length) {
         return res.status(404).json({ error: 'Note not found' });
       }
 
-      const updatedNote = (await allAsync(
-        `SELECT ${NOTE_SELECT}
+      const updatedNote = (
+        await allAsync(
+          `SELECT ${NOTE_SELECT}
          FROM notes
          LEFT JOIN tasks ON tasks.id = notes.task_id AND tasks.user_id = notes.user_id
          WHERE notes.id = ? AND notes.user_id = ?`,
-        [id, req.session.userId]
-      ))[0];
+          [id, req.session.userId],
+        )
+      )[0];
 
       await auditLogs.record({
         ...createAuditContext(req),
@@ -614,7 +629,6 @@ const createNotesRouter = ({ allAsync, auditLogs, authRequired, cache, emitToUse
   });
 
   return router;
-
 };
 
 module.exports = createNotesRouter;

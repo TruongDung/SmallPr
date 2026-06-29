@@ -12,7 +12,7 @@ const createEvaluationRepository = ({ allAsync, getAsync, runAsync }) => {
         JSON.stringify(report),
         report.startedAt,
         report.completedAt,
-      ]
+      ],
     );
 
     return getRun(result.lastID);
@@ -36,21 +36,23 @@ const createEvaluationRepository = ({ allAsync, getAsync, runAsync }) => {
     return allAsync(query, params);
   };
 
-  const getRun = (id) => getAsync(
-    `SELECT id, feature, status, summary, report, started_at, completed_at, created_at
+  const getRun = (id) =>
+    getAsync(
+      `SELECT id, feature, status, summary, report, started_at, completed_at, created_at
      FROM ai_evaluation_runs
      WHERE id = ?`,
-    [id]
-  );
+      [id],
+    );
 
-  const getLatestRun = (feature) => getAsync(
-    `SELECT id, feature, status, summary, report, started_at, completed_at, created_at
+  const getLatestRun = (feature) =>
+    getAsync(
+      `SELECT id, feature, status, summary, report, started_at, completed_at, created_at
      FROM ai_evaluation_runs
      WHERE feature = ?
      ORDER BY id DESC
      LIMIT 1`,
-    [feature]
-  );
+      [feature],
+    );
 
   return {
     getLatestRun,

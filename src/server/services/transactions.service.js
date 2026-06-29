@@ -1,4 +1,5 @@
-const TRANSACTION_SELECT = 'id, occurred_on, kind, amount, category, account, note, credit_card_id, created_at, updated_at';
+const TRANSACTION_SELECT =
+  'id, occurred_on, kind, amount, category, account, note, credit_card_id, created_at, updated_at';
 
 const createTransactionsService = ({ allAsync, getAsync, runAsync }) => {
   const listForUser = (userId, filters = {}) => {
@@ -26,22 +27,16 @@ const createTransactionsService = ({ allAsync, getAsync, runAsync }) => {
     return allAsync(query, params);
   };
 
-  const findForUser = (id, userId) => getAsync(
-    'SELECT * FROM transactions WHERE id = ? AND user_id = ?',
-    [id, userId]
-  );
+  const findForUser = (id, userId) => getAsync('SELECT * FROM transactions WHERE id = ? AND user_id = ?', [id, userId]);
 
-  const findById = (id) => getAsync(
-    `SELECT ${TRANSACTION_SELECT} FROM transactions WHERE id = ?`,
-    [id]
-  );
+  const findById = (id) => getAsync(`SELECT ${TRANSACTION_SELECT} FROM transactions WHERE id = ?`, [id]);
 
   const create = async ({ userId, occurredOn, kind, amount, category, account, note, creditCardId }) => {
     const result = await runAsync(
       `INSERT INTO transactions (user_id, occurred_on, kind, amount, category, account, note, credit_card_id)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        RETURNING id`,
-      [userId, occurredOn, kind, amount, category || null, account || null, note || null, creditCardId || null]
+      [userId, occurredOn, kind, amount, category || null, account || null, note || null, creditCardId || null],
     );
 
     return findById(result.lastID);
@@ -52,16 +47,13 @@ const createTransactionsService = ({ allAsync, getAsync, runAsync }) => {
       `UPDATE transactions
        SET occurred_on = ?, kind = ?, amount = ?, category = ?, account = ?, note = ?, credit_card_id = ?, updated_at = CURRENT_TIMESTAMP
        WHERE id = ? AND user_id = ?`,
-      [occurredOn, kind, amount, category || null, account || null, note || null, creditCardId || null, id, userId]
+      [occurredOn, kind, amount, category || null, account || null, note || null, creditCardId || null, id, userId],
     );
 
     return findById(id);
   };
 
-  const remove = ({ id, userId }) => runAsync(
-    'DELETE FROM transactions WHERE id = ? AND user_id = ?',
-    [id, userId]
-  );
+  const remove = ({ id, userId }) => runAsync('DELETE FROM transactions WHERE id = ? AND user_id = ?', [id, userId]);
 
   const getSummary = async (userId, month, year) => {
     let query = `
@@ -88,7 +80,7 @@ const createTransactionsService = ({ allAsync, getAsync, runAsync }) => {
       net: 0,
     };
 
-    results.forEach(row => {
+    results.forEach((row) => {
       if (row.kind === 'income') {
         summary.income = Number(row.total);
       } else if (row.kind === 'expense') {
@@ -101,13 +93,14 @@ const createTransactionsService = ({ allAsync, getAsync, runAsync }) => {
     return summary;
   };
 
-  const getCategoriesForUser = (userId) => allAsync(
-    `SELECT DISTINCT category
+  const getCategoriesForUser = (userId) =>
+    allAsync(
+      `SELECT DISTINCT category
      FROM transactions
      WHERE user_id = ? AND category IS NOT NULL AND category <> ''
      ORDER BY category`,
-    [userId]
-  );
+      [userId],
+    );
 
   return {
     listForUser,
