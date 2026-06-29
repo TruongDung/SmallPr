@@ -62,9 +62,9 @@ const validateSprintInput = (body = {}, isCreate = false) => {
   return {
     value: {
       name: name ? String(name).trim() : name,
-      goal: goal !== undefined ? (goal || null) : undefined,
-      startDate: start_date !== undefined ? (start_date || null) : undefined,
-      endDate: end_date !== undefined ? (end_date || null) : undefined,
+      goal: goal !== undefined ? goal || null : undefined,
+      startDate: start_date !== undefined ? start_date || null : undefined,
+      endDate: end_date !== undefined ? end_date || null : undefined,
       status: status || (isCreate ? 'planned' : undefined),
       archived: hasArchivedUpdate ? archived : undefined,
       hasArchivedUpdate,
@@ -78,13 +78,7 @@ const buildSprintsCacheKey = (userId, archived = 0) => `user:${userId}:sprints:v
 
 const isAdmin = (req) => req.currentUser?.username === 'admin';
 
-const createSprintsRouter = ({
-  authRequired,
-  allAsync,
-  cache = null,
-  getAsync,
-  runAsync,
-}) => {
+const createSprintsRouter = ({ authRequired, allAsync, cache = null, getAsync, runAsync }) => {
   const router = express.Router();
   const sprints = createSprintsService({ allAsync, getAsync, runAsync });
 
@@ -92,10 +86,12 @@ const createSprintsRouter = ({
 
   const clearSprintUserCaches = async (userIds = []) => {
     const uniqueIds = [...new Set(userIds.map(Number).filter(Number.isInteger))];
-    await Promise.all(uniqueIds.map(async (userId) => {
-      await cache?.deleteByPattern?.(buildSprintsCacheKey(userId));
-      await cache?.deleteByPattern?.(`user:${userId}:tasks:*`);
-    }));
+    await Promise.all(
+      uniqueIds.map(async (userId) => {
+        await cache?.deleteByPattern?.(buildSprintsCacheKey(userId));
+        await cache?.deleteByPattern?.(`user:${userId}:tasks:*`);
+      }),
+    );
   };
 
   const validateEditorAssignments = async ({ req, ownerUserId, editorUserIds }) => {
@@ -114,9 +110,9 @@ const createSprintsRouter = ({
     }
 
     const editors = await sprints.listAssignableEditors(editorUserIds);
-    const validEditorIds = new Set(editors
-      .filter((editor) => editor.username !== 'admin')
-      .map((editor) => Number(editor.id)));
+    const validEditorIds = new Set(
+      editors.filter((editor) => editor.username !== 'admin').map((editor) => Number(editor.id)),
+    );
     if (validEditorIds.size !== editorUserIds.length) {
       return { error: 'Sprint editors must be enabled non-admin users' };
     }
@@ -220,8 +216,9 @@ const createSprintsRouter = ({
       });
       const accessUserIds = await sprints.listSprintAccessUserIds(id);
       await clearSprintUserCaches([...previousAccessUserIds, ...accessUserIds]);
-      [...new Set([...previousAccessUserIds, ...accessUserIds])]
-        .forEach((userId) => emitToUser(userId, 'sprint:updated', { sprint }));
+      [...new Set([...previousAccessUserIds, ...accessUserIds])].forEach((userId) =>
+        emitToUser(userId, 'sprint:updated', { sprint }),
+      );
       res.json({ sprint });
     } catch (error) {
       logger.error({ err: error }, 'Failed to update sprint');

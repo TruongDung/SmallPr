@@ -91,25 +91,23 @@
     const userGroupKey = (card) => (card.card_user || '').trim() || t('notAvailable');
 
     const mergeCardUsers = (savedUsers = [], cardsToMerge = cards) => {
-      const names = [
-        ...savedUsers,
-        ...cardsToMerge.map((card) => card.card_user),
-      ]
+      const names = [...savedUsers, ...cardsToMerge.map((card) => card.card_user)]
         .map((name) => String(name || '').trim())
         .filter(Boolean);
 
-      return [...new Set(names)].sort((first, second) => (
-        first.localeCompare(second, getLanguage(), { sensitivity: 'base' })
-      ));
+      return [...new Set(names)].sort((first, second) =>
+        first.localeCompare(second, getLanguage(), { sensitivity: 'base' }),
+      );
     };
 
     const setUserOptions = (select, selectedValue = '') => {
       if (!select) return;
 
       const normalizedSelectedValue = String(selectedValue || '').trim();
-      const optionValues = normalizedSelectedValue && !cardUsers.includes(normalizedSelectedValue)
-        ? [normalizedSelectedValue, ...cardUsers]
-        : cardUsers;
+      const optionValues =
+        normalizedSelectedValue && !cardUsers.includes(normalizedSelectedValue)
+          ? [normalizedSelectedValue, ...cardUsers]
+          : cardUsers;
 
       select.innerHTML = '';
 
@@ -128,15 +126,16 @@
       select.value = normalizedSelectedValue;
     };
 
-    const groupCardsByUser = (cardsToGroup) => cardsToGroup.reduce((groups, card) => {
-      const user = userGroupKey(card);
-      const existing = groups.get(user) || { user, total: 0, cards: [] };
-      const amount = Number(card.total_balance || 0);
-      existing.total += Number.isFinite(amount) ? amount : 0;
-      existing.cards.push(card);
-      groups.set(user, existing);
-      return groups;
-    }, new Map());
+    const groupCardsByUser = (cardsToGroup) =>
+      cardsToGroup.reduce((groups, card) => {
+        const user = userGroupKey(card);
+        const existing = groups.get(user) || { user, total: 0, cards: [] };
+        const amount = Number(card.total_balance || 0);
+        existing.total += Number.isFinite(amount) ? amount : 0;
+        existing.cards.push(card);
+        groups.set(user, existing);
+        return groups;
+      }, new Map());
 
     const createSummaryRow = ({ label, total, className }) => {
       const row = document.createElement('tr');
@@ -156,11 +155,12 @@
       return row;
     };
 
-    const createUserSummaryRow = (group) => createSummaryRow({
-      label: group.user,
-      total: group.total,
-      className: 'credit-card-user-summary',
-    });
+    const createUserSummaryRow = (group) =>
+      createSummaryRow({
+        label: group.user,
+        total: group.total,
+        className: 'credit-card-user-summary',
+      });
 
     const createGrandTotalRow = (cardsToTotal) => {
       const total = cardsToTotal.reduce((sum, card) => {
@@ -416,4 +416,4 @@
   };
 
   window.CreditCardModule = { create };
-}());
+})();

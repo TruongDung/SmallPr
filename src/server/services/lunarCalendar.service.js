@@ -21,9 +21,7 @@ const createUtcDateFromYmd = (ymd) => {
   return new Date(Date.UTC(parsed.year, parsed.month - 1, parsed.day, 12, 0, 0));
 };
 
-const toYmd = (date) => (
-  `${date.getUTCFullYear()}-${pad2(date.getUTCMonth() + 1)}-${pad2(date.getUTCDate())}`
-);
+const toYmd = (date) => `${date.getUTCFullYear()}-${pad2(date.getUTCMonth() + 1)}-${pad2(date.getUTCDate())}`;
 
 const isSupportedTimezone = (timezone) => {
   if (!timezone) return true;
@@ -35,9 +33,7 @@ const isSupportedTimezone = (timezone) => {
   }
 };
 
-const normalizeTimezone = (timezone) => (
-  isSupportedTimezone(timezone) && timezone ? timezone : DEFAULT_TIMEZONE
-);
+const normalizeTimezone = (timezone) => (isSupportedTimezone(timezone) && timezone ? timezone : DEFAULT_TIMEZONE);
 
 const getTimezoneOffsetHours = (timezone, date = new Date()) => {
   const formatter = new Intl.DateTimeFormat('en-US', {
@@ -59,7 +55,7 @@ const getTimezoneOffsetHours = (timezone, date = new Date()) => {
     value('day'),
     value('hour'),
     value('minute'),
-    value('second')
+    value('second'),
   );
   return Math.round((asUtc - date.getTime()) / MS_PER_HOUR);
 };
@@ -67,21 +63,18 @@ const getTimezoneOffsetHours = (timezone, date = new Date()) => {
 const jdFromDate = (day, month, year) => {
   const a = Math.floor((14 - month) / 12);
   const y = year + 4800 - a;
-  const m = month + (12 * a) - 3;
-  const jd = day
-    + Math.floor(((153 * m) + 2) / 5)
-    + (365 * y)
-    + Math.floor(y / 4)
-    - Math.floor(y / 100)
-    + Math.floor(y / 400)
-    - 32045;
+  const m = month + 12 * a - 3;
+  const jd =
+    day +
+    Math.floor((153 * m + 2) / 5) +
+    365 * y +
+    Math.floor(y / 4) -
+    Math.floor(y / 100) +
+    Math.floor(y / 400) -
+    32045;
 
   if (jd < 2299161) {
-    return day
-      + Math.floor(((153 * m) + 2) / 5)
-      + (365 * y)
-      + Math.floor(y / 4)
-      - 32083;
+    return day + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4) - 32083;
   }
 
   return jd;
@@ -92,56 +85,53 @@ const newMoon = (k) => {
   const t2 = t * t;
   const t3 = t2 * t;
   const dr = PI / 180;
-  let jd = 2415020.75933
-    + (SYNODIC_MONTH * k)
-    + (0.0001178 * t2)
-    - (0.000000155 * t3);
-  jd += 0.00033 * Math.sin((166.56 + (132.87 * t) - (0.009173 * t2)) * dr);
+  let jd = 2415020.75933 + SYNODIC_MONTH * k + 0.0001178 * t2 - 0.000000155 * t3;
+  jd += 0.00033 * Math.sin((166.56 + 132.87 * t - 0.009173 * t2) * dr);
 
-  const m = 359.2242 + (29.10535608 * k) - (0.0000333 * t2) - (0.00000347 * t3);
-  const mPrime = 306.0253 + (385.81691806 * k) + (0.0107306 * t2) + (0.00001236 * t3);
-  const f = 21.2964 + (390.67050646 * k) - (0.0016528 * t2) - (0.00000239 * t3);
-  const c1 = ((0.1734 - (0.000393 * t)) * Math.sin(m * dr))
-    + (0.0021 * Math.sin(2 * m * dr))
-    - (0.4068 * Math.sin(mPrime * dr))
-    + (0.0161 * Math.sin(2 * mPrime * dr))
-    - (0.0004 * Math.sin(3 * mPrime * dr))
-    + (0.0104 * Math.sin(2 * f * dr))
-    - (0.0051 * Math.sin((m + mPrime) * dr))
-    - (0.0074 * Math.sin((m - mPrime) * dr))
-    + (0.0004 * Math.sin(((2 * f) + m) * dr))
-    - (0.0004 * Math.sin(((2 * f) - m) * dr))
-    - (0.0006 * Math.sin(((2 * f) + mPrime) * dr))
-    + (0.0010 * Math.sin(((2 * f) - mPrime) * dr))
-    + (0.0005 * Math.sin(((2 * mPrime) + m) * dr));
+  const m = 359.2242 + 29.10535608 * k - 0.0000333 * t2 - 0.00000347 * t3;
+  const mPrime = 306.0253 + 385.81691806 * k + 0.0107306 * t2 + 0.00001236 * t3;
+  const f = 21.2964 + 390.67050646 * k - 0.0016528 * t2 - 0.00000239 * t3;
+  const c1 =
+    (0.1734 - 0.000393 * t) * Math.sin(m * dr) +
+    0.0021 * Math.sin(2 * m * dr) -
+    0.4068 * Math.sin(mPrime * dr) +
+    0.0161 * Math.sin(2 * mPrime * dr) -
+    0.0004 * Math.sin(3 * mPrime * dr) +
+    0.0104 * Math.sin(2 * f * dr) -
+    0.0051 * Math.sin((m + mPrime) * dr) -
+    0.0074 * Math.sin((m - mPrime) * dr) +
+    0.0004 * Math.sin((2 * f + m) * dr) -
+    0.0004 * Math.sin((2 * f - m) * dr) -
+    0.0006 * Math.sin((2 * f + mPrime) * dr) +
+    0.001 * Math.sin((2 * f - mPrime) * dr) +
+    0.0005 * Math.sin((2 * mPrime + m) * dr);
 
-  const deltaT = t < -11
-    ? 0.001 + (0.000839 * t) + (0.0002261 * t2) - (0.00000845 * t3) - (0.000000081 * t * t3)
-    : -0.000278 + (0.000265 * t) + (0.000262 * t2);
+  const deltaT =
+    t < -11
+      ? 0.001 + 0.000839 * t + 0.0002261 * t2 - 0.00000845 * t3 - 0.000000081 * t * t3
+      : -0.000278 + 0.000265 * t + 0.000262 * t2;
 
   return jd + c1 - deltaT;
 };
 
-const getNewMoonDay = (k, timezoneOffsetHours) => (
-  Math.floor(newMoon(k) + 0.5 + (timezoneOffsetHours / 24))
-);
+const getNewMoonDay = (k, timezoneOffsetHours) => Math.floor(newMoon(k) + 0.5 + timezoneOffsetHours / 24);
 
 const sunLongitude = (jdn) => {
   const t = (jdn - 2451545.0) / 36525;
   const t2 = t * t;
-  const m = 357.52910 + (35999.05030 * t) - (0.0001559 * t2) - (0.00000048 * t * t2);
-  const l0 = 280.46645 + (36000.76983 * t) + (0.0003032 * t2);
-  const dl = ((1.914600 - (0.004817 * t) - (0.000014 * t2)) * Math.sin(RAD * m))
-    + ((0.019993 - (0.000101 * t)) * Math.sin(RAD * 2 * m))
-    + (0.000290 * Math.sin(RAD * 3 * m));
+  const m = 357.5291 + 35999.0503 * t - 0.0001559 * t2 - 0.00000048 * t * t2;
+  const l0 = 280.46645 + 36000.76983 * t + 0.0003032 * t2;
+  const dl =
+    (1.9146 - 0.004817 * t - 0.000014 * t2) * Math.sin(RAD * m) +
+    (0.019993 - 0.000101 * t) * Math.sin(RAD * 2 * m) +
+    0.00029 * Math.sin(RAD * 3 * m);
   let l = (l0 + dl) * RAD;
-  l -= (PI * 2) * Math.floor(l / (PI * 2));
+  l -= PI * 2 * Math.floor(l / (PI * 2));
   return l;
 };
 
-const getSunLongitude = (dayNumber, timezoneOffsetHours) => (
-  Math.floor((sunLongitude(dayNumber - 0.5 - (timezoneOffsetHours / 24)) / PI) * 6)
-);
+const getSunLongitude = (dayNumber, timezoneOffsetHours) =>
+  Math.floor((sunLongitude(dayNumber - 0.5 - timezoneOffsetHours / 24) / PI) * 6);
 
 const getLunarMonth11 = (year, timezoneOffsetHours) => {
   const off = jdFromDate(31, 12, year) - 2415021;
@@ -157,7 +147,7 @@ const getLunarMonth11 = (year, timezoneOffsetHours) => {
 };
 
 const getLeapMonthOffset = (a11, timezoneOffsetHours) => {
-  const k = Math.floor(((a11 - 2415021.076998695) / SYNODIC_MONTH) + 0.5);
+  const k = Math.floor((a11 - 2415021.076998695) / SYNODIC_MONTH + 0.5);
   let i = 1;
   let last = 0;
   let arc = getSunLongitude(getNewMoonDay(k + i, timezoneOffsetHours), timezoneOffsetHours);
@@ -227,7 +217,7 @@ const createLunarCalendarService = () => {
   const addDays = (ymd, days) => {
     const date = createUtcDateFromYmd(ymd);
     if (!date) return null;
-    date.setTime(date.getTime() + (Number(days || 0) * MS_PER_DAY));
+    date.setTime(date.getTime() + Number(days || 0) * MS_PER_DAY);
     return toYmd(date);
   };
 

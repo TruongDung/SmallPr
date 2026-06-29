@@ -44,28 +44,28 @@
     };
 
     // Fixed-date federal holidays
-    add("New Year's Day",          new Date(year, 0, 1));
-    add('Juneteenth',               new Date(year, 5, 19));
-    add('Independence Day',         new Date(year, 6, 4));
-    add('Veterans Day',             new Date(year, 10, 11));
-    add('Christmas Day',            new Date(year, 11, 25));
+    add("New Year's Day", new Date(year, 0, 1));
+    add('Juneteenth', new Date(year, 5, 19));
+    add('Independence Day', new Date(year, 6, 4));
+    add('Veterans Day', new Date(year, 10, 11));
+    add('Christmas Day', new Date(year, 11, 25));
 
     // Floating federal holidays
-    add("Martin Luther King Jr. Day",   nthWeekday(year, 0, 1, 3));   // 3rd Mon Jan
-    add("Presidents' Day",              nthWeekday(year, 1, 1, 3));   // 3rd Mon Feb
-    add('Memorial Day',                  nthWeekday(year, 4, 1, -1));  // Last Mon May
-    add('Labor Day',                     nthWeekday(year, 8, 1, 1));   // 1st Mon Sep
-    add('Columbus Day',                  nthWeekday(year, 9, 1, 2));   // 2nd Mon Oct
-    add('Thanksgiving Day',              nthWeekday(year, 10, 4, 4));  // 4th Thu Nov
+    add('Martin Luther King Jr. Day', nthWeekday(year, 0, 1, 3)); // 3rd Mon Jan
+    add("Presidents' Day", nthWeekday(year, 1, 1, 3)); // 3rd Mon Feb
+    add('Memorial Day', nthWeekday(year, 4, 1, -1)); // Last Mon May
+    add('Labor Day', nthWeekday(year, 8, 1, 1)); // 1st Mon Sep
+    add('Columbus Day', nthWeekday(year, 9, 1, 2)); // 2nd Mon Oct
+    add('Thanksgiving Day', nthWeekday(year, 10, 4, 4)); // 4th Thu Nov
 
     // Common observances (not federal but widely observed)
-    add("Valentine's Day",           new Date(year, 1, 14),  true);
-    add("St. Patrick's Day",         new Date(year, 2, 17),  true);
-    add('Tax Day',                   new Date(year, 3, 15),  true);
-    add('Earth Day',                 new Date(year, 3, 22),  true);
-    add('Halloween',                 new Date(year, 9, 31),  true);
-    add('Christmas Eve',             new Date(year, 11, 24), true);
-    add("New Year's Eve",            new Date(year, 11, 31), true);
+    add("Valentine's Day", new Date(year, 1, 14), true);
+    add("St. Patrick's Day", new Date(year, 2, 17), true);
+    add('Tax Day', new Date(year, 3, 15), true);
+    add('Earth Day', new Date(year, 3, 22), true);
+    add('Halloween', new Date(year, 9, 31), true);
+    add('Christmas Eve', new Date(year, 11, 24), true);
+    add("New Year's Eve", new Date(year, 11, 31), true);
 
     // Mother's Day: 2nd Sun May
     holidays.push({ date: fmt(nthWeekday(year, 4, 0, 2)), name: "Mother's Day", isObservance: true });

@@ -47,12 +47,14 @@ export const SprintList = ({ onSelectSprint }: SprintListProps) => {
   };
 
   if (isLoading) {
-    return <p className="loading-state" aria-busy="true">{t('loading')}</p>;
+    return (
+      <p className="loading-state" aria-busy="true">
+        {t('loading')}
+      </p>
+    );
   }
 
-  const sorted = [...sprints].sort(
-    (a, b) => (STATUS_ORDER[a.status] ?? 3) - (STATUS_ORDER[b.status] ?? 3)
-  );
+  const sorted = [...sprints].sort((a, b) => (STATUS_ORDER[a.status] ?? 3) - (STATUS_ORDER[b.status] ?? 3));
 
   return (
     <div className="sprint-list-view">
@@ -81,11 +83,7 @@ export const SprintList = ({ onSelectSprint }: SprintListProps) => {
                   {t(`sprint_${sprint.status}`)}
                 </span>
                 <div className="sprint-card-actions">
-                  <button
-                    type="button"
-                    title={t('editSprint')}
-                    onClick={(e) => handleOpenEdit(sprint, e)}
-                  >
+                  <button type="button" title={t('editSprint')} onClick={(e) => handleOpenEdit(sprint, e)}>
                     ✎
                   </button>
                   <button
@@ -101,9 +99,7 @@ export const SprintList = ({ onSelectSprint }: SprintListProps) => {
 
               <h3 className="sprint-card-name">{sprint.name}</h3>
 
-              {sprint.goal && (
-                <p className="sprint-card-goal">{sprint.goal}</p>
-              )}
+              {sprint.goal && <p className="sprint-card-goal">{sprint.goal}</p>}
 
               <div className="sprint-card-meta">
                 {(sprint.start_date || sprint.end_date) && (
@@ -120,12 +116,7 @@ export const SprintList = ({ onSelectSprint }: SprintListProps) => {
         </div>
       )}
 
-      <SprintForm
-        open={formOpen}
-        sprint={editingSprint}
-        onSave={handleSave}
-        onClose={() => setFormOpen(false)}
-      />
+      <SprintForm open={formOpen} sprint={editingSprint} onSave={handleSave} onClose={() => setFormOpen(false)} />
     </div>
   );
 };

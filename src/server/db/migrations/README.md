@@ -14,9 +14,9 @@ calls `runMigrations()` from `src/server/db/migrationRunner.js`. The runner:
 
 ## Naming convention
 
-| Prefix | Pattern | Example |
-|--------|---------|---------|
-| `001`–`011` | `NNN_create_<entity>.sql` | `001_create_users.sql` |
+| Prefix      | Pattern                     | Example                    |
+| ----------- | --------------------------- | -------------------------- |
+| `001`–`011` | `NNN_create_<entity>.sql`   | `001_create_users.sql`     |
 | `012`–`017` | `NNN_<action>_<entity>.sql` | `012_add_notes_pinned.sql` |
 
 Files are sorted by name, so the numeric prefix determines execution order.
@@ -35,23 +35,23 @@ safe to re-run on databases that may already have the change.
 
 ## Migration order
 
-| File | Description |
-|------|-------------|
-| `001_create_users.sql` | Core users table |
-| `002_create_tasks.sql` | Tasks and task_tags tables |
-| `003_create_transactions.sql` | Transactions table |
-| `004_create_credit_cards.sql` | Credit cards table + FK from transactions |
-| `005_create_weather_cities.sql` | Weather cities table |
-| `006_create_fast_access_bills.sql` | Fast access bills table |
-| `007_create_fast_access_bill_defaults.sql` | Fast access bill defaults table |
-| `008_create_fast_access_links.sql` | Fast access links table |
-| `009_create_notes.sql` | Notes table |
-| `010_create_note_versions.sql` | Note versions table (history) |
-| `011_create_notes_search_index.sql` | Full-text search index on notes |
-| `012_add_notes_pinned.sql` | Pinned column on notes |
-| `013_add_email_verification.sql` | Email verification columns on users |
-| `014_create_audit_logs.sql` | Audit logs table |
-| `015_add_audit_logs_search.sql` | Full-text search index on audit_logs |
-| `016_relax_transaction_constraints.sql` | Relax NOT NULL on transaction text fields |
-| `017_data_initialization.sql` | Seed default fast access bills and task tags |
-| `027_create_sprint_editors.sql` | Delegated sprint editors |
+| File                                       | Description                                  |
+| ------------------------------------------ | -------------------------------------------- |
+| `001_create_users.sql`                     | Core users table                             |
+| `002_create_tasks.sql`                     | Tasks and task_tags tables                   |
+| `003_create_transactions.sql`              | Transactions table                           |
+| `004_create_credit_cards.sql`              | Credit cards table + FK from transactions    |
+| `005_create_weather_cities.sql`            | Weather cities table                         |
+| `006_create_fast_access_bills.sql`         | Fast access bills table                      |
+| `007_create_fast_access_bill_defaults.sql` | Fast access bill defaults table              |
+| `008_create_fast_access_links.sql`         | Fast access links table                      |
+| `009_create_notes.sql`                     | Notes table                                  |
+| `010_create_note_versions.sql`             | Note versions table (history)                |
+| `011_create_notes_search_index.sql`        | Full-text search index on notes              |
+| `012_add_notes_pinned.sql`                 | Pinned column on notes                       |
+| `013_add_email_verification.sql`           | Email verification columns on users          |
+| `014_create_audit_logs.sql`                | Audit logs table                             |
+| `015_add_audit_logs_search.sql`            | Full-text search index on audit_logs         |
+| `016_relax_transaction_constraints.sql`    | Relax NOT NULL on transaction text fields    |
+| `017_data_initialization.sql`              | Seed default fast access bills and task tags |
+| `027_create_sprint_editors.sql`            | Delegated sprint editors                     |

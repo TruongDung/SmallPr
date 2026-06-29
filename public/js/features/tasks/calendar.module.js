@@ -125,7 +125,7 @@
       header.className = 'calendar-day-header';
       const title = document.createElement('h3');
       title.textContent = compact ? String(date.getDate()) : formatLongDate(date);
-      
+
       // Add lunar badge if enabled
       if (showLunar && window.LunarCalendar) {
         const lunar = window.LunarCalendar.toLunar(date);
@@ -215,8 +215,9 @@
         grid.append(dayName);
       });
 
-      Array.from({ length: 42 }, (_, index) => addDays(first, index))
-        .forEach((date) => grid.append(renderDayCell(date, { monthDate: cursor, compact: true })));
+      Array.from({ length: 42 }, (_, index) => addDays(first, index)).forEach((date) =>
+        grid.append(renderDayCell(date, { monthDate: cursor, compact: true })),
+      );
     }
 
     function renderDeadlineList(container, list, emptyKey) {
@@ -290,7 +291,7 @@
         cursor = startOfDay(new Date());
         render();
       });
-      
+
       // Lunar calendar toggle
       if (lunarToggle) {
         lunarToggle.checked = showLunar;

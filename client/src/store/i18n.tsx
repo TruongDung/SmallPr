@@ -14,18 +14,18 @@ interface I18nContextValue {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
-const makeTranslate = (language: string): TranslateFn => (key, values = {}) => {
-  const template = translations[language]?.[key] || translations.en[key] || key;
-  return Object.entries(values).reduce(
-    (text, [name, value]) => text.replaceAll(`{${name}}`, String(value)),
-    template,
-  );
-};
+const makeTranslate =
+  (language: string): TranslateFn =>
+  (key, values = {}) => {
+    const template = translations[language]?.[key] || translations.en[key] || key;
+    return Object.entries(values).reduce(
+      (text, [name, value]) => text.replaceAll(`{${name}}`, String(value)),
+      template,
+    );
+  };
 
 export const I18nProvider = ({ children }: { children: ReactNode }) => {
-  const [language, setLanguageState] = useState(
-    () => localStorage.getItem(LANGUAGE_KEY) || 'en',
-  );
+  const [language, setLanguageState] = useState(() => localStorage.getItem(LANGUAGE_KEY) || 'en');
 
   const setLanguage = useCallback((next: string) => {
     localStorage.setItem(LANGUAGE_KEY, next);

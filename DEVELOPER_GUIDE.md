@@ -3,6 +3,7 @@
 A comprehensive guide for developers working on the Task Manager application.
 
 ## 📚 Table of Contents
+
 - [Code Organization](#code-organization)
 - [Backend Development](#backend-development)
 - [Frontend Development](#frontend-development)
@@ -108,15 +109,11 @@ client/src/
  * Handles CRUD operations for examples
  */
 function registerExampleRoutes(app, { authRequired, runAsync }) {
-  
   // Get all examples
   app.get('/api/examples', authRequired, async (req, res) => {
     try {
       const userId = req.session.userId;
-      const examples = await runAsync(
-        'SELECT * FROM examples WHERE user_id = $1',
-        [userId]
-      );
+      const examples = await runAsync('SELECT * FROM examples WHERE user_id = $1', [userId]);
       res.json(examples);
     } catch (error) {
       req.log.error({ error }, 'Failed to fetch examples');
@@ -129,7 +126,7 @@ function registerExampleRoutes(app, { authRequired, runAsync }) {
     try {
       const { title, description } = req.body;
       const userId = req.session.userId;
-      
+
       // Validation
       if (!title) {
         return res.status(400).json({ error: 'Title is required' });
@@ -137,9 +134,9 @@ function registerExampleRoutes(app, { authRequired, runAsync }) {
 
       const result = await runAsync(
         'INSERT INTO examples (title, description, user_id) VALUES ($1, $2, $3) RETURNING *',
-        [title, description, userId]
+        [title, description, userId],
       );
-      
+
       res.status(201).json(result);
     } catch (error) {
       req.log.error({ error }, 'Failed to create example');
@@ -181,14 +178,9 @@ module.exports = { createExampleSchema };
 const { validateRequest } = require('../middleware/validateRequest');
 const { createExampleSchema } = require('../schemas/example.schema');
 
-app.post(
-  '/api/examples',
-  authRequired,
-  validateRequest(createExampleSchema),
-  async (req, res) => {
-    // Handler code
-  }
-);
+app.post('/api/examples', authRequired, validateRequest(createExampleSchema), async (req, res) => {
+  // Handler code
+});
 ```
 
 ### Creating a Service
@@ -201,28 +193,27 @@ Services encapsulate business logic and database operations.
 /**
  * Example service
  * Handles business logic for examples
- * 
+ *
  * @param {Object} deps - Dependencies
  * @param {Function} deps.runAsync - Database query function
  * @param {Function} deps.getAsync - Database get function
  * @returns {Object} Service methods
  */
 function createExampleService({ runAsync, getAsync }) {
-  
   /**
    * Create a new example with business logic
    */
   async function createExample(userId, data) {
     const { title, description } = data;
-    
+
     // Business logic here
     const slug = title.toLowerCase().replace(/\s+/g, '-');
-    
+
     return await runAsync(
       `INSERT INTO examples (title, description, slug, user_id, created_at)
        VALUES ($1, $2, $3, $4, NOW())
        RETURNING *`,
-      [title, description, slug, userId]
+      [title, description, slug, userId],
     );
   }
 
@@ -230,15 +221,12 @@ function createExampleService({ runAsync, getAsync }) {
    * Get example by ID with authorization check
    */
   async function getExampleById(exampleId, userId) {
-    const example = await getAsync(
-      'SELECT * FROM examples WHERE id = $1 AND user_id = $2',
-      [exampleId, userId]
-    );
-    
+    const example = await getAsync('SELECT * FROM examples WHERE id = $1 AND user_id = $2', [exampleId, userId]);
+
     if (!example) {
       throw new Error('Example not found or access denied');
     }
-    
+
     return example;
   }
 
@@ -247,9 +235,9 @@ function createExampleService({ runAsync, getAsync }) {
    */
   async function updateExample(exampleId, userId, updates) {
     const existing = await getExampleById(exampleId, userId);
-    
+
     const { title, description } = updates;
-    
+
     return await runAsync(
       `UPDATE examples 
        SET title = COALESCE($1, title),
@@ -257,7 +245,7 @@ function createExampleService({ runAsync, getAsync }) {
            updated_at = NOW()
        WHERE id = $3 AND user_id = $4
        RETURNING *`,
-      [title, description, exampleId, userId]
+      [title, description, exampleId, userId],
     );
   }
 
@@ -274,50 +262,42 @@ module.exports = { createExampleService };
 ### Database Queries
 
 **Best Practices:**
+
 - Always use parameterized queries ($1, $2, etc.)
 - Handle errors appropriately
 - Use transactions for multiple related operations
 
 ```javascript
 // ✅ GOOD: Parameterized query
-const user = await getAsync(
-  'SELECT * FROM users WHERE email = $1',
-  [email]
-);
+const user = await getAsync('SELECT * FROM users WHERE email = $1', [email]);
 
 // ❌ BAD: String concatenation (SQL injection risk!)
-const user = await getAsync(
-  `SELECT * FROM users WHERE email = '${email}'`
-);
+const user = await getAsync(`SELECT * FROM users WHERE email = '${email}'`);
 
 // Transaction example
 async function transferTask(taskId, fromUserId, toUserId) {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
-    
+
     // Check task ownership
-    const task = await client.query(
-      'SELECT * FROM tasks WHERE id = $1 AND user_id = $2',
-      [taskId, fromUserId]
-    );
-    
+    const task = await client.query('SELECT * FROM tasks WHERE id = $1 AND user_id = $2', [taskId, fromUserId]);
+
     if (task.rows.length === 0) {
       throw new Error('Task not found');
     }
-    
+
     // Transfer task
-    await client.query(
-      'UPDATE tasks SET user_id = $1 WHERE id = $2',
-      [toUserId, taskId]
-    );
-    
+    await client.query('UPDATE tasks SET user_id = $1 WHERE id = $2', [toUserId, taskId]);
+
     // Log transfer
-    await client.query(
-      'INSERT INTO audit_logs (action, task_id, from_user, to_user) VALUES ($1, $2, $3, $4)',
-      ['transfer', taskId, fromUserId, toUserId]
-    );
-    
+    await client.query('INSERT INTO audit_logs (action, task_id, from_user, to_user) VALUES ($1, $2, $3, $4)', [
+      'transfer',
+      taskId,
+      fromUserId,
+      toUserId,
+    ]);
+
     await client.query('COMMIT');
   } catch (error) {
     await client.query('ROLLBACK');
@@ -336,35 +316,29 @@ const redisCache = require('./cache/redis');
 // Get from cache with fallback to database
 async function getTasksWithCache(userId) {
   const cacheKey = `tasks:user:${userId}`;
-  
+
   // Try cache first
   const cached = await redisCache.get(cacheKey);
   if (cached) {
     return JSON.parse(cached);
   }
-  
+
   // Cache miss - query database
-  const tasks = await runAsync(
-    'SELECT * FROM tasks WHERE user_id = $1',
-    [userId]
-  );
-  
+  const tasks = await runAsync('SELECT * FROM tasks WHERE user_id = $1', [userId]);
+
   // Store in cache (TTL: 5 minutes)
   await redisCache.setex(cacheKey, 300, JSON.stringify(tasks));
-  
+
   return tasks;
 }
 
 // Invalidate cache on update
 async function updateTask(taskId, data) {
-  const task = await runAsync(
-    'UPDATE tasks SET title = $1 WHERE id = $2 RETURNING *',
-    [data.title, taskId]
-  );
-  
+  const task = await runAsync('UPDATE tasks SET title = $1 WHERE id = $2 RETURNING *', [data.title, taskId]);
+
   // Invalidate cache
   await redisCache.del(`tasks:user:${task.user_id}`);
-  
+
   return task;
 }
 ```
@@ -418,7 +392,11 @@ export function useExamples() {
   const queryClient = useQueryClient();
 
   // Fetch all examples
-  const { data: examples, isLoading, error } = useQuery({
+  const {
+    data: examples,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['examples'],
     queryFn: examplesApi.getAll,
   });
@@ -434,8 +412,7 @@ export function useExamples() {
 
   // Update example mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Partial<Example> }) =>
-      examplesApi.update(id, data),
+    mutationFn: ({ id, data }: { id: number; data: Partial<Example> }) => examplesApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['examples'] });
     },
@@ -485,7 +462,7 @@ export function ExampleList() {
   return (
     <div>
       <h2>Examples</h2>
-      
+
       <form onSubmit={handleSubmit}>
         <input
           type="text"
@@ -524,15 +501,11 @@ export function useRealtimeExamples() {
     });
 
     socket.on('exampleUpdated', (example) => {
-      queryClient.setQueryData(['examples'], (old: any) =>
-        old.map((e: any) => (e.id === example.id ? example : e))
-      );
+      queryClient.setQueryData(['examples'], (old: any) => old.map((e: any) => (e.id === example.id ? example : e)));
     });
 
     socket.on('exampleDeleted', (exampleId) => {
-      queryClient.setQueryData(['examples'], (old: any) =>
-        old.filter((e: any) => e.id !== exampleId)
-      );
+      queryClient.setQueryData(['examples'], (old: any) => old.filter((e: any) => e.id !== exampleId));
     });
 
     return () => {
@@ -632,7 +605,7 @@ describe('ExampleService', () => {
     it('should create example with generated slug', async () => {
       const userId = 1;
       const data = { title: 'Test Example', description: 'Test description' };
-      
+
       mockRunAsync.mockResolvedValue({
         id: 1,
         ...data,
@@ -644,7 +617,7 @@ describe('ExampleService', () => {
 
       expect(mockRunAsync).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO examples'),
-        expect.arrayContaining(['Test Example', 'Test description', 'test-example', userId])
+        expect.arrayContaining(['Test Example', 'Test description', 'test-example', userId]),
       );
       expect(result.slug).toBe('test-example');
     });
@@ -715,11 +688,13 @@ describe('ExampleList', () => {
 ### Backend Debugging
 
 **View formatted logs:**
+
 ```bash
 npm start | npx pino-pretty
 ```
 
 **Debug specific routes:**
+
 ```javascript
 app.get('/api/examples', authRequired, async (req, res) => {
   req.log.debug({ userId: req.session.userId }, 'Fetching examples');
@@ -728,6 +703,7 @@ app.get('/api/examples', authRequired, async (req, res) => {
 ```
 
 **VS Code launch configuration:**
+
 ```json
 {
   "type": "node",
@@ -741,11 +717,13 @@ app.get('/api/examples', authRequired, async (req, res) => {
 ### Frontend Debugging
 
 **React DevTools:**
+
 - Install browser extension
 - Inspect component tree
 - View props and state
 
 **TanStack Query DevTools:**
+
 ```typescript
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
@@ -756,14 +734,15 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 ```
 
 **Network debugging:**
+
 ```typescript
 // Add request/response interceptors
-apiClient.interceptors.request.use(request => {
+apiClient.interceptors.request.use((request) => {
   console.log('Request:', request);
   return request;
 });
 
-apiClient.interceptors.response.use(response => {
+apiClient.interceptors.response.use((response) => {
   console.log('Response:', response);
   return response;
 });

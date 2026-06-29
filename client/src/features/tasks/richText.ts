@@ -2,8 +2,24 @@
 // preserve the exact stored-HTML format the backend validates and legacy renders.
 
 const richTextAllowedTags = new Set([
-  'A', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL',
-  'UL', 'OL', 'LI', 'P', 'DIV', 'BR', 'LABEL', 'INPUT', 'SPAN',
+  'A',
+  'B',
+  'STRONG',
+  'I',
+  'EM',
+  'U',
+  'S',
+  'STRIKE',
+  'DEL',
+  'UL',
+  'OL',
+  'LI',
+  'P',
+  'DIV',
+  'BR',
+  'LABEL',
+  'INPUT',
+  'SPAN',
 ]);
 
 export const escapeHtml = (value = ''): string =>
@@ -26,8 +42,7 @@ export const autolinkPlainUrls = (html = ''): string =>
       `${prefix}<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`,
   );
 
-const linkifyPlainText = (value = ''): string =>
-  autolinkPlainUrls(escapeHtml(value)).replace(/\n/g, '<br>');
+const linkifyPlainText = (value = ''): string => autolinkPlainUrls(escapeHtml(value)).replace(/\n/g, '<br>');
 
 export const sanitizeRichText = (html = ''): string => {
   const template = document.createElement('template');
@@ -46,11 +61,9 @@ export const sanitizeRichText = (html = ''): string => {
     }
 
     const href = element.tagName === 'A' ? element.getAttribute('href') || '' : '';
-    const inputType =
-      element.tagName === 'INPUT' ? (element.getAttribute('type') || '').toLowerCase() : '';
+    const inputType = element.tagName === 'INPUT' ? (element.getAttribute('type') || '').toLowerCase() : '';
     const isChecked =
-      element.tagName === 'INPUT' &&
-      ((element as HTMLInputElement).checked || element.hasAttribute('checked'));
+      element.tagName === 'INPUT' && ((element as HTMLInputElement).checked || element.hasAttribute('checked'));
     const className = element.getAttribute('class') || '';
     [...element.attributes].forEach((attribute) => element.removeAttribute(attribute.name));
 
@@ -82,9 +95,7 @@ export const sanitizeRichText = (html = ''): string => {
     }
 
     if (element.tagName === 'LABEL' && className.includes('rich-check-item')) {
-      element.className = `rich-check-item${
-        element.querySelector('input[type="checkbox"]:checked') ? ' checked' : ''
-      }`;
+      element.className = `rich-check-item${element.querySelector('input[type="checkbox"]:checked') ? ' checked' : ''}`;
       return;
     }
 

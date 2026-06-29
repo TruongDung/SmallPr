@@ -1,23 +1,58 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
+  <head>
     <title>Test Code Highlighter</title>
     <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        textarea { width: 100%; height: 200px; font-family: monospace; }
-        button { padding: 10px 20px; margin: 10px 0; }
-        .preview { border: 1px solid #ccc; padding: 20px; background: #f5f5f5; }
-        .code-block { background: #282c34; color: #abb2bf; padding: 16px; border-radius: 8px; overflow-x: auto; margin: 12px 0; font-family: monospace; }
-        .keyword { color: #c678dd; font-weight: 600; }
-        .string { color: #98c379; }
-        .comment { color: #5c6370; font-style: italic; }
-        .number { color: #d19a66; }
-        .function { color: #61afef; }
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      textarea {
+        width: 100%;
+        height: 200px;
+        font-family: monospace;
+      }
+      button {
+        padding: 10px 20px;
+        margin: 10px 0;
+      }
+      .preview {
+        border: 1px solid #ccc;
+        padding: 20px;
+        background: #f5f5f5;
+      }
+      .code-block {
+        background: #282c34;
+        color: #abb2bf;
+        padding: 16px;
+        border-radius: 8px;
+        overflow-x: auto;
+        margin: 12px 0;
+        font-family: monospace;
+      }
+      .keyword {
+        color: #c678dd;
+        font-weight: 600;
+      }
+      .string {
+        color: #98c379;
+      }
+      .comment {
+        color: #5c6370;
+        font-style: italic;
+      }
+      .number {
+        color: #d19a66;
+      }
+      .function {
+        color: #61afef;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Code Highlighter Test</h1>
-    <textarea id="input">class Solution:
+    <textarea id="input">
+class Solution:
     def minimumEffortPath(self, heights: List[List[int]]) -> int:
         rows, cols = len(heights), len(heights[0])
         dist = [[float('inf')] * cols for _ in range(rows)]
@@ -36,21 +71,21 @@
 
     <script src="/js/notes-code-highlighter.js"></script>
     <script>
-        function testHighlight() {
-            const input = document.getElementById('input').value;
-            const output = document.getElementById('output');
+      function testHighlight() {
+        const input = document.getElementById('input').value;
+        const output = document.getElementById('output');
 
-            console.log('Input:', input);
-            console.log('NotesCodeHighlighter:', window.NotesCodeHighlighter);
+        console.log('Input:', input);
+        console.log('NotesCodeHighlighter:', window.NotesCodeHighlighter);
 
-            if (window.NotesCodeHighlighter) {
-                const result = window.NotesCodeHighlighter.detectAndHighlightCodeBlocks(input);
-                console.log('Result:', result);
-                output.innerHTML = result;
-            } else {
-                output.innerHTML = '<p style="color: red;">NotesCodeHighlighter not loaded!</p>';
-            }
+        if (window.NotesCodeHighlighter) {
+          const result = window.NotesCodeHighlighter.detectAndHighlightCodeBlocks(input);
+          console.log('Result:', result);
+          output.innerHTML = result;
+        } else {
+          output.innerHTML = '<p style="color: red;">NotesCodeHighlighter not loaded!</p>';
         }
+      }
     </script>
-</body>
+  </body>
 </html>

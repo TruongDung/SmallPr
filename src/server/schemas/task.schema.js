@@ -1,15 +1,5 @@
-const {
-  MAX_TAG_LENGTH,
-  MAX_TASK_TEXT_LENGTH,
-  MAX_TASK_TITLE_LENGTH,
-} = require('../constants/tasks');
-const {
-  normalizePriority,
-  normalizeStatus,
-  normalizeTag,
-  parseAttachment,
-  stripHtml,
-} = require('../utils/tasks');
+const { MAX_TAG_LENGTH, MAX_TASK_TEXT_LENGTH, MAX_TASK_TITLE_LENGTH } = require('../constants/tasks');
+const { normalizePriority, normalizeStatus, normalizeTag, parseAttachment, stripHtml } = require('../utils/tasks');
 
 const taskError = (message) => ({ error: message });
 const RECURRENCE_PATTERNS = new Set(['daily', 'weekly', 'monthly', 'yearly']);
@@ -32,10 +22,11 @@ const normalizeDate = (value) => {
 const normalizeWeekdays = (value) => {
   if (value === undefined || value === null || value === '') return null;
   const entries = Array.isArray(value) ? value : String(value).split(',');
-  const days = [...new Set(entries
-    .map((entry) => Number(entry))
-    .filter((entry) => Number.isInteger(entry) && entry >= 0 && entry <= 6))]
-    .sort((a, b) => a - b);
+  const days = [
+    ...new Set(
+      entries.map((entry) => Number(entry)).filter((entry) => Number.isInteger(entry) && entry >= 0 && entry <= 6),
+    ),
+  ].sort((a, b) => a - b);
   return days.length ? days.join(',') : null;
 };
 
@@ -99,9 +90,10 @@ const normalizeRecurrence = ({
     return taskError('Due date is required for recurring tasks');
   }
 
-  const occurrenceLimit = recurrenceOccurrenceLimit === undefined || recurrenceOccurrenceLimit === null || recurrenceOccurrenceLimit === ''
-    ? null
-    : Number(recurrenceOccurrenceLimit);
+  const occurrenceLimit =
+    recurrenceOccurrenceLimit === undefined || recurrenceOccurrenceLimit === null || recurrenceOccurrenceLimit === ''
+      ? null
+      : Number(recurrenceOccurrenceLimit);
   if (occurrenceLimit !== null && (!Number.isInteger(occurrenceLimit) || occurrenceLimit <= 0)) {
     return taskError('Recurrence occurrence limit must be a positive number');
   }
@@ -130,9 +122,7 @@ const normalizeRelatedTaskIds = (value) => {
     return { error: 'Related tasks must be an array' };
   }
 
-  const ids = [...new Set(value
-    .map((entry) => Number(entry))
-    .filter((entry) => Number.isInteger(entry) && entry > 0))];
+  const ids = [...new Set(value.map((entry) => Number(entry)).filter((entry) => Number.isInteger(entry) && entry > 0))];
 
   if (ids.length > 25) {
     return { error: 'Related tasks must include 25 tasks or less' };
@@ -233,9 +223,8 @@ const validateCreateTask = (body = {}) => {
     return taskError(recurrence.error);
   }
 
-  const normalizedSprintId = sprint_id !== undefined && sprint_id !== null && sprint_id !== ''
-    ? Number(sprint_id)
-    : null;
+  const normalizedSprintId =
+    sprint_id !== undefined && sprint_id !== null && sprint_id !== '' ? Number(sprint_id) : null;
   if (normalizedSprintId !== null && !Number.isInteger(normalizedSprintId)) {
     return taskError('Sprint ID must be a valid number');
   }
@@ -351,9 +340,7 @@ const validateUpdateTask = (body = {}, existingTask) => {
 
   let normalizedSprintId = undefined;
   if (hasSprintUpdate) {
-    normalizedSprintId = sprint_id !== undefined && sprint_id !== null && sprint_id !== ''
-      ? Number(sprint_id)
-      : null;
+    normalizedSprintId = sprint_id !== undefined && sprint_id !== null && sprint_id !== '' ? Number(sprint_id) : null;
     if (normalizedSprintId !== null && !Number.isInteger(normalizedSprintId)) {
       return taskError('Sprint ID must be a valid number');
     }

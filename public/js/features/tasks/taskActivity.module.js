@@ -24,7 +24,7 @@
     escapeHtml,
     renderRelatedTasks,
   }) => {
-    let activeFilter = 'comments';
+    let activeFilter = 'all';
 
     const getActor = () => {
       const currentUser = getCurrentUser();
@@ -32,10 +32,12 @@
     };
 
     const getInitials = (name) => {
-      const words = String(name || '').trim().split(/\s+/).filter(Boolean);
-      const initials = words.length > 1
-        ? `${words[0][0]}${words[words.length - 1][0]}`
-        : String(words[0] || 'U').slice(0, 2);
+      const words = String(name || '')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+      const initials =
+        words.length > 1 ? `${words[0][0]}${words[words.length - 1][0]}` : String(words[0] || 'U').slice(0, 2);
       return initials.toUpperCase();
     };
 
@@ -127,18 +129,6 @@
         });
       }
 
-      if (task.comment && getRichTextPlainText(task.comment).trim()) {
-        items.push({
-          type: 'comments',
-          actor,
-          timestamp: updatedAt || createdAt,
-          when: formatWhen(updatedAt || createdAt),
-          message: t('activityCommented'),
-          badge: t('activityComment'),
-          html: renderStoredRichText(task.comment),
-        });
-      }
-
       if (Number(task.time_spent_minutes) > 0) {
         items.push({
           type: 'worklog',
@@ -173,9 +163,7 @@
         const filter = tab.dataset.activityFilter;
         let shouldShow = true;
 
-        if (filter === 'comments' && !hasComment(task)) {
-          shouldShow = false;
-        } else if (filter === 'related' && !hasRelatedTasks(task)) {
+        if (filter === 'related' && !hasRelatedTasks(task)) {
           shouldShow = false;
         }
 
@@ -218,7 +206,7 @@
       updateTabVisibility();
 
       // If the current active tab is hidden, switch to the first visible tab
-      if (elements.tabs.find(t => t.dataset.activityFilter === activeFilter)?.classList.contains('hidden')) {
+      if (elements.tabs.find((t) => t.dataset.activityFilter === activeFilter)?.classList.contains('hidden')) {
         activeFilter = getVisibleTab();
       }
 
@@ -243,8 +231,7 @@
         return;
       }
 
-      const items = getItems(getTask())
-        .filter((item) => activeFilter === 'all' || item.type === activeFilter);
+      const items = getItems(getTask()).filter((item) => activeFilter === 'all' || item.type === activeFilter);
 
       elements.list.innerHTML = '';
 

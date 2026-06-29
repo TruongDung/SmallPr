@@ -18,23 +18,19 @@ const getReminderCopy = ({ lunarDay, reminderDaysBefore }) => {
 };
 
 const createTaskCreationService = ({ getAsync, runAsync }) => {
-  const findExistingLunarReminder = ({ userId, lunarDay, reminderDate }) => getAsync(
-    `SELECT id, title, due_date, lunar_day, lunar_month, reminder_date
+  const findExistingLunarReminder = ({ userId, lunarDay, reminderDate }) =>
+    getAsync(
+      `SELECT id, title, due_date, lunar_day, lunar_month, reminder_date
      FROM tasks
      WHERE user_id = ?
        AND type = ?
        AND lunar_day = ?
        AND reminder_date = ?
      LIMIT 1`,
-    [userId, TASK_TYPES.LUNAR_REMINDER, lunarDay, reminderDate]
-  );
+      [userId, TASK_TYPES.LUNAR_REMINDER, lunarDay, reminderDate],
+    );
 
-  const createLunarReminderTask = async ({
-    userId,
-    lunar,
-    reminderDate,
-    reminderDaysBefore,
-  }) => {
+  const createLunarReminderTask = async ({ userId, lunar, reminderDate, reminderDaysBefore }) => {
     const existing = await findExistingLunarReminder({
       userId,
       lunarDay: lunar.lunar_day,
@@ -82,7 +78,7 @@ const createTaskCreationService = ({ getAsync, runAsync }) => {
         lunar.lunar_year,
         reminderDate,
         lunar.gregorian_date,
-      ]
+      ],
     );
 
     const task = await getAsync('SELECT * FROM tasks WHERE id = ? AND user_id = ?', [result.lastID, userId]);

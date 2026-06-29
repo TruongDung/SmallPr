@@ -24,7 +24,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
          AND audit_logs.entity_type = 'task'
          AND audit_logs.entity_id IN (${placeholders})
        ORDER BY audit_logs.created_at ASC, audit_logs.id ASC`,
-      taskIds
+      taskIds,
     );
 
     const historyByTaskId = historyRows.reduce((map, row) => {
@@ -75,7 +75,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
            AND (related.user_id = ? OR related_sprint.user_id = ? OR related_editor.user_id IS NOT NULL)
        ) related_union
        ORDER BY task_id, LOWER(title), id`,
-      [userId, ...taskIds, userId, userId, userId, ...taskIds, userId, userId]
+      [userId, ...taskIds, userId, userId, userId, ...taskIds, userId, userId],
     );
 
     const relatedByTaskId = relatedRows.reduce((map, row) => {
@@ -123,7 +123,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
          AND tasks.deleted_at IS NULL
          AND (tasks.user_id = ? OR sprint.user_id = ? OR task_editor.user_id IS NOT NULL)
        ORDER BY ${TASK_PRIORITY_ORDER_SQL}`,
-      [userId, userId, userId, userId, archived, userId, userId]
+      [userId, userId, userId, userId, archived, userId, userId],
     );
 
     // Strip the heavy attachment_data (base64 file contents) from the list.
@@ -139,12 +139,13 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     return attachRelatedTasks(userId, lightRows, { includeActivityHistory: false });
   };
 
-  const listAllTasksForEmail = (userId) => allAsync(
-    `SELECT * FROM tasks
+  const listAllTasksForEmail = (userId) =>
+    allAsync(
+      `SELECT * FROM tasks
      WHERE user_id = ? AND deleted_at IS NULL
      ORDER BY ${TASK_PRIORITY_ORDER_SQL}`,
-    [userId]
-  );
+      [userId],
+    );
 
   const getTaskForUser = async (id, userId, { includeActivityHistory = true } = {}) => {
     const task = await getAsync(
@@ -161,24 +162,86 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         AND task_editor.user_id = ?
        WHERE tasks.id = ?
          AND (tasks.user_id = ? OR sprint.user_id = ? OR task_editor.user_id IS NOT NULL)`,
-      [userId, userId, userId, userId, id, userId, userId]
+      [userId, userId, userId, userId, id, userId, userId],
     );
     if (!task) return null;
-    return (await attachRelatedTasks(userId, [task], { includeActivityHistory }))[0];
+    const [withRelated] = await attachRelatedTasks(userId, [task], { includeActivityHistory });
+    // Threaded comments are detail-only (same as activity history) to keep the
+    // task list payload light.
+    if (includeActivityHistory) {
+      withRelated.comments = await listTaskComments(task.id);
+    }
+    return withRelated;
   };
+
+  // --- Threaded task comments (task_comments table) ---------------------------
+
+  const listTaskComments = (taskId) =>
+    allAsync(
+      `SELECT task_comments.id,
+            task_comments.task_id,
+            task_comments.user_id,
+            task_comments.body,
+            task_comments.created_at,
+            task_comments.updated_at,
+            author.username AS author_username,
+            author.name AS author_name
+     FROM task_comments
+     LEFT JOIN users author ON author.id = task_comments.user_id
+     WHERE task_comments.task_id = ?
+     ORDER BY task_comments.created_at ASC, task_comments.id ASC`,
+      [taskId],
+    );
+
+  const getTaskCommentById = (commentId) => getAsync('SELECT * FROM task_comments WHERE id = ?', [commentId]);
+
+  const getTaskCommentForResponse = async (commentId) => {
+    const rows = await allAsync(
+      `SELECT task_comments.id,
+              task_comments.task_id,
+              task_comments.user_id,
+              task_comments.body,
+              task_comments.created_at,
+              task_comments.updated_at,
+              author.username AS author_username,
+              author.name AS author_name
+       FROM task_comments
+       LEFT JOIN users author ON author.id = task_comments.user_id
+       WHERE task_comments.id = ?`,
+      [commentId],
+    );
+    return rows[0] || null;
+  };
+
+  const addTaskComment = async ({ taskId, userId, body }) => {
+    const result = await runAsync(
+      `INSERT INTO task_comments (task_id, user_id, body)
+       VALUES (?, ?, ?) RETURNING id`,
+      [taskId, userId, body],
+    );
+    return getTaskCommentForResponse(result.lastID);
+  };
+
+  const updateTaskComment = async ({ commentId, body }) => {
+    await runAsync('UPDATE task_comments SET body = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [body, commentId]);
+    return getTaskCommentForResponse(commentId);
+  };
+
+  const deleteTaskComment = (commentId) => runAsync('DELETE FROM task_comments WHERE id = ?', [commentId]);
 
   const getTaskById = (id) => getAsync('SELECT * FROM tasks WHERE id = ?', [id]);
 
-  const getAccessibleSprintForUser = (id, userId) => getAsync(
-    `SELECT s.*
+  const getAccessibleSprintForUser = (id, userId) =>
+    getAsync(
+      `SELECT s.*
      FROM sprints s
      LEFT JOIN sprint_editors editor
        ON editor.sprint_id = s.id
       AND editor.user_id = ?
      WHERE s.id = ?
        AND (s.user_id = ? OR editor.user_id IS NOT NULL)`,
-    [userId, id, userId]
-  );
+      [userId, id, userId],
+    );
 
   const listTaskAccessUserIds = async (id) => {
     const rows = await allAsync(
@@ -199,28 +262,33 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
          WHERE tasks.id = ?
        ) access_users
        WHERE user_id IS NOT NULL`,
-      [id, id, id]
+      [id, id, id],
     );
     return rows.map((row) => Number(row.user_id)).filter(Number.isInteger);
   };
 
   const setRelatedTasks = async ({ userId, taskId, relatedTaskIds = [] }) => {
-    const normalizedIds = [...new Set(relatedTaskIds
-      .map((id) => Number(id))
-      .filter((id) => Number.isInteger(id) && id > 0 && Number(id) !== Number(taskId)))];
+    const normalizedIds = [
+      ...new Set(
+        relatedTaskIds
+          .map((id) => Number(id))
+          .filter((id) => Number.isInteger(id) && id > 0 && Number(id) !== Number(taskId)),
+      ),
+    ];
 
-    await runAsync(
-      'DELETE FROM task_related_tasks WHERE user_id = ? AND (task_id = ? OR related_task_id = ?)',
-      [userId, taskId, taskId]
-    );
+    await runAsync('DELETE FROM task_related_tasks WHERE user_id = ? AND (task_id = ? OR related_task_id = ?)', [
+      userId,
+      taskId,
+      taskId,
+    ]);
 
     if (!normalizedIds.length) return;
 
     const placeholders = normalizedIds.map(() => '?').join(', ');
-    const ownedRows = await allAsync(
-      `SELECT id FROM tasks WHERE user_id = ? AND id IN (${placeholders})`,
-      [userId, ...normalizedIds]
-    );
+    const ownedRows = await allAsync(`SELECT id FROM tasks WHERE user_id = ? AND id IN (${placeholders})`, [
+      userId,
+      ...normalizedIds,
+    ]);
     const ownedIds = ownedRows.map((row) => Number(row.id));
 
     for (const relatedTaskId of ownedIds) {
@@ -229,22 +297,20 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
          VALUES (?, ?, ?)
          ON CONFLICT (task_id, related_task_id) DO NOTHING
          RETURNING task_id`,
-        [userId, taskId, relatedTaskId]
+        [userId, taskId, relatedTaskId],
       );
       await runAsync(
         `INSERT INTO task_related_tasks (user_id, task_id, related_task_id)
          VALUES (?, ?, ?)
          ON CONFLICT (task_id, related_task_id) DO NOTHING
          RETURNING task_id`,
-        [userId, relatedTaskId, taskId]
+        [userId, relatedTaskId, taskId],
       );
     }
   };
 
-  const listTags = (userId) => allAsync(
-    'SELECT id, name FROM task_tags WHERE user_id = ? ORDER BY LOWER(name), name',
-    [userId]
-  );
+  const listTags = (userId) =>
+    allAsync('SELECT id, name FROM task_tags WHERE user_id = ? ORDER BY LOWER(name), name', [userId]);
 
   const ensureTaskTag = async (userId, tag) => {
     const normalizedTag = normalizeTag(tag);
@@ -258,37 +324,43 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
        VALUES (?, ?, ?)
        ON CONFLICT (user_id, normalized_name) DO NOTHING
        RETURNING id`,
-      [userId, normalizedTag, normalizedName]
+      [userId, normalizedTag, normalizedName],
     );
-    return getAsync(
-      'SELECT id, name FROM task_tags WHERE user_id = ? AND normalized_name = ?',
-      [userId, normalizedName]
-    );
+    return getAsync('SELECT id, name FROM task_tags WHERE user_id = ? AND normalized_name = ?', [
+      userId,
+      normalizedName,
+    ]);
   };
 
-  const getTagForUser = (id, userId) => getAsync(
-    'SELECT id, name FROM task_tags WHERE id = ? AND user_id = ?',
-    [id, userId]
-  );
+  const getTagForUser = (id, userId) =>
+    getAsync('SELECT id, name FROM task_tags WHERE id = ? AND user_id = ?', [id, userId]);
 
-  const findTagByNormalizedName = (userId, normalizedName) => getAsync(
-    'SELECT id, name FROM task_tags WHERE user_id = ? AND normalized_name = ?',
-    [userId, normalizedName]
-  );
+  const findTagByNormalizedName = (userId, normalizedName) =>
+    getAsync('SELECT id, name FROM task_tags WHERE user_id = ? AND normalized_name = ?', [userId, normalizedName]);
 
   const mergeTagIntoExisting = async ({ userId, oldName, existingTag, tagId }) => {
-    await runAsync('UPDATE tasks SET tag = ? WHERE user_id = ? AND LOWER(tag) = LOWER(?)', [existingTag.name, userId, oldName]);
+    await runAsync('UPDATE tasks SET tag = ? WHERE user_id = ? AND LOWER(tag) = LOWER(?)', [
+      existingTag.name,
+      userId,
+      oldName,
+    ]);
     await runAsync('DELETE FROM task_tags WHERE id = ? AND user_id = ?', [tagId, userId]);
     return existingTag;
   };
 
   const updateTag = async ({ id, userId, name, previousName }) => {
     const normalizedName = name.toLowerCase();
-    await runAsync(
-      'UPDATE task_tags SET name = ?, normalized_name = ? WHERE id = ? AND user_id = ?',
-      [name, normalizedName, id, userId]
-    );
-    await runAsync('UPDATE tasks SET tag = ? WHERE user_id = ? AND LOWER(tag) = LOWER(?)', [name, userId, previousName]);
+    await runAsync('UPDATE task_tags SET name = ?, normalized_name = ? WHERE id = ? AND user_id = ?', [
+      name,
+      normalizedName,
+      id,
+      userId,
+    ]);
+    await runAsync('UPDATE tasks SET tag = ? WHERE user_id = ? AND LOWER(tag) = LOWER(?)', [
+      name,
+      userId,
+      previousName,
+    ]);
     return getTagForUser(id, userId);
   };
 
@@ -363,7 +435,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         parentTaskId || null,
         nextOccurrenceDate || null,
         sprintId || null,
-      ]
+      ],
     );
 
     await setRelatedTasks({ userId, taskId: result.lastID, relatedTaskIds });
@@ -446,8 +518,8 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         hasAttachmentUpdate ? attachment?.type || null : existingTask.attachment_type,
         hasAttachmentUpdate ? attachment?.data || null : existingTask.attachment_data,
         hasAttachmentUpdate ? attachment?.size || 0 : existingTask.attachment_size,
-        hasAttachmentUpdate ? (attachmentDriveId || null) : existingTask.attachment_drive_id,
-        hasAttachmentUpdate ? (attachmentUrl || null) : existingTask.attachment_url,
+        hasAttachmentUpdate ? attachmentDriveId || null : existingTask.attachment_drive_id,
+        hasAttachmentUpdate ? attachmentUrl || null : existingTask.attachment_url,
         isRecurring !== undefined ? isRecurring : existingTask.is_recurring,
         recurrencePattern !== undefined ? recurrencePattern : existingTask.recurrence_pattern,
         recurrenceInterval !== undefined ? recurrenceInterval : existingTask.recurrence_interval,
@@ -457,8 +529,8 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
         recurrenceOccurrenceLimit !== undefined ? recurrenceOccurrenceLimit : existingTask.recurrence_occurrence_limit,
         hasSprintUpdate ? sprintId : existingTask.sprint_id,
         id,
-        existingTask.user_id
-      ]
+        existingTask.user_id,
+      ],
     );
 
     if (hasRelatedTaskUpdate) {
@@ -468,45 +540,43 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     return getTaskForUser(id, existingTask.user_id, { includeActivityHistory: false });
   };
 
-  const deleteTask = (id, userId) => runAsync(
-    'UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?',
-    [id, userId]
-  );
+  const deleteTask = (id, userId) =>
+    runAsync('UPDATE tasks SET deleted_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?', [id, userId]);
 
   // Permanently remove a task from the trash
-  const permanentlyDeleteTask = (id, userId) => runAsync(
-    'DELETE FROM tasks WHERE id = ? AND user_id = ? AND deleted_at IS NOT NULL',
-    [id, userId]
-  );
+  const permanentlyDeleteTask = (id, userId) =>
+    runAsync('DELETE FROM tasks WHERE id = ? AND user_id = ? AND deleted_at IS NOT NULL', [id, userId]);
 
   // Restore a soft-deleted task back to the active list
-  const restoreTask = (id, userId) => runAsync(
-    'UPDATE tasks SET deleted_at = NULL WHERE id = ? AND user_id = ? AND deleted_at IS NOT NULL',
-    [id, userId]
-  );
+  const restoreTask = (id, userId) =>
+    runAsync('UPDATE tasks SET deleted_at = NULL WHERE id = ? AND user_id = ? AND deleted_at IS NOT NULL', [
+      id,
+      userId,
+    ]);
 
   // List soft-deleted tasks (trash) for a user
-  const listDeletedTasks = (userId) => allAsync(
-    `SELECT * FROM tasks WHERE user_id = ? AND deleted_at IS NOT NULL ORDER BY deleted_at DESC`,
-    [userId]
-  );
+  const listDeletedTasks = (userId) =>
+    allAsync(`SELECT * FROM tasks WHERE user_id = ? AND deleted_at IS NOT NULL ORDER BY deleted_at DESC`, [userId]);
 
   // Purge tasks that have been in trash for more than 30 days
-  const purgeOldDeletedTasks = () => runAsync(
-    `DELETE FROM tasks WHERE deleted_at IS NOT NULL AND deleted_at < CURRENT_TIMESTAMP - INTERVAL '30 days'`
-  );
+  const purgeOldDeletedTasks = () =>
+    runAsync(`DELETE FROM tasks WHERE deleted_at IS NOT NULL AND deleted_at < CURRENT_TIMESTAMP - INTERVAL '30 days'`);
 
   return {
+    addTaskComment,
     createTask,
     deleteTag,
     deleteTask,
+    deleteTaskComment,
     ensureTaskTag,
     findTagByNormalizedName,
     getAccessibleSprintForUser,
     getTagForUser,
+    getTaskCommentById,
     getTaskForUser,
     listDeletedTasks,
     listTaskAccessUserIds,
+    listTaskComments,
     listAllTasksForEmail,
     listTags,
     listTasks,
@@ -516,6 +586,7 @@ const createTasksService = ({ allAsync, getAsync, runAsync }) => {
     restoreTask,
     updateTag,
     updateTask,
+    updateTaskComment,
   };
 };
 

@@ -1,5 +1,4 @@
-const rateLimit = require('express-rate-limit');
-const { ipKeyGenerator } = require('express-rate-limit');
+const { rateLimit, ipKeyGenerator } = require('express-rate-limit');
 const { RedisStore } = require('rate-limit-redis');
 
 const redisCache = require('../cache/redis');
@@ -9,11 +8,6 @@ const parsePositiveInt = (value, fallback) => {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 };
-
-// Normalize the client IP into a rate-limit key. ipKeyGenerator collapses IPv6
-// addresses into a /64 subnet so a single client can't bypass limits by
-// rotating addresses within its block (required by express-rate-limit v8).
-const ipKey = (req) => ipKeyGenerator(req.ip);
 
 // Rate limiting is per-process in-memory by default. When Redis is configured
 // the limits become shared across all instances (important on serverless where
@@ -34,6 +28,12 @@ const buildStore = (prefix) => {
   }
 };
 
+// Normalize a client IP into a safe rate-limit key. For IPv6 this collapses the
+// address to its /64 subnet so a single user cannot bypass limits by rotating
+// through the many addresses available within their prefix. `express-rate-limit`
+// requires this helper for any IP-derived key (see ERR_ERL_KEY_GEN_IPV6).
+const ipKey = (req) => ipKeyGenerator(req.ip);
+
 // Identify the caller by authenticated user when available, else by client IP.
 // Behind Vercel/proxies, `trust proxy` is set so req.ip is the real client IP.
 const keyByUserOrIp = (req) => {
@@ -42,12 +42,15 @@ const keyByUserOrIp = (req) => {
 };
 
 const jsonLimitHandler = (message) => (req, res) => {
-  logger.warn({
-    ip: req.ip,
-    userId: req.session?.userId || null,
-    path: req.originalUrl,
-    method: req.method,
-  }, 'Rate limit exceeded');
+  logger.warn(
+    {
+      ip: req.ip,
+      userId: req.session?.userId || null,
+      path: req.originalUrl,
+      method: req.method,
+    },
+    'Rate limit exceeded',
+  );
   res.status(429).json({ error: message });
 };
 

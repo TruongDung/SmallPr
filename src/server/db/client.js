@@ -11,9 +11,7 @@ const logger = require('../logger');
 // so the value is interpreted as UTC, matching what we wrote with
 // CURRENT_TIMESTAMP and what the client expects when computing
 // "n minutes ago" labels.
-pgTypes.setTypeParser(1114, (value) => (
-  value === null ? null : new Date(`${value}Z`)
-));
+pgTypes.setTypeParser(1114, (value) => (value === null ? null : new Date(`${value}Z`)));
 
 const parsePositiveInt = (value, fallback) => {
   const parsed = Number.parseInt(value, 10);

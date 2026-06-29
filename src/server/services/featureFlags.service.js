@@ -59,10 +59,7 @@ const resolveKey = (scope) => VISIBILITY_KEYS[scope] || VISIBILITY_KEYS.demo;
 
 const createFeatureFlagsService = ({ allAsync, runAsync }) => {
   const getVisibility = async (scope) => {
-    const rows = await allAsync(
-      'SELECT setting_value FROM app_settings WHERE setting_key = ?',
-      [resolveKey(scope)]
-    );
+    const rows = await allAsync('SELECT setting_value FROM app_settings WHERE setting_key = ?', [resolveKey(scope)]);
     return normalizeVisibility(rows[0]?.setting_value);
   };
 
@@ -76,9 +73,7 @@ const createFeatureFlagsService = ({ allAsync, runAsync }) => {
       userSettings: updates?.userSettings ?? current.userSettings,
       financialTabs: {
         ...current.financialTabs,
-        ...(updates?.financialTabs && typeof updates.financialTabs === 'object'
-          ? updates.financialTabs
-          : {}),
+        ...(updates?.financialTabs && typeof updates.financialTabs === 'object' ? updates.financialTabs : {}),
       },
     });
 
@@ -88,7 +83,7 @@ const createFeatureFlagsService = ({ allAsync, runAsync }) => {
        ON CONFLICT (setting_key)
        DO UPDATE SET setting_value = EXCLUDED.setting_value,
                      updated_at = CURRENT_TIMESTAMP`,
-      [resolveKey(scope), JSON.stringify(merged)]
+      [resolveKey(scope), JSON.stringify(merged)],
     );
     return merged;
   };
@@ -110,10 +105,7 @@ const createFeatureFlagsService = ({ allAsync, runAsync }) => {
   // --- Per-user overrides ---
   // Returns the stored override for a user, or null when none exists.
   const getUserOverride = async (userId) => {
-    const rows = await allAsync(
-      'SELECT visibility FROM user_feature_overrides WHERE user_id = ?',
-      [userId]
-    );
+    const rows = await allAsync('SELECT visibility FROM user_feature_overrides WHERE user_id = ?', [userId]);
     if (!rows.length) return null;
     return normalizeVisibility(rows[0].visibility);
   };
@@ -136,9 +128,7 @@ const createFeatureFlagsService = ({ allAsync, runAsync }) => {
       userSettings: updates?.userSettings ?? current.userSettings,
       financialTabs: {
         ...current.financialTabs,
-        ...(updates?.financialTabs && typeof updates.financialTabs === 'object'
-          ? updates.financialTabs
-          : {}),
+        ...(updates?.financialTabs && typeof updates.financialTabs === 'object' ? updates.financialTabs : {}),
       },
     });
 
@@ -148,7 +138,7 @@ const createFeatureFlagsService = ({ allAsync, runAsync }) => {
        ON CONFLICT (user_id)
        DO UPDATE SET visibility = EXCLUDED.visibility,
                      updated_at = CURRENT_TIMESTAMP`,
-      [userId, JSON.stringify(merged)]
+      [userId, JSON.stringify(merged)],
     );
     return merged;
   };
@@ -166,10 +156,7 @@ const createFeatureFlagsService = ({ allAsync, runAsync }) => {
 
   // Flags exposed publicly (consumed by the frontend, including demo mode).
   const getPublicFlags = async () => {
-    const [demoVisibility, userVisibility] = await Promise.all([
-      getDemoVisibility(),
-      getUserVisibility(),
-    ]);
+    const [demoVisibility, userVisibility] = await Promise.all([getDemoVisibility(), getUserVisibility()]);
     return {
       // Retained so older clients keep working.
       weatherEnabledForDemo: demoVisibility.weather,

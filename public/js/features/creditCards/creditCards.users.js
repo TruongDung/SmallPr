@@ -2,7 +2,9 @@
   const excludedCardUserNames = new Set(['admin', 'card holder']);
 
   const isAllowedCardUser = (name) => {
-    const normalizedName = String(name || '').trim().toLowerCase();
+    const normalizedName = String(name || '')
+      .trim()
+      .toLowerCase();
     return normalizedName && !excludedCardUserNames.has(normalizedName);
   };
 
@@ -10,16 +12,13 @@
     let users = [];
 
     const merge = (savedUsers = [], cards = []) => {
-      const names = [
-        ...savedUsers,
-        ...cards.map((card) => card.card_user),
-      ]
+      const names = [...savedUsers, ...cards.map((card) => card.card_user)]
         .map((name) => String(name || '').trim())
         .filter(isAllowedCardUser);
 
-      users = [...new Set(names)].sort((first, second) => (
-        first.localeCompare(second, getLanguage(), { sensitivity: 'base' })
-      ));
+      users = [...new Set(names)].sort((first, second) =>
+        first.localeCompare(second, getLanguage(), { sensitivity: 'base' }),
+      );
       return users;
     };
 
@@ -27,9 +26,10 @@
       if (!select) return;
 
       const normalizedSelectedValue = String(selectedValue || '').trim();
-      const optionValues = isAllowedCardUser(normalizedSelectedValue) && !users.includes(normalizedSelectedValue)
-        ? [normalizedSelectedValue, ...users]
-        : users;
+      const optionValues =
+        isAllowedCardUser(normalizedSelectedValue) && !users.includes(normalizedSelectedValue)
+          ? [normalizedSelectedValue, ...users]
+          : users;
 
       select.innerHTML = '';
 
@@ -58,4 +58,4 @@
     ...(window.CreditCardFeature || {}),
     createUserOptions,
   };
-}());
+})();

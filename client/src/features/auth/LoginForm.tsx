@@ -59,11 +59,7 @@ export const LoginForm = () => {
               autoComplete="current-password"
               onChange={(event) => setPassword(event.target.value)}
             />
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => setShowPassword((prev) => !prev)}
-            >
+            <button type="button" className="secondary" onClick={() => setShowPassword((prev) => !prev)}>
               {showPassword ? t('hidePassword') : t('showPassword')}
             </button>
           </div>

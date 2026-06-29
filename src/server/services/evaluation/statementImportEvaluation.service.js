@@ -26,16 +26,18 @@ const round = (value, digits = 4) => {
   return Math.round((Number(value) || 0) * factor) / factor;
 };
 
-const normalizeText = (value) => String(value || '')
-  .toLowerCase()
-  .replace(/&/g, ' and ')
-  .replace(/[^a-z0-9\s]/g, ' ')
-  .replace(/\s+/g, ' ')
-  .trim();
+const normalizeText = (value) =>
+  String(value || '')
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
 
-const tokenize = (value) => normalizeText(value)
-  .split(' ')
-  .filter((token) => token.length > 1);
+const tokenize = (value) =>
+  normalizeText(value)
+    .split(' ')
+    .filter((token) => token.length > 1);
 
 const jaccardSimilarity = (a, b) => {
   const left = new Set(tokenize(a));
@@ -52,10 +54,12 @@ const merchantMatches = (expected, actual) => {
   const expectedText = normalizeText(expected);
   const actualText = normalizeText(actual);
   if (!expectedText || !actualText) return false;
-  return expectedText === actualText
-    || expectedText.includes(actualText)
-    || actualText.includes(expectedText)
-    || jaccardSimilarity(expectedText, actualText) >= 0.5;
+  return (
+    expectedText === actualText ||
+    expectedText.includes(actualText) ||
+    actualText.includes(expectedText) ||
+    jaccardSimilarity(expectedText, actualText) >= 0.5
+  );
 };
 
 const dateMatches = (expected, actual) => String(expected || '') === String(actual || '');
@@ -122,10 +126,9 @@ const emptyCounters = () => ({
 const summarizeCounters = (counters, caseCount, durationMs, estimatedCostUsd) => {
   const fieldDenominator = Math.max(counters.totalExpected - counters.duplicateTotal, 1);
   const overallFields = fieldDenominator * 4;
-  const overallCorrect = counters.dateCorrect + counters.amountCorrect + counters.merchantCorrect + counters.categoryCorrect;
-  const duplicateAccuracy = counters.duplicateTotal === 0
-    ? 1
-    : counters.duplicateCorrect / counters.duplicateTotal;
+  const overallCorrect =
+    counters.dateCorrect + counters.amountCorrect + counters.merchantCorrect + counters.categoryCorrect;
+  const duplicateAccuracy = counters.duplicateTotal === 0 ? 1 : counters.duplicateCorrect / counters.duplicateTotal;
 
   return {
     caseCount,
@@ -161,12 +164,13 @@ const evaluateExpectedAgainstActual = ({ expectedTransactions, actualTransaction
 
   expectedItems.forEach((expected, expectedIndex) => {
     if (expected.duplicate) {
-      const duplicateWasDropped = !actualItems.some((actual, actualIndex) => (
-        !usedActualIndexes.has(actualIndex)
-        && dateMatches(expected.date, actual.date)
-        && amountMatches(expected.amount, actual.amount)
-        && merchantMatches(expected.merchant, actual.merchant)
-      ));
+      const duplicateWasDropped = !actualItems.some(
+        (actual, actualIndex) =>
+          !usedActualIndexes.has(actualIndex) &&
+          dateMatches(expected.date, actual.date) &&
+          amountMatches(expected.amount, actual.amount) &&
+          merchantMatches(expected.merchant, actual.merchant),
+      );
       counters.duplicateTotal += 1;
       if (duplicateWasDropped) counters.duplicateCorrect += 1;
       comparisons.push({
@@ -258,7 +262,8 @@ const readJson = (filePath) => JSON.parse(fs.readFileSync(filePath, 'utf8'));
 const loadEvaluationCases = (casesDir = DEFAULT_CASES_DIR) => {
   if (!fs.existsSync(casesDir)) return [];
 
-  return fs.readdirSync(casesDir)
+  return fs
+    .readdirSync(casesDir)
     .filter((file) => file.endsWith('.json'))
     .sort()
     .map((file) => {
@@ -337,10 +342,7 @@ const compareWithPreviousRun = (currentSummary, previousReport) => {
     .filter(Boolean);
 };
 
-const isBlockingRegression = (regression) => ![
-  'averageLatencyMs',
-  'estimatedCostUsd',
-].includes(regression.metric);
+const isBlockingRegression = (regression) => !['averageLatencyMs', 'estimatedCostUsd'].includes(regression.metric);
 
 const createEvaluationReport = async ({
   cases,
@@ -372,9 +374,7 @@ const createEvaluationReport = async ({
     const latencyMs = performance.now() - startedAt;
     const actualTransactions = Array.isArray(result?.items) ? result.items : [];
     const parseError = result?.error || thrownError?.message || null;
-    const expectedTransactions = Array.isArray(testCase.expectedTransactions)
-      ? testCase.expectedTransactions
-      : [];
+    const expectedTransactions = Array.isArray(testCase.expectedTransactions) ? testCase.expectedTransactions : [];
     const evaluation = evaluateExpectedAgainstActual({
       expectedTransactions,
       actualTransactions,

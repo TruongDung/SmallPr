@@ -1,8 +1,5 @@
 const { createLunarCalendarService } = require('./lunarCalendar.service');
-const {
-  createLunarReminderScheduler,
-  millisecondsUntilNextRun,
-} = require('./lunarReminderScheduler.service');
+const { createLunarReminderScheduler, millisecondsUntilNextRun } = require('./lunarReminderScheduler.service');
 const { createTaskCreationService } = require('./taskCreation.service');
 
 describe('lunar reminder scheduler service', () => {
@@ -17,13 +14,15 @@ describe('lunar reminder scheduler service', () => {
       lunarCalendar: createLunarCalendarService(),
       taskCreation,
       userSettings: {
-        listUsersWithLunarRemindersEnabled: jest.fn().mockResolvedValue([{
-          user_id: 1,
-          timezone: 'Asia/Ho_Chi_Minh',
-          reminder_days_before: 3,
-          remind_lunar_day1: true,
-          remind_lunar_day15: true,
-        }]),
+        listUsersWithLunarRemindersEnabled: jest.fn().mockResolvedValue([
+          {
+            user_id: 1,
+            timezone: 'Asia/Ho_Chi_Minh',
+            reminder_days_before: 3,
+            remind_lunar_day1: true,
+            remind_lunar_day15: true,
+          },
+        ]),
       },
     });
 
@@ -38,7 +37,7 @@ describe('lunar reminder scheduler service', () => {
         reminderDate: '2025-01-26',
         reminderDaysBefore: 3,
         lunar: expect.objectContaining({ lunar_day: 1, gregorian_date: '2025-01-29' }),
-      })
+      }),
     );
   });
 
@@ -48,13 +47,15 @@ describe('lunar reminder scheduler service', () => {
       lunarCalendar: createLunarCalendarService(),
       taskCreation,
       userSettings: {
-        listUsersWithLunarRemindersEnabled: jest.fn().mockResolvedValue([{
-          user_id: 1,
-          timezone: 'Asia/Ho_Chi_Minh',
-          reminder_days_before: 3,
-          remind_lunar_day1: false,
-          remind_lunar_day15: true,
-        }]),
+        listUsersWithLunarRemindersEnabled: jest.fn().mockResolvedValue([
+          {
+            user_id: 1,
+            timezone: 'Asia/Ho_Chi_Minh',
+            reminder_days_before: 3,
+            remind_lunar_day1: false,
+            remind_lunar_day15: true,
+          },
+        ]),
       },
     });
 
@@ -92,8 +93,6 @@ describe('lunar reminder scheduler service', () => {
 
   test('schedules the next local 00:05 run', () => {
     expect(millisecondsUntilNextRun(new Date('2025-01-01T00:04:00'))).toBe(60 * 1000);
-    expect(millisecondsUntilNextRun(new Date('2025-01-01T00:06:00'))).toBe(
-      (23 * 60 + 59) * 60 * 1000
-    );
+    expect(millisecondsUntilNextRun(new Date('2025-01-01T00:06:00'))).toBe((23 * 60 + 59) * 60 * 1000);
   });
 });

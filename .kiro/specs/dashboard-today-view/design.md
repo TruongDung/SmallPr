@@ -14,6 +14,7 @@ The Dashboard does not change the internal behavior of any existing section. It 
 **Mapped requirements:** REQ-1 through REQ-19 (every requirement in `requirements.md`).
 
 **Non-goals (explicitly out of scope):**
+
 - Push notifications (web push or APNs).
 - Multi-day calendar grid.
 - AI summaries / smart sort.
@@ -112,10 +113,10 @@ The user reaches the Dashboard via a top-level nav entry whose label key is `das
 
 **Query parameters.**
 
-| Name          | Type    | Default | Notes |
-|---------------|---------|---------|-------|
+| Name          | Type    | Default | Notes                                                                                                                                                                                                                                                                                                        |
+| ------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `tz`          | string  | `'UTC'` | IANA timezone resolved client-side via `Intl.DateTimeFormat().resolvedOptions().timeZone`. Validated with `Intl.supportedValuesOf('timeZone').includes(tz)` if available, else with a regex. Invalid values fall back to UTC and `timezoneFallback: true` is set in the response. (REQ-2.4, REQ-2.5, REQ-17) |
-| `dueSoonDays` | integer | `3`     | Range `[1, 14]`; values outside the range are clamped silently. (Glossary `Due_Soon_Window`) |
+| `dueSoonDays` | integer | `3`     | Range `[1, 14]`; values outside the range are clamped silently. (Glossary `Due_Soon_Window`)                                                                                                                                                                                                                 |
 
 **Response shape.**
 
@@ -128,22 +129,42 @@ The user reaches the Dashboard via a top-level nav entry whose label key is `das
     "version": 1,
     "defaultLanding": "today",
     "cards": [
-      { "id": "todaysTasks",        "visible": true,  "order": 0 },
-      { "id": "taskStatusSummary",  "visible": true,  "order": 1 },
-      { "id": "bills",              "visible": true,  "order": 2 },
-      { "id": "creditCards",        "visible": true,  "order": 3 },
-      { "id": "recentNotes",        "visible": true,  "order": 4 },
-      { "id": "weather",            "visible": true,  "order": 5 },
-      { "id": "dailyQuote",         "visible": true,  "order": 6 }
+      { "id": "todaysTasks", "visible": true, "order": 0 },
+      { "id": "taskStatusSummary", "visible": true, "order": 1 },
+      { "id": "bills", "visible": true, "order": 2 },
+      { "id": "creditCards", "visible": true, "order": 3 },
+      { "id": "recentNotes", "visible": true, "order": 4 },
+      { "id": "weather", "visible": true, "order": 5 },
+      { "id": "dailyQuote", "visible": true, "order": 6 }
     ]
   },
   "cards": {
     "todaysTasks": {
       "ok": true,
       "data": {
-        "overdue":     [{ "id": 12, "title": "...", "priority": "high",   "tag": "Work", "reminder_at": "2026-05-29T14:00:00Z", "status": "todo" }],
-        "today":       [{ "id": 18, "title": "...", "priority": "medium", "tag": "",      "reminder_at": "2026-05-30T17:30:00Z", "status": "todo" }],
-        "in_progress": [{ "id": 22, "title": "...", "priority": "low",    "tag": "",      "reminder_at": null,                  "status": "in_progress" }],
+        "overdue": [
+          {
+            "id": 12,
+            "title": "...",
+            "priority": "high",
+            "tag": "Work",
+            "reminder_at": "2026-05-29T14:00:00Z",
+            "status": "todo"
+          }
+        ],
+        "today": [
+          {
+            "id": 18,
+            "title": "...",
+            "priority": "medium",
+            "tag": "",
+            "reminder_at": "2026-05-30T17:30:00Z",
+            "status": "todo"
+          }
+        ],
+        "in_progress": [
+          { "id": 22, "title": "...", "priority": "low", "tag": "", "reminder_at": null, "status": "in_progress" }
+        ],
         "totalMatching": 7
       }
     },
@@ -153,34 +174,38 @@ The user reaches the Dashboard via a top-level nav entry whose label key is `das
     },
     "recentNotes": {
       "ok": true,
-      "data": [
-        { "id": 5, "title": "Trip plan", "excerpt": "Day 1 …", "updated_at": "2026-05-30T13:11:00Z" }
-      ]
+      "data": [{ "id": 5, "title": "Trip plan", "excerpt": "Day 1 …", "updated_at": "2026-05-30T13:11:00Z" }]
     },
     "bills": {
       "ok": true,
       "data": {
-        "overdue":  [{ "id": 1, "item": "Internet", "amount": "54.99", "due_date": "2026-05-25", "pay_before": "30th" }],
-        "dueSoon":  [{ "id": 2, "item": "Phone",    "amount": "78.20", "due_date": "2026-06-01", "pay_before": "5th"  }],
-        "undated":  [{ "id": 3, "item": "HOA",      "amount": "73.33", "due_date": null,         "pay_before": null   }],
+        "overdue": [{ "id": 1, "item": "Internet", "amount": "54.99", "due_date": "2026-05-25", "pay_before": "30th" }],
+        "dueSoon": [{ "id": 2, "item": "Phone", "amount": "78.20", "due_date": "2026-06-01", "pay_before": "5th" }],
+        "undated": [{ "id": 3, "item": "HOA", "amount": "73.33", "due_date": null, "pay_before": null }],
         "totalMatching": 3
       }
     },
     "creditCards": {
       "ok": true,
       "data": {
-        "totalBalance":   "25829.16",
-        "totalInterest":  "73.05",
+        "totalBalance": "25829.16",
+        "totalInterest": "73.05",
         "approachingClose": [
-          { "id": 1, "name": "Citi •• 4242", "total_balance": "1234.56", "closing_date": "2026-06-02", "daysUntilClose": 3 }
+          {
+            "id": 1,
+            "name": "Citi •• 4242",
+            "total_balance": "1234.56",
+            "closing_date": "2026-06-02",
+            "daysUntilClose": 3
+          }
         ]
       }
     },
     "weather": {
       "ok": true,
       "data": {
-        "city":      { "id": 7, "name": "Raleigh", "weather_key": "raleigh-nc-us" },
-        "summary":   { "temperature": 71, "unit": "F", "condition": "Clear", "iconKey": "clear" }
+        "city": { "id": 7, "name": "Raleigh", "weather_key": "raleigh-nc-us" },
+        "summary": { "temperature": 71, "unit": "F", "condition": "Clear", "iconKey": "clear" }
       }
     },
     "dailyQuote": {
@@ -213,7 +238,10 @@ Day boundaries are computed in **Node**, not Postgres, to keep the SQL portable:
 // Returns ISO timestamps for [startOfToday, endOfToday) in the given IANA tz.
 function dayWindow(tz, daysFromToday = 0) {
   const fmt = new Intl.DateTimeFormat('en-CA', {
-    timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+    timeZone: tz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
   });
   const ymd = fmt.format(new Date()); // "2026-05-30"
   // Build [start, end) in tz, then convert to UTC ISO via Intl + Date.
@@ -258,10 +286,10 @@ Clears `users.dashboard_preferences` to `NULL`. Subsequent reads return the serv
 
 Two existing handlers gain one emit each so the Dashboard can recompute affected cards without re-fetching the full payload (REQ-11.4, REQ-11.5):
 
-| Existing handler | Add |
-|---|---|
+| Existing handler                                                           | Add                                                                     |
+| -------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | `PUT /api/credit-cards/fast-access-bills/:id` (in `creditCards.routes.js`) | `emitToUser(req.session.userId, 'bill:updated', { bill: updatedBill })` |
-| `POST /, PUT /:id, DELETE /:id` under `/api/credit-cards` (cards) | `emitToUser(req.session.userId, 'card:updated', { id })` after success |
+| `POST /, PUT /:id, DELETE /:id` under `/api/credit-cards` (cards)          | `emitToUser(req.session.userId, 'card:updated', { id })` after success  |
 
 No new emit is needed for tasks or notes — those events already exist.
 
@@ -269,14 +297,14 @@ No new emit is needed for tasks or notes — those events already exist.
 
 ## 4. Backend file changes
 
-| File | Change |
-|---|---|
-| `src/server/services/dailyQuote.service.js` (NEW) | Extract `fetchDailyQuote()` and `DEFAULT_DAILY_QUOTE` from `server.js` so the dashboard service and the existing `GET /api/daily-quote` handler share one implementation. `server.js` imports from here. |
-| `src/server/services/dashboard.service.js` (NEW) | `createDashboardService({ allAsync, getAsync })` exporting `loadDashboard(userId, { tz, dueSoonDays })`. Internally splits work into `loadTodaysTasks`, `loadTaskStatusSummary`, `loadRecentNotes`, `loadBills`, `loadCreditCardSummary`, `loadWeatherCard`, and a passthrough to the daily quote service. Calls them with `Promise.allSettled`. |
-| `src/server/routes/dashboard.routes.js` (NEW) | `createDashboardRouter({ authRequired, allAsync, getAsync, runAsync })` exposing: `GET /dashboard`, `PUT /dashboard/preferences`, `POST /dashboard/preferences/reset`. |
-| `server.js` | (a) Import and mount the new router via `app.use('/api', createDashboardRouter({...}))`. (b) Replace the inline `fetchDailyQuote` / `DEFAULT_DAILY_QUOTE` with imports from `dailyQuote.service.js`. (c) Inside `initializeDatabase()`, add one idempotent migration: `ALTER TABLE users ADD COLUMN IF NOT EXISTS dashboard_preferences JSONB`. (d) In the existing notes routes, no change — `note:*` events are already emitted. |
-| `src/server/routes/creditCards.routes.js` | Add `emitToUser(req.session.userId, 'bill:updated', { bill: updatedBill })` and `emitToUser(req.session.userId, 'card:updated', { id })` at the end of the relevant successful handlers. Import `emitToUser` from `../realtime`. |
-| `src/server/realtime.js` | No code change. |
+| File                                              | Change                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/server/services/dailyQuote.service.js` (NEW) | Extract `fetchDailyQuote()` and `DEFAULT_DAILY_QUOTE` from `server.js` so the dashboard service and the existing `GET /api/daily-quote` handler share one implementation. `server.js` imports from here.                                                                                                                                                                                                                           |
+| `src/server/services/dashboard.service.js` (NEW)  | `createDashboardService({ allAsync, getAsync })` exporting `loadDashboard(userId, { tz, dueSoonDays })`. Internally splits work into `loadTodaysTasks`, `loadTaskStatusSummary`, `loadRecentNotes`, `loadBills`, `loadCreditCardSummary`, `loadWeatherCard`, and a passthrough to the daily quote service. Calls them with `Promise.allSettled`.                                                                                   |
+| `src/server/routes/dashboard.routes.js` (NEW)     | `createDashboardRouter({ authRequired, allAsync, getAsync, runAsync })` exposing: `GET /dashboard`, `PUT /dashboard/preferences`, `POST /dashboard/preferences/reset`.                                                                                                                                                                                                                                                             |
+| `server.js`                                       | (a) Import and mount the new router via `app.use('/api', createDashboardRouter({...}))`. (b) Replace the inline `fetchDailyQuote` / `DEFAULT_DAILY_QUOTE` with imports from `dailyQuote.service.js`. (c) Inside `initializeDatabase()`, add one idempotent migration: `ALTER TABLE users ADD COLUMN IF NOT EXISTS dashboard_preferences JSONB`. (d) In the existing notes routes, no change — `note:*` events are already emitted. |
+| `src/server/routes/creditCards.routes.js`         | Add `emitToUser(req.session.userId, 'bill:updated', { bill: updatedBill })` and `emitToUser(req.session.userId, 'card:updated', { id })` at the end of the relevant successful handlers. Import `emitToUser` from `../realtime`.                                                                                                                                                                                                   |
+| `src/server/realtime.js`                          | No code change.                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 ### 4.1 Sample query: today's tasks
 
@@ -305,6 +333,7 @@ The Node code then partitions the rows into `overdue / today / in_progress` and 
 **Decision: add a single `JSONB` column on `users`** (Option A) rather than a separate table.
 
 Rationale:
+
 - One row per user, one read alongside the dashboard payload (no extra join).
 - No referential complexity (preferences are owned by the user; nothing references them).
 - Idempotent migration via `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`.
@@ -322,13 +351,13 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS dashboard_preferences JSONB
   "version": 1,
   "defaultLanding": "today",
   "cards": [
-    { "id": "todaysTasks",        "visible": true,  "order": 0 },
-    { "id": "taskStatusSummary",  "visible": true,  "order": 1 },
-    { "id": "bills",              "visible": true,  "order": 2 },
-    { "id": "creditCards",        "visible": true,  "order": 3 },
-    { "id": "recentNotes",        "visible": true,  "order": 4 },
-    { "id": "weather",            "visible": true,  "order": 5 },
-    { "id": "dailyQuote",         "visible": true,  "order": 6 }
+    { "id": "todaysTasks", "visible": true, "order": 0 },
+    { "id": "taskStatusSummary", "visible": true, "order": 1 },
+    { "id": "bills", "visible": true, "order": 2 },
+    { "id": "creditCards", "visible": true, "order": 3 },
+    { "id": "recentNotes", "visible": true, "order": 4 },
+    { "id": "weather", "visible": true, "order": 5 },
+    { "id": "dailyQuote", "visible": true, "order": 6 }
   ]
 }
 ```
@@ -354,15 +383,9 @@ The Dashboard module attaches its own listeners to the same socket that `connect
 // public/js/features/dashboard/dashboard.module.js
 const subscribe = () => {
   if (!window.realtimeSocket) return;
-  ['task:created', 'task:updated', 'task:deleted'].forEach((e) =>
-    window.realtimeSocket.on(e, scheduleRefresh)
-  );
-  ['note:created', 'note:updated', 'note:deleted'].forEach((e) =>
-    window.realtimeSocket.on(e, scheduleRefresh)
-  );
-  ['bill:updated', 'card:updated'].forEach((e) =>
-    window.realtimeSocket.on(e, scheduleRefresh)
-  );
+  ['task:created', 'task:updated', 'task:deleted'].forEach((e) => window.realtimeSocket.on(e, scheduleRefresh));
+  ['note:created', 'note:updated', 'note:deleted'].forEach((e) => window.realtimeSocket.on(e, scheduleRefresh));
+  ['bill:updated', 'card:updated'].forEach((e) => window.realtimeSocket.on(e, scheduleRefresh));
 };
 ```
 
@@ -385,23 +408,29 @@ Socket.IO requires a persistent connection. On Vercel's serverless functions, li
 ```js
 (function () {
   const create = ({ request, t, getLanguage, showStatusToast, openAddTask, openNewNote }) => {
-    const root  = document.getElementById('dashboard-section');
-    const grid  = root.querySelector('.dashboard-grid');
-    const live  = root.querySelector('.dashboard-live-region');
+    const root = document.getElementById('dashboard-section');
+    const grid = root.querySelector('.dashboard-grid');
+    const live = root.querySelector('.dashboard-live-region');
     const customizeBtn = document.getElementById('dashboard-customize');
 
     let lastPayload = null;
     let refreshTimer = null;
     const scheduleRefresh = () => {
       if (refreshTimer) return;
-      refreshTimer = setTimeout(() => { refreshTimer = null; load({ silent: true }); }, 150);
+      refreshTimer = setTimeout(() => {
+        refreshTimer = null;
+        load({ silent: true });
+      }, 150);
     };
 
     const load = async ({ silent = false } = {}) => {
       if (!silent) renderSkeletons();
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
       const payload = await request(`/api/dashboard?tz=${encodeURIComponent(tz)}`);
-      if (payload.error) { renderError(payload.error); return; }
+      if (payload.error) {
+        renderError(payload.error);
+        return;
+      }
       lastPayload = payload;
       renderAll(payload);
     };
@@ -419,7 +448,9 @@ Socket.IO requires a persistent connection. On Vercel's serverless functions, li
       // dispatch by id to renderTodaysTasks, renderTaskStatus, ...
     };
 
-    const applyTranslations = () => { /* update card titles from t() */ };
+    const applyTranslations = () => {
+      /* update card titles from t() */
+    };
 
     const bind = () => {
       customizeBtn.addEventListener('click', openCustomizePanel);
@@ -432,7 +463,7 @@ Socket.IO requires a persistent connection. On Vercel's serverless functions, li
   };
 
   window.DashboardModule = { create };
-}());
+})();
 ```
 
 Module shape mirrors `notes.module.js` and `creditCards.module.js`: factory returning `{ applyTranslations, bind, load, refresh }`. Mounted from `app.js`:
@@ -443,8 +474,11 @@ const dashboardModule = window.DashboardModule.create({
   t,
   getLanguage: () => currentLanguage,
   showStatusToast,
-  openAddTask: () => showAddTaskModal(),     // existing function
-  openNewNote: () => { setCurrentView('notes'); showSection(); /* notesModule.addNote() pattern */ },
+  openAddTask: () => showAddTaskModal(), // existing function
+  openNewNote: () => {
+    setCurrentView('notes');
+    showSection(); /* notesModule.addNote() pattern */
+  },
 });
 ```
 
@@ -457,9 +491,13 @@ Inserted near the existing sections:
   <header class="dashboard-header">
     <h2 id="dashboard-title">Today</h2>
     <div class="dashboard-header-actions">
-      <button id="dashboard-add-task"   class="task-action-icon"           aria-label="Add task" title="Add task">+</button>
-      <button id="dashboard-new-note"   class="task-action-icon secondary" aria-label="New note" title="New note">✎</button>
-      <button id="dashboard-customize"  class="task-action-icon secondary" aria-label="Customize" title="Customize">⚙</button>
+      <button id="dashboard-add-task" class="task-action-icon" aria-label="Add task" title="Add task">+</button>
+      <button id="dashboard-new-note" class="task-action-icon secondary" aria-label="New note" title="New note">
+        ✎
+      </button>
+      <button id="dashboard-customize" class="task-action-icon secondary" aria-label="Customize" title="Customize">
+        ⚙
+      </button>
     </div>
     <p class="dashboard-live-region" role="status" aria-live="polite"></p>
   </header>
@@ -510,20 +548,20 @@ All new rules live in `public/styles.css` and use existing theme tokens (`--bg`,
 
 ### 9.1 New class names
 
-| Class | Purpose |
-|---|---|
-| `.dashboard-header` | Sticky header above the grid with backdrop blur (mirrors the iPhone `.task-column-header` sticky pattern). |
-| `.dashboard-header-actions` | Inline-flex container for `+` / `✎` / `⚙`. |
-| `.dashboard-live-region` | Visually hidden / muted style for SR announcements. |
-| `.dashboard-grid` | CSS Grid container. Breakpoints below. |
-| `.dashboard-card` | Per-card wrapper (rounded, bordered, themed). |
-| `.dashboard-card-header` | Card title row + optional "View all" link. Not sticky. |
-| `.dashboard-card-body` | Card content. |
-| `.dashboard-empty` | Empty-state copy (centered, muted). |
-| `.dashboard-error` | Per-card error state with Retry button. |
-| `.dashboard-skeleton` | Pulsing placeholder shape. |
-| `.dashboard-pill` | Small inline pill for counts/labels (reuses `.task-action-icon` sizing on mobile). |
-| `.dashboard-quick-action` | Inline form host for Quick_Action submissions. |
+| Class                       | Purpose                                                                                                    |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `.dashboard-header`         | Sticky header above the grid with backdrop blur (mirrors the iPhone `.task-column-header` sticky pattern). |
+| `.dashboard-header-actions` | Inline-flex container for `+` / `✎` / `⚙`.                                                                 |
+| `.dashboard-live-region`    | Visually hidden / muted style for SR announcements.                                                        |
+| `.dashboard-grid`           | CSS Grid container. Breakpoints below.                                                                     |
+| `.dashboard-card`           | Per-card wrapper (rounded, bordered, themed).                                                              |
+| `.dashboard-card-header`    | Card title row + optional "View all" link. Not sticky.                                                     |
+| `.dashboard-card-body`      | Card content.                                                                                              |
+| `.dashboard-empty`          | Empty-state copy (centered, muted).                                                                        |
+| `.dashboard-error`          | Per-card error state with Retry button.                                                                    |
+| `.dashboard-skeleton`       | Pulsing placeholder shape.                                                                                 |
+| `.dashboard-pill`           | Small inline pill for counts/labels (reuses `.task-action-icon` sizing on mobile).                         |
+| `.dashboard-quick-action`   | Inline form host for Quick_Action submissions.                                                             |
 
 ### 9.2 Grid breakpoints (REQ-12.1, REQ-12.2)
 
@@ -531,10 +569,18 @@ All new rules live in `public/styles.css` and use existing theme tokens (`--bg`,
 .dashboard-grid {
   display: grid;
   gap: 16px;
-  grid-template-columns: 1fr;                 /* < 768px */
+  grid-template-columns: 1fr; /* < 768px */
 }
-@media (min-width: 768px)  { .dashboard-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (min-width: 1200px) { .dashboard-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 768px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1200px) {
+  .dashboard-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
 ```
 
 ### 9.3 Mobile / iOS chrome (REQ-12.3 to REQ-12.7)
@@ -550,9 +596,15 @@ All new rules live in `public/styles.css` and use existing theme tokens (`--bg`,
 The Today's Tasks card reuses the existing per-status CSS variables introduced for the task columns:
 
 ```css
-.dashboard-card[data-card="todaysTasks"] li[data-status="todo"]        { box-shadow: inset 4px 0 0 var(--status-todo-accent, var(--primary)); }
-.dashboard-card[data-card="todaysTasks"] li[data-status="in_progress"] { box-shadow: inset 4px 0 0 var(--status-in_progress-accent, var(--primary)); }
-.dashboard-card[data-card="todaysTasks"] li[data-status="done"]        { box-shadow: inset 4px 0 0 var(--status-done-accent, var(--primary)); }
+.dashboard-card[data-card='todaysTasks'] li[data-status='todo'] {
+  box-shadow: inset 4px 0 0 var(--status-todo-accent, var(--primary));
+}
+.dashboard-card[data-card='todaysTasks'] li[data-status='in_progress'] {
+  box-shadow: inset 4px 0 0 var(--status-in_progress-accent, var(--primary));
+}
+.dashboard-card[data-card='todaysTasks'] li[data-status='done'] {
+  box-shadow: inset 4px 0 0 var(--status-done-accent, var(--primary));
+}
 ```
 
 (The accent variables already exist on `.task-column-{status}`; the dashboard reads them via `--status-accent` set on a parent `[data-status]`.)
@@ -569,7 +621,14 @@ CSS-only:
   border-radius: 8px;
   min-height: 14px;
 }
-@keyframes dashboard-skeleton { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@keyframes dashboard-skeleton {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
 ```
 
 ## 10. Accessibility & i18n
@@ -586,47 +645,47 @@ CSS-only:
 
 New translation keys to add to `translations.en` and `translations.vi` in `public/app.js`:
 
-| Key | English | Vietnamese |
-|---|---|---|
-| `dashboardTab` | Today | Hôm nay |
-| `dashboardTitle` | Today | Hôm nay |
-| `dashboardCustomize` | Customize | Tuỳ chỉnh |
-| `dashboardCustomizeReset` | Reset to default | Khôi phục mặc định |
-| `dashboardDefaultLanding` | Default landing view | Trang mặc định khi mở app |
-| `dashboardDefaultLandingToday` | Today | Hôm nay |
-| `dashboardDefaultLandingLastUsed` | Last used | Trang gần nhất |
-| `dashboardLiveResumed` | Live updates resumed | Đã kết nối lại |
-| `dashboardLivePaused` | Live updates paused | Tạm dừng cập nhật trực tiếp |
-| `dashboardErrorTitle` | Dashboard could not be loaded | Không thể tải Dashboard |
-| `dashboardRetry` | Retry | Thử lại |
-| `cardTodaysTasks` | Today's tasks | Việc hôm nay |
-| `cardTaskStatusSummary` | Task status | Trạng thái công việc |
-| `cardRecentNotes` | Recent notes | Ghi chú gần đây |
-| `cardBills` | Bills | Hóa đơn |
-| `cardCreditCards` | Credit cards | Thẻ tín dụng |
-| `cardWeather` | Weather | Thời tiết |
-| `cardDailyQuote` | Daily quote | Câu nói hôm nay |
-| `viewAllTasks` | View all tasks | Xem tất cả công việc |
-| `viewAllNotes` | View all notes | Xem tất cả ghi chú |
-| `viewAllBills` | View all bills | Xem tất cả hóa đơn |
-| `subOverdue` | Overdue | Quá hạn |
-| `subToday` | Today | Hôm nay |
-| `subInProgress` | In progress | Đang làm |
-| `subDueSoon` | Due soon | Sắp đến hạn |
-| `subUndated` | Undated | Chưa có ngày |
-| `closesInDays` | Closes in {n} days | Còn {n} ngày đến hạn chốt |
-| `markPaid` | Mark paid | Đánh dấu đã trả |
-| `quickAddTask` | Add task | Thêm việc |
-| `quickNewNote` | New note | Ghi chú mới |
-| `dashboardEmptyTasks` | No tasks for today | Hôm nay không có việc |
-| `dashboardEmptyNotes` | No notes yet | Chưa có ghi chú |
-| `dashboardEmptyBills` | No bills need attention | Không có hóa đơn cần xử lý |
-| `dashboardEmptyCards` | No credit cards added | Chưa thêm thẻ tín dụng |
-| `dashboardNoApproachingClose` | No closing dates approaching | Không có thẻ nào sắp đến ngày chốt |
-| `dashboardEmptyWeather` | Add a city in Weather | Thêm thành phố trong tab Thời tiết |
-| `dashboardWeatherUnavailable` | Weather unavailable | Không tải được thời tiết |
-| `dashboardQuoteUnavailable` | Quote unavailable | Không tải được câu nói |
-| `cardErrorRetry` | Couldn't load this card | Không thể tải thẻ này |
+| Key                               | English                       | Vietnamese                         |
+| --------------------------------- | ----------------------------- | ---------------------------------- |
+| `dashboardTab`                    | Today                         | Hôm nay                            |
+| `dashboardTitle`                  | Today                         | Hôm nay                            |
+| `dashboardCustomize`              | Customize                     | Tuỳ chỉnh                          |
+| `dashboardCustomizeReset`         | Reset to default              | Khôi phục mặc định                 |
+| `dashboardDefaultLanding`         | Default landing view          | Trang mặc định khi mở app          |
+| `dashboardDefaultLandingToday`    | Today                         | Hôm nay                            |
+| `dashboardDefaultLandingLastUsed` | Last used                     | Trang gần nhất                     |
+| `dashboardLiveResumed`            | Live updates resumed          | Đã kết nối lại                     |
+| `dashboardLivePaused`             | Live updates paused           | Tạm dừng cập nhật trực tiếp        |
+| `dashboardErrorTitle`             | Dashboard could not be loaded | Không thể tải Dashboard            |
+| `dashboardRetry`                  | Retry                         | Thử lại                            |
+| `cardTodaysTasks`                 | Today's tasks                 | Việc hôm nay                       |
+| `cardTaskStatusSummary`           | Task status                   | Trạng thái công việc               |
+| `cardRecentNotes`                 | Recent notes                  | Ghi chú gần đây                    |
+| `cardBills`                       | Bills                         | Hóa đơn                            |
+| `cardCreditCards`                 | Credit cards                  | Thẻ tín dụng                       |
+| `cardWeather`                     | Weather                       | Thời tiết                          |
+| `cardDailyQuote`                  | Daily quote                   | Câu nói hôm nay                    |
+| `viewAllTasks`                    | View all tasks                | Xem tất cả công việc               |
+| `viewAllNotes`                    | View all notes                | Xem tất cả ghi chú                 |
+| `viewAllBills`                    | View all bills                | Xem tất cả hóa đơn                 |
+| `subOverdue`                      | Overdue                       | Quá hạn                            |
+| `subToday`                        | Today                         | Hôm nay                            |
+| `subInProgress`                   | In progress                   | Đang làm                           |
+| `subDueSoon`                      | Due soon                      | Sắp đến hạn                        |
+| `subUndated`                      | Undated                       | Chưa có ngày                       |
+| `closesInDays`                    | Closes in {n} days            | Còn {n} ngày đến hạn chốt          |
+| `markPaid`                        | Mark paid                     | Đánh dấu đã trả                    |
+| `quickAddTask`                    | Add task                      | Thêm việc                          |
+| `quickNewNote`                    | New note                      | Ghi chú mới                        |
+| `dashboardEmptyTasks`             | No tasks for today            | Hôm nay không có việc              |
+| `dashboardEmptyNotes`             | No notes yet                  | Chưa có ghi chú                    |
+| `dashboardEmptyBills`             | No bills need attention       | Không có hóa đơn cần xử lý         |
+| `dashboardEmptyCards`             | No credit cards added         | Chưa thêm thẻ tín dụng             |
+| `dashboardNoApproachingClose`     | No closing dates approaching  | Không có thẻ nào sắp đến ngày chốt |
+| `dashboardEmptyWeather`           | Add a city in Weather         | Thêm thành phố trong tab Thời tiết |
+| `dashboardWeatherUnavailable`     | Weather unavailable           | Không tải được thời tiết           |
+| `dashboardQuoteUnavailable`       | Quote unavailable             | Không tải được câu nói             |
+| `cardErrorRetry`                  | Couldn't load this card       | Không thể tải thẻ này              |
 
 Numbers, dates, and currency are formatted with `Intl.*` using `currentLanguage`'s locale (existing pattern in `creditCards.formatters.js`).
 
@@ -683,15 +742,15 @@ Dashboard listeners are attached on `showSection('dashboard')` and detached on l
 
 ## Error Handling
 
-| Card | Empty state copy key | Error state |
-|---|---|---|
-| Today's Tasks | `dashboardEmptyTasks` + Quick_Action `quickAddTask` | Per-card error chip + Retry. |
-| Task Status Summary | `dashboardEmptyTasks` (renders only when all three counts are zero) + Quick_Action | Per-card error chip + Retry. |
-| Recent Notes | `dashboardEmptyNotes` + Quick_Action `quickNewNote` | Per-card error chip + Retry. |
-| Bills | `dashboardEmptyBills` (no Quick_Action — bills are seeded from defaults) | Per-card error chip + Retry. |
-| Credit Cards | `dashboardEmptyCards` if zero cards; `dashboardNoApproachingClose` shown alongside totals when no card is within Due_Soon_Window | Per-card error chip + Retry. |
-| Weather | `dashboardEmptyWeather` (links to Weather tab); `dashboardWeatherUnavailable` for upstream failure | Inline retry. |
-| Daily Quote | `dashboardQuoteUnavailable` | Falls back to `DEFAULT_DAILY_QUOTE` from `dailyQuote.service.js`. |
+| Card                | Empty state copy key                                                                                                             | Error state                                                       |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Today's Tasks       | `dashboardEmptyTasks` + Quick_Action `quickAddTask`                                                                              | Per-card error chip + Retry.                                      |
+| Task Status Summary | `dashboardEmptyTasks` (renders only when all three counts are zero) + Quick_Action                                               | Per-card error chip + Retry.                                      |
+| Recent Notes        | `dashboardEmptyNotes` + Quick_Action `quickNewNote`                                                                              | Per-card error chip + Retry.                                      |
+| Bills               | `dashboardEmptyBills` (no Quick_Action — bills are seeded from defaults)                                                         | Per-card error chip + Retry.                                      |
+| Credit Cards        | `dashboardEmptyCards` if zero cards; `dashboardNoApproachingClose` shown alongside totals when no card is within Due_Soon_Window | Per-card error chip + Retry.                                      |
+| Weather             | `dashboardEmptyWeather` (links to Weather tab); `dashboardWeatherUnavailable` for upstream failure                               | Inline retry.                                                     |
+| Daily Quote         | `dashboardQuoteUnavailable`                                                                                                      | Falls back to `DEFAULT_DAILY_QUOTE` from `dailyQuote.service.js`. |
 
 If the entire Dashboard request fails (network or 5xx) the dashboard renders a single banner with the dashboardError keys (REQ-2.7, REQ-18.5).
 

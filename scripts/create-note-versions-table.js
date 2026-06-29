@@ -2,7 +2,7 @@
 /**
  * One-off script to create the note_versions table in production
  * Run with: node scripts/create-note-versions-table.js
- * 
+ *
  * Requires DATABASE_URL environment variable to be set
  */
 
@@ -20,10 +20,10 @@ const pool = new Pool({
 
 const createNoteVersionsTable = async () => {
   const client = await pool.connect();
-  
+
   try {
     logger.info('Creating note_versions table...');
-    
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS note_versions (
         id SERIAL PRIMARY KEY,
@@ -35,14 +35,14 @@ const createNoteVersionsTable = async () => {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-    
+
     logger.info('✓ note_versions table created successfully');
-    
+
     // Verify the table exists
     const result = await client.query(`
       SELECT to_regclass('public.note_versions') AS table_exists;
     `);
-    
+
     if (result.rows[0].table_exists) {
       logger.info('✓ Table verified in database');
     } else {

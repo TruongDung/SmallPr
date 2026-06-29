@@ -3,13 +3,7 @@ const express = require('express');
 const logger = require('../logger');
 const { createUserSettingsService } = require('../services/userSettings.service');
 
-const createUserSettingsRouter = ({
-  authRequired,
-  allAsync,
-  cache = null,
-  getAsync,
-  runAsync,
-}) => {
+const createUserSettingsRouter = ({ authRequired, allAsync, cache = null, getAsync, runAsync }) => {
   const router = express.Router();
   const settings = createUserSettingsService({ allAsync, getAsync, runAsync });
 

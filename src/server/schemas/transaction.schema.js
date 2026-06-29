@@ -36,16 +36,15 @@ const amountField = z
   })
   .transform((value) => Math.round(value * 100) / 100);
 
-const textField = (max, label) => z
-  .any()
-  .transform((value) => String(value ?? '').trim())
-  .refine((value) => value.length <= max, {
-    message: `${label} must be ${max} characters or less`,
-  });
+const textField = (max, label) =>
+  z
+    .any()
+    .transform((value) => String(value ?? '').trim())
+    .refine((value) => value.length <= max, {
+      message: `${label} must be ${max} characters or less`,
+    });
 
-const creditCardIdField = z
-  .any()
-  .transform((value) => (value ? Number(value) : null));
+const creditCardIdField = z.any().transform((value) => (value ? Number(value) : null));
 
 const categoryField = textField(MAX_TRANSACTION_CATEGORY_LENGTH, 'Category');
 const accountField = textField(MAX_TRANSACTION_ACCOUNT_LENGTH, 'Account');
@@ -168,7 +167,7 @@ const mergeTransactionValues = (existing, updates) => ({
   category: updates.category !== undefined ? updates.category : String(existing.category || '').trim(),
   account: updates.account !== undefined ? updates.account : String(existing.account || '').trim(),
   note: updates.note !== undefined ? updates.note : String(existing.note || '').trim(),
-  creditCardId: updates.creditCardId !== undefined ? updates.creditCardId : (existing.credit_card_id || null),
+  creditCardId: updates.creditCardId !== undefined ? updates.creditCardId : existing.credit_card_id || null,
 });
 
 module.exports = {

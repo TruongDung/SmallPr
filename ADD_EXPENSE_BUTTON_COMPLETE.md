@@ -1,27 +1,42 @@
 # Add Expense Button - Implementation Complete
 
 ## Overview
+
 Successfully implemented the **Add Expense** button (+) in the **Expense tab** (fast-access-bills section) to allow users to quickly add new monthly bills/expenses.
 
 ## Changes Made
 
 ### 1. HTML Button (Already Added)
+
 **File**: `public/index.html`
+
 - Added button with ID `open-add-fast-access-bill` in the credit-card-info-panel toolbar
 - Button positioned next to export buttons (CSV, PDF, Excel)
 - Uses primary styling with + icon
 
 ```html
-<button id="open-add-fast-access-bill" type="button" class="primary task-action-icon" aria-label="Add Expense" title="Add Expense">+</button>
+<button
+  id="open-add-fast-access-bill"
+  type="button"
+  class="primary task-action-icon"
+  aria-label="Add Expense"
+  title="Add Expense"
+>
+  +
+</button>
 ```
 
 ### 2. DOM Reference
+
 **File**: `public/js/features/creditCards/creditCards.dom.js`
+
 - Added button reference to the DOM elements object
 - Line: `openAddFastAccessBillButton: document.getElementById('open-add-fast-access-bill')`
 
 ### 3. Event Listener
+
 **File**: `public/js/features/creditCards/creditCards.module.js`
+
 - Wired up click event listener in the `bind()` function
 - Calls `fastAccessBills.openEditModal(null)` when clicked (null = create new)
 
@@ -30,12 +45,16 @@ elements.openAddFastAccessBillButton?.addEventListener('click', () => fastAccess
 ```
 
 ### 4. Backend Support (Already Implemented)
-**Files**: 
+
+**Files**:
+
 - `src/server/routes/creditCards.routes.js` - POST endpoint at `/api/credit-cards/fast-access-bills`
 - `src/server/services/creditCards.service.js` - `createFastAccessBill` method
 
 ### 5. Frontend Logic (Already Implemented)
+
 **File**: `public/js/features/creditCards/creditCards.bills.js`
+
 - Updated `openEditModal(bill)` to handle null (new bill) vs existing bill (edit)
 - Added `createBill()` function for POST requests
 - Updated `updateFromModal()` to check if pendingEditBill is null (create) or exists (update)

@@ -1,10 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  createSprint,
-  deleteSprint,
-  listSprints,
-  updateSprint,
-} from '../api/sprintsApi';
+import { createSprint, deleteSprint, listSprints, updateSprint } from '../api/sprintsApi';
 import type { SprintPayload } from '../api/types';
 
 export const sprintsQueryKey = ['sprints'] as const;
@@ -27,8 +22,7 @@ export const useSprints = () => {
   });
 
   const update = useMutation({
-    mutationFn: ({ id, payload }: { id: number; payload: SprintPayload }) =>
-      updateSprint(id, payload),
+    mutationFn: ({ id, payload }: { id: number; payload: SprintPayload }) => updateSprint(id, payload),
     onSuccess: invalidate,
   });
 

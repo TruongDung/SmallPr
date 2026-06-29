@@ -3,15 +3,15 @@
   const create = ({ t, getRichTextPlainText, getDefaultWeeklyOptions = () => null }) => {
     const priorityLabel = (priority = 'medium') => t(priority || 'medium');
 
-    const priorityRank = (priority = 'medium') => ({
-      high: 0,
-      medium: 1,
-      low: 2,
-    }[priority] ?? 3);
+    const priorityRank = (priority = 'medium') =>
+      ({
+        high: 0,
+        medium: 1,
+        low: 2,
+      })[priority] ?? 3;
 
-    const sortTasksByPriority = (taskList = []) => [...taskList].sort((first, second) => (
-      priorityRank(first.priority) - priorityRank(second.priority)
-    ));
+    const sortTasksByPriority = (taskList = []) =>
+      [...taskList].sort((first, second) => priorityRank(first.priority) - priorityRank(second.priority));
 
     const taskStatus = (task) => task.status || (task.completed ? 'done' : 'todo');
 
@@ -34,11 +34,12 @@
     const taskMatchesSearch = (task, query) => {
       if (!query) return true;
       const normalizedQuery = query.toLowerCase();
-      return [
-        task.title,
-        getRichTextPlainText(task.description || ''),
-        getRichTextPlainText(task.comment || ''),
-      ].some((value) => String(value || '').toLowerCase().includes(normalizedQuery));
+      return [task.title, getRichTextPlainText(task.description || ''), getRichTextPlainText(task.comment || '')].some(
+        (value) =>
+          String(value || '')
+            .toLowerCase()
+            .includes(normalizedQuery),
+      );
     };
 
     const formatDateEST = (dateString) => {
@@ -91,11 +92,17 @@
 
     const getSelectedWeekdays = (container = getDefaultWeeklyOptions()) => {
       const checkboxes = container?.querySelectorAll('input[type="checkbox"]:checked') || [];
-      return Array.from(checkboxes).map(cb => cb.value).join(',');
+      return Array.from(checkboxes)
+        .map((cb) => cb.value)
+        .join(',');
     };
 
     const setSelectedWeekdays = (container, days = '') => {
-      const selectedDays = new Set(String(days || '').split(',').filter(Boolean));
+      const selectedDays = new Set(
+        String(days || '')
+          .split(',')
+          .filter(Boolean),
+      );
       container.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
         checkbox.checked = selectedDays.has(checkbox.value);
       });

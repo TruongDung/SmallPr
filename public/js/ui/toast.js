@@ -25,10 +25,13 @@
       if (options.persist) {
         return;
       }
-      state.statusToastTimer = setTimeout(() => {
-        hideStatusToast();
-        state.statusToastTimer = null;
-      }, tone === 'error' ? 3500 : 2000);
+      state.statusToastTimer = setTimeout(
+        () => {
+          hideStatusToast();
+          state.statusToastTimer = null;
+        },
+        tone === 'error' ? 3500 : 2000,
+      );
     };
 
     const setUploadProgress = (percent, message = t('uploadPleaseWait')) => {

@@ -1,5 +1,13 @@
 (function () {
-  const create = ({ request, t, showStatusToast, getLanguage, isAdminUser, confirmDelete, confirmDeleteFastAccessLink }) => {
+  const create = ({
+    request,
+    t,
+    showStatusToast,
+    getLanguage,
+    isAdminUser,
+    confirmDelete,
+    confirmDeleteFastAccessLink,
+  }) => {
     const feature = window.CreditCardFeature;
     const elements = feature.dom.getElements();
     const formatters = feature.createFormatters({ t, getLanguage });
@@ -21,12 +29,13 @@
     const showEditError = (text) => feature.dom.setFieldError(elements.editError, text);
     const clearEditError = () => feature.dom.clearFieldError(elements.editError);
 
-    const escapeHtml = (value) => String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+    const escapeHtml = (value) =>
+      String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 
     const downloadBlob = (content, type, fileName) => {
       const blob = new Blob([content], { type });
@@ -44,21 +53,27 @@
       showStatusToast(t('noCreditCardsToExport') || 'No credit cards to export', 'error');
     };
 
-    const creditCardExportFileName = (extension) => `financial-credit-cards-${new Date().toISOString().slice(0, 10)}.${extension}`;
+    const creditCardExportFileName = (extension) =>
+      `financial-credit-cards-${new Date().toISOString().slice(0, 10)}.${extension}`;
 
-    const creditCardExportRows = () => cards.map(card => ({
-      'Card No': card.name || '',
-      User: card.card_user || '',
-      Type: formatters.formatIssuer(card.issuer),
-      Balance: formatters.normalizeAmount(card.total_balance).toFixed(2),
-      Interest: formatters.normalizeAmount(card.interest_charge).toFixed(2),
-      Close: card.closing_date || '',
-    }));
+    const creditCardExportRows = () =>
+      cards.map((card) => ({
+        'Card No': card.name || '',
+        User: card.card_user || '',
+        Type: formatters.formatIssuer(card.issuer),
+        Balance: formatters.normalizeAmount(card.total_balance).toFixed(2),
+        Interest: formatters.normalizeAmount(card.interest_charge).toFixed(2),
+        Close: card.closing_date || '',
+      }));
 
-    const getCreditCardTotals = () => cards.reduce((totals, card) => ({
-      balance: totals.balance + formatters.normalizeAmount(card.total_balance),
-      interest: totals.interest + formatters.normalizeAmount(card.interest_charge),
-    }), { balance: 0, interest: 0 });
+    const getCreditCardTotals = () =>
+      cards.reduce(
+        (totals, card) => ({
+          balance: totals.balance + formatters.normalizeAmount(card.total_balance),
+          interest: totals.interest + formatters.normalizeAmount(card.interest_charge),
+        }),
+        { balance: 0, interest: 0 },
+      );
 
     const exportCreditCardsCsv = () => {
       const rows = creditCardExportRows();
@@ -70,7 +85,7 @@
       const headers = Object.keys(rows[0]);
       const csv = [
         headers.join(','),
-        ...rows.map(row => headers.map(header => `"${String(row[header]).replace(/"/g, '""')}"`).join(',')),
+        ...rows.map((row) => headers.map((header) => `"${String(row[header]).replace(/"/g, '""')}"`).join(',')),
       ].join('\n');
       downloadBlob(csv, 'text/csv;charset=utf-8', creditCardExportFileName('csv'));
     };
@@ -86,9 +101,9 @@
       const totals = getCreditCardTotals();
       const table = `
         <table>
-          <thead><tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead>
+          <thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead>
           <tbody>
-            ${rows.map(row => `<tr>${headers.map(header => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('')}
+            ${rows.map((row) => `<tr>${headers.map((header) => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('')}
           </tbody>
           <tfoot>
             <tr><td colspan="3">Total</td><td>${escapeHtml(totals.balance.toFixed(2))}</td><td>${escapeHtml(totals.interest.toFixed(2))}</td><td></td></tr>
@@ -131,8 +146,8 @@
             <h1>Financial Credit Card Report</h1>
             <p>Total balance: ${escapeHtml(formatters.formatCurrency(totals.balance))} - Total interest: ${escapeHtml(formatters.formatCurrency(totals.interest))}</p>
             <table>
-              <thead><tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead>
-              <tbody>${rows.map(row => `<tr>${headers.map(header => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('')}</tbody>
+              <thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead>
+              <tbody>${rows.map((row) => `<tr>${headers.map((header) => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('')}</tbody>
               <tfoot><tr><td colspan="3">Total</td><td>${escapeHtml(formatters.formatCurrency(totals.balance))}</td><td>${escapeHtml(formatters.formatCurrency(totals.interest))}</td><td></td></tr></tfoot>
             </table>
           </body>
@@ -252,7 +267,8 @@
     const deleteFastAccessLink = async (link) => {
       if (!link) return;
       if (!link.id) {
-        elements.message.textContent = 'This bill payment website cannot be deleted until links are loaded from the server.';
+        elements.message.textContent =
+          'This bill payment website cannot be deleted until links are loaded from the server.';
         return;
       }
 
@@ -275,12 +291,25 @@
       if (!statsEl) return;
 
       const totalBalance = cardsToRender.reduce((sum, card) => sum + formatters.normalizeAmount(card.total_balance), 0);
-      const totalInterest = cardsToRender.reduce((sum, card) => sum + formatters.normalizeAmount(card.interest_charge), 0);
+      const totalInterest = cardsToRender.reduce(
+        (sum, card) => sum + formatters.normalizeAmount(card.interest_charge),
+        0,
+      );
       const cardCount = cardsToRender.length;
 
       const stats = [
-        { key: 'totalBalance', label: t('totalBalance') || 'Total Balance', value: formatters.formatCurrency(totalBalance), tone: 'balance' },
-        { key: 'interestCharge', label: t('interestCharge') || 'Interest', value: formatters.formatCurrency(totalInterest), tone: 'interest' },
+        {
+          key: 'totalBalance',
+          label: t('totalBalance') || 'Total Balance',
+          value: formatters.formatCurrency(totalBalance),
+          tone: 'balance',
+        },
+        {
+          key: 'interestCharge',
+          label: t('interestCharge') || 'Interest',
+          value: formatters.formatCurrency(totalInterest),
+          tone: 'interest',
+        },
         { key: 'cards', label: t('creditCardSubTab') || 'Cards', value: String(cardCount), tone: 'count' },
       ];
 
@@ -367,14 +396,15 @@
       const now = new Date();
       const year = now.getFullYear();
       const month = now.getMonth() + 1;
-      
-      const [cardsResult, usersResult, fastAccessBillsResult, fastAccessLinksResult, transactionsResult] = await Promise.all([
-        request('/api/credit-cards'),
-        request('/api/credit-cards/users'),
-        request('/api/credit-cards/fast-access-bills'),
-        request('/api/credit-cards/fast-access-links'),
-        request(`/api/transactions?year=${year}&month=${month}`),
-      ]);
+
+      const [cardsResult, usersResult, fastAccessBillsResult, fastAccessLinksResult, transactionsResult] =
+        await Promise.all([
+          request('/api/credit-cards'),
+          request('/api/credit-cards/users'),
+          request('/api/credit-cards/fast-access-bills'),
+          request('/api/credit-cards/fast-access-links'),
+          request(`/api/transactions?year=${year}&month=${month}`),
+        ]);
 
       if (cardsResult.error) {
         elements.message.textContent = cardsResult.error;
@@ -392,7 +422,7 @@
       }
 
       cards = cardsResult.cards || [];
-      fastAccessLinks = fastAccessLinksResult.error ? defaultFastAccessLinks : (fastAccessLinksResult.links || []);
+      fastAccessLinks = fastAccessLinksResult.error ? defaultFastAccessLinks : fastAccessLinksResult.links || [];
       fastAccessBills.setBills(fastAccessBillsResult.bills || []);
       userOptions.merge(usersResult.users || [], cards);
       userOptions.setOptions(elements.userInput, elements.userInput.value);
@@ -401,10 +431,10 @@
       render(cards);
       renderFastAccessLinks();
       fastAccessBills.render();
-      financialCalendar.setData({ 
-        cards, 
+      financialCalendar.setData({
+        cards,
         bills: fastAccessBillsResult.bills || [],
-        transactions: transactionsResult.transactions || []
+        transactions: transactionsResult.transactions || [],
       });
       financialCalendar.render();
       loadTabLabels();
@@ -515,9 +545,8 @@
       financialCalendar.render();
     };
 
-    const getActiveFinancialTab = () => (
-      elements.financialTabs.find((tab) => tab.classList.contains('active'))?.dataset.financialTab || 'cards'
-    );
+    const getActiveFinancialTab = () =>
+      elements.financialTabs.find((tab) => tab.classList.contains('active'))?.dataset.financialTab || 'cards';
 
     const refreshActivePanel = () => {
       if (getActiveFinancialTab() === 'transactions' && window.transactionsModule) {
@@ -603,8 +632,14 @@
 
       input.addEventListener('blur', () => finish(true));
       input.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') { event.preventDefault(); input.blur(); }
-        if (event.key === 'Escape') { event.preventDefault(); finish(false); }
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          input.blur();
+        }
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          finish(false);
+        }
       });
       // Prevent the click from propagating to the tab's click handler
       input.addEventListener('click', (event) => event.stopPropagation());
@@ -614,10 +649,13 @@
       elements.financialTabs.forEach((tab) => {
         tab.addEventListener('click', () => {
           const tabName = tab.dataset.financialTab;
-          feature.dom.setActiveFinancialTab({
-            tabs: elements.financialTabs,
-            panels: elements.financialPanels,
-          }, tabName);
+          feature.dom.setActiveFinancialTab(
+            {
+              tabs: elements.financialTabs,
+              panels: elements.financialPanels,
+            },
+            tabName,
+          );
 
           // Render transactions module when transactions tab is clicked
           if (tabName === 'transactions' && window.transactionsModule) {
@@ -632,8 +670,8 @@
             const month = now.getMonth() + 1;
             request(`/api/transactions?year=${year}&month=${month}`).then((result) => {
               if (!result.error) {
-                financialCalendar.setData({ 
-                  transactions: result.transactions || []
+                financialCalendar.setData({
+                  transactions: result.transactions || [],
                 });
               }
               financialCalendar.render();
@@ -651,10 +689,13 @@
         }
       });
 
-      feature.dom.setActiveFinancialTab({
-        tabs: elements.financialTabs,
-        panels: elements.financialPanels,
-      }, 'cards');
+      feature.dom.setActiveFinancialTab(
+        {
+          tabs: elements.financialTabs,
+          panels: elements.financialPanels,
+        },
+        'cards',
+      );
 
       elements.form.addEventListener('submit', handleSubmit);
       elements.openAddButton.addEventListener('click', openAddModal);
@@ -712,4 +753,4 @@
   };
 
   window.CreditCardModule = { create };
-}());
+})();

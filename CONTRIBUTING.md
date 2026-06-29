@@ -3,6 +3,7 @@
 Thank you for considering contributing to the Task Manager application! This guide will help you get started.
 
 ## 📋 Table of Contents
+
 - [Code of Conduct](#code-of-conduct)
 - [Getting Started](#getting-started)
 - [Development Workflow](#development-workflow)
@@ -23,6 +24,7 @@ Thank you for considering contributing to the Task Manager application! This gui
 ### First Time Setup
 
 1. **Fork the repository**
+
    ```bash
    # Click "Fork" on GitHub, then:
    git clone https://github.com/YOUR_USERNAME/task-manager.git
@@ -30,11 +32,13 @@ Thank you for considering contributing to the Task Manager application! This gui
    ```
 
 2. **Add upstream remote**
+
    ```bash
    git remote add upstream https://github.com/ORIGINAL_OWNER/task-manager.git
    ```
 
 3. **Install dependencies**
+
    ```bash
    npm install
    cd client && npm install && cd ..
@@ -76,18 +80,19 @@ git checkout -b fix/bug-description
 
 ### Branch Naming Convention
 
-| Type | Pattern | Example |
-|------|---------|---------|
-| New Feature | `feature/description` | `feature/add-task-tags` |
-| Bug Fix | `fix/description` | `fix/login-validation` |
-| Documentation | `docs/description` | `docs/update-api-guide` |
-| Refactoring | `refactor/description` | `refactor/auth-service` |
-| Performance | `perf/description` | `perf/optimize-queries` |
-| Tests | `test/description` | `test/add-task-tests` |
+| Type          | Pattern                | Example                 |
+| ------------- | ---------------------- | ----------------------- |
+| New Feature   | `feature/description`  | `feature/add-task-tags` |
+| Bug Fix       | `fix/description`      | `fix/login-validation`  |
+| Documentation | `docs/description`     | `docs/update-api-guide` |
+| Refactoring   | `refactor/description` | `refactor/auth-service` |
+| Performance   | `perf/description`     | `perf/optimize-queries` |
+| Tests         | `test/description`     | `test/add-task-tests`   |
 
 ### 2. Make Your Changes
 
 Follow these principles:
+
 - ✅ Write clean, readable code
 - ✅ Follow existing patterns
 - ✅ Add comments for complex logic
@@ -127,28 +132,35 @@ Then create a Pull Request on GitHub.
 ### JavaScript/Node.js (Backend)
 
 **Style:**
+
 ```javascript
 // ✅ GOOD
 function createTask(userId, data) {
   const { title, description } = data;
-  
+
   if (!title) {
     throw new Error('Title is required');
   }
-  
-  return runAsync(
-    'INSERT INTO tasks (title, description, user_id) VALUES ($1, $2, $3) RETURNING *',
-    [title, description, userId]
-  );
+
+  return runAsync('INSERT INTO tasks (title, description, user_id) VALUES ($1, $2, $3) RETURNING *', [
+    title,
+    description,
+    userId,
+  ]);
 }
 
 // ❌ BAD
-function createTask(userId,data){
-  return runAsync('INSERT INTO tasks (title, description, user_id) VALUES ($1, $2, $3) RETURNING *',[data.title,data.description,userId]);
+function createTask(userId, data) {
+  return runAsync('INSERT INTO tasks (title, description, user_id) VALUES ($1, $2, $3) RETURNING *', [
+    data.title,
+    data.description,
+    userId,
+  ]);
 }
 ```
 
 **Best Practices:**
+
 - Use `const` by default, `let` when needed, never `var`
 - Use destructuring for cleaner code
 - Always use parameterized queries (prevent SQL injection)
@@ -159,6 +171,7 @@ function createTask(userId,data){
 ### TypeScript/React (Frontend)
 
 **Style:**
+
 ```typescript
 // ✅ GOOD
 interface Task {
@@ -169,7 +182,7 @@ interface Task {
 
 export function TaskCard({ task, onUpdate }: TaskCardProps) {
   const [isEditing, setIsEditing] = useState(false);
-  
+
   const handleSave = async () => {
     try {
       await onUpdate(task.id, { title });
@@ -178,7 +191,7 @@ export function TaskCard({ task, onUpdate }: TaskCardProps) {
       console.error('Failed to update task:', error);
     }
   };
-  
+
   return (
     <div className="task-card">
       {/* Component JSX */}
@@ -193,6 +206,7 @@ export function TaskCard(props) {
 ```
 
 **Best Practices:**
+
 - Use TypeScript types/interfaces
 - Use functional components with hooks
 - Destructure props
@@ -204,6 +218,7 @@ export function TaskCard(props) {
 ### File Organization
 
 **Backend:**
+
 ```
 src/server/
 ├── routes/
@@ -217,6 +232,7 @@ src/server/
 ```
 
 **Frontend:**
+
 ```
 client/src/
 ├── api/
@@ -298,6 +314,7 @@ git commit -m "feat(tasks): add task tagging functionality
 ### PR Title Format
 
 Same as commit messages:
+
 ```
 feat(tasks): add task tagging functionality
 fix(auth): resolve session timeout issue
@@ -307,26 +324,32 @@ fix(auth): resolve session timeout issue
 
 ```markdown
 ## Description
+
 Brief description of the changes
 
 ## Type of Change
+
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Breaking change
 - [ ] Documentation update
 
 ## Changes Made
+
 - Change 1
 - Change 2
 - Change 3
 
 ## Testing
+
 How was this tested?
 
 ## Screenshots (if applicable)
+
 Add screenshots for UI changes
 
 ## Checklist
+
 - [ ] Code follows style guidelines
 - [ ] Self-review performed
 - [ ] Tests added/updated
@@ -359,12 +382,14 @@ git push origin --delete feature/your-feature-name
 ### Backend Tests
 
 **Required for:**
+
 - New services
 - New routes
 - Bug fixes
 - Refactoring
 
 **Example:**
+
 ```javascript
 // src/server/services/tasks.service.test.js
 describe('TasksService', () => {
@@ -372,17 +397,15 @@ describe('TasksService', () => {
     it('should create task with valid data', async () => {
       const task = await createTask(1, {
         title: 'Test Task',
-        description: 'Test Description'
+        description: 'Test Description',
       });
-      
+
       expect(task).toHaveProperty('id');
       expect(task.title).toBe('Test Task');
     });
-    
+
     it('should reject task without title', async () => {
-      await expect(
-        createTask(1, { description: 'Test' })
-      ).rejects.toThrow('Title is required');
+      await expect(createTask(1, { description: 'Test' })).rejects.toThrow('Title is required');
     });
   });
 });
@@ -391,12 +414,14 @@ describe('TasksService', () => {
 ### Frontend Tests
 
 **Required for:**
+
 - New components
 - Custom hooks
 - Utility functions
 - Bug fixes
 
 **Example:**
+
 ```typescript
 // client/src/features/tasks/TaskCard.test.tsx
 describe('TaskCard', () => {
@@ -405,19 +430,19 @@ describe('TaskCard', () => {
     render(<TaskCard task={task} />);
     expect(screen.getByText('Test Task')).toBeInTheDocument();
   });
-  
+
   it('should call onUpdate when saved', async () => {
     const onUpdate = jest.fn();
     const task = { id: 1, title: 'Test Task' };
-    
+
     render(<TaskCard task={task} onUpdate={onUpdate} />);
-    
+
     const editButton = screen.getByText('Edit');
     await userEvent.click(editButton);
-    
+
     const saveButton = screen.getByText('Save');
     await userEvent.click(saveButton);
-    
+
     expect(onUpdate).toHaveBeenCalled();
   });
 });
@@ -426,11 +451,13 @@ describe('TaskCard', () => {
 ### Test Coverage
 
 Aim for:
+
 - **>80%** for business logic (services)
 - **>70%** for route handlers
 - **>60%** for UI components
 
 Check coverage:
+
 ```bash
 npm test -- --coverage
 ```
@@ -438,6 +465,7 @@ npm test -- --coverage
 ## 📚 Documentation Requirements
 
 Update documentation when:
+
 - Adding new features
 - Changing APIs
 - Modifying architecture
@@ -445,6 +473,7 @@ Update documentation when:
 - Changing configuration
 
 Files to update:
+
 - `README.md` - If feature list changes
 - `ARCHITECTURE.md` - If design changes
 - `DEVELOPER_GUIDE.md` - If patterns change
@@ -457,28 +486,35 @@ Use this template:
 
 ```markdown
 ## Bug Description
+
 Clear description of the bug
 
 ## Steps to Reproduce
+
 1. Step 1
 2. Step 2
 3. Step 3
 
 ## Expected Behavior
+
 What should happen
 
 ## Actual Behavior
+
 What actually happens
 
 ## Environment
+
 - OS: [e.g., Windows 10]
 - Node.js version: [e.g., 18.17.0]
 - Browser: [e.g., Chrome 120]
 
 ## Screenshots
+
 If applicable
 
 ## Additional Context
+
 Any other relevant information
 ```
 
@@ -488,18 +524,23 @@ Use this template:
 
 ```markdown
 ## Feature Description
+
 Clear description of the feature
 
 ## Use Case
+
 Why is this feature needed?
 
 ## Proposed Solution
+
 How should it work?
 
 ## Alternatives Considered
+
 Other approaches you've thought about
 
 ## Additional Context
+
 Any other relevant information
 ```
 
@@ -513,6 +554,7 @@ Any other relevant information
 ## 🎉 Recognition
 
 Contributors will be:
+
 - Listed in the repository
 - Mentioned in release notes
 - Credited for their work

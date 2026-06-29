@@ -4,16 +4,7 @@ const MAX_FAST_ACCESS_BILL_TEXT_LENGTH = 120;
 const MAX_FAST_ACCESS_LINK_LABEL_LENGTH = 80;
 const MAX_FAST_ACCESS_LINK_URL_LENGTH = 500;
 
-const CREDIT_CARD_ISSUERS = [
-  'citi',
-  'amex',
-  'discover',
-  'boa',
-  'chase',
-  'capital_one',
-  'wells_fargo',
-  'other',
-];
+const CREDIT_CARD_ISSUERS = ['citi', 'amex', 'discover', 'boa', 'chase', 'capital_one', 'wells_fargo', 'other'];
 
 const FAST_ACCESS_BILL_STATUSES = ['Paid', 'Unpaid'];
 

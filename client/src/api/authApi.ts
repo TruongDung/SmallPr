@@ -9,8 +9,7 @@ export interface UpdateProfilePayload {
 }
 
 // /me returns { user: null } with a 200 when logged out, so it never throws.
-export const getMe = () =>
-  request<{ user: User | null }>('/api/me').then((r) => r.user);
+export const getMe = () => request<{ user: User | null }>('/api/me').then((r) => r.user);
 
 export const login = (username: string, password: string) =>
   request<{ user: User }>('/api/login', {
@@ -18,8 +17,7 @@ export const login = (username: string, password: string) =>
     body: JSON.stringify({ username, password }),
   }).then((r) => r.user);
 
-export const logout = () =>
-  request<{ success: boolean }>('/api/logout', { method: 'POST' });
+export const logout = () => request<{ success: boolean }>('/api/logout', { method: 'POST' });
 
 export const updateMe = (payload: UpdateProfilePayload) =>
   request<{ user: User }>('/api/me', {

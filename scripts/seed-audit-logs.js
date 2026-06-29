@@ -18,7 +18,7 @@ const main = async () => {
     `SELECT id
      FROM users
      ORDER BY CASE WHEN username = 'admin' THEN 0 ELSE 1 END, id
-     LIMIT 1`
+     LIMIT 1`,
   );
   const userId = userResult.rows[0]?.id;
 
@@ -54,7 +54,7 @@ const main = async () => {
        jsonb_build_object('seed', true, 'row', n),
        CURRENT_TIMESTAMP - (n || ' minutes')::interval
      FROM seed`,
-    [userId, count, SEED_PREFIX]
+    [userId, count, SEED_PREFIX],
   );
 
   console.log(`Seeded ${count} audit log rows for user_id=${userId}.`);

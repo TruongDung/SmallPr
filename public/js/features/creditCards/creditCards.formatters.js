@@ -44,9 +44,8 @@
       return Number.isFinite(amount) ? amount : 0;
     };
 
-    const compareText = (first, second) => (
-      String(first || '').localeCompare(String(second || ''), getLanguage(), { sensitivity: 'base' })
-    );
+    const compareText = (first, second) =>
+      String(first || '').localeCompare(String(second || ''), getLanguage(), { sensitivity: 'base' });
 
     return {
       compareText,
@@ -62,4 +61,4 @@
     ...(window.CreditCardFeature || {}),
     createFormatters,
   };
-}());
+})();

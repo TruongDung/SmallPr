@@ -12,8 +12,7 @@ export const useAuth = () => {
   });
 
   const loginMutation = useMutation({
-    mutationFn: ({ username, password }: { username: string; password: string }) =>
-      login(username, password),
+    mutationFn: ({ username, password }: { username: string; password: string }) => login(username, password),
     onSuccess: (user) => {
       queryClient.setQueryData(['me'], user);
     },

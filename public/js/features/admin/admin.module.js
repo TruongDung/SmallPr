@@ -85,12 +85,8 @@
 
     const renderAuditLogSavingToggle = () => {
       if (!auditLogSavingToggle) return;
-      auditLogSavingToggle.textContent = auditLogSavingEnabled
-        ? t('auditLogSavingOn')
-        : t('auditLogSavingOff');
-      auditLogSavingToggle.title = auditLogSavingEnabled
-        ? t('disableAuditLogSaving')
-        : t('enableAuditLogSaving');
+      auditLogSavingToggle.textContent = auditLogSavingEnabled ? t('auditLogSavingOn') : t('auditLogSavingOff');
+      auditLogSavingToggle.title = auditLogSavingEnabled ? t('disableAuditLogSaving') : t('enableAuditLogSaving');
       auditLogSavingToggle.setAttribute('aria-label', auditLogSavingToggle.title);
       auditLogSavingToggle.setAttribute('aria-pressed', String(auditLogSavingEnabled));
       auditLogSavingToggle.classList.toggle('is-enabled', auditLogSavingEnabled);
@@ -229,8 +225,10 @@
     // Resolve the endpoint + response key for a scope, honoring the selected
     // user for the "user" scope.
     const endpointForScope = (scope) => {
-      if (isDemoSelected()) return { endpoint: '/api/admin/settings/demo-visibility', resultKey: 'demoVisibility', nested: 'settings' };
-      if (selectedUserId) return { endpoint: `/api/admin/users/${selectedUserId}/visibility`, resultKey: 'visibility', nested: null };
+      if (isDemoSelected())
+        return { endpoint: '/api/admin/settings/demo-visibility', resultKey: 'demoVisibility', nested: 'settings' };
+      if (selectedUserId)
+        return { endpoint: `/api/admin/users/${selectedUserId}/visibility`, resultKey: 'visibility', nested: null };
       return { endpoint: '/api/admin/settings/user-visibility', resultKey: 'userVisibility', nested: 'settings' };
     };
 
@@ -239,7 +237,9 @@
       const { endpoint, resultKey, nested } = endpointForScope(scope);
       const path = toggle.dataset.visibilityPath;
       const nextValue = !getVisibilityAt(scope, path);
-      demoVisibilityToggles.forEach((tg) => { tg.disabled = true; });
+      demoVisibilityToggles.forEach((tg) => {
+        tg.disabled = true;
+      });
 
       try {
         const result = await request(endpoint, {
@@ -260,7 +260,9 @@
       } catch (error) {
         showStatusToast(error.message || 'Failed to save visibility setting', 'error');
       } finally {
-        demoVisibilityToggles.forEach((tg) => { tg.disabled = false; });
+        demoVisibilityToggles.forEach((tg) => {
+          tg.disabled = false;
+        });
       }
     };
 
@@ -277,9 +279,10 @@
       showStatusToast(t('userOverrideCleared') || 'Reset to default');
     };
 
-    const formatInteger = (value) => new Intl.NumberFormat(undefined, {
-      maximumFractionDigits: 0,
-    }).format(Number(value || 0));
+    const formatInteger = (value) =>
+      new Intl.NumberFormat(undefined, {
+        maximumFractionDigits: 0,
+      }).format(Number(value || 0));
 
     const formatBytes = (value) => {
       const bytes = Number(value || 0);
@@ -325,20 +328,23 @@
         const label = t(button.dataset.labelKey);
         const isActive = key === databaseStorageSort.key;
         const directionLabel = databaseStorageSort.direction === 'asc' ? t('ascending') : t('descending');
-        const sortIndicator = isActive
-          ? (databaseStorageSort.direction === 'asc' ? ' ↑' : ' ↓')
-          : '';
+        const sortIndicator = isActive ? (databaseStorageSort.direction === 'asc' ? ' ↑' : ' ↓') : '';
 
         button.textContent = `${label}${sortIndicator}`;
         button.title = t('sortByColumn', { column: label });
-        button.setAttribute('aria-label', isActive
-          ? t('sortedByColumn', { column: label, direction: directionLabel })
-          : t('sortByColumn', { column: label }));
-        button.classList.toggle('is-active', isActive);
-        button.closest('th')?.setAttribute(
-          'aria-sort',
-          isActive ? (databaseStorageSort.direction === 'asc' ? 'ascending' : 'descending') : 'none'
+        button.setAttribute(
+          'aria-label',
+          isActive
+            ? t('sortedByColumn', { column: label, direction: directionLabel })
+            : t('sortByColumn', { column: label }),
         );
+        button.classList.toggle('is-active', isActive);
+        button
+          .closest('th')
+          ?.setAttribute(
+            'aria-sort',
+            isActive ? (databaseStorageSort.direction === 'asc' ? 'ascending' : 'descending') : 'none',
+          );
       });
     };
 
@@ -346,9 +352,7 @@
       if (!key) return;
       databaseStorageSort = {
         key,
-        direction: databaseStorageSort.key === key && databaseStorageSort.direction === 'desc'
-          ? 'asc'
-          : 'desc',
+        direction: databaseStorageSort.key === key && databaseStorageSort.direction === 'desc' ? 'asc' : 'desc',
       };
       renderDatabaseStorage();
     };
@@ -672,7 +676,9 @@
         statusBadge.className = `user-status-badge ${isDisabled || isPending ? 'disabled' : 'enabled'}`;
         statusBadge.textContent = isPending
           ? t('userPendingStatus')
-          : (isDisabled ? t('userDisabledStatus') : t('userEnabledStatus'));
+          : isDisabled
+            ? t('userDisabledStatus')
+            : t('userEnabledStatus');
         statusCell.append(statusBadge);
 
         const taskCountCell = document.createElement('td');
@@ -797,7 +803,7 @@
         const row = document.createElement('tr');
         const actor = log.impersonator_username
           ? `${log.actor_username || ''} -> ${log.username || ''}`
-          : (log.actor_username || log.username || '');
+          : log.actor_username || log.username || '';
         const cells = [
           [t('time'), formatAuditDateTime(log.created_at)],
           [t('actor'), actor],
@@ -890,9 +896,11 @@
 
       const result = await request(isEditing ? `/api/admin/users/${pendingAdminUser.id}` : '/api/admin/users', {
         method: isEditing ? 'PUT' : 'POST',
-        body: JSON.stringify(isEditing
-          ? { username, name, email, account_status: accountStatus }
-          : { username, name, email, password, account_status: accountStatus }),
+        body: JSON.stringify(
+          isEditing
+            ? { username, name, email, account_status: accountStatus }
+            : { username, name, email, password, account_status: accountStatus },
+        ),
       });
 
       if (result.error) {
@@ -1030,15 +1038,20 @@
 
     const getTestUsersDeleteMessage = () => {
       const currentUser = getCurrentUser();
-      const matchingUsers = users.filter((user) => (
-        isTestUser(user) && String(user.username || '').toLowerCase() !== 'admin' && user.id !== currentUser?.id
-      ));
+      const matchingUsers = users.filter(
+        (user) =>
+          isTestUser(user) && String(user.username || '').toLowerCase() !== 'admin' && user.id !== currentUser?.id,
+      );
       const count = matchingUsers.length;
-      const names = matchingUsers.slice(0, 8).map((user) => user.username).join(', ');
+      const names = matchingUsers
+        .slice(0, 8)
+        .map((user) => user.username)
+        .join(', ');
       const extra = count > 8 ? `, +${count - 8}` : '';
-      const message = count > 0
-        ? t('deleteTestUsersConfirm', { count, users: `${names}${extra}` })
-        : t('deleteTestUsersConfirmEmpty');
+      const message =
+        count > 0
+          ? t('deleteTestUsersConfirm', { count, users: `${names}${extra}` })
+          : t('deleteTestUsersConfirmEmpty');
 
       return message;
     };
@@ -1239,4 +1252,4 @@
   };
 
   window.AdminModule = { create };
-}());
+})();

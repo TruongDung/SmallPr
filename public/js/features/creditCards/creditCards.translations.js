@@ -10,8 +10,12 @@
     setText('#financial-calendar-tab', t('financialCalendarSubTab'));
     setText('#financial-calendar-today', t('calendarToday'));
     setText('#financial-calendar-upcoming-title', t('financialCalendarUpcoming'));
-    document.querySelectorAll('[data-i18n-key="financialCalendarCardLegend"]').forEach((node) => { node.textContent = t('financialCalendarCardLegend'); });
-    document.querySelectorAll('[data-i18n-key="financialCalendarBillLegend"]').forEach((node) => { node.textContent = t('financialCalendarBillLegend'); });
+    document.querySelectorAll('[data-i18n-key="financialCalendarCardLegend"]').forEach((node) => {
+      node.textContent = t('financialCalendarCardLegend');
+    });
+    document.querySelectorAll('[data-i18n-key="financialCalendarBillLegend"]').forEach((node) => {
+      node.textContent = t('financialCalendarBillLegend');
+    });
     setText('#add-fast-access-link-title', t('addFastAccessLink'));
     setText('#fast-access-bills-title', t('monthlyBills'));
     renderBillsHeaders();
@@ -105,4 +109,4 @@
     ...(window.CreditCardFeature || {}),
     applyStaticTranslations,
   };
-}());
+})();

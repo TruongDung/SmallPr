@@ -80,19 +80,20 @@ const validateFastAccessBillDetails = ({ item, amount, due_date, pay_before, sta
     return { error: `Item must be ${MAX_FAST_ACCESS_BILL_TEXT_LENGTH} characters or less` };
   }
 
-  const normalizedAmount = amount === undefined
-    ? Number(existingBill.amount || 0)
-    : normalizeFastAccessBillAmount(amount);
+  const normalizedAmount =
+    amount === undefined ? Number(existingBill.amount || 0) : normalizeFastAccessBillAmount(amount);
   if (normalizedAmount === null) {
     return { error: 'Amount must be a valid amount' };
   }
 
-  const normalizedDueDate = due_date === undefined ? normalizeBillText(existingBill.due_date) : normalizeBillText(due_date);
+  const normalizedDueDate =
+    due_date === undefined ? normalizeBillText(existingBill.due_date) : normalizeBillText(due_date);
   if (normalizedDueDate.length > MAX_FAST_ACCESS_BILL_TEXT_LENGTH) {
     return { error: `Due date must be ${MAX_FAST_ACCESS_BILL_TEXT_LENGTH} characters or less` };
   }
 
-  const normalizedPayBefore = pay_before === undefined ? normalizeBillText(existingBill.pay_before) : normalizeBillText(pay_before);
+  const normalizedPayBefore =
+    pay_before === undefined ? normalizeBillText(existingBill.pay_before) : normalizeBillText(pay_before);
   if (normalizedPayBefore.length > MAX_FAST_ACCESS_BILL_TEXT_LENGTH) {
     return { error: `Pay before must be ${MAX_FAST_ACCESS_BILL_TEXT_LENGTH} characters or less` };
   }
@@ -113,7 +114,10 @@ const validateFastAccessBillDetails = ({ item, amount, due_date, pay_before, sta
   };
 };
 
-const validateCreditCardDetails = ({ name, card_user, issuer, total_balance, interest_charge, closing_date }, existingCard = {}) => {
+const validateCreditCardDetails = (
+  { name, card_user, issuer, total_balance, interest_charge, closing_date },
+  existingCard = {},
+) => {
   const normalizedName = name === undefined ? existingCard.name : String(name || '').trim();
   if (!normalizedName) {
     return { error: 'Credit card No is required' };
@@ -123,37 +127,36 @@ const validateCreditCardDetails = ({ name, card_user, issuer, total_balance, int
     return { error: `Credit card No must be ${MAX_CREDIT_CARD_NAME_LENGTH} characters or less` };
   }
 
-  const normalizedCardUser = card_user === undefined
-    ? normalizeCreditCardUser(existingCard.card_user)
-    : normalizeCreditCardUser(card_user);
+  const normalizedCardUser =
+    card_user === undefined ? normalizeCreditCardUser(existingCard.card_user) : normalizeCreditCardUser(card_user);
   if (normalizedCardUser.length > MAX_CREDIT_CARD_USER_LENGTH) {
     return { error: `User must be ${MAX_CREDIT_CARD_USER_LENGTH} characters or less` };
   }
 
   const normalizedIssuer = normalizeCreditCardIssuer(
     issuer === undefined ? existingCard.issuer : issuer,
-    CREDIT_CARD_ISSUERS
+    CREDIT_CARD_ISSUERS,
   );
   if (normalizedIssuer === null) {
     return { error: 'Card type must be one of the available options' };
   }
 
-  const normalizedBalance = total_balance === undefined
-    ? Number(existingCard.total_balance || 0)
-    : normalizeCreditCardBalance(total_balance);
+  const normalizedBalance =
+    total_balance === undefined ? Number(existingCard.total_balance || 0) : normalizeCreditCardBalance(total_balance);
   if (normalizedBalance === null) {
     return { error: 'Balance must be a valid amount' };
   }
 
-  const normalizedInterestCharge = interest_charge === undefined
-    ? Number(existingCard.interest_charge || 0)
-    : normalizeCreditCardInterestCharge(interest_charge);
+  const normalizedInterestCharge =
+    interest_charge === undefined
+      ? Number(existingCard.interest_charge || 0)
+      : normalizeCreditCardInterestCharge(interest_charge);
   if (normalizedInterestCharge === null) {
     return { error: 'Interest must be a valid amount' };
   }
 
   const normalizedClosingDate = normalizeClosingDate(
-    closing_date === undefined ? existingCard.closing_date : closing_date
+    closing_date === undefined ? existingCard.closing_date : closing_date,
   );
   if (normalizedClosingDate === null) {
     return { error: 'Close must be a valid date' };
@@ -336,10 +339,7 @@ const createCreditCardsRouter = ({ authRequired, auditLogs, allAsync, getAsync, 
         creditCards.listCardUsersForUser(req.session.userId),
       ]);
       const users = [
-        ...new Set([
-          accountUser && accountUser.username,
-          ...savedUsers.map((user) => user.name),
-        ].filter(Boolean)),
+        ...new Set([accountUser && accountUser.username, ...savedUsers.map((user) => user.name)].filter(Boolean)),
       ];
       res.json({ users });
     } catch (error) {
@@ -351,9 +351,10 @@ const createCreditCardsRouter = ({ authRequired, auditLogs, allAsync, getAsync, 
   router.get('/', async (req, res) => {
     try {
       const accountUser = await creditCards.getAccountUser(req.session.userId);
-      const cards = accountUser?.username === 'admin'
-        ? await creditCards.listForAdmin()
-        : await creditCards.listForUser(req.session.userId);
+      const cards =
+        accountUser?.username === 'admin'
+          ? await creditCards.listForAdmin()
+          : await creditCards.listForUser(req.session.userId);
       res.json({ cards });
     } catch (error) {
       logger.error({ err: error }, 'Failed to load credit cards');

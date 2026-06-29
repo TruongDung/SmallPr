@@ -18,12 +18,14 @@ const createSessionUser = (user, impersonator = null) => ({
   timezone: user.timezone,
   language: user.language,
   account_status: user.account_status,
-  impersonator: impersonator ? {
-    id: impersonator.id,
-    username: impersonator.username,
-    name: impersonator.name,
-    email: impersonator.email,
-  } : null,
+  impersonator: impersonator
+    ? {
+        id: impersonator.id,
+        username: impersonator.username,
+        name: impersonator.name,
+        email: impersonator.email,
+      }
+    : null,
 });
 
 module.exports = {

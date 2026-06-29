@@ -3,25 +3,43 @@
 (function () {
   // ---- HTML / text ----
 
-  const escapeHtml = (value = '') => String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#39;');
+  const escapeHtml = (value = '') =>
+    String(value)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
 
   const isSafeLinkHref = (href = '') => /^(https?:|mailto:)/i.test(href);
 
-  const autolinkPlainUrls = (html = '') => html.replace(
-    /(^|[\s>])((https?:\/\/)[^\s<]+)/gi,
-    (match, prefix, url) => `${prefix}<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
-  );
+  const autolinkPlainUrls = (html = '') =>
+    html.replace(
+      /(^|[\s>])((https?:\/\/)[^\s<]+)/gi,
+      (match, prefix, url) => `${prefix}<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`,
+    );
 
   const linkifyPlainText = (value = '') => autolinkPlainUrls(escapeHtml(value)).replace(/\n/g, '<br>');
 
   const richTextAllowedTags = new Set([
-    'A', 'B', 'STRONG', 'I', 'EM', 'U', 'S', 'STRIKE', 'DEL',
-    'UL', 'OL', 'LI', 'P', 'DIV', 'BR', 'LABEL', 'INPUT', 'SPAN'
+    'A',
+    'B',
+    'STRONG',
+    'I',
+    'EM',
+    'U',
+    'S',
+    'STRIKE',
+    'DEL',
+    'UL',
+    'OL',
+    'LI',
+    'P',
+    'DIV',
+    'BR',
+    'LABEL',
+    'INPUT',
+    'SPAN',
   ]);
 
   const hasRichTextMarkup = (value = '') =>
@@ -33,7 +51,10 @@
 
     template.content.querySelectorAll('*').forEach((element) => {
       const style = element.getAttribute('style') || '';
-      if (element.tagName === 'SPAN' && /text-decoration[^;:]*:\s*[^;]*line-through|text-decoration-line[^;:]*:\s*[^;]*line-through/i.test(style)) {
+      if (
+        element.tagName === 'SPAN' &&
+        /text-decoration[^;:]*:\s*[^;]*line-through|text-decoration-line[^;:]*:\s*[^;]*line-through/i.test(style)
+      ) {
         const strike = document.createElement('s');
         strike.append(...element.childNodes);
         element.replaceWith(strike);
@@ -89,9 +110,8 @@
     return template.innerHTML.trim();
   };
 
-  const renderStoredRichText = (value = '') => (
-    hasRichTextMarkup(value) ? sanitizeRichText(value) : linkifyPlainText(value)
-  );
+  const renderStoredRichText = (value = '') =>
+    hasRichTextMarkup(value) ? sanitizeRichText(value) : linkifyPlainText(value);
 
   const getRichTextPlainText = (html = '') => {
     if (!hasRichTextMarkup(html)) return String(html || '').trim();
@@ -107,7 +127,7 @@
     });
     // Normalize multiple newlines and trim
     return container.textContent
-      .replace(/\n{3,}/g, '\n\n')  // Max 2 consecutive newlines
+      .replace(/\n{3,}/g, '\n\n') // Max 2 consecutive newlines
       .trim();
   };
 
@@ -191,7 +211,7 @@
     document.execCommand(
       'insertHTML',
       false,
-      `<div><span class="rich-check-item"><input id="${id}" class="rich-check-input" data-rich-checklist="true" type="checkbox"> <span class="rich-check-text">Checklist item</span></span></div>`
+      `<div><span class="rich-check-item"><input id="${id}" class="rich-check-input" data-rich-checklist="true" type="checkbox"> <span class="rich-check-text">Checklist item</span></span></div>`,
     );
     editor.innerHTML = sanitizeRichText(editor.innerHTML);
     saveRichEditorSelection(editor);
@@ -274,21 +294,23 @@
       task.title,
       getRichTextPlainText(task.description || ''),
       getRichTextPlainText(task.comment || ''),
-    ].join(' ').toLowerCase();
+    ]
+      .join(' ')
+      .toLowerCase();
     return haystack.includes(query);
   };
 
   const priorityLabel = (priority, t) => t(priority || 'medium');
 
-  const priorityRank = (priority = 'medium') => ({
-    high: 0,
-    medium: 1,
-    low: 2,
-  }[priority] ?? 3);
+  const priorityRank = (priority = 'medium') =>
+    ({
+      high: 0,
+      medium: 1,
+      low: 2,
+    })[priority] ?? 3;
 
-  const sortTasksByPriority = (taskList = []) => [...taskList].sort((first, second) => (
-    priorityRank(first.priority) - priorityRank(second.priority)
-  ));
+  const sortTasksByPriority = (taskList = []) =>
+    [...taskList].sort((first, second) => priorityRank(first.priority) - priorityRank(second.priority));
 
   const taskStatus = (task) => task.status || (task.completed ? 'done' : 'todo');
 
@@ -296,15 +318,16 @@
 
   // ---- File helpers ----
 
-  const readAttachmentFile = (file, onProgress = () => {}) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.addEventListener('load', () => resolve(reader.result));
-    reader.addEventListener('error', () => reject(new Error('Failed to read file')));
-    reader.addEventListener('progress', (event) => {
-      if (event.lengthComputable) onProgress((event.loaded / event.total) * 100);
+  const readAttachmentFile = (file, onProgress = () => {}) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => resolve(reader.result));
+      reader.addEventListener('error', () => reject(new Error('Failed to read file')));
+      reader.addEventListener('progress', (event) => {
+        if (event.lengthComputable) onProgress((event.loaded / event.total) * 100);
+      });
+      reader.readAsDataURL(file);
     });
-    reader.readAsDataURL(file);
-  });
 
   const fileFromClipboard = (clipboardData) => {
     const files = clipboardData?.files;
@@ -342,11 +365,13 @@
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
-      hour12: true
+      hour12: true,
     });
     const parts = formatter.formatToParts(date);
     const formattedParts = {};
-    parts.forEach(part => { formattedParts[part.type] = part.value; });
+    parts.forEach((part) => {
+      formattedParts[part.type] = part.value;
+    });
     return `${formattedParts.month}/${formattedParts.day}/${formattedParts.year}, ${formattedParts.hour}:${formattedParts.minute}:${formattedParts.second} ${formattedParts.dayPeriod} EST (NYC)`;
   };
 
@@ -354,7 +379,7 @@
     if (!dateString) return '';
     return new Date(dateString).toLocaleString('en-US', {
       dateStyle: 'medium',
-      timeStyle: 'short'
+      timeStyle: 'short',
     });
   };
 

@@ -24,18 +24,18 @@ export const ToastProvider = ({ children }: { children: ReactNode }) => {
     setToast(null);
   }, []);
 
-  const showToast = useCallback<ToastContextValue['showToast']>(
-    (message, tone = 'success', options = {}) => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-      setToast({ message, tone });
-      if (options.persist) return;
-      timerRef.current = setTimeout(() => {
+  const showToast = useCallback<ToastContextValue['showToast']>((message, tone = 'success', options = {}) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setToast({ message, tone });
+    if (options.persist) return;
+    timerRef.current = setTimeout(
+      () => {
         setToast(null);
         timerRef.current = null;
-      }, tone === 'error' ? 3500 : 2000);
-    },
-    [],
-  );
+      },
+      tone === 'error' ? 3500 : 2000,
+    );
+  }, []);
 
   const value = useMemo(() => ({ showToast, hideToast }), [showToast, hideToast]);
 

@@ -10,8 +10,8 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [theme, setTheme] = useState<'light' | 'dark'>(
-    () => (localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light'),
+  const [theme, setTheme] = useState<'light' | 'dark'>(() =>
+    localStorage.getItem(THEME_KEY) === 'dark' ? 'dark' : 'light',
   );
 
   // Mirror legacy behaviour: toggle body.theme-dark so the existing styles.css

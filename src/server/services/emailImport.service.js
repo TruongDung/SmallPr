@@ -10,10 +10,10 @@ const normalizeCharset = (charset = 'utf-8') => {
   if (normalized === 'utf-8' || normalized === 'utf8') return 'utf8';
   if (normalized === 'us-ascii' || normalized === 'ascii') return 'ascii';
   if (
-    normalized === 'iso-8859-1'
-    || normalized === 'latin1'
-    || normalized === 'windows-1252'
-    || normalized === 'cp1252'
+    normalized === 'iso-8859-1' ||
+    normalized === 'latin1' ||
+    normalized === 'windows-1252' ||
+    normalized === 'cp1252'
   ) {
     return 'latin1';
   }
@@ -43,22 +43,19 @@ const decodeQuotedPrintable = (input, charset = 'utf-8') => {
   return Buffer.from(bytes).toString(normalizeCharset(charset));
 };
 
-const decodeBase64 = (input, charset = 'utf-8') => Buffer
-  .from(String(input).replace(/\s+/g, ''), 'base64')
-  .toString(normalizeCharset(charset));
+const decodeBase64 = (input, charset = 'utf-8') =>
+  Buffer.from(String(input).replace(/\s+/g, ''), 'base64').toString(normalizeCharset(charset));
 
 // Decode RFC 2047 "encoded-words" used in headers, e.g.
 // "=?UTF-8?B?SGVsbG8=?=" or "=?UTF-8?Q?Hello=20World?=".
-const decodeEncodedWords = (value = '') => String(value).replace(
-  /=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g,
-  (_match, charset, encoding, text) => {
+const decodeEncodedWords = (value = '') =>
+  String(value).replace(/=\?([^?]+)\?([BbQq])\?([^?]*)\?=/g, (_match, charset, encoding, text) => {
     if (encoding.toUpperCase() === 'B') {
       return decodeBase64(text, charset);
     }
     // Q-encoding is quoted-printable with "_" standing in for a space.
     return decodeQuotedPrintable(text.replace(/_/g, ' '), charset);
-  }
-);
+  });
 
 // --- MIME parsing ---------------------------------------------------------
 
@@ -126,7 +123,9 @@ const splitMultipart = (body, boundary) => {
 
 // Decode a leaf part's body according to its transfer encoding and charset.
 const decodePartBody = (body, headers, contentType) => {
-  const encoding = String(headers['content-transfer-encoding'] || '').toLowerCase().trim();
+  const encoding = String(headers['content-transfer-encoding'] || '')
+    .toLowerCase()
+    .trim();
   const charset = contentType.params.charset || 'utf-8';
   if (encoding === 'base64') return decodeBase64(body, charset);
   if (encoding === 'quoted-printable') return decodeQuotedPrintable(body, charset);
@@ -176,24 +175,37 @@ const extractBody = (body, headers) => {
 // --- Due-date extraction --------------------------------------------------
 
 const MONTHS = {
-  january: '01', jan: '01',
-  february: '02', feb: '02',
-  march: '03', mar: '03',
-  april: '04', apr: '04',
+  january: '01',
+  jan: '01',
+  february: '02',
+  feb: '02',
+  march: '03',
+  mar: '03',
+  april: '04',
+  apr: '04',
   may: '05',
-  june: '06', jun: '06',
-  july: '07', jul: '07',
-  august: '08', aug: '08',
-  september: '09', sep: '09', sept: '09',
-  october: '10', oct: '10',
-  november: '11', nov: '11',
-  december: '12', dec: '12',
+  june: '06',
+  jun: '06',
+  july: '07',
+  jul: '07',
+  august: '08',
+  aug: '08',
+  september: '09',
+  sep: '09',
+  sept: '09',
+  october: '10',
+  oct: '10',
+  november: '11',
+  nov: '11',
+  december: '12',
+  dec: '12',
 };
 
 // Words that hint a nearby date is the relevant travel/deadline date. The
 // extractor prefers dates closest to one of these. Kept travel/deadline
 // specific (with word boundaries) so generic prose like "dated" doesn't match.
-const DATE_KEYWORD_RE = /\b(travel(?:l?ing)?|depart(?:ure|ing)?|flight|trip|check[\s-]?in|check[\s-]?out|arriv(?:al|ing)|itinerary|boarding|booking|reservation|due|deadline)\b/gi;
+const DATE_KEYWORD_RE =
+  /\b(travel(?:l?ing)?|depart(?:ure|ing)?|flight|trip|check[\s-]?in|check[\s-]?out|arriv(?:al|ing)|itinerary|boarding|booking|reservation|due|deadline)\b/gi;
 
 // Build a validated YYYY-MM-DD string, rejecting impossible dates (e.g. Feb 30)
 // by round-tripping through Date.
@@ -305,28 +317,32 @@ const extractDueDate = (text) => {
 
 // --- Task draft assembly --------------------------------------------------
 
-const escapeHtml = (value = '') => String(value)
-  .replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;')
-  .replace(/'/g, '&#39;');
+const escapeHtml = (value = '') =>
+  String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 
 // Convert plain-text body lines into simple HTML paragraphs so the task
 // description renders nicely in the rich-text view. Blank lines are dropped.
-const bodyToHtmlParagraphs = (body) => String(body)
-  .split('\n')
-  .map((line) => line.trim())
-  .filter((line) => line.length > 0)
-  .map((line) => `<p>${escapeHtml(line)}</p>`)
-  .join('');
+const bodyToHtmlParagraphs = (body) =>
+  String(body)
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .map((line) => `<p>${escapeHtml(line)}</p>`)
+    .join('');
 
 // Build a task payload (title + description) from the parsed email fields.
 // The title is the subject, truncated to the task title limit; the
 // description carries the From/Date context plus the email body, truncated to
 // the task text limit so it always passes validation.
 const buildTaskDraft = ({ subject, from, date, body }) => {
-  const cleanSubject = String(subject || '').replace(/\s+/g, ' ').trim();
+  const cleanSubject = String(subject || '')
+    .replace(/\s+/g, ' ')
+    .trim();
   const title = (cleanSubject || 'Email task').slice(0, MAX_TASK_TITLE_LENGTH);
 
   const metaParts = [];
@@ -366,9 +382,10 @@ const parseEmailToTask = ({ base64Eml }) => {
 
   // Tolerate a data-URL prefix in case the client forwards it verbatim.
   const commaIndex = String(base64Eml).indexOf(',');
-  const payload = String(base64Eml).startsWith('data:') && commaIndex !== -1
-    ? String(base64Eml).slice(commaIndex + 1)
-    : String(base64Eml);
+  const payload =
+    String(base64Eml).startsWith('data:') && commaIndex !== -1
+      ? String(base64Eml).slice(commaIndex + 1)
+      : String(base64Eml);
 
   let raw;
   try {

@@ -6,10 +6,14 @@ const logger = require('../logger');
 const MAX_WEATHER_CITY_LENGTH = 120;
 
 const normalizeWeatherCity = (body = {}) => {
-  const name = String(body.name || '').trim().slice(0, MAX_WEATHER_CITY_LENGTH);
+  const name = String(body.name || '')
+    .trim()
+    .slice(0, MAX_WEATHER_CITY_LENGTH);
   const latitude = Number(body.latitude);
   const longitude = Number(body.longitude);
-  const weatherKey = String(body.weather_key || body.weatherKey || body.id || `${latitude.toFixed(3)},${longitude.toFixed(3)}`).trim();
+  const weatherKey = String(
+    body.weather_key || body.weatherKey || body.id || `${latitude.toFixed(3)},${longitude.toFixed(3)}`,
+  ).trim();
 
   if (!name || !weatherKey || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
     return null;
@@ -52,7 +56,7 @@ const createWeatherRouter = ({ allAsync, authRequired, cache, queryAsync, runAsy
          FROM weather_cities
          WHERE user_id = ?
          ORDER BY LOWER(name), name`,
-        [req.session.userId]
+        [req.session.userId],
       );
       const payload = { cities };
       const wroteCache = await cache?.setJson?.(cacheKey, payload, WEATHER_PAGE_CACHE_TTL_SECONDS);
@@ -80,7 +84,7 @@ const createWeatherRouter = ({ allAsync, authRequired, cache, queryAsync, runAsy
            longitude = EXCLUDED.longitude,
            updated_at = CURRENT_TIMESTAMP
          RETURNING id, weather_key, name, latitude, longitude`,
-        [req.session.userId, city.weatherKey, city.name, city.latitude, city.longitude]
+        [req.session.userId, city.weatherKey, city.name, city.latitude, city.longitude],
       );
       res.json({ city: result.rows[0] });
     } catch (error) {
@@ -93,10 +97,10 @@ const createWeatherRouter = ({ allAsync, authRequired, cache, queryAsync, runAsy
     const { id } = req.params;
 
     try {
-      const result = await runAsync(
-        'DELETE FROM weather_cities WHERE id = ? AND user_id = ? RETURNING id',
-        [id, req.session.userId]
-      );
+      const result = await runAsync('DELETE FROM weather_cities WHERE id = ? AND user_id = ? RETURNING id', [
+        id,
+        req.session.userId,
+      ]);
 
       if (!result.lastID) {
         return res.status(404).json({ error: 'Weather city not found' });

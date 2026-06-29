@@ -23,9 +23,7 @@ export const SprintBoard = ({ sprint, onBack }: SprintBoardProps) => {
   const { tasks, isLoading, error, updateTask, deleteTask } = useTasks(false);
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
 
-  const sprintTasks = tasks.filter(
-    (task) => !task.archived && task.sprint_id === sprint.id
-  );
+  const sprintTasks = tasks.filter((task) => !task.archived && task.sprint_id === sprint.id);
 
   const cardHandlers = {
     onToggleDone: async (task: Task) => {
@@ -68,9 +66,7 @@ export const SprintBoard = ({ sprint, onBack }: SprintBoardProps) => {
         </button>
         <div className="sprint-board-title">
           <h2>{sprint.name}</h2>
-          <span className={`sprint-status-badge sprint-status-${sprint.status}`}>
-            {t(`sprint_${sprint.status}`)}
-          </span>
+          <span className={`sprint-status-badge sprint-status-${sprint.status}`}>{t(`sprint_${sprint.status}`)}</span>
           {(sprint.start_date || sprint.end_date) && (
             <span className="sprint-dates">
               {sprint.start_date ?? '…'} → {sprint.end_date ?? '…'}
@@ -81,7 +77,9 @@ export const SprintBoard = ({ sprint, onBack }: SprintBoardProps) => {
       </div>
 
       {isLoading ? (
-        <p className="loading-state" aria-busy="true">{t('loading')}</p>
+        <p className="loading-state" aria-busy="true">
+          {t('loading')}
+        </p>
       ) : error ? (
         <p className="field-error">{t('dashboardErrorTitle')}</p>
       ) : (
@@ -91,9 +89,7 @@ export const SprintBoard = ({ sprint, onBack }: SprintBoardProps) => {
               key={status}
               title={t(labelKey)}
               status={status}
-              tasks={sortTasksByPriority(
-                sprintTasks.filter((task) => taskStatus(task) === status)
-              )}
+              tasks={sortTasksByPriority(sprintTasks.filter((task) => taskStatus(task) === status))}
               draggable
               onDropTask={handleDropTask}
               onDragStartTask={setDraggedTask}

@@ -95,7 +95,7 @@ const localStartOfDayUtc = (ymd, timeZone) => {
     Number(map.day),
     Number(map.hour) === 24 ? 0 : Number(map.hour),
     Number(map.minute),
-    Number(map.second)
+    Number(map.second),
   );
   // Offset = local - naive. We want naive - offset to land on local midnight.
   const offset = localAsUtc - naive;
@@ -121,16 +121,17 @@ const computeWindows = (timezone, dueSoonDays, now = new Date()) => {
   };
 };
 
-const sortTasks = (rows) => rows.slice().sort((a, b) => {
-  const aHas = Boolean(a.reminder_at);
-  const bHas = Boolean(b.reminder_at);
-  if (aHas && bHas) return new Date(a.reminder_at) - new Date(b.reminder_at);
-  if (aHas) return -1;
-  if (bHas) return 1;
-  const aRank = PRIORITY_RANK[a.priority] ?? 1;
-  const bRank = PRIORITY_RANK[b.priority] ?? 1;
-  return aRank - bRank;
-});
+const sortTasks = (rows) =>
+  rows.slice().sort((a, b) => {
+    const aHas = Boolean(a.reminder_at);
+    const bHas = Boolean(b.reminder_at);
+    if (aHas && bHas) return new Date(a.reminder_at) - new Date(b.reminder_at);
+    if (aHas) return -1;
+    if (bHas) return 1;
+    const aRank = PRIORITY_RANK[a.priority] ?? 1;
+    const bRank = PRIORITY_RANK[b.priority] ?? 1;
+    return aRank - bRank;
+  });
 
 const projectTaskRow = (row) => ({
   id: row.id,
@@ -155,7 +156,7 @@ const loadTodaysTasks = async ({ allAsync, userId, windows }) => {
        )
      ORDER BY reminder_at NULLS LAST
      LIMIT ?`,
-    [userId, startOfToday, endOfToday, startOfToday, PAGE_LIMIT_TASKS]
+    [userId, startOfToday, endOfToday, startOfToday, PAGE_LIMIT_TASKS],
   );
 
   const overdueAll = [];
@@ -194,7 +195,7 @@ const loadTaskStatusSummary = async ({ allAsync, userId }) => {
      FROM tasks
      WHERE user_id = ? AND archived = 0
      GROUP BY status`,
-    [userId]
+    [userId],
   );
   const result = { todo: 0, in_progress: 0, done: 0 };
   for (const row of rows) {
@@ -210,7 +211,7 @@ const loadRecentNotes = async ({ allAsync, userId }) => {
      WHERE user_id = ?
      ORDER BY updated_at DESC, id DESC
      LIMIT ?`,
-    [userId, RECENT_NOTES_LIMIT]
+    [userId, RECENT_NOTES_LIMIT],
   );
   return rows.map((row) => ({
     id: row.id,
@@ -243,7 +244,7 @@ const loadBills = async ({ allAsync, userId, windows }) => {
      ORDER BY
        CASE WHEN due_date IS NULL OR due_date = '' THEN 1 ELSE 0 END,
        due_date ASC, id ASC`,
-    [userId]
+    [userId],
   );
 
   const overdue = [];
@@ -286,7 +287,7 @@ const loadCreditCardSummary = async ({ allAsync, userId, windows }) => {
      FROM credit_cards
      WHERE user_id = ?
      ORDER BY id ASC`,
-    [userId]
+    [userId],
   );
 
   let totalBalance = 0;
@@ -334,7 +335,7 @@ const loadWeatherCard = async ({ allAsync, userId }) => {
      WHERE user_id = ?
      ORDER BY LOWER(name), name
      LIMIT 1`,
-    [userId]
+    [userId],
   );
   if (!rows.length) {
     return { city: null, summary: null };
@@ -386,7 +387,7 @@ const loadActiveSprints = async ({ allAsync, userId }) => {
        AND s.status IN ('active', 'planned')
      ORDER BY CASE s.status WHEN 'active' THEN 0 ELSE 1 END, s.start_date DESC
      LIMIT 5`,
-    [userId, userId]
+    [userId, userId],
   );
   return {
     sprints: rows.map((row) => ({
@@ -409,14 +410,14 @@ const createDashboardService = ({ allAsync }) => {
 
     const ctx = { allAsync, userId, windows };
     const settled = await Promise.all([
-      wrapSettled('todaysTasks',       () => loadTodaysTasks(ctx)),
+      wrapSettled('todaysTasks', () => loadTodaysTasks(ctx)),
       wrapSettled('taskStatusSummary', () => loadTaskStatusSummary(ctx)),
-      wrapSettled('recentNotes',       () => loadRecentNotes(ctx)),
-      wrapSettled('bills',             () => loadBills(ctx)),
-      wrapSettled('creditCards',       () => loadCreditCardSummary(ctx)),
-      wrapSettled('weather',           () => loadWeatherCard(ctx)),
-      wrapSettled('dailyQuote',        () => loadDailyQuoteCard()),
-      wrapSettled('activeSprints',     () => loadActiveSprints(ctx)),
+      wrapSettled('recentNotes', () => loadRecentNotes(ctx)),
+      wrapSettled('bills', () => loadBills(ctx)),
+      wrapSettled('creditCards', () => loadCreditCardSummary(ctx)),
+      wrapSettled('weather', () => loadWeatherCard(ctx)),
+      wrapSettled('dailyQuote', () => loadDailyQuoteCard()),
+      wrapSettled('activeSprints', () => loadActiveSprints(ctx)),
     ]);
 
     const cards = {};

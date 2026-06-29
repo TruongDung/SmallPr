@@ -57,6 +57,7 @@ A toggle-enabled lunar calendar feature has been added to the Task/Calendar sect
 Badges display in the format: **`L{month}·{day}`**
 
 Examples:
+
 - `L1·1` = 1st day of lunar month 1 (Lunar New Year)
 - `L1·15` = 15th day of lunar month 1 (Full moon)
 - `L6·1` = 1st day of lunar month 6
@@ -86,6 +87,7 @@ Pass  All tests
 ```
 
 The lunar toggle integrates seamlessly with:
+
 - Task rendering and filtering
 - Day cell drag-and-drop
 - View switching (today/week/month)
@@ -116,6 +118,7 @@ SmallPr/
 ## User Preferences
 
 When a user enables the lunar calendar:
+
 1. Setting is saved to `localStorage['showLunarCalendar'] = 'true'`
 2. Preference persists across sessions
 3. Each user has independent preference (browser-level storage)

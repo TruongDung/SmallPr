@@ -85,10 +85,7 @@ const normalizeLanguage = (language) => (language === 'vi' ? 'vi' : 'en');
 const tEmail = (language, key, values = {}) => {
   const dictionary = EMAIL_TRANSLATIONS[normalizeLanguage(language)];
   const template = dictionary[key] || EMAIL_TRANSLATIONS.en[key] || key;
-  return Object.entries(values).reduce(
-    (text, [name, value]) => text.replaceAll(`{${name}}`, value),
-    template
-  );
+  return Object.entries(values).reduce((text, [name, value]) => text.replaceAll(`{${name}}`, value), template);
 };
 
 const formatTaskStatus = (status = 'todo', language = 'en') => tEmail(language, status);
@@ -96,13 +93,7 @@ const formatTaskStatus = (status = 'todo', language = 'en') => tEmail(language, 
 const formatTaskPriority = (priority = 'medium', language = 'en') => tEmail(language, priority);
 
 const createMailTransporter = () => {
-  const {
-    SMTP_HOST,
-    SMTP_PORT,
-    SMTP_SECURE,
-    SMTP_USER,
-    SMTP_PASS,
-  } = process.env;
+  const { SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS } = process.env;
 
   if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
     return null;
@@ -129,49 +120,52 @@ const createMailTransporter = () => {
 
 const getUserEmailRecipient = (user) => normalizeEmail(user?.email) || TASK_ALERT_TO;
 
-const escapeHtml = (value = '') => String(value)
-  .replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;')
-  .replace(/'/g, '&#39;');
+const escapeHtml = (value = '') =>
+  String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 
-const normalizeLineBreaks = (value = '') => String(value)
-  .replace(/\\r\\n|\\n|\\r/g, '\n')
-  .replace(/\r\n|\r|\n/g, '\n');
+const normalizeLineBreaks = (value = '') =>
+  String(value)
+    .replace(/\\r\\n|\\n|\\r/g, '\n')
+    .replace(/\r\n|\r|\n/g, '\n');
 
 const formatPlainTextValue = (value = '') => normalizeLineBreaks(stripHtml(value));
 
-const formatMultilineHtml = (value = '') => normalizeLineBreaks(value)
-  .split('\n')
-  .map((line) => escapeHtml(line))
-  .join('<br>');
-
-const formatLinkedMultilineHtml = (value = '') => formatMultilineHtml(value)
-  .replace(
-    /(https?:\/\/[^\s<]+)/g,
-    '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
-  );
-
-const decodeBasicHtmlEntities = (value = '') => String(value)
-  .replace(/&nbsp;/g, ' ')
-  .replace(/&amp;/g, '&')
-  .replace(/&lt;/g, '<')
-  .replace(/&gt;/g, '>')
-  .replace(/&quot;/g, '"')
-  .replace(/&#39;/g, "'");
-
-const linkifyEscapedHtml = (value = '') => String(value).replace(
-  /(https?:\/\/[^\s<]+)/g,
-  '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>'
-);
-
-const formatEmailTextNodeHtml = (value = '') => linkifyEscapedHtml(
-  normalizeLineBreaks(decodeBasicHtmlEntities(value))
+const formatMultilineHtml = (value = '') =>
+  normalizeLineBreaks(value)
     .split('\n')
     .map((line) => escapeHtml(line))
-    .join('<br>')
-);
+    .join('<br>');
+
+const formatLinkedMultilineHtml = (value = '') =>
+  formatMultilineHtml(value).replace(
+    /(https?:\/\/[^\s<]+)/g,
+    '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>',
+  );
+
+const decodeBasicHtmlEntities = (value = '') =>
+  String(value)
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+
+const linkifyEscapedHtml = (value = '') =>
+  String(value).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+
+const formatEmailTextNodeHtml = (value = '') =>
+  linkifyEscapedHtml(
+    normalizeLineBreaks(decodeBasicHtmlEntities(value))
+      .split('\n')
+      .map((line) => escapeHtml(line))
+      .join('<br>'),
+  );
 
 const formatRichTextEmailHtml = (value = '', fallback = '') => {
   const input = String(value || '');
@@ -266,23 +260,33 @@ const sendTaskAlertEmail = async (task, user, language = 'en') => {
     hasReminder ? `${tEmail(language, 'dateTimeAlert')}: ${reminder}` : null,
   ].filter(Boolean);
   const optionalHtmlRows = [
-    hasTag ? `<p style="margin:0 0 8px;"><strong>${escapeHtml(tEmail(language, 'tag'))}:</strong> ${escapeHtml(task.tag)}</p>` : '',
+    hasTag
+      ? `<p style="margin:0 0 8px;"><strong>${escapeHtml(tEmail(language, 'tag'))}:</strong> ${escapeHtml(task.tag)}</p>`
+      : '',
     `<p style="margin:0 0 8px;"><strong>${escapeHtml(tEmail(language, 'priority'))}:</strong> ${escapeHtml(priority)}</p>`,
     `<p style="margin:0 0 8px;"><strong>${escapeHtml(tEmail(language, 'status'))}:</strong> ${escapeHtml(status)}</p>`,
-    hasDescription ? `
+    hasDescription
+      ? `
         <div style="margin:0 0 8px;">
           <strong>${escapeHtml(tEmail(language, 'description'))}:</strong>
           <div style="margin-top:4px;white-space:normal;">${descriptionHtml}</div>
         </div>
-      ` : '',
-    hasComment ? `
+      `
+      : '',
+    hasComment
+      ? `
         <div style="margin:0 0 8px;">
           <strong>${escapeHtml(tEmail(language, 'comment'))}:</strong>
           <div style="margin-top:4px;white-space:normal;">${commentHtml}</div>
         </div>
-      ` : '',
-    hasAttachment ? `<p style="margin:0 0 8px;"><strong>${escapeHtml(tEmail(language, 'attachment'))}:</strong> ${escapeHtml(task.attachment_name)}</p>` : '',
-    hasReminder ? `<p style="margin:0;"><strong>${escapeHtml(tEmail(language, 'dateTimeAlert'))}:</strong> ${escapeHtml(reminder)}</p>` : '',
+      `
+      : '',
+    hasAttachment
+      ? `<p style="margin:0 0 8px;"><strong>${escapeHtml(tEmail(language, 'attachment'))}:</strong> ${escapeHtml(task.attachment_name)}</p>`
+      : '',
+    hasReminder
+      ? `<p style="margin:0;"><strong>${escapeHtml(tEmail(language, 'dateTimeAlert'))}:</strong> ${escapeHtml(reminder)}</p>`
+      : '',
   ].join('');
 
   await transporter.sendMail({
@@ -329,9 +333,10 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
 
   const locale = normalizeLanguage(language) === 'vi' ? 'vi-VN' : 'en-US';
   const taskAlertMarker = tEmail(language, 'taskManager');
-  const formatReminder = (task) => task.reminder_at
-    ? new Date(task.reminder_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })
-    : tEmail(language, 'notSet');
+  const formatReminder = (task) =>
+    task.reminder_at
+      ? new Date(task.reminder_at).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })
+      : tEmail(language, 'notSet');
   const getTaskStatus = (task) => formatTaskStatus(task.status || (task.completed ? 'done' : 'todo'), language);
   const headings = [
     tEmail(language, 'number'),
@@ -360,31 +365,38 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
   const textTable = taskTableRows.length
     ? [
         headings.join('\t'),
-        ...taskTableRows.map((task) => [
-          task.number,
-          task.title,
-          task.tag,
-          task.priority,
-          task.status,
-          task.description,
-          task.comment,
-          task.attachment,
-          task.reminder,
-        ].join('\t')),
+        ...taskTableRows.map((task) =>
+          [
+            task.number,
+            task.title,
+            task.tag,
+            task.priority,
+            task.status,
+            task.description,
+            task.comment,
+            task.attachment,
+            task.reminder,
+          ].join('\t'),
+        ),
       ]
     : [tEmail(language, 'noTasks')];
   const htmlTable = taskTableRows.length
     ? `<table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;">
         <thead>
           <tr>
-            ${headings.map((heading) => (
-              `<th style="border:1px solid #d1d5db;padding:8px;background:#f3f4f6;text-align:left;">${escapeHtml(heading)}</th>`
-            )).join('')}
+            ${headings
+              .map(
+                (heading) =>
+                  `<th style="border:1px solid #d1d5db;padding:8px;background:#f3f4f6;text-align:left;">${escapeHtml(heading)}</th>`,
+              )
+              .join('')}
           </tr>
         </thead>
         <tbody>
-          ${taskTableRows.map((task) => (
-            `<tr>
+          ${taskTableRows
+            .map(
+              (task) =>
+                `<tr>
               <td style="border:1px solid #d1d5db;padding:8px;">${task.number}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.title)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.tag)}</td>
@@ -394,8 +406,9 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
               <td style="border:1px solid #d1d5db;padding:8px;white-space:pre-line;">${task.commentHtml}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.attachment)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;">${escapeHtml(task.reminder)}</td>
-            </tr>`
-          )).join('')}
+            </tr>`,
+            )
+            .join('')}
         </tbody>
       </table>`
     : `<p>${escapeHtml(tEmail(language, 'noTasks'))}</p>`;
@@ -407,13 +420,9 @@ const sendTaskSummaryEmail = async (tasks, user, language = 'en') => {
     headers: {
       'X-Task-Manager-Alert': taskAlertMarker,
     },
-    text: [
-      taskAlertMarker,
-      '',
-      tEmail(language, 'summaryMessage', { username: user.username }),
-      '',
-      ...textTable,
-    ].join('\n'),
+    text: [taskAlertMarker, '', tEmail(language, 'summaryMessage', { username: user.username }), '', ...textTable].join(
+      '\n',
+    ),
     html: `
       <div style="font-family:Arial,sans-serif;color:#111827;">
         <p><strong>${taskAlertMarker}</strong></p>
@@ -442,7 +451,7 @@ const sendNoteSummaryEmail = async (notes, user, language = 'en') => {
 
   const locale = normalizeLanguage(language) === 'vi' ? 'vi-VN' : 'en-US';
   const appMarker = tEmail(language, 'taskManager');
-  
+
   const formatDate = (dateStr) => {
     if (!dateStr) return tEmail(language, 'notSet');
     return new Date(dateStr).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
@@ -468,13 +477,15 @@ const sendNoteSummaryEmail = async (notes, user, language = 'en') => {
   const textTable = noteRows.length
     ? [
         headings.join('\t'),
-        ...noteRows.map((note) => [
-          note.number,
-          note.title,
-          note.body.slice(0, 200) + (note.body.length > 200 ? '...' : ''),
-          note.created,
-          note.updated,
-        ].join('\t')),
+        ...noteRows.map((note) =>
+          [
+            note.number,
+            note.title,
+            note.body.slice(0, 200) + (note.body.length > 200 ? '...' : ''),
+            note.created,
+            note.updated,
+          ].join('\t'),
+        ),
       ]
     : [tEmail(language, 'noNotes')];
 
@@ -482,21 +493,27 @@ const sendNoteSummaryEmail = async (notes, user, language = 'en') => {
     ? `<table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:14px;">
         <thead>
           <tr>
-            ${headings.map((heading) => (
-              `<th style="border:1px solid #d1d5db;padding:8px;background:#f3f4f6;text-align:left;">${escapeHtml(heading)}</th>`
-            )).join('')}
+            ${headings
+              .map(
+                (heading) =>
+                  `<th style="border:1px solid #d1d5db;padding:8px;background:#f3f4f6;text-align:left;">${escapeHtml(heading)}</th>`,
+              )
+              .join('')}
           </tr>
         </thead>
         <tbody>
-          ${noteRows.map((note) => (
-            `<tr>
+          ${noteRows
+            .map(
+              (note) =>
+                `<tr>
               <td style="border:1px solid #d1d5db;padding:8px;vertical-align:top;">${note.number}</td>
               <td style="border:1px solid #d1d5db;padding:8px;vertical-align:top;font-weight:600;">${escapeHtml(note.title)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;white-space:pre-line;vertical-align:top;">${note.bodyHtml}</td>
               <td style="border:1px solid #d1d5db;padding:8px;vertical-align:top;white-space:nowrap;">${escapeHtml(note.created)}</td>
               <td style="border:1px solid #d1d5db;padding:8px;vertical-align:top;white-space:nowrap;">${escapeHtml(note.updated)}</td>
-            </tr>`
-          )).join('')}
+            </tr>`,
+            )
+            .join('')}
         </tbody>
       </table>`
     : `<p>${escapeHtml(tEmail(language, 'noNotes'))}</p>`;
@@ -508,13 +525,9 @@ const sendNoteSummaryEmail = async (notes, user, language = 'en') => {
     headers: {
       'X-Task-Manager-Alert': appMarker,
     },
-    text: [
-      appMarker,
-      '',
-      tEmail(language, 'noteSummaryMessage', { username: user.username }),
-      '',
-      ...textTable,
-    ].join('\n'),
+    text: [appMarker, '', tEmail(language, 'noteSummaryMessage', { username: user.username }), '', ...textTable].join(
+      '\n',
+    ),
     html: `
       <div style="font-family:Arial,sans-serif;color:#111827;">
         <p><strong>${escapeHtml(appMarker)}</strong></p>

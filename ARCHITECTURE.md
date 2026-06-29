@@ -1,6 +1,7 @@
 # Task Manager - Architecture Documentation
 
 ## 📋 Table of Contents
+
 - [Overview](#overview)
 - [Project Structure](#project-structure)
 - [Tech Stack](#tech-stack)
@@ -13,6 +14,7 @@
 This is a full-stack task management application with real-time updates, user authentication, and multi-platform support (web + iOS).
 
 ### Key Features
+
 - ✅ User authentication with session management
 - ✅ Real-time task updates via WebSockets
 - ✅ Rich text editing for task descriptions
@@ -59,6 +61,7 @@ SmallPr/
 ## 🛠 Tech Stack
 
 ### Backend
+
 - **Runtime**: Node.js (v18+)
 - **Framework**: Express.js
 - **Database**: PostgreSQL
@@ -69,6 +72,7 @@ SmallPr/
 - **Logging**: Pino
 
 ### Frontend
+
 - **Framework**: React 18 + TypeScript
 - **Build Tool**: Vite
 - **State Management**: TanStack Query (React Query)
@@ -77,6 +81,7 @@ SmallPr/
 - **Real-time**: Socket.IO client
 
 ### Mobile
+
 - **Platform**: iOS (Swift + SwiftUI)
 - **Type**: WebView wrapper
 
@@ -85,6 +90,7 @@ SmallPr/
 ### Backend Architecture
 
 #### Layered Architecture
+
 ```
 Request → Middleware → Routes → Services → Database
                 ↓
@@ -98,35 +104,36 @@ Request → Middleware → Routes → Services → Database
    - Sets up middleware pipeline
    - Configures Socket.IO
    - Registers routes
-   - *Purpose*: Separation of concerns for app initialization
+   - _Purpose_: Separation of concerns for app initialization
 
 2. **Routes Layer** (`src/server/routes/`)
    - HTTP endpoint definitions
    - Request/response handling
    - Input validation
-   - *Pattern*: One file per resource (tasks, auth, admin, etc.)
+   - _Pattern_: One file per resource (tasks, auth, admin, etc.)
 
 3. **Services Layer** (`src/server/services/`)
    - Business logic implementation
    - Database operations
    - External integrations (email, etc.)
-   - *Pattern*: Factory functions returning service objects
+   - _Pattern_: Factory functions returning service objects
 
 4. **Middleware Layer** (`src/server/middleware/`)
    - Authentication checks
    - Request validation
    - Error handling
-   - *Pattern*: Reusable Express middleware functions
+   - _Pattern_: Reusable Express middleware functions
 
 5. **Database Layer** (`src/server/db/`)
    - Connection pooling
    - Query execution
    - Migrations
-   - *Pattern*: Centralized database client
+   - _Pattern_: Centralized database client
 
 ### Frontend Architecture
 
 #### Component-Based Architecture
+
 ```
 App
 ├── LoginGate (auth guard)
@@ -145,22 +152,23 @@ App
    - `useTasks`: Task CRUD operations
    - `useRealtime`: WebSocket connection management
    - `useTags`: Tag management
-   - *Purpose*: Encapsulate logic, promote reusability
+   - _Purpose_: Encapsulate logic, promote reusability
 
 2. **API Layer** (`src/api/`)
    - HTTP client configuration
    - Type-safe API calls
    - Error handling
-   - *Pattern*: Centralized API client with TypeScript types
+   - _Pattern_: Centralized API client with TypeScript types
 
 3. **Feature Folders** (`src/features/`)
    - Feature-specific components
    - Feature-specific utilities
-   - *Pattern*: Colocation of related code
+   - _Pattern_: Colocation of related code
 
 ## 🔄 Data Flow
 
 ### Authentication Flow
+
 ```
 1. User submits credentials → POST /api/auth/login
 2. Backend validates → bcrypt.compare(password, hash)
@@ -170,6 +178,7 @@ App
 ```
 
 ### Real-time Task Updates
+
 ```
 1. User updates task → PUT /api/tasks/:id
 2. Database updated → PostgreSQL
@@ -179,6 +188,7 @@ App
 ```
 
 ### Caching Strategy
+
 ```
 1. Request → Check Redis cache
 2. Cache hit? → Return cached data
@@ -190,6 +200,7 @@ App
 ## 🚀 Getting Started
 
 ### Prerequisites
+
 - Node.js 18+ and npm
 - PostgreSQL 16+
 - Redis 6+
@@ -198,6 +209,7 @@ App
 ### Environment Setup
 
 Create `.env` file:
+
 ```bash
 # Database
 DATABASE_URL=postgresql://user:password@localhost:5432/taskmanager
@@ -274,12 +286,14 @@ npm test
 ## 🐛 Debugging
 
 ### Backend Logs
+
 ```bash
 # View logs in JSON format (Pino)
 npm start | npx pino-pretty
 ```
 
 ### Frontend
+
 - React DevTools browser extension
 - TanStack Query DevTools (built-in)
 - Browser console for WebSocket messages
@@ -289,17 +303,20 @@ npm start | npx pino-pretty
 The iOS app is a native Swift wrapper that loads the web app in a WKWebView.
 
 ### Configuration
+
 - URL configured in `ios/TaskManager/TaskManager/AppConfig.swift`
 - For local testing: Use Mac's local IP (same Wi-Fi)
 - For production: Use HTTPS deployment URL
 
 ### Building
+
 - **Mac**: Open in Xcode and build
 - **CI/CD**: GitHub Actions workflow (`.github/workflows/ios-build.yml`)
 
 ## 🤝 Contributing
 
 When adding new features:
+
 1. Add route in `src/server/routes/`
 2. Implement service in `src/server/services/`
 3. Add validation schema in `src/server/schemas/`

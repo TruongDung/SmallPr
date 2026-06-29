@@ -33,7 +33,7 @@ const addDays = (value, count) => {
 
 const addMonths = (value, count) => {
   const { year, month, day } = parseYmd(value);
-  const targetMonthIndex = (year * 12) + (month - 1) + count;
+  const targetMonthIndex = year * 12 + (month - 1) + count;
   const targetYear = Math.floor(targetMonthIndex / 12);
   const targetMonth = (targetMonthIndex % 12) + 1;
   const targetDay = Math.min(day, daysInMonth(targetYear, targetMonth));
@@ -61,30 +61,45 @@ const getTodayYmd = (timezone = 'UTC', now = new Date()) => {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  }).formatToParts(now).reduce((memo, part) => {
-    memo[part.type] = part.value;
-    return memo;
-  }, {});
+  })
+    .formatToParts(now)
+    .reduce((memo, part) => {
+      memo[part.type] = part.value;
+      return memo;
+    }, {});
   return `${parts.year}-${parts.month}-${parts.day}`;
 };
 
 const normalizeWeekdays = (value) => {
   if (value === undefined || value === null || value === '') return null;
   const entries = Array.isArray(value) ? value : String(value).split(',');
-  const days = [...new Set(entries
-    .map((entry) => Number(entry))
-    .filter((entry) => WEEKDAY_VALUES.has(entry)))].sort((a, b) => a - b);
+  const days = [...new Set(entries.map((entry) => Number(entry)).filter((entry) => WEEKDAY_VALUES.has(entry)))].sort(
+    (a, b) => a - b,
+  );
   return days.length ? days : null;
 };
 
 const normalizeRuleInput = (input = {}, fallback = {}) => {
-  const frequency = String(input.frequency || input.recurrencePattern || fallback.frequency || fallback.recurrence_pattern || '').trim();
-  const interval = Math.max(1, Number(input.interval || input.recurrenceInterval || fallback.interval || fallback.recurrence_interval || 1) || 1);
-  const timezone = input.timezone || input.recurrenceTimezone || fallback.timezone || fallback.recurrence_timezone || 'UTC';
+  const frequency = String(
+    input.frequency || input.recurrencePattern || fallback.frequency || fallback.recurrence_pattern || '',
+  ).trim();
+  const interval = Math.max(
+    1,
+    Number(input.interval || input.recurrenceInterval || fallback.interval || fallback.recurrence_interval || 1) || 1,
+  );
+  const timezone =
+    input.timezone || input.recurrenceTimezone || fallback.timezone || fallback.recurrence_timezone || 'UTC';
   const startDate = toYmd(input.startDate || input.recurrenceStartDate || fallback.start_date || fallback.due_date);
   const endDate = toYmd(input.endDate || input.recurrenceEndDate || fallback.end_date || fallback.recurrence_end_date);
-  const occurrenceLimit = input.occurrenceLimit || input.recurrenceOccurrenceLimit || fallback.occurrence_limit || fallback.recurrence_occurrence_limit || null;
-  const weekdays = normalizeWeekdays(input.weekdays || input.recurrenceDays || fallback.weekdays || fallback.recurrence_days);
+  const occurrenceLimit =
+    input.occurrenceLimit ||
+    input.recurrenceOccurrenceLimit ||
+    fallback.occurrence_limit ||
+    fallback.recurrence_occurrence_limit ||
+    null;
+  const weekdays = normalizeWeekdays(
+    input.weekdays || input.recurrenceDays || fallback.weekdays || fallback.recurrence_days,
+  );
 
   if (!FREQUENCIES.has(frequency)) {
     return { error: 'Recurrence frequency must be daily, weekly, monthly, or yearly' };
@@ -115,15 +130,7 @@ const normalizeRuleInput = (input = {}, fallback = {}) => {
   };
 };
 
-const calculateNextOccurrence = ({
-  frequency,
-  pattern,
-  interval = 1,
-  weekdays,
-  days,
-  fromDate,
-  startDate,
-}) => {
+const calculateNextOccurrence = ({ frequency, pattern, interval = 1, weekdays, days, fromDate, startDate }) => {
   const normalizedFrequency = frequency || pattern;
   const normalizedInterval = Math.max(1, Number(interval) || 1);
   const anchor = toYmd(fromDate || startDate);
@@ -153,10 +160,9 @@ const calculateNextOccurrence = ({
   return null;
 };
 
-const isPastRuleEnd = (rule, dueDate) => (
+const isPastRuleEnd = (rule, dueDate) =>
   (rule.end_date && dueDate > toYmd(rule.end_date)) ||
-  (rule.occurrence_limit && Number(rule.generated_count || 0) >= Number(rule.occurrence_limit))
-);
+  (rule.occurrence_limit && Number(rule.generated_count || 0) >= Number(rule.occurrence_limit));
 
 const createRecurrenceService = ({
   allAsync,
@@ -208,13 +214,17 @@ const createRecurrenceService = ({
           weekdays: rule.weekdays,
           fromDate: rule.startDate,
         }),
-      ]
+      ],
     );
 
-    const ruleId = result.lastID || (await getAsync(
-      'SELECT id FROM recurring_task_rules WHERE template_task_id = ? AND status <> ?',
-      [task.id, 'deleted']
-    ))?.id;
+    const ruleId =
+      result.lastID ||
+      (
+        await getAsync('SELECT id FROM recurring_task_rules WHERE template_task_id = ? AND status <> ?', [
+          task.id,
+          'deleted',
+        ])
+      )?.id;
 
     if (!ruleId) return { error: 'Failed to create recurrence rule' };
 
@@ -247,7 +257,7 @@ const createRecurrenceService = ({
         }),
         task.id,
         task.user_id,
-      ]
+      ],
     );
 
     const createdRule = await getAsync('SELECT * FROM recurring_task_rules WHERE id = ?', [ruleId]);
@@ -269,10 +279,11 @@ const createRecurrenceService = ({
       return createRuleForTask({ task, input, actor });
     }
 
-    const existing = await getAsync(
-      'SELECT * FROM recurring_task_rules WHERE id = ? AND user_id = ? AND status <> ?',
-      [task.recurring_rule_id, task.user_id, 'deleted']
-    );
+    const existing = await getAsync('SELECT * FROM recurring_task_rules WHERE id = ? AND user_id = ? AND status <> ?', [
+      task.recurring_rule_id,
+      task.user_id,
+      'deleted',
+    ]);
     if (!existing) return { error: 'Recurrence rule not found' };
 
     const normalized = normalizeRuleInput(input, existing);
@@ -302,7 +313,7 @@ const createRecurrenceService = ({
         nextDueDate,
         existing.id,
         task.user_id,
-      ]
+      ],
     );
 
     await runAsync(
@@ -328,7 +339,7 @@ const createRecurrenceService = ({
         existing.id,
         scope,
         task.id,
-      ]
+      ],
     );
 
     const updatedRule = await getAsync('SELECT * FROM recurring_task_rules WHERE id = ?', [existing.id]);
@@ -347,29 +358,28 @@ const createRecurrenceService = ({
   };
 
   const setRuleStatusForTask = async ({ task, status, actor = {} }) => {
-    const existing = task.recurring_rule_id ? await getAsync(
-      'SELECT * FROM recurring_task_rules WHERE id = ? AND user_id = ?',
-      [task.recurring_rule_id, task.user_id]
-    ) : null;
+    const existing = task.recurring_rule_id
+      ? await getAsync('SELECT * FROM recurring_task_rules WHERE id = ? AND user_id = ?', [
+          task.recurring_rule_id,
+          task.user_id,
+        ])
+      : null;
     if (!existing) return { error: 'Recurrence rule not found' };
 
     await runAsync(
       'UPDATE recurring_task_rules SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?',
-      [status, existing.id, task.user_id]
+      [status, existing.id, task.user_id],
     );
     if (status === 'deleted') {
       await runAsync(
         `UPDATE tasks SET is_recurring = FALSE, recurring_rule_id = NULL, next_occurrence_date = NULL
          WHERE user_id = ? AND recurring_rule_id = ?`,
-        [task.user_id, existing.id]
+        [task.user_id, existing.id],
       );
     }
     const updated = await getAsync('SELECT * FROM recurring_task_rules WHERE id = ?', [existing.id]);
-    const action = status === 'paused'
-      ? 'recurrence_paused'
-      : status === 'active'
-        ? 'recurrence_resumed'
-        : 'recurrence_deleted';
+    const action =
+      status === 'paused' ? 'recurrence_paused' : status === 'active' ? 'recurrence_resumed' : 'recurrence_deleted';
     await recordAudit({
       userId: task.user_id,
       actorUserId: actor.actorUserId || task.user_id,
@@ -395,14 +405,17 @@ const createRecurrenceService = ({
          AND rules.next_due_date IS NOT NULL
        ORDER BY rules.next_due_date ASC, rules.id ASC
        LIMIT ?`,
-      [limit]
+      [limit],
     );
     return rows.filter((rule) => toYmd(rule.next_due_date) <= getTodayYmd(rule.timezone, now));
   };
 
   const generateNextTaskForRule = async (rule, { actorUserId = null, now = new Date() } = {}) => {
     if (!rule.title && rule.template_task_id) {
-      const template = await getAsync('SELECT * FROM tasks WHERE id = ? AND user_id = ?', [rule.template_task_id, rule.user_id]);
+      const template = await getAsync('SELECT * FROM tasks WHERE id = ? AND user_id = ?', [
+        rule.template_task_id,
+        rule.user_id,
+      ]);
       if (!template) return null;
       rule = {
         ...rule,
@@ -458,7 +471,7 @@ const createRecurrenceService = ({
         rule.attachment_type,
         rule.attachment_data,
         rule.attachment_size || 0,
-      ]
+      ],
     );
 
     const nextDueDate = calculateNextOccurrence({
@@ -469,15 +482,14 @@ const createRecurrenceService = ({
     });
 
     const inserted = Boolean(result.rows[0]);
-    const generatedTask = result.rows[0] || await getAsync(
-      'SELECT * FROM tasks WHERE recurring_rule_id = ? AND due_date = ?',
-      [rule.id, dueDate]
-    );
+    const generatedTask =
+      result.rows[0] ||
+      (await getAsync('SELECT * FROM tasks WHERE recurring_rule_id = ? AND due_date = ?', [rule.id, dueDate]));
     if (!generatedTask) return null;
 
     const generatedCount = Math.max(
       Number(rule.generated_count || 0),
-      Number(generatedTask.recurrence_occurrence_index || nextOccurrenceIndex)
+      Number(generatedTask.recurrence_occurrence_index || nextOccurrenceIndex),
     );
 
     await runAsync(
@@ -487,12 +499,13 @@ const createRecurrenceService = ({
          next_due_date = ?,
          updated_at = CURRENT_TIMESTAMP
        WHERE id = ?`,
-      [generatedCount, dueDate, nextDueDate, rule.id]
+      [generatedCount, dueDate, nextDueDate, rule.id],
     );
-    await runAsync(
-      'UPDATE tasks SET next_occurrence_date = ? WHERE recurring_rule_id = ? AND user_id = ?',
-      [nextDueDate, rule.id, rule.user_id]
-    );
+    await runAsync('UPDATE tasks SET next_occurrence_date = ? WHERE recurring_rule_id = ? AND user_id = ?', [
+      nextDueDate,
+      rule.id,
+      rule.user_id,
+    ]);
 
     if (!inserted) return generatedTask;
 

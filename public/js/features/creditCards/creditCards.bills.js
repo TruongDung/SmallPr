@@ -7,14 +7,18 @@
     const showEditBillError = (text) => window.CreditCardFeature.dom.setFieldError(elements.editBillError, text);
     const clearEditBillError = () => window.CreditCardFeature.dom.clearFieldError(elements.editBillError);
 
-    const billGroupKey = (bill) => String(bill.item || '').trim().toLowerCase();
+    const billGroupKey = (bill) =>
+      String(bill.item || '')
+        .trim()
+        .toLowerCase();
 
-    const escapeHtml = (value) => String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
+    const escapeHtml = (value) =>
+      String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 
     const setBills = (nextBills) => {
       bills = nextBills || [];
@@ -69,7 +73,7 @@
       const headers = Object.keys(rows[0]);
       const csv = [
         headers.join(','),
-        ...rows.map(row => headers.map(header => `"${String(row[header]).replace(/"/g, '""')}"`).join(',')),
+        ...rows.map((row) => headers.map((header) => `"${String(row[header]).replace(/"/g, '""')}"`).join(',')),
       ].join('\n');
       downloadBlob(csv, 'text/csv;charset=utf-8', exportFileName('csv'));
     };
@@ -84,9 +88,9 @@
       const headers = Object.keys(rows[0]);
       const table = `
         <table>
-          <thead><tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead>
+          <thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead>
           <tbody>
-            ${rows.map(row => `<tr>${headers.map(header => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('')}
+            ${rows.map((row) => `<tr>${headers.map((header) => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('')}
           </tbody>
           <tfoot>
             <tr><td colspan="2">Grand total</td><td>${escapeHtml(formatters.normalizeAmount(bills.reduce((sum, bill) => sum + formatters.normalizeAmount(bill.amount), 0)).toFixed(2))}</td><td colspan="3"></td></tr>
@@ -128,8 +132,8 @@
             <h1>Financial Expense Report</h1>
             <p>Grand total: ${escapeHtml(formatters.formatCurrency(bills.reduce((sum, bill) => sum + formatters.normalizeAmount(bill.amount), 0)))}</p>
             <table>
-              <thead><tr>${headers.map(header => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead>
-              <tbody>${rows.map(row => `<tr>${headers.map(header => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('')}</tbody>
+              <thead><tr>${headers.map((header) => `<th>${escapeHtml(header)}</th>`).join('')}</tr></thead>
+              <tbody>${rows.map((row) => `<tr>${headers.map((header) => `<td>${escapeHtml(row[header])}</td>`).join('')}</tr>`).join('')}</tbody>
             </table>
           </body>
         </html>
@@ -221,7 +225,7 @@
       pendingEditBill = bill;
       clearEditBillError();
       elements.editBillForm.reset();
-      
+
       if (bill) {
         // Editing existing bill
         elements.editBillItemInput.value = bill.item || '';
@@ -239,7 +243,7 @@
         elements.editBillStatusInput.value = 'Unpaid';
         document.getElementById('edit-fast-access-bill-title').textContent = t('addExpense') || 'Add Expense';
       }
-      
+
       elements.editBillModal.classList.remove('hidden');
       elements.editBillItemInput.focus();
       elements.editBillItemInput.select();
@@ -373,7 +377,10 @@
       document.querySelectorAll('[data-bill-sort]').forEach((button) => {
         const isActive = button.dataset.billSort === billSort.field;
         button.classList.toggle('active', isActive);
-        button.setAttribute('aria-sort', isActive ? (billSort.direction === 'asc' ? 'ascending' : 'descending') : 'none');
+        button.setAttribute(
+          'aria-sort',
+          isActive ? (billSort.direction === 'asc' ? 'ascending' : 'descending') : 'none',
+        );
 
         const arrow = button.querySelector('.sort-arrow');
         if (arrow) arrow.textContent = isActive ? (billSort.direction === 'asc' ? '^' : 'v') : '<>';
@@ -408,14 +415,7 @@
 
     const renderHeaders = () => {
       const headerCells = document.querySelectorAll('.fast-access-bills-table th');
-      const labels = [
-        t('billItem'),
-        t('amount'),
-        t('dueDate'),
-        t('payBefore'),
-        t('status'),
-        t('actions'),
-      ];
+      const labels = [t('billItem'), t('amount'), t('dueDate'), t('payBefore'), t('status'), t('actions')];
       const sortableHeaders = {
         1: 'amount',
       };
@@ -515,7 +515,7 @@
             const deleteButton = document.createElement('button');
             deleteButton.type = 'button';
             deleteButton.className = 'task-action-icon danger';
-            deleteButton.textContent = '🗑';
+            deleteButton.textContent = '×';
             deleteButton.setAttribute('aria-label', t('delete'));
             deleteButton.title = t('delete');
             deleteButton.addEventListener('click', () => {
@@ -567,4 +567,4 @@
     ...(window.CreditCardFeature || {}),
     createFastAccessBills,
   };
-}());
+})();

@@ -15,9 +15,39 @@
     if (!localStorage.getItem(DEMO_TASKS_KEY)) {
       const now = new Date().toISOString();
       const sampleTasks = [
-        { id: 1, title: 'Welcome to Demo!', tag: 'demo', priority: 'high', status: 'todo', description: 'This is a sample task. Try creating, editing, and completing tasks.', comment: '', created_at: now, updated_at: now },
-        { id: 2, title: 'Try adding a task', tag: 'demo', priority: 'medium', status: 'todo', description: 'Click the + button to add your own task.', comment: '', created_at: now, updated_at: now },
-        { id: 3, title: 'Drag to change status', tag: '', priority: 'low', status: 'in_progress', description: 'Drag task cards between columns to update their status.', comment: '', created_at: now, updated_at: now },
+        {
+          id: 1,
+          title: 'Welcome to Demo!',
+          tag: 'demo',
+          priority: 'high',
+          status: 'todo',
+          description: 'This is a sample task. Try creating, editing, and completing tasks.',
+          comment: '',
+          created_at: now,
+          updated_at: now,
+        },
+        {
+          id: 2,
+          title: 'Try adding a task',
+          tag: 'demo',
+          priority: 'medium',
+          status: 'todo',
+          description: 'Click the + button to add your own task.',
+          comment: '',
+          created_at: now,
+          updated_at: now,
+        },
+        {
+          id: 3,
+          title: 'Drag to change status',
+          tag: '',
+          priority: 'low',
+          status: 'in_progress',
+          description: 'Drag task cards between columns to update their status.',
+          comment: '',
+          created_at: now,
+          updated_at: now,
+        },
       ];
       localStorage.setItem(DEMO_TASKS_KEY, JSON.stringify(sampleTasks));
     }
@@ -29,30 +59,162 @@
       const fiveDaysAgo = new Date(Date.now() - 5 * 86400000).toISOString().slice(0, 10);
       const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
       const sampleTransactions = [
-        { id: 1, kind: 'income', category: 'Salary', amount: 5000.00, occurred_on: today, note: 'Monthly salary', account: '' },
-        { id: 2, kind: 'expense', category: 'Food', amount: 35.00, occurred_on: today, note: 'Breakfast', account: '' },
-        { id: 3, kind: 'expense', category: 'Bills & Home', amount: 850.00, occurred_on: today, note: 'Electricity bill', account: '' },
-        { id: 4, kind: 'expense', category: 'Transport', amount: 80.00, occurred_on: yesterday, note: 'Gas station', account: '' },
-        { id: 5, kind: 'expense', category: 'Food', amount: 65.00, occurred_on: yesterday, note: 'Bubble tea', account: '' },
-        { id: 6, kind: 'expense', category: 'Food', amount: 42.00, occurred_on: twoDaysAgo, note: 'Lunch with team', account: '' },
-        { id: 7, kind: 'expense', category: 'Shopping', amount: 120.00, occurred_on: twoDaysAgo, note: 'New headphones', account: '' },
-        { id: 8, kind: 'expense', category: 'Transport', amount: 25.00, occurred_on: threeDaysAgo, note: 'Uber to office', account: '' },
-        { id: 9, kind: 'expense', category: 'Food', amount: 18.50, occurred_on: threeDaysAgo, note: 'Coffee & snack', account: '' },
-        { id: 10, kind: 'expense', category: 'Entertainment', amount: 15.99, occurred_on: fiveDaysAgo, note: 'Netflix subscription', account: '' },
-        { id: 11, kind: 'expense', category: 'Health', amount: 50.00, occurred_on: fiveDaysAgo, note: 'Gym monthly', account: '' },
-        { id: 12, kind: 'income', category: 'Freelance', amount: 800.00, occurred_on: weekAgo, note: 'Side project payment', account: '' },
-        { id: 13, kind: 'expense', category: 'Food', amount: 95.00, occurred_on: weekAgo, note: 'Grocery shopping', account: '' },
-        { id: 14, kind: 'expense', category: 'Bills & Home', amount: 200.00, occurred_on: weekAgo, note: 'Internet + phone', account: '' },
+        {
+          id: 1,
+          kind: 'income',
+          category: 'Salary',
+          amount: 5000.0,
+          occurred_on: today,
+          note: 'Monthly salary',
+          account: '',
+        },
+        { id: 2, kind: 'expense', category: 'Food', amount: 35.0, occurred_on: today, note: 'Breakfast', account: '' },
+        {
+          id: 3,
+          kind: 'expense',
+          category: 'Bills & Home',
+          amount: 850.0,
+          occurred_on: today,
+          note: 'Electricity bill',
+          account: '',
+        },
+        {
+          id: 4,
+          kind: 'expense',
+          category: 'Transport',
+          amount: 80.0,
+          occurred_on: yesterday,
+          note: 'Gas station',
+          account: '',
+        },
+        {
+          id: 5,
+          kind: 'expense',
+          category: 'Food',
+          amount: 65.0,
+          occurred_on: yesterday,
+          note: 'Bubble tea',
+          account: '',
+        },
+        {
+          id: 6,
+          kind: 'expense',
+          category: 'Food',
+          amount: 42.0,
+          occurred_on: twoDaysAgo,
+          note: 'Lunch with team',
+          account: '',
+        },
+        {
+          id: 7,
+          kind: 'expense',
+          category: 'Shopping',
+          amount: 120.0,
+          occurred_on: twoDaysAgo,
+          note: 'New headphones',
+          account: '',
+        },
+        {
+          id: 8,
+          kind: 'expense',
+          category: 'Transport',
+          amount: 25.0,
+          occurred_on: threeDaysAgo,
+          note: 'Uber to office',
+          account: '',
+        },
+        {
+          id: 9,
+          kind: 'expense',
+          category: 'Food',
+          amount: 18.5,
+          occurred_on: threeDaysAgo,
+          note: 'Coffee & snack',
+          account: '',
+        },
+        {
+          id: 10,
+          kind: 'expense',
+          category: 'Entertainment',
+          amount: 15.99,
+          occurred_on: fiveDaysAgo,
+          note: 'Netflix subscription',
+          account: '',
+        },
+        {
+          id: 11,
+          kind: 'expense',
+          category: 'Health',
+          amount: 50.0,
+          occurred_on: fiveDaysAgo,
+          note: 'Gym monthly',
+          account: '',
+        },
+        {
+          id: 12,
+          kind: 'income',
+          category: 'Freelance',
+          amount: 800.0,
+          occurred_on: weekAgo,
+          note: 'Side project payment',
+          account: '',
+        },
+        {
+          id: 13,
+          kind: 'expense',
+          category: 'Food',
+          amount: 95.0,
+          occurred_on: weekAgo,
+          note: 'Grocery shopping',
+          account: '',
+        },
+        {
+          id: 14,
+          kind: 'expense',
+          category: 'Bills & Home',
+          amount: 200.0,
+          occurred_on: weekAgo,
+          note: 'Internet + phone',
+          account: '',
+        },
       ];
       localStorage.setItem(DEMO_TRANSACTIONS_KEY, JSON.stringify(sampleTransactions));
     }
     if (!localStorage.getItem(DEMO_NOTES_KEY)) {
       const now = new Date().toISOString();
       const sampleNotes = [
-        { id: 1, title: 'Welcome to Notes', body: '# Getting Started\n\nThis is a sample note. Try editing it!\n\n- You can use **markdown** formatting\n- Create checklists with `- [ ]`\n- Paste images to extract text (OCR)', pinned: 1, created_at: now, updated_at: now },
-        { id: 2, title: 'Meeting Notes', body: '## Team Meeting - June 2026\n\n**Attendees:** Alice, Bob, Charlie\n\n### Action Items\n- [ ] Review project timeline\n- [ ] Update documentation\n- [x] Send weekly report\n\n### Notes\nDiscussed upcoming release. Need to finalize by end of month.', pinned: 0, created_at: now, updated_at: now },
-        { id: 3, title: 'Shopping List', body: '- [ ] Milk\n- [ ] Bread\n- [ ] Eggs\n- [ ] Coffee\n- [x] Butter\n- [ ] Vegetables', pinned: 0, created_at: now, updated_at: now },
-        { id: 4, title: 'Quick Ideas', body: 'Some random ideas to explore later:\n\n1. Build a habit tracker\n2. Learn a new programming language\n3. Read more books this month\n\n> "The best time to start is now."', pinned: 0, created_at: now, updated_at: now },
+        {
+          id: 1,
+          title: 'Welcome to Notes',
+          body: '# Getting Started\n\nThis is a sample note. Try editing it!\n\n- You can use **markdown** formatting\n- Create checklists with `- [ ]`\n- Paste images to extract text (OCR)',
+          pinned: 1,
+          created_at: now,
+          updated_at: now,
+        },
+        {
+          id: 2,
+          title: 'Meeting Notes',
+          body: '## Team Meeting - June 2026\n\n**Attendees:** Alice, Bob, Charlie\n\n### Action Items\n- [ ] Review project timeline\n- [ ] Update documentation\n- [x] Send weekly report\n\n### Notes\nDiscussed upcoming release. Need to finalize by end of month.',
+          pinned: 0,
+          created_at: now,
+          updated_at: now,
+        },
+        {
+          id: 3,
+          title: 'Shopping List',
+          body: '- [ ] Milk\n- [ ] Bread\n- [ ] Eggs\n- [ ] Coffee\n- [x] Butter\n- [ ] Vegetables',
+          pinned: 0,
+          created_at: now,
+          updated_at: now,
+        },
+        {
+          id: 4,
+          title: 'Quick Ideas',
+          body: 'Some random ideas to explore later:\n\n1. Build a habit tracker\n2. Learn a new programming language\n3. Read more books this month\n\n> "The best time to start is now."',
+          pinned: 0,
+          created_at: now,
+          updated_at: now,
+        },
       ];
       localStorage.setItem(DEMO_NOTES_KEY, JSON.stringify(sampleNotes));
     }
@@ -62,8 +224,30 @@
       const nextWeek = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
       const lastWeek = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
       const sampleSprints = [
-        { id: 1, name: 'Sprint 1 - MVP', goal: 'Deliver the minimum viable product with core task management features.', status: 'active', start_date: lastWeek, end_date: nextWeek, archived: 0, task_count: 2, created_at: now, updated_at: now },
-        { id: 2, name: 'Sprint 2 - Polish', goal: 'UI improvements and bug fixes based on user feedback.', status: 'planned', start_date: nextWeek, end_date: null, archived: 0, task_count: 1, created_at: now, updated_at: now },
+        {
+          id: 1,
+          name: 'Sprint 1 - MVP',
+          goal: 'Deliver the minimum viable product with core task management features.',
+          status: 'active',
+          start_date: lastWeek,
+          end_date: nextWeek,
+          archived: 0,
+          task_count: 2,
+          created_at: now,
+          updated_at: now,
+        },
+        {
+          id: 2,
+          name: 'Sprint 2 - Polish',
+          goal: 'UI improvements and bug fixes based on user feedback.',
+          status: 'planned',
+          start_date: nextWeek,
+          end_date: null,
+          archived: 0,
+          task_count: 1,
+          created_at: now,
+          updated_at: now,
+        },
       ];
       localStorage.setItem(DEMO_SPRINTS_KEY, JSON.stringify(sampleSprints));
       // Assign some tasks to sprints
@@ -90,29 +274,41 @@
   let nextTxnId = 100;
 
   const getTasks = () => {
-    try { return JSON.parse(localStorage.getItem(DEMO_TASKS_KEY) || '[]'); }
-    catch { return []; }
+    try {
+      return JSON.parse(localStorage.getItem(DEMO_TASKS_KEY) || '[]');
+    } catch {
+      return [];
+    }
   };
 
   const saveTasks = (tasks) => localStorage.setItem(DEMO_TASKS_KEY, JSON.stringify(tasks));
 
   const getTransactions = () => {
-    try { return JSON.parse(localStorage.getItem(DEMO_TRANSACTIONS_KEY) || '[]'); }
-    catch { return []; }
+    try {
+      return JSON.parse(localStorage.getItem(DEMO_TRANSACTIONS_KEY) || '[]');
+    } catch {
+      return [];
+    }
   };
 
   const saveTransactions = (txns) => localStorage.setItem(DEMO_TRANSACTIONS_KEY, JSON.stringify(txns));
 
   const getNotes = () => {
-    try { return JSON.parse(localStorage.getItem(DEMO_NOTES_KEY) || '[]'); }
-    catch { return []; }
+    try {
+      return JSON.parse(localStorage.getItem(DEMO_NOTES_KEY) || '[]');
+    } catch {
+      return [];
+    }
   };
 
   const saveNotes = (notes) => localStorage.setItem(DEMO_NOTES_KEY, JSON.stringify(notes));
 
   const getSprints = () => {
-    try { return JSON.parse(localStorage.getItem(DEMO_SPRINTS_KEY) || '[]'); }
-    catch { return []; }
+    try {
+      return JSON.parse(localStorage.getItem(DEMO_SPRINTS_KEY) || '[]');
+    } catch {
+      return [];
+    }
   };
 
   const saveSprints = (sprints) => localStorage.setItem(DEMO_SPRINTS_KEY, JSON.stringify(sprints));
@@ -131,13 +327,11 @@
     const todoTasks = tasks.filter((task) => task.status === 'todo');
 
     // Overdue = has a due_date strictly before today and not done.
-    const overdue = tasks.filter((task) => (
-      task.due_date && task.due_date < todayKey && !isDone(task)
-    ));
+    const overdue = tasks.filter((task) => task.due_date && task.due_date < todayKey && !isDone(task));
     // Today = due today, or undated todo tasks (so the card isn't empty in demo).
-    const today = tasks.filter((task) => (
-      !isDone(task) && (task.due_date === todayKey || (!task.due_date && task.status === 'todo'))
-    ));
+    const today = tasks.filter(
+      (task) => !isDone(task) && (task.due_date === todayKey || (!task.due_date && task.status === 'todo')),
+    );
 
     const cards = {
       todaysTasks: {
@@ -192,12 +386,14 @@
       creditCards: { ok: true, data: { cardCount: 0, totalBalance: 0, totalInterest: 0, approachingClose: [] } },
       recentNotes: {
         ok: true,
-        data: getNotes().slice(0, 5).map((note) => ({
-          id: note.id,
-          title: note.title || 'Untitled',
-          excerpt: (note.body || '').slice(0, 120),
-          updated_at: note.updated_at,
-        })),
+        data: getNotes()
+          .slice(0, 5)
+          .map((note) => ({
+            id: note.id,
+            title: note.title || 'Untitled',
+            excerpt: (note.body || '').slice(0, 120),
+            updated_at: note.updated_at,
+          })),
       },
       weather: { ok: true, data: { city: null } },
       dailyQuote: {
@@ -288,20 +484,18 @@
     if (url.match(/^\/api\/transactions\/summary/) && method === 'GET') {
       const txns = getTransactions();
       const num = (value) => Number(value) || 0;
-      const income = txns
-        .filter((tx) => tx.kind === 'income')
-        .reduce((sum, tx) => sum + num(tx.amount), 0);
-      const expense = txns
-        .filter((tx) => tx.kind === 'expense')
-        .reduce((sum, tx) => sum + num(tx.amount), 0);
+      const income = txns.filter((tx) => tx.kind === 'income').reduce((sum, tx) => sum + num(tx.amount), 0);
+      const expense = txns.filter((tx) => tx.kind === 'expense').reduce((sum, tx) => sum + num(tx.amount), 0);
       return { summary: { income, expense, net: income - expense } };
     }
     if (url.match(/^\/api\/transactions\/categories/) && method === 'GET') {
-      const categories = [...new Set(
-        getTransactions()
-          .map((tx) => tx.category)
-          .filter(Boolean)
-      )];
+      const categories = [
+        ...new Set(
+          getTransactions()
+            .map((tx) => tx.category)
+            .filter(Boolean),
+        ),
+      ];
       return { categories };
     }
     if (url.match(/^\/api\/transactions/) && method === 'GET') {
@@ -342,10 +536,15 @@
     // --- Sprints ---
     if ((url === '/api/sprints' || url.startsWith('/api/sprints?')) && method === 'GET') {
       const archived = url.includes('archived=true');
-      const sprints = getSprints().filter((s) => archived ? s.archived : !s.archived);
+      const sprints = getSprints().filter((s) => (archived ? s.archived : !s.archived));
       // Attach task_count dynamically
       const tasks = getTasks();
-      return { sprints: sprints.map((s) => ({ ...s, task_count: tasks.filter((t) => t.sprint_id === s.id && !t.archived).length })) };
+      return {
+        sprints: sprints.map((s) => ({
+          ...s,
+          task_count: tasks.filter((t) => t.sprint_id === s.id && !t.archived).length,
+        })),
+      };
     }
     if (url === '/api/sprints' && method === 'POST') {
       const sprints = getSprints();
@@ -436,7 +635,10 @@
       return { success: true };
     }
     if (url.match(/^\/api\/notes\/\d+\/versions/) && method === 'GET') {
-      return { versions: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 1, hasPreviousPage: false, hasNextPage: false } };
+      return {
+        versions: [],
+        pagination: { page: 1, limit: 10, total: 0, totalPages: 1, hasPreviousPage: false, hasNextPage: false },
+      };
     }
     if (url === '/api/dashboard' || url.startsWith('/api/dashboard?')) return buildDashboardPayload();
 

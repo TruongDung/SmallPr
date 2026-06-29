@@ -17,13 +17,13 @@
     const checkboxButton = document.getElementById('note-checkbox-button');
     const taskLabel = document.getElementById('note-task-label');
     const taskSelect = document.getElementById('note-task-select');
-    
+
     // Folder management
     const foldersList = document.getElementById('notes-folders-list');
     const addFolderButton = document.getElementById('add-folder-button');
     const folderSelect = document.getElementById('note-folder-select');
     const folderLabel = document.getElementById('note-folder-label');
-    
+
     let notes = [];
     let tasks = [];
     let folders = [];
@@ -109,10 +109,11 @@
       });
     };
 
-    const folderNoteCount = (folderId) => notes.filter((note) => {
-      if (folderId === null) return note.folder_id === null || note.folder_id === undefined;
-      return note.folder_id === folderId;
-    }).length;
+    const folderNoteCount = (folderId) =>
+      notes.filter((note) => {
+        if (folderId === null) return note.folder_id === null || note.folder_id === undefined;
+        return note.folder_id === folderId;
+      }).length;
 
     // Persist a note's folder assignment (used by the editor select and by
     // drag-and-drop onto a folder).
@@ -230,24 +231,28 @@
       foldersList.innerHTML = '';
 
       // "All Notes" pseudo-folder (root).
-      foldersList.append(buildFolderRow({
-        id: null,
-        icon: '🗒',
-        name: t('allNotes') || 'All Notes',
-        isActive: activeFolderId === null,
-        count: folderNoteCount(null),
-        renamable: false,
-      }));
+      foldersList.append(
+        buildFolderRow({
+          id: null,
+          icon: '🗒',
+          name: t('allNotes') || 'All Notes',
+          isActive: activeFolderId === null,
+          count: folderNoteCount(null),
+          renamable: false,
+        }),
+      );
 
       folders.forEach((folder) => {
-        foldersList.append(buildFolderRow({
-          id: folder.id,
-          icon: '📁',
-          name: folder.name,
-          isActive: folder.id === activeFolderId,
-          count: folderNoteCount(folder.id),
-          renamable: true,
-        }));
+        foldersList.append(
+          buildFolderRow({
+            id: folder.id,
+            icon: '📁',
+            name: folder.name,
+            isActive: folder.id === activeFolderId,
+            count: folderNoteCount(folder.id),
+            renamable: true,
+          }),
+        );
       });
 
       // Keep the editor's folder dropdown in sync.
@@ -296,7 +301,10 @@
         finished = true;
         const name = input.value.trim();
         creatingFolder = false;
-        if (!name) { renderFolders(); return; }
+        if (!name) {
+          renderFolders();
+          return;
+        }
         const result = await request('/api/note-folders', {
           method: 'POST',
           body: JSON.stringify({ name, description: '' }),
@@ -308,7 +316,7 @@
         }
         if (result.folder) {
           folders.push(result.folder);
-          folders.sort((a, b) => (a.sort_order - b.sort_order) || a.name.localeCompare(b.name));
+          folders.sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name));
           activeFolderId = result.folder.id;
         }
         renderFolders();
@@ -323,8 +331,13 @@
       };
 
       input.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') { event.preventDefault(); commit(); }
-        else if (event.key === 'Escape') { event.preventDefault(); cancel(); }
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          commit();
+        } else if (event.key === 'Escape') {
+          event.preventDefault();
+          cancel();
+        }
       });
       input.addEventListener('blur', commit);
     };
@@ -350,7 +363,10 @@
         if (finished) return;
         finished = true;
         const name = input.value.trim();
-        if (!name || name === currentName) { renderFolders(); return; }
+        if (!name || name === currentName) {
+          renderFolders();
+          return;
+        }
         const result = await request(`/api/note-folders/${folderId}`, {
           method: 'PUT',
           body: JSON.stringify({ name, description: folder.description || '' }),
@@ -373,8 +389,13 @@
       };
 
       input.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') { event.preventDefault(); commit(); }
-        else if (event.key === 'Escape') { event.preventDefault(); cancel(); }
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          commit();
+        } else if (event.key === 'Escape') {
+          event.preventDefault();
+          cancel();
+        }
       });
       input.addEventListener('blur', commit);
     };
@@ -654,12 +675,10 @@
         if (hadPendingSave && previousNoteId) {
           const previousNote = notes.find((entry) => entry.id === previousNoteId);
           if (
-            previousNote
-            && (
-              previousNote.title !== previousTitle
-              || previousNote.body !== previousBody
-              || normalizeTaskId(previousNote.task_id) !== previousTaskId
-            )
+            previousNote &&
+            (previousNote.title !== previousTitle ||
+              previousNote.body !== previousBody ||
+              normalizeTaskId(previousNote.task_id) !== previousTaskId)
           ) {
             const saveResult = await request(`/api/notes/${previousNoteId}`, {
               method: 'PUT',
@@ -768,11 +787,11 @@
 
       notes = notesResult.notes || [];
       tasks = [
-        ...(tasksResult.error ? [] : (tasksResult.tasks || [])),
-        ...(archivedTasksResult.error ? [] : (archivedTasksResult.tasks || [])),
+        ...(tasksResult.error ? [] : tasksResult.tasks || []),
+        ...(archivedTasksResult.error ? [] : archivedTasksResult.tasks || []),
       ];
       folders = foldersResult.folders || [];
-      
+
       updateTaskOptions();
       renderFolders();
       setMessage('');
@@ -821,7 +840,7 @@
     const bind = () => {
       addButton.addEventListener('click', addNote);
       deleteButton.addEventListener('click', requestDeleteActive);
-      
+
       // Add folder functionality
       if (addFolderButton) {
         addFolderButton.addEventListener('click', startInlineCreate);
@@ -1036,7 +1055,7 @@
             // Silently fail on iOS or when clipboard read is blocked.
             return;
           }
-          
+
           if (!text) return;
 
           // Append on a fresh last line, adding a separating newline only when
@@ -1061,19 +1080,19 @@
       // Make links clickable in the note body with Ctrl/Cmd + Click
       bodyInput.addEventListener('click', (e) => {
         if (!e.ctrlKey && !e.metaKey) return;
-        
+
         const text = bodyInput.value;
         const cursorPos = bodyInput.selectionStart;
-        
+
         // URL regex pattern
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         let match;
-        
+
         // Find if cursor is on a URL
         while ((match = urlRegex.exec(text)) !== null) {
           const urlStart = match.index;
           const urlEnd = match.index + match[0].length;
-          
+
           if (cursorPos >= urlStart && cursorPos <= urlEnd) {
             e.preventDefault();
             const url = match[0];
@@ -1082,29 +1101,29 @@
           }
         }
       });
-      
+
       // Update title attribute to show Ctrl+Click hint on URLs
       bodyInput.addEventListener('mouseup', () => {
         const text = bodyInput.value;
         const cursorPos = bodyInput.selectionStart;
-        
+
         // URL regex pattern
         const urlRegex = /(https?:\/\/[^\s]+)/g;
         let match;
         let onUrl = false;
-        
+
         // Check if cursor is on a URL
         while ((match = urlRegex.exec(text)) !== null) {
           const urlStart = match.index;
           const urlEnd = match.index + match[0].length;
-          
+
           if (cursorPos >= urlStart && cursorPos <= urlEnd) {
             onUrl = true;
             bodyInput.title = 'Ctrl+Click to open link';
             break;
           }
         }
-        
+
         if (!onUrl) {
           bodyInput.title = '';
         }
@@ -1197,4 +1216,4 @@
   };
 
   window.NotesModule = { create };
-}());
+})();
