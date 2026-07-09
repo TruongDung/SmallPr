@@ -1307,6 +1307,229 @@
       quickEntryAddSuggestion?.addEventListener('click', addCurrentAsSuggestion);
       renderQuickSuggestions();
 
+      // ===== OCR Receipt Scanner =====
+      const ocrScanBtn = document.getElementById('ocr-scan-btn');
+      const ocrScanFile = document.getElementById('ocr-scan-file');
+      const ocrModal = document.getElementById('ocr-txn-modal');
+      const ocrProgress = document.getElementById('ocr-txn-progress');
+      const ocrStatus = document.getElementById('ocr-txn-status');
+      const ocrPreview = document.getElementById('ocr-txn-preview');
+      const ocrImage = document.getElementById('ocr-txn-image');
+      const ocrDescription = document.getElementById('ocr-txn-description');
+      const ocrAmount = document.getElementById('ocr-txn-amount');
+      const ocrDate = document.getElementById('ocr-txn-date');
+      const ocrCategory = document.getElementById('ocr-txn-category');
+      const ocrRaw = document.getElementById('ocr-txn-raw');
+      const ocrCancel = document.getElementById('ocr-txn-cancel');
+      const ocrConfirm = document.getElementById('ocr-txn-confirm');
+
+      const openOcrModal = () => {
+        ocrModal?.classList.remove('hidden');
+        ocrProgress?.classList.remove('hidden');
+        ocrPreview?.classList.add('hidden');
+        if (ocrConfirm) ocrConfirm.disabled = true;
+        if (ocrStatus) ocrStatus.textContent = 'Scanning image...';
+      };
+
+      const closeOcrModal = () => {
+        ocrModal?.classList.add('hidden');
+        ocrProgress?.classList.add('hidden');
+        ocrPreview?.classList.add('hidden');
+        if (ocrImage) ocrImage.src = '';
+        if (ocrRaw) ocrRaw.textContent = '';
+      };
+
+      // Parse extracted text to find amount, date, and merchant.
+      const parseReceiptText = (text) => {
+        const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+        let amount = null;
+        let date = null;
+        let description = '';
+
+        // Find amount: look for dollar/currency patterns.
+        const amountPatterns = [
+          /(?:total|amount|charged|subtotal)[:\s]*\$?([\d,]+\.?\d*)/i,
+          /\$\s*([\d,]+\.\d{2})/,
+          /([\d,]+\.\d{2})\s*(?:USD|VND)?/i,
+          /(?:[\d,]+k)/i,
+        ];
+        for (const pattern of amountPatterns) {
+          for (const line of lines) {
+            const match = line.match(pattern);
+            if (match) {
+              const raw = match[1] || match[0];
+              const cleaned = raw.replace(/[$,\s]/g, '');
+              if (cleaned.toLowerCase().endsWith('k')) {
+                amount = parseFloat(cleaned) * 1000;
+              } else {
+                amount = parseFloat(cleaned);
+              }
+              if (Number.isFinite(amount) && amount > 0) break;
+              amount = null;
+            }
+          }
+          if (amount) break;
+        }
+
+        // Find date patterns.
+        const datePatterns = [
+          /(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/,
+          /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*)\s+(\d{1,2}),?\s*(\d{4})/i,
+          /(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/,
+        ];
+        for (const pattern of datePatterns) {
+          for (const line of lines) {
+            const match = line.match(pattern);
+            if (match) {
+              try {
+                const parsed = new Date(match[0]);
+                if (!isNaN(parsed.getTime()) && parsed.getFullYear() > 2000) {
+                  date = parsed.toISOString().slice(0, 10);
+                  break;
+                }
+              } catch (_e) { /* continue */ }
+              // Try MM/DD/YYYY manually.
+              if (!date && match[3] && match[1] && match[2]) {
+                const year = match[3].length === 2 ? '20' + match[3] : match[3];
+                const candidate = new Date(`${year}-${match[1].padStart(2, '0')}-${match[2].padStart(2, '0')}`);
+                if (!isNaN(candidate.getTime())) {
+                  date = candidate.toISOString().slice(0, 10);
+                  break;
+                }
+              }
+            }
+          }
+          if (date) break;
+        }
+
+        // Description: first few non-numeric, non-date lines (likely merchant).
+        const skipPatterns = /^(total|subtotal|tax|change|cash|visa|mastercard|debit|credit|amount|\$|date|time|\d{1,2}[:\-\/])/i;
+        for (const line of lines.slice(0, 5)) {
+          if (!skipPatterns.test(line) && line.length > 2 && line.length < 60) {
+            description = line;
+            break;
+          }
+        }
+
+        return { amount, date, description };
+      };
+
+      const processOcrImage = async (imageSource) => {
+        openOcrModal();
+
+        // Show image preview.
+        if (typeof imageSource === 'string') {
+          if (ocrImage) ocrImage.src = imageSource;
+        } else {
+          const url = URL.createObjectURL(imageSource);
+          if (ocrImage) ocrImage.src = url;
+        }
+
+        if (!window.Tesseract) {
+          if (ocrStatus) ocrStatus.textContent = 'OCR library not available.';
+          setTimeout(closeOcrModal, 3000);
+          return;
+        }
+
+        try {
+          const result = await window.Tesseract.recognize(imageSource, 'eng+vie', {
+            logger: (info) => {
+              if (info.status === 'recognizing text' && ocrStatus) {
+                ocrStatus.textContent = `Reading receipt... ${Math.round((info.progress || 0) * 100)}%`;
+              }
+            },
+          });
+
+          const text = (result.data?.text || '').trim();
+          if (!text) {
+            if (ocrStatus) ocrStatus.textContent = 'No text found in image.';
+            setTimeout(closeOcrModal, 3000);
+            return;
+          }
+
+          // Parse and fill fields.
+          const parsed = parseReceiptText(text);
+          if (ocrDescription) ocrDescription.value = parsed.description || '';
+          if (ocrAmount) ocrAmount.value = parsed.amount ? String(parsed.amount) : '';
+          if (ocrDate) ocrDate.value = parsed.date || new Date().toISOString().slice(0, 10);
+          if (ocrCategory) ocrCategory.value = '';
+          if (ocrRaw) ocrRaw.textContent = text;
+
+          ocrProgress?.classList.add('hidden');
+          ocrPreview?.classList.remove('hidden');
+          if (ocrConfirm) ocrConfirm.disabled = false;
+        } catch (error) {
+          if (ocrStatus) ocrStatus.textContent = 'OCR failed. Please try again.';
+          console.error('OCR error:', error);
+          setTimeout(closeOcrModal, 3000);
+        }
+      };
+
+      // Click camera button → open file picker.
+      ocrScanBtn?.addEventListener('click', () => ocrScanFile?.click());
+      ocrScanFile?.addEventListener('change', () => {
+        const file = ocrScanFile.files?.[0];
+        if (file) processOcrImage(file);
+        ocrScanFile.value = '';
+      });
+
+      // Global paste listener: Ctrl+V an image anywhere while Transactions is
+      // visible triggers the OCR scanner. Text pastes into inputs are left alone.
+      document.addEventListener('paste', (event) => {
+        // Only active when the transactions panel is visible.
+        if (!panel || panel.classList.contains('hidden') || panel.offsetParent === null) return;
+        const items = event.clipboardData?.items;
+        if (!items) return;
+        let imageFile = null;
+        for (const item of items) {
+          if (item.type.startsWith('image/')) {
+            imageFile = item.getAsFile();
+            break;
+          }
+        }
+        if (!imageFile) return; // Not an image paste — let it through as text.
+        event.preventDefault();
+        processOcrImage(imageFile);
+      });
+
+      ocrCancel?.addEventListener('click', closeOcrModal);
+      ocrModal?.addEventListener('click', (event) => {
+        if (event.target === ocrModal) closeOcrModal();
+      });
+
+      // Confirm: create the transaction.
+      ocrConfirm?.addEventListener('click', async () => {
+        const amount = parseFloat(ocrAmount?.value || '0');
+        if (!amount || amount <= 0) {
+          showStatusToast(t('invalidAmount') || 'Please enter a valid amount', 'error');
+          ocrAmount?.focus();
+          return;
+        }
+
+        ocrConfirm.disabled = true;
+        const result = await request('/api/transactions', {
+          method: 'POST',
+          body: JSON.stringify({
+            kind: 'expense',
+            category: (ocrCategory?.value || '').trim() || 'Uncategorized',
+            amount,
+            occurred_on: ocrDate?.value || new Date().toISOString().slice(0, 10),
+            note: (ocrDescription?.value || '').trim(),
+          }),
+        });
+
+        if (result.error) {
+          showStatusToast(result.error, 'error');
+          ocrConfirm.disabled = false;
+          return;
+        }
+
+        showStatusToast(t('transactionAdded') || 'Transaction added from receipt!', 'success');
+        closeOcrModal();
+        await load();
+      });
+      // ===== End OCR Receipt Scanner =====
+
       // Collapsible insight panels (Budget by Category, Credit Card Payment).
       const bindPanelToggle = (toggle, list) => {
         toggle?.addEventListener('click', () => {

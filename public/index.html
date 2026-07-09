@@ -15,7 +15,7 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="apple-touch-icon" href="icon-180.png" />
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="stylesheet" href="styles.css?v=cache-clear-20260628-format-1" />
+    <link rel="stylesheet" href="styles.css?v=cache-clear-20260709-ocr-receipt-1" />
   </head>
   <body>
     <div class="container">
@@ -1372,6 +1372,8 @@
                   aria-label="Quick add transaction"
                 />
                 <button id="quick-entry-submit" type="submit" class="primary quick-entry-submit">Record</button>
+                <button id="ocr-scan-btn" type="button" class="secondary quick-entry-scan" title="Scan receipt image" aria-label="Scan receipt image">📷</button>
+                <input id="ocr-scan-file" type="file" accept="image/*" class="hidden" aria-hidden="true" />
               </form>
               <div class="quick-entry-suggestions">
                 <span class="quick-entry-suggestions-label" id="quick-entry-suggestions-label">Quick add:</span>
@@ -1928,6 +1930,42 @@
           >
             ✓
           </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="ocr-txn-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="ocr-txn-title">
+      <div class="modal ocr-txn-modal">
+        <h3 id="ocr-txn-title">Scan Receipt</h3>
+        <div id="ocr-txn-progress" class="ocr-txn-progress hidden">
+          <div class="ocr-txn-spinner" aria-hidden="true"></div>
+          <p id="ocr-txn-status">Scanning image...</p>
+        </div>
+        <div id="ocr-txn-preview" class="ocr-txn-preview hidden">
+          <img id="ocr-txn-image" class="ocr-txn-image" alt="Receipt preview" />
+          <div class="ocr-txn-fields">
+            <div class="field">
+              <label for="ocr-txn-description">Description</label>
+              <input id="ocr-txn-description" type="text" placeholder="Merchant / description" />
+            </div>
+            <div class="field">
+              <label for="ocr-txn-amount">Amount</label>
+              <input id="ocr-txn-amount" type="number" step="0.01" min="0" placeholder="0.00" />
+            </div>
+            <div class="field">
+              <label for="ocr-txn-date">Date</label>
+              <input id="ocr-txn-date" type="date" />
+            </div>
+            <div class="field">
+              <label for="ocr-txn-category">Category</label>
+              <input id="ocr-txn-category" type="text" placeholder="e.g. Food, Transport" />
+            </div>
+          </div>
+          <p id="ocr-txn-raw" class="ocr-txn-raw"></p>
+        </div>
+        <div class="modal-actions">
+          <button id="ocr-txn-cancel" type="button" class="secondary modal-text-action">Cancel</button>
+          <button id="ocr-txn-confirm" type="button" class="primary modal-text-action modal-text-action-primary" disabled>Add Transaction</button>
         </div>
       </div>
     </div>
@@ -2878,7 +2916,7 @@
     <script src="js/features/sprints/sprints.module.js?v=cache-clear-20260611-archive-hide-add-1"></script>
     <script src="js/weather.js?v=cache-clear-20260604-1"></script>
     <script src="js/tags/tags.module.js?v=cache-clear-20260608-1"></script>
-    <script src="js/transactions.module.js?v=cache-clear-20260601-7"></script>
+    <script src="js/transactions.module.js?v=cache-clear-20260709-ocr-receipt-1"></script>
     <script src="js/features/exports/exports.module.js?v=cache-clear-20260604-1"></script>
     <script src="js/notes-code-highlighter.js?v=cache-clear-20260601-7"></script>
     <script src="/socket.io/socket.io.js?v=cache-clear-20260623-1"></script>
