@@ -1339,6 +1339,73 @@
         if (ocrRaw) ocrRaw.textContent = '';
       };
 
+      // ===== Merchant → Category Auto-Mapping =====
+      // Common merchants mapped to spending categories. Matches are case-
+      // insensitive and use partial/fuzzy matching (the merchant name just needs
+      // to appear somewhere in the description). Users' past categories are also
+      // checked so the system learns from their history.
+      const MERCHANT_CATEGORIES = [
+        // Gas & Transport
+        { keywords: ['speedway', 'shell', 'chevron', 'exxon', 'mobil', 'bp ', 'sunoco', 'circle k', 'wawa', 'quiktrip', 'valero', 'marathon', 'costco gas', 'sam\'s fuel', 'gas station', 'fuel'], category: 'Transport' },
+        { keywords: ['uber', 'lyft', 'grab', 'gojek', 'taxi', 'bus', 'metro', 'transit', 'parking', 'toll'], category: 'Transport' },
+        // Food & Dining
+        { keywords: ['mcdonald', 'burger king', 'wendy', 'chick-fil-a', 'taco bell', 'subway', 'chipotle', 'panda express', 'kfc', 'popeyes', 'five guys', 'in-n-out', 'sonic', 'arby', 'domino', 'pizza hut', 'papa john', 'little caesar'], category: 'Food' },
+        { keywords: ['starbucks', 'dunkin', 'coffee', 'café', 'cafe', 'boba', 'milk tea', 'bubble tea', 'tea house', 'juice'], category: 'Food' },
+        { keywords: ['doordash', 'grubhub', 'uber eats', 'ubereats', 'postmates', 'instacart', 'seamless'], category: 'Food' },
+        { keywords: ['restaurant', 'diner', 'bistro', 'grill', 'sushi', 'ramen', 'pho', 'thai', 'chinese', 'mexican', 'italian', 'indian', 'korean', 'bbq', 'steakhouse', 'seafood', 'buffet'], category: 'Food' },
+        // Groceries
+        { keywords: ['walmart', 'target', 'kroger', 'safeway', 'albertson', 'publix', 'trader joe', 'whole foods', 'aldi', 'lidl', 'costco', 'sam\'s club', 'bj\'s', 'h-e-b', 'heb', 'meijer', 'food lion', 'piggly', 'winn-dixie', 'grocery', 'market', 'supermarket', 'fresh', 'organic'], category: 'Groceries' },
+        // Shopping
+        { keywords: ['amazon', 'ebay', 'etsy', 'shopify', 'aliexpress', 'wish', 'temu', 'shein'], category: 'Shopping' },
+        { keywords: ['kohl', 'macy', 'nordstrom', 'jcpenney', 'ross', 'tj maxx', 'tjmaxx', 'marshalls', 'burlington', 'old navy', 'gap', 'zara', 'h&m', 'uniqlo', 'forever 21', 'nike', 'adidas', 'foot locker'], category: 'Shopping' },
+        { keywords: ['best buy', 'apple store', 'microsoft', 'gamestop', 'micro center'], category: 'Shopping' },
+        { keywords: ['home depot', 'lowe', 'ikea', 'wayfair', 'bed bath', 'pier 1', 'pottery barn', 'crate & barrel', 'williams sonoma'], category: 'Shopping' },
+        // Bills & Utilities
+        { keywords: ['electric', 'power', 'utility', 'water', 'sewage', 'gas bill', 'internet', 'comcast', 'xfinity', 'at&t', 'att', 'verizon', 't-mobile', 'tmobile', 'sprint', 'spectrum', 'cox', 'centurylink', 'frontier'], category: 'Bills & Home' },
+        { keywords: ['rent', 'mortgage', 'hoa', 'insurance', 'geico', 'progressive', 'state farm', 'allstate', 'usaa', 'liberty mutual'], category: 'Bills & Home' },
+        // Entertainment & Subscriptions
+        { keywords: ['netflix', 'hulu', 'disney+', 'disney plus', 'hbo', 'spotify', 'apple music', 'youtube', 'twitch', 'paramount', 'peacock', 'crunchyroll'], category: 'Entertainment' },
+        { keywords: ['steam', 'playstation', 'xbox', 'nintendo', 'epic games', 'gaming'], category: 'Entertainment' },
+        { keywords: ['movie', 'cinema', 'theater', 'theatre', 'amc', 'regal', 'imax', 'concert', 'ticketmaster', 'eventbrite', 'stubhub'], category: 'Entertainment' },
+        // Health & Fitness
+        { keywords: ['pharmacy', 'cvs', 'walgreens', 'rite aid', 'doctor', 'hospital', 'clinic', 'dental', 'dentist', 'vision', 'optometrist', 'lab', 'quest diagnostic', 'labcorp'], category: 'Health' },
+        { keywords: ['gym', 'fitness', 'planet fitness', 'la fitness', 'crossfit', 'yoga', 'peloton', 'equinox', 'anytime fitness', '24 hour'], category: 'Health' },
+        // Travel
+        { keywords: ['airline', 'delta', 'united', 'american airlines', 'southwest', 'jetblue', 'spirit', 'frontier airlines', 'alaska air', 'hawaiian', 'flight', 'airbnb', 'vrbo', 'hotel', 'marriott', 'hilton', 'hyatt', 'motel', 'booking.com', 'expedia', 'trivago'], category: 'Travel' },
+        // Education
+        { keywords: ['tuition', 'university', 'college', 'school', 'udemy', 'coursera', 'skillshare', 'masterclass', 'textbook', 'chegg'], category: 'Education' },
+        // Personal Care
+        { keywords: ['salon', 'barber', 'haircut', 'spa', 'nail', 'beauty', 'sephora', 'ulta', 'bath & body'], category: 'Personal Care' },
+      ];
+
+      const categorizeMerchant = (description) => {
+        if (!description) return '';
+        const lower = description.toLowerCase();
+
+        // First check against the known merchant database.
+        for (const { keywords, category } of MERCHANT_CATEGORIES) {
+          for (const keyword of keywords) {
+            if (lower.includes(keyword.toLowerCase())) {
+              return category;
+            }
+          }
+        }
+
+        // Then check against the user's existing transaction categories. If
+        // they've previously categorized a similar merchant, reuse that.
+        const existingMatch = transactions.find((t) => {
+          if (!t.category || !t.note) return false;
+          const existingNote = t.note.toLowerCase();
+          // Check if significant words (3+ chars) from the description appear
+          // in an existing transaction's note.
+          const words = lower.split(/\s+/).filter((w) => w.length >= 3);
+          return words.some((word) => existingNote.includes(word));
+        });
+        if (existingMatch) return existingMatch.category;
+
+        return '';
+      };
+
       // Parse extracted text to find ALL transactions (each with date, amount, description).
       // Bank statements / receipts often have multiple line items.
       const parseMultipleTransactions = (text) => {
@@ -1350,10 +1417,18 @@
         const amountRegex = /\$\s*([\d,]+\.\d{2})|([\d,]+\.\d{2})\s*(?:USD)?|\b([\d,]+)\s*(?:k|K)\b/g;
         // Date patterns
         const datePatterns = [
-          { regex: /((?:Jan|Feb|Mar|Apr|May|Jun|Jul(?:y|e)?|Aug|Sep|Oct|Nov|Dec)\w*)\s*(\d{1,2}),?\s*(\d{4})/i, parse: (m) => new Date(`${m[1].slice(0,3)} ${m[2]}, ${m[3]}`) },
+          // "Jul 7, 2026", "Jul7,2026", "July 7 2026", "Jule, 2026" (OCR typos)
+          { regex: /((?:Jan|Feb|Mar|Apr|May|Jun|Jul[a-z]*|Aug|Sep|Oct|Nov|Dec)[a-z]*)\s*(\d{1,2}),?\s*(\d{4})/i, parse: (m) => {
+            const mon = m[1].slice(0, 3); // normalize "Jule"/"Juls" → "Jul"
+            return new Date(`${mon} ${m[2]}, ${m[3]}`);
+          }},
           { regex: /(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/, parse: (m) => new Date(`${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`) },
           { regex: /(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/, parse: (m) => new Date(`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`) },
-          { regex: /((?:Jan|Feb|Mar|Apr|May|Jun|Jul(?:y|e)?|Aug|Sep|Oct|Nov|Dec)\w*)\s*(\d{1,2})/i, parse: (m) => new Date(`${m[1].slice(0,3)} ${m[2]}, ${new Date().getFullYear()}`) },
+          // "Jul 5" without year → assume current year
+          { regex: /((?:Jan|Feb|Mar|Apr|May|Jun|Jul[a-z]*|Aug|Sep|Oct|Nov|Dec)[a-z]*)\s*(\d{1,2})/i, parse: (m) => {
+            const mon = m[1].slice(0, 3);
+            return new Date(`${mon} ${m[2]}, ${new Date().getFullYear()}`);
+          }},
         ];
 
         const extractDate = (line) => {
@@ -1403,12 +1478,14 @@
           // Remove the amount and date parts to get the description/merchant
           let desc = line;
           if (amount) desc = desc.replace(/[-–]?\$\s*[\d,]+\.?\d*|[\d,]+\.\d{2}\s*(?:USD)?|[\d,]+\s*[kK]/g, '').trim();
-          // Remove date-like patterns
-          desc = desc.replace(/((?:Jan|Feb|Mar|Apr|May|Jun|Jul(?:y|e)?|Aug|Sep|Oct|Nov|Dec)\w*\s*\d{1,2},?\s*\d{0,4}|\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})/gi, '').trim();
-          // Remove > arrows (common in bank statement screenshots), @ symbols, leading numbers
-          desc = desc.replace(/[>@]/g, '').replace(/^\d+\s*/, '').trim();
+          // Remove date-like patterns (including OCR typos like Jule, Juls, Jul7,2026)
+          desc = desc.replace(/((?:Jan|Feb|Mar|Apr|May|Jun|Jul[a-z]*|Aug|Sep|Oct|Nov|Dec)[a-z]*\s*\d{0,2},?\s*\d{0,4})/gi, '').trim();
+          desc = desc.replace(/\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}/g, '').trim();
+          desc = desc.replace(/\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2}/g, '').trim();
+          // Remove > arrows, @ symbols, leading numbers, "me", "==", stray punctuation
+          desc = desc.replace(/[>@=]/g, '').replace(/\bme\b/gi, '').replace(/^\d+\s*/, '').trim();
           // Clean up common separators and extra spaces
-          desc = desc.replace(/^[\s\-\|:]+|[\s\-\|:]+$/g, '').replace(/\s{2,}/g, ' ').trim();
+          desc = desc.replace(/^[\s\-\|:,]+|[\s\-\|:,]+$/g, '').replace(/\s{2,}/g, ' ').trim();
           return desc.length > 1 ? desc : '';
         };
 
@@ -1424,12 +1501,13 @@
           if (/^(total|subtotal|balance|grand total|tax|tip)/i.test(line)) continue;
 
           const description = extractDescription(line, Math.abs(amount), lastDate);
+          const autoCategory = categorizeMerchant(description);
           transactions.push({
             description: description || 'Transaction',
             amount: Math.abs(amount),
             kind: amount < 0 ? 'income' : 'expense', // negative = refund/credit
             date: lastDate || today,
-            category: '',
+            category: autoCategory,
             selected: true,
           });
         }
@@ -1457,7 +1535,7 @@
               description: singleDesc || 'Transaction',
               amount: singleAmount,
               date: singleDate || today,
-              category: '',
+              category: categorizeMerchant(singleDesc),
               selected: true,
             });
           }
@@ -1496,6 +1574,7 @@
           <label class="ocr-txn-cell ocr-txn-cell-check"><input type="checkbox" id="ocr-txn-select-all" checked /></label>
           <span class="ocr-txn-cell ocr-txn-cell-date">Date</span>
           <span class="ocr-txn-cell ocr-txn-cell-desc">Description</span>
+          <span class="ocr-txn-cell ocr-txn-cell-cat">Category</span>
           <span class="ocr-txn-cell ocr-txn-cell-amount">Amount</span>
         `;
         table.append(header);
@@ -1546,7 +1625,16 @@
           amountInput.addEventListener('input', () => { ocrDetectedTransactions[index].amount = parseFloat(amountInput.value) || 0; });
           amountCell.append(amountPrefix, amountInput);
 
-          row.append(check, dateCell, descCell, amountCell);
+          const catCell = document.createElement('span');
+          catCell.className = 'ocr-txn-cell ocr-txn-cell-cat';
+          const catInput = document.createElement('input');
+          catInput.type = 'text';
+          catInput.value = txn.category || '';
+          catInput.placeholder = 'Category';
+          catInput.addEventListener('input', () => { ocrDetectedTransactions[index].category = catInput.value; });
+          catCell.append(catInput);
+
+          row.append(check, dateCell, descCell, catCell, amountCell);
           table.append(row);
         });
 

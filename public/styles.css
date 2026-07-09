@@ -9004,7 +9004,7 @@ body.theme-dark .month-nav-button.secondary:focus-visible:not(:disabled) {
 
 /* OCR Transaction Modal */
 .ocr-txn-modal {
-  width: min(100%, 480px);
+  width: min(100%, 620px);
   padding: 24px;
   border-radius: 16px;
 }
@@ -9121,7 +9121,7 @@ body.theme-dark .month-nav-button.secondary:focus-visible:not(:disabled) {
 
 .ocr-txn-row {
   display: grid;
-  grid-template-columns: 32px 110px 1fr 100px;
+  grid-template-columns: 32px 110px 1fr 100px 100px;
   gap: 8px;
   align-items: center;
   padding: 6px 4px;
@@ -9204,7 +9204,7 @@ body.theme-dark .month-nav-button.secondary:focus-visible:not(:disabled) {
 
 @media (max-width: 480px) {
   .ocr-txn-row {
-    grid-template-columns: 28px 90px 1fr 80px;
+    grid-template-columns: 28px 80px 1fr 80px 72px;
     gap: 4px;
   }
   .ocr-txn-modal {
