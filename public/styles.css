@@ -9182,6 +9182,19 @@ body.theme-dark .month-nav-button.secondary:focus-visible:not(:disabled) {
   font-weight: 600;
 }
 
+.ocr-txn-kind-badge {
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.ocr-txn-kind-income {
+  color: var(--success-text);
+}
+
+.ocr-txn-refund input {
+  color: var(--success-text);
+}
+
 .ocr-txn-empty {
   text-align: center;
   color: var(--muted);

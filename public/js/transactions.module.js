@@ -1325,8 +1325,8 @@
 
       const openOcrModal = () => {
         ocrModal?.classList.remove('hidden');
-        ocrProgress?.classList.remove('hidden');
-        ocrPreview?.classList.add('hidden');
+        if (ocrProgress) { ocrProgress.classList.remove('hidden'); ocrProgress.style.display = ''; }
+        if (ocrPreview) { ocrPreview.classList.add('hidden'); ocrPreview.style.display = 'none'; }
         if (ocrConfirm) ocrConfirm.disabled = true;
         if (ocrStatus) ocrStatus.textContent = 'Scanning image...';
       };
@@ -1350,10 +1350,10 @@
         const amountRegex = /\$\s*([\d,]+\.\d{2})|([\d,]+\.\d{2})\s*(?:USD)?|\b([\d,]+)\s*(?:k|K)\b/g;
         // Date patterns
         const datePatterns = [
-          { regex: /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*)\s+(\d{1,2}),?\s*(\d{4})/i, parse: (m) => new Date(`${m[1]} ${m[2]}, ${m[3]}`) },
+          { regex: /((?:Jan|Feb|Mar|Apr|May|Jun|Jul(?:y|e)?|Aug|Sep|Oct|Nov|Dec)\w*)\s*(\d{1,2}),?\s*(\d{4})/i, parse: (m) => new Date(`${m[1].slice(0,3)} ${m[2]}, ${m[3]}`) },
           { regex: /(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/, parse: (m) => new Date(`${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`) },
           { regex: /(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/, parse: (m) => new Date(`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`) },
-          { regex: /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*)\s+(\d{1,2})/i, parse: (m) => new Date(`${m[1]} ${m[2]}, ${new Date().getFullYear()}`) },
+          { regex: /((?:Jan|Feb|Mar|Apr|May|Jun|Jul(?:y|e)?|Aug|Sep|Oct|Nov|Dec)\w*)\s*(\d{1,2})/i, parse: (m) => new Date(`${m[1].slice(0,3)} ${m[2]}, ${new Date().getFullYear()}`) },
         ];
 
         const extractDate = (line) => {
@@ -1374,13 +1374,26 @@
         const extractAmount = (line) => {
           const amounts = [];
           let match;
-          const regex = /\$\s*([\d,]+\.\d{2})|([\d,]+\.\d{2})|\b([\d,]+)\s*(?:k|K)\b/g;
+          // Match patterns: -$19.95, $41.60, $4160, 19.95, 1995, 65k
+          // OCR sometimes drops the decimal point, so we match both $XX.XX and $XXXX
+          const regex = /[-–]?\$\s*([\d,]+\.?\d*)|[-–]?([\d,]+\.\d{2})\s*(?:USD)?|\b[-–]?([\d,]+)\s*(?:k|K)\b/g;
           while ((match = regex.exec(line)) !== null) {
             const raw = match[1] || match[2] || match[3] || '';
             const cleaned = raw.replace(/[,\s]/g, '');
             let value = parseFloat(cleaned);
-            if (match[3]) value *= 1000; // "65k" → 65000
-            if (Number.isFinite(value) && value > 0) amounts.push(value);
+            if (match[3] && /k|K/.test(match[0])) value *= 1000; // "65k" → 65000
+            if (!Number.isFinite(value) || value <= 0) continue;
+            // Heuristic: if no decimal and value > 100, OCR likely dropped the dot
+            // e.g. $4160 → $41.60, $1657 → $16.57
+            if (!raw.includes('.') && value >= 100 && !/k|K/.test(match[0])) {
+              value = value / 100;
+            }
+            // Skip tiny amounts that are likely OCR noise (single digits, etc.)
+            if (value < 0.5) continue;
+            // Check if preceded by minus sign (refund/credit)
+            const fullMatch = match[0];
+            const isNegative = /^[-–]/.test(fullMatch.trim());
+            amounts.push(isNegative ? -value : value);
           }
           // Return the last (usually the transaction total, not subtotals)
           return amounts.length ? amounts[amounts.length - 1] : null;
@@ -1389,11 +1402,13 @@
         const extractDescription = (line, amount, date) => {
           // Remove the amount and date parts to get the description/merchant
           let desc = line;
-          if (amount) desc = desc.replace(/\$\s*[\d,]+\.\d{2}|[\d,]+\.\d{2}\s*(?:USD)?|[\d,]+\s*[kK]/g, '').trim();
+          if (amount) desc = desc.replace(/[-–]?\$\s*[\d,]+\.?\d*|[\d,]+\.\d{2}\s*(?:USD)?|[\d,]+\s*[kK]/g, '').trim();
           // Remove date-like patterns
-          desc = desc.replace(/((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+\d{1,2},?\s*\d{0,4}|\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})/gi, '').trim();
+          desc = desc.replace(/((?:Jan|Feb|Mar|Apr|May|Jun|Jul(?:y|e)?|Aug|Sep|Oct|Nov|Dec)\w*\s*\d{1,2},?\s*\d{0,4}|\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})/gi, '').trim();
+          // Remove > arrows (common in bank statement screenshots), @ symbols, leading numbers
+          desc = desc.replace(/[>@]/g, '').replace(/^\d+\s*/, '').trim();
           // Clean up common separators and extra spaces
-          desc = desc.replace(/^[\s\-\|:>]+|[\s\-\|:>]+$/g, '').replace(/\s{2,}/g, ' ').trim();
+          desc = desc.replace(/^[\s\-\|:]+|[\s\-\|:]+$/g, '').replace(/\s{2,}/g, ' ').trim();
           return desc.length > 1 ? desc : '';
         };
 
@@ -1408,10 +1423,11 @@
           // Skip header/total-like lines
           if (/^(total|subtotal|balance|grand total|tax|tip)/i.test(line)) continue;
 
-          const description = extractDescription(line, amount, lastDate);
+          const description = extractDescription(line, Math.abs(amount), lastDate);
           transactions.push({
             description: description || 'Transaction',
-            amount,
+            amount: Math.abs(amount),
+            kind: amount < 0 ? 'income' : 'expense', // negative = refund/credit
             date: lastDate || today,
             category: '',
             selected: true,
@@ -1518,13 +1534,17 @@
 
           const amountCell = document.createElement('span');
           amountCell.className = 'ocr-txn-cell ocr-txn-cell-amount';
+          if (txn.kind === 'income') amountCell.classList.add('ocr-txn-refund');
+          const amountPrefix = document.createElement('span');
+          amountPrefix.className = `ocr-txn-kind-badge ${txn.kind === 'income' ? 'ocr-txn-kind-income' : 'ocr-txn-kind-expense'}`;
+          amountPrefix.textContent = txn.kind === 'income' ? '↩' : '';
           const amountInput = document.createElement('input');
           amountInput.type = 'number';
           amountInput.step = '0.01';
           amountInput.min = '0';
           amountInput.value = String(txn.amount);
           amountInput.addEventListener('input', () => { ocrDetectedTransactions[index].amount = parseFloat(amountInput.value) || 0; });
-          amountCell.append(amountInput);
+          amountCell.append(amountPrefix, amountInput);
 
           row.append(check, dateCell, descCell, amountCell);
           table.append(row);
@@ -1582,8 +1602,11 @@
           ocrDetectedTransactions = parseMultipleTransactions(text);
           if (ocrRaw) ocrRaw.textContent = text;
 
-          ocrProgress?.classList.add('hidden');
-          ocrPreview?.classList.remove('hidden');
+          // Ensure spinner is hidden, preview is shown.
+          if (ocrProgress) ocrProgress.classList.add('hidden');
+          if (ocrProgress) ocrProgress.style.display = 'none';
+          if (ocrPreview) ocrPreview.classList.remove('hidden');
+          if (ocrPreview) ocrPreview.style.display = '';
           renderOcrTransactions();
         } catch (error) {
           if (ocrStatus) ocrStatus.textContent = 'OCR failed. Please try again.';
@@ -1654,7 +1677,7 @@
           const result = await request('/api/transactions', {
             method: 'POST',
             body: JSON.stringify({
-              kind: 'expense',
+              kind: txn.kind || 'expense',
               category: (txn.category || '').trim() || 'Uncategorized',
               amount: txn.amount,
               occurred_on: txn.date || new Date().toISOString().slice(0, 10),
