@@ -62,6 +62,7 @@
     let creditCards = [];
     let pendingEditTransaction = null;
     let dataVersion = 0;
+    let selectedTxnIds = new Set(); // multi-select for bulk delete
     let currentFilters = {
       month: '',
       year: '',
@@ -379,7 +380,26 @@
     const buildTransactionItem = (transaction) => {
       const isIncome = transaction.kind === 'income';
       const item = document.createElement('div');
-      item.className = `txn-item txn-item-${isIncome ? 'income' : 'expense'}`;
+      item.className = `txn-item txn-item-${isIncome ? 'income' : 'expense'}${selectedTxnIds.has(transaction.id) ? ' txn-item-selected' : ''}`;
+      item.dataset.txnId = String(transaction.id);
+
+      // Multi-select checkbox
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.className = 'txn-item-checkbox';
+      checkbox.checked = selectedTxnIds.has(transaction.id);
+      checkbox.setAttribute('aria-label', 'Select transaction');
+      checkbox.addEventListener('change', (e) => {
+        e.stopPropagation();
+        if (checkbox.checked) {
+          selectedTxnIds.add(transaction.id);
+        } else {
+          selectedTxnIds.delete(transaction.id);
+        }
+        item.classList.toggle('txn-item-selected', checkbox.checked);
+        renderBulkToolbar();
+      });
+      checkbox.addEventListener('click', (e) => e.stopPropagation());
 
       const label = transaction.category || (isIncome ? t('income') || 'Income' : t('expense') || 'Expense');
 
@@ -426,14 +446,103 @@
       deleteBtn.addEventListener('click', () => window.transactionsModule.confirmDelete(transaction.id));
       actions.append(editBtn, deleteBtn);
 
-      // Tapping the row (outside the action buttons) opens edit.
+      // Tapping the row (outside the action buttons and checkbox) opens edit.
       item.addEventListener('click', (event) => {
-        if (event.target.closest('.txn-item-actions')) return;
+        if (event.target.closest('.txn-item-actions') || event.target.closest('.txn-item-checkbox')) return;
         window.transactionsModule.edit(transaction.id);
       });
 
-      item.append(icon, main, amount, actions);
+      item.append(checkbox, icon, main, amount, actions);
       return item;
+    };
+
+    // ===== Bulk Selection Toolbar =====
+    const renderBulkToolbar = () => {
+      let toolbar = panel?.querySelector('.txn-bulk-toolbar');
+      if (!selectedTxnIds.size) {
+        if (toolbar) toolbar.remove();
+        return;
+      }
+      if (!toolbar) {
+        toolbar = document.createElement('div');
+        toolbar.className = 'txn-bulk-toolbar';
+        // Insert before the transaction list
+        const listEl = panel?.querySelector('.transactions-list') || list;
+        listEl?.parentNode?.insertBefore(toolbar, listEl);
+      }
+      toolbar.innerHTML = '';
+
+      const countLabel = document.createElement('span');
+      countLabel.className = 'txn-bulk-count';
+      countLabel.textContent = `${selectedTxnIds.size} selected`;
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'txn-bulk-delete';
+      deleteBtn.textContent = `Delete (${selectedTxnIds.size})`;
+      deleteBtn.addEventListener('click', confirmBulkDelete);
+
+      const clearBtn = document.createElement('button');
+      clearBtn.type = 'button';
+      clearBtn.className = 'txn-bulk-clear';
+      clearBtn.textContent = 'Clear';
+      clearBtn.addEventListener('click', () => {
+        selectedTxnIds.clear();
+        renderTransactions();
+        renderBulkToolbar();
+      });
+
+      toolbar.append(countLabel, deleteBtn, clearBtn);
+    };
+
+    const confirmBulkDelete = () => {
+      if (!selectedTxnIds.size) return;
+      const count = selectedTxnIds.size;
+
+      // Inline confirm inside toolbar
+      const toolbar = panel?.querySelector('.txn-bulk-toolbar');
+      if (!toolbar) return;
+      toolbar.innerHTML = '';
+
+      const msg = document.createElement('span');
+      msg.className = 'txn-bulk-count';
+      msg.textContent = `Delete ${count} transaction(s)?`;
+
+      const yesBtn = document.createElement('button');
+      yesBtn.type = 'button';
+      yesBtn.className = 'txn-bulk-delete';
+      yesBtn.textContent = 'Yes, Delete';
+      yesBtn.addEventListener('click', executeBulkDelete);
+
+      const noBtn = document.createElement('button');
+      noBtn.type = 'button';
+      noBtn.className = 'txn-bulk-clear';
+      noBtn.textContent = 'Cancel';
+      noBtn.addEventListener('click', () => renderBulkToolbar());
+
+      toolbar.append(msg, yesBtn, noBtn);
+    };
+
+    const executeBulkDelete = async () => {
+      const ids = [...selectedTxnIds];
+      const toolbar = panel?.querySelector('.txn-bulk-toolbar');
+      if (toolbar) {
+        toolbar.innerHTML = '';
+        const progress = document.createElement('span');
+        progress.className = 'txn-bulk-count';
+        progress.textContent = `Deleting ${ids.length} transaction(s)...`;
+        toolbar.append(progress);
+      }
+
+      let deleted = 0;
+      for (const id of ids) {
+        const result = await request(`/api/transactions/${id}`, { method: 'DELETE' });
+        if (!result.error) deleted++;
+      }
+
+      selectedTxnIds.clear();
+      showStatusToast(`${deleted} transaction(s) deleted`, 'success');
+      await load();
     };
 
     const renderEmptyTransactions = () => {
@@ -450,6 +559,7 @@
 
     const renderTransactions = () => {
       list.innerHTML = '';
+      renderBulkToolbar();
 
       if (txnListCount) {
         const n = transactions.length;
@@ -1432,8 +1542,21 @@
         ];
 
         const extractDate = (line) => {
+          // Pre-process: fix common OCR date misreads where a digit gets merged
+          // with the month name. E.g. "Jul7,2026" → "Jul 7,2026",
+          // "Jule, 2026" (= Jul6) → "Jul 6, 2026", "Juls,2026" (= Jul5) → "Jul 5,2026"
+          let normalized = line
+            // "Jul7,2026" or "Aug15,2026" → insert space between month letters and digits
+            .replace(/((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec))(\d)/gi, '$1 $2')
+            // "Jule" → "Jul 6", "Juls" → "Jul 5", etc. (OCR merges trailing digit as letter)
+            .replace(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)([a-z])\b/gi, (full, mon, extra) => {
+              const digitMap = { 'e': '6', 's': '5', 'l': '1', 'o': '0', 'z': '2', 'b': '6', 'g': '9', 'q': '9', 'i': '1' };
+              const digit = digitMap[extra.toLowerCase()];
+              return digit ? `${mon} ${digit}` : full;
+            });
+
           for (const { regex, parse } of datePatterns) {
-            const match = line.match(regex);
+            const match = normalized.match(regex);
             if (match) {
               try {
                 const d = parse(match);

@@ -10132,6 +10132,84 @@ body.theme-dark .summary-amount.negative {
   transition: background-color 0.15s ease;
 }
 
+.txn-item-checkbox {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary);
+  border-radius: 4px;
+}
+
+.txn-item-selected {
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+}
+
+.txn-item-selected:hover {
+  background: color-mix(in srgb, var(--primary) 14%, var(--surface));
+}
+
+/* Bulk action toolbar */
+.txn-bulk-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--primary) 25%, var(--border));
+  animation: txnBulkSlideIn 0.18s ease;
+}
+
+@keyframes txnBulkSlideIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.txn-bulk-count {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.txn-bulk-delete {
+  padding: 6px 14px;
+  border: none;
+  border-radius: 8px;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+
+.txn-bulk-delete:hover {
+  background: color-mix(in srgb, var(--danger) 85%, #000);
+  transform: scale(1.03);
+}
+
+.txn-bulk-delete:active {
+  transform: scale(0.97);
+}
+
+.txn-bulk-clear {
+  padding: 6px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.txn-bulk-clear:hover {
+  background: var(--surface-soft);
+}
+
 .txn-group-items > .txn-item:last-child {
   border-bottom: 0;
 }
