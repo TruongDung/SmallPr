@@ -9105,8 +9105,99 @@ body.theme-dark .month-nav-button.secondary:focus-visible:not(:disabled) {
   font-size: 0.8rem;
   font-family: monospace;
   white-space: pre-wrap;
-  max-height: 100px;
+  max-height: 80px;
   overflow-y: auto;
+}
+
+/* Multi-transaction table */
+.ocr-txn-table {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+  margin-top: 8px;
+}
+
+.ocr-txn-row {
+  display: grid;
+  grid-template-columns: 32px 110px 1fr 100px;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 4px;
+  border-radius: 8px;
+}
+
+.ocr-txn-row:not(.ocr-txn-row-header):hover {
+  background: var(--surface-soft);
+}
+
+.ocr-txn-row-header {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.ocr-txn-cell {
+  display: flex;
+  align-items: center;
+}
+
+.ocr-txn-cell-check {
+  justify-content: center;
+}
+
+.ocr-txn-cell-check input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+.ocr-txn-cell input[type="text"],
+.ocr-txn-cell input[type="number"],
+.ocr-txn-cell input[type="date"] {
+  width: 100%;
+  min-height: 34px;
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.88rem;
+}
+
+.ocr-txn-cell input:focus {
+  border-color: var(--primary);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(47, 112, 255, 0.12);
+}
+
+.ocr-txn-cell-amount input {
+  text-align: right;
+  font-weight: 600;
+}
+
+.ocr-txn-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 24px 0;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 480px) {
+  .ocr-txn-row {
+    grid-template-columns: 28px 90px 1fr 80px;
+    gap: 4px;
+  }
+  .ocr-txn-modal {
+    width: 100%;
+    padding: 16px;
+  }
 }
 
 .ocr-txn-modal .modal-actions {

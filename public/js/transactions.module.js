@@ -1339,83 +1339,214 @@
         if (ocrRaw) ocrRaw.textContent = '';
       };
 
-      // Parse extracted text to find amount, date, and merchant.
-      const parseReceiptText = (text) => {
+      // Parse extracted text to find ALL transactions (each with date, amount, description).
+      // Bank statements / receipts often have multiple line items.
+      const parseMultipleTransactions = (text) => {
         const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
-        let amount = null;
-        let date = null;
-        let description = '';
+        const transactions = [];
+        const today = new Date().toISOString().slice(0, 10);
 
-        // Find amount: look for dollar/currency patterns.
-        const amountPatterns = [
-          /(?:total|amount|charged|subtotal)[:\s]*\$?([\d,]+\.?\d*)/i,
-          /\$\s*([\d,]+\.\d{2})/,
-          /([\d,]+\.\d{2})\s*(?:USD|VND)?/i,
-          /(?:[\d,]+k)/i,
-        ];
-        for (const pattern of amountPatterns) {
-          for (const line of lines) {
-            const match = line.match(pattern);
-            if (match) {
-              const raw = match[1] || match[0];
-              const cleaned = raw.replace(/[$,\s]/g, '');
-              if (cleaned.toLowerCase().endsWith('k')) {
-                amount = parseFloat(cleaned) * 1000;
-              } else {
-                amount = parseFloat(cleaned);
-              }
-              if (Number.isFinite(amount) && amount > 0) break;
-              amount = null;
-            }
-          }
-          if (amount) break;
-        }
-
-        // Find date patterns.
+        // Amount patterns
+        const amountRegex = /\$\s*([\d,]+\.\d{2})|([\d,]+\.\d{2})\s*(?:USD)?|\b([\d,]+)\s*(?:k|K)\b/g;
+        // Date patterns
         const datePatterns = [
-          /(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/,
-          /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*)\s+(\d{1,2}),?\s*(\d{4})/i,
-          /(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/,
+          { regex: /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*)\s+(\d{1,2}),?\s*(\d{4})/i, parse: (m) => new Date(`${m[1]} ${m[2]}, ${m[3]}`) },
+          { regex: /(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})/, parse: (m) => new Date(`${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`) },
+          { regex: /(\d{4})[\/\-.](\d{1,2})[\/\-.](\d{1,2})/, parse: (m) => new Date(`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`) },
+          { regex: /((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*)\s+(\d{1,2})/i, parse: (m) => new Date(`${m[1]} ${m[2]}, ${new Date().getFullYear()}`) },
         ];
-        for (const pattern of datePatterns) {
-          for (const line of lines) {
-            const match = line.match(pattern);
+
+        const extractDate = (line) => {
+          for (const { regex, parse } of datePatterns) {
+            const match = line.match(regex);
             if (match) {
               try {
-                const parsed = new Date(match[0]);
-                if (!isNaN(parsed.getTime()) && parsed.getFullYear() > 2000) {
-                  date = parsed.toISOString().slice(0, 10);
-                  break;
+                const d = parse(match);
+                if (!isNaN(d.getTime()) && d.getFullYear() >= 2020 && d.getFullYear() <= 2030) {
+                  return d.toISOString().slice(0, 10);
                 }
-              } catch (_e) { /* continue */ }
-              // Try MM/DD/YYYY manually.
-              if (!date && match[3] && match[1] && match[2]) {
-                const year = match[3].length === 2 ? '20' + match[3] : match[3];
-                const candidate = new Date(`${year}-${match[1].padStart(2, '0')}-${match[2].padStart(2, '0')}`);
-                if (!isNaN(candidate.getTime())) {
-                  date = candidate.toISOString().slice(0, 10);
-                  break;
-                }
-              }
+              } catch (_e) { /* skip */ }
             }
           }
-          if (date) break;
+          return null;
+        };
+
+        const extractAmount = (line) => {
+          const amounts = [];
+          let match;
+          const regex = /\$\s*([\d,]+\.\d{2})|([\d,]+\.\d{2})|\b([\d,]+)\s*(?:k|K)\b/g;
+          while ((match = regex.exec(line)) !== null) {
+            const raw = match[1] || match[2] || match[3] || '';
+            const cleaned = raw.replace(/[,\s]/g, '');
+            let value = parseFloat(cleaned);
+            if (match[3]) value *= 1000; // "65k" → 65000
+            if (Number.isFinite(value) && value > 0) amounts.push(value);
+          }
+          // Return the last (usually the transaction total, not subtotals)
+          return amounts.length ? amounts[amounts.length - 1] : null;
+        };
+
+        const extractDescription = (line, amount, date) => {
+          // Remove the amount and date parts to get the description/merchant
+          let desc = line;
+          if (amount) desc = desc.replace(/\$\s*[\d,]+\.\d{2}|[\d,]+\.\d{2}\s*(?:USD)?|[\d,]+\s*[kK]/g, '').trim();
+          // Remove date-like patterns
+          desc = desc.replace(/((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\w*\s+\d{1,2},?\s*\d{0,4}|\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}|\d{4}[\/\-\.]\d{1,2}[\/\-\.]\d{1,2})/gi, '').trim();
+          // Clean up common separators and extra spaces
+          desc = desc.replace(/^[\s\-\|:>]+|[\s\-\|:>]+$/g, '').replace(/\s{2,}/g, ' ').trim();
+          return desc.length > 1 ? desc : '';
+        };
+
+        // Strategy 1: Each line that has an amount is treated as a transaction row.
+        let lastDate = null;
+        for (const line of lines) {
+          const lineDate = extractDate(line);
+          if (lineDate) lastDate = lineDate;
+
+          const amount = extractAmount(line);
+          if (!amount) continue;
+          // Skip header/total-like lines
+          if (/^(total|subtotal|balance|grand total|tax|tip)/i.test(line)) continue;
+
+          const description = extractDescription(line, amount, lastDate);
+          transactions.push({
+            description: description || 'Transaction',
+            amount,
+            date: lastDate || today,
+            category: '',
+            selected: true,
+          });
         }
 
-        // Description: first few non-numeric, non-date lines (likely merchant).
-        const skipPatterns = /^(total|subtotal|tax|change|cash|visa|mastercard|debit|credit|amount|\$|date|time|\d{1,2}[:\-\/])/i;
-        for (const line of lines.slice(0, 5)) {
-          if (!skipPatterns.test(line) && line.length > 2 && line.length < 60) {
-            description = line;
-            break;
+        // If we found nothing useful, try a single-receipt approach.
+        if (!transactions.length) {
+          let singleAmount = null;
+          let singleDate = null;
+          let singleDesc = '';
+
+          for (const line of lines) {
+            if (!singleAmount) singleAmount = extractAmount(line);
+            if (!singleDate) singleDate = extractDate(line);
+          }
+          // Description: first non-numeric, non-date line.
+          const skipPatterns = /^(total|subtotal|tax|change|cash|visa|mastercard|debit|credit|amount|\$|date|time|\d{1,2}[:\-\/])/i;
+          for (const line of lines.slice(0, 5)) {
+            if (!skipPatterns.test(line) && line.length > 2 && line.length < 60 && !extractAmount(line)) {
+              singleDesc = line;
+              break;
+            }
+          }
+          if (singleAmount) {
+            transactions.push({
+              description: singleDesc || 'Transaction',
+              amount: singleAmount,
+              date: singleDate || today,
+              category: '',
+              selected: true,
+            });
           }
         }
 
-        return { amount, date, description };
+        return transactions;
+      };
+
+      let ocrDetectedTransactions = [];
+
+      const renderOcrTransactions = () => {
+        const container = ocrPreview;
+        if (!container) return;
+
+        // Clear previous fields (keep image).
+        const existingTable = container.querySelector('.ocr-txn-table');
+        if (existingTable) existingTable.remove();
+        const existingFields = container.querySelector('.ocr-txn-fields');
+        if (existingFields) existingFields.remove();
+
+        if (!ocrDetectedTransactions.length) {
+          const msg = document.createElement('p');
+          msg.className = 'ocr-txn-empty';
+          msg.textContent = 'No transactions detected in image.';
+          container.append(msg);
+          return;
+        }
+
+        const table = document.createElement('div');
+        table.className = 'ocr-txn-table';
+
+        // Header
+        const header = document.createElement('div');
+        header.className = 'ocr-txn-row ocr-txn-row-header';
+        header.innerHTML = `
+          <label class="ocr-txn-cell ocr-txn-cell-check"><input type="checkbox" id="ocr-txn-select-all" checked /></label>
+          <span class="ocr-txn-cell ocr-txn-cell-date">Date</span>
+          <span class="ocr-txn-cell ocr-txn-cell-desc">Description</span>
+          <span class="ocr-txn-cell ocr-txn-cell-amount">Amount</span>
+        `;
+        table.append(header);
+
+        ocrDetectedTransactions.forEach((txn, index) => {
+          const row = document.createElement('div');
+          row.className = 'ocr-txn-row';
+
+          const check = document.createElement('label');
+          check.className = 'ocr-txn-cell ocr-txn-cell-check';
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.checked = txn.selected;
+          checkbox.addEventListener('change', () => {
+            ocrDetectedTransactions[index].selected = checkbox.checked;
+            updateOcrConfirmState();
+          });
+          check.append(checkbox);
+
+          const dateCell = document.createElement('span');
+          dateCell.className = 'ocr-txn-cell ocr-txn-cell-date';
+          const dateInput = document.createElement('input');
+          dateInput.type = 'date';
+          dateInput.value = txn.date;
+          dateInput.addEventListener('change', () => { ocrDetectedTransactions[index].date = dateInput.value; });
+          dateCell.append(dateInput);
+
+          const descCell = document.createElement('span');
+          descCell.className = 'ocr-txn-cell ocr-txn-cell-desc';
+          const descInput = document.createElement('input');
+          descInput.type = 'text';
+          descInput.value = txn.description;
+          descInput.placeholder = 'Description';
+          descInput.addEventListener('input', () => { ocrDetectedTransactions[index].description = descInput.value; });
+          descCell.append(descInput);
+
+          const amountCell = document.createElement('span');
+          amountCell.className = 'ocr-txn-cell ocr-txn-cell-amount';
+          const amountInput = document.createElement('input');
+          amountInput.type = 'number';
+          amountInput.step = '0.01';
+          amountInput.min = '0';
+          amountInput.value = String(txn.amount);
+          amountInput.addEventListener('input', () => { ocrDetectedTransactions[index].amount = parseFloat(amountInput.value) || 0; });
+          amountCell.append(amountInput);
+
+          row.append(check, dateCell, descCell, amountCell);
+          table.append(row);
+        });
+
+        container.append(table);
+        updateOcrConfirmState();
+      };
+
+      const updateOcrConfirmState = () => {
+        const selected = ocrDetectedTransactions.filter((t) => t.selected);
+        if (ocrConfirm) {
+          ocrConfirm.disabled = selected.length === 0;
+          ocrConfirm.textContent = selected.length > 1
+            ? `Add ${selected.length} Transactions`
+            : 'Add Transaction';
+        }
       };
 
       const processOcrImage = async (imageSource) => {
         openOcrModal();
+        ocrDetectedTransactions = [];
 
         // Show image preview.
         if (typeof imageSource === 'string') {
@@ -1447,17 +1578,13 @@
             return;
           }
 
-          // Parse and fill fields.
-          const parsed = parseReceiptText(text);
-          if (ocrDescription) ocrDescription.value = parsed.description || '';
-          if (ocrAmount) ocrAmount.value = parsed.amount ? String(parsed.amount) : '';
-          if (ocrDate) ocrDate.value = parsed.date || new Date().toISOString().slice(0, 10);
-          if (ocrCategory) ocrCategory.value = '';
+          // Parse all transactions from text.
+          ocrDetectedTransactions = parseMultipleTransactions(text);
           if (ocrRaw) ocrRaw.textContent = text;
 
           ocrProgress?.classList.add('hidden');
           ocrPreview?.classList.remove('hidden');
-          if (ocrConfirm) ocrConfirm.disabled = false;
+          renderOcrTransactions();
         } catch (error) {
           if (ocrStatus) ocrStatus.textContent = 'OCR failed. Please try again.';
           console.error('OCR error:', error);
@@ -1478,6 +1605,8 @@
       document.addEventListener('paste', (event) => {
         // Only active when the transactions panel is visible.
         if (!panel || panel.classList.contains('hidden') || panel.offsetParent === null) return;
+        // Don't intercept if OCR modal is already open.
+        if (ocrModal && !ocrModal.classList.contains('hidden')) return;
         const items = event.clipboardData?.items;
         if (!items) return;
         let imageFile = null;
@@ -1487,7 +1616,7 @@
             break;
           }
         }
-        if (!imageFile) return; // Not an image paste — let it through as text.
+        if (!imageFile) return;
         event.preventDefault();
         processOcrImage(imageFile);
       });
@@ -1497,35 +1626,46 @@
         if (event.target === ocrModal) closeOcrModal();
       });
 
-      // Confirm: create the transaction.
+      // Select all checkbox.
+      document.addEventListener('change', (event) => {
+        if (event.target.id === 'ocr-txn-select-all') {
+          const checked = event.target.checked;
+          ocrDetectedTransactions.forEach((t) => { t.selected = checked; });
+          ocrPreview?.querySelectorAll('.ocr-txn-row:not(.ocr-txn-row-header) input[type="checkbox"]').forEach((cb) => { cb.checked = checked; });
+          updateOcrConfirmState();
+        }
+      });
+
+      // Confirm: create ALL selected transactions.
       ocrConfirm?.addEventListener('click', async () => {
-        const amount = parseFloat(ocrAmount?.value || '0');
-        if (!amount || amount <= 0) {
-          showStatusToast(t('invalidAmount') || 'Please enter a valid amount', 'error');
-          ocrAmount?.focus();
+        const selected = ocrDetectedTransactions.filter((t) => t.selected && t.amount > 0);
+        if (!selected.length) {
+          showStatusToast('No transactions selected', 'error');
           return;
         }
 
         ocrConfirm.disabled = true;
-        const result = await request('/api/transactions', {
-          method: 'POST',
-          body: JSON.stringify({
-            kind: 'expense',
-            category: (ocrCategory?.value || '').trim() || 'Uncategorized',
-            amount,
-            occurred_on: ocrDate?.value || new Date().toISOString().slice(0, 10),
-            note: (ocrDescription?.value || '').trim(),
-          }),
-        });
+        if (ocrStatus) ocrStatus.textContent = `Creating ${selected.length} transaction(s)...`;
+        ocrProgress?.classList.remove('hidden');
+        ocrPreview?.classList.add('hidden');
 
-        if (result.error) {
-          showStatusToast(result.error, 'error');
-          ocrConfirm.disabled = false;
-          return;
+        let created = 0;
+        for (const txn of selected) {
+          const result = await request('/api/transactions', {
+            method: 'POST',
+            body: JSON.stringify({
+              kind: 'expense',
+              category: (txn.category || '').trim() || 'Uncategorized',
+              amount: txn.amount,
+              occurred_on: txn.date || new Date().toISOString().slice(0, 10),
+              note: (txn.description || '').trim(),
+            }),
+          });
+          if (!result.error) created++;
         }
 
-        showStatusToast(t('transactionAdded') || 'Transaction added from receipt!', 'success');
         closeOcrModal();
+        showStatusToast(`${created} transaction(s) added from receipt!`, 'success');
         await load();
       });
       // ===== End OCR Receipt Scanner =====
